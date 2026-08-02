@@ -1,0 +1,3 @@
+docling-mcp==2.1.0
+# docling-mcp imports mcp.server.fastmcp, which was removed in MCP 2.x.
+mcp==1.29.0

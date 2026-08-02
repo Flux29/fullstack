@@ -1,11 +1,14 @@
 """Reranker implementations for RAG retrieval quality improvement."""
 
+import asyncio
 import logging
+import math
 import time
 from abc import ABC, abstractmethod
 
-from app.core.config import settings
-from app.services.rag.config import RAGSettings
+import httpx
+
+from app.services.rag.config import RAGSettings, RerankerConfig
 from app.services.rag.models import SearchResult
 
 logger = logging.getLogger(__name__)
@@ -23,44 +26,93 @@ class BaseReranker(ABC):
     ) -> list[SearchResult]: ...
 
     @abstractmethod
-    def warmup(self) -> None: ...
+    async def warmup(self) -> None: ...
+
+    @abstractmethod
+    async def aclose(self) -> None: ...
 
     @property
     @abstractmethod
     def name(self) -> str: ...
 
 
-from sentence_transformers import CrossEncoder
+class DockerModelRunnerReranker(BaseReranker):
+    """Rerank documents with Docker Model Runner's native ``/rerank`` API."""
 
-
-class CrossEncoderReranker(BaseReranker):
-    """Local Cross Encoder reranker (no API calls required)."""
-
-    DEFAULT_MODEL = settings.CROSS_ENCODER_MODEL
-
-    def __init__(self, model: str | None = None, cache_dir: str | None = None):
-        self.model_name = model or self.DEFAULT_MODEL
-        self.cache_dir = cache_dir
-        self._model = None
-
-    @property
-    def model(self) -> CrossEncoder:
-        """Lazy-load the cross-encoder model."""
-        if self._model is None:
-            cache_path = self.cache_dir or str(settings.MODELS_CACHE_DIR)
-            settings.MODELS_CACHE_DIR.mkdir(exist_ok=True, parents=True)
-
-            logger.info("[RERANKER] Loading Cross Encoder model: %s", self.model_name)
-            self._model = CrossEncoder(
-                self.model_name,
-                cache_folder=cache_path,
-                token=settings.HF_TOKEN,
-            )
-        return self._model
+    def __init__(
+        self,
+        config: RerankerConfig,
+        client: httpx.AsyncClient | None = None,
+    ) -> None:
+        self.model_name = config.model
+        self.max_retries = config.max_retries
+        self._owns_client = client is None
+        self.client = client or httpx.AsyncClient(
+            base_url=config.base_url,
+            timeout=httpx.Timeout(config.timeout_seconds),
+        )
 
     @property
     def name(self) -> str:
-        return f"CrossEncoderReranker({self.model_name})"
+        return f"DockerModelRunnerReranker({self.model_name})"
+
+    async def _request(
+        self,
+        query: str,
+        documents: list[str],
+        top_n: int,
+    ) -> list[tuple[int, float]]:
+        request = {
+            "model": self.model_name,
+            "query": query,
+            "documents": documents,
+            "top_n": top_n,
+        }
+        response: httpx.Response | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                response = await self.client.post("/rerank", json=request)
+                response.raise_for_status()
+                break
+            except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as exc:
+                status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+                transient = status in {404, 408, 409, 425, 429} or (
+                    status is not None and status >= 500
+                )
+                if attempt >= self.max_retries or (
+                    isinstance(exc, httpx.HTTPStatusError) and not transient
+                ):
+                    raise
+                delay = min(0.5 * (2**attempt), 4.0)
+                logger.warning(
+                    "[RERANKER] DMR request unavailable (status=%s); retrying in %.1fs",
+                    status,
+                    delay,
+                )
+                await asyncio.sleep(delay)
+        if response is None:  # pragma: no cover - loop always executes at least once
+            raise RuntimeError("Docker Model Runner rerank request was not attempted")
+        payload = response.json()
+        raw_results = payload.get("results")
+        if not isinstance(raw_results, list):
+            raise ValueError("Docker Model Runner rerank response has no results list")
+
+        scored: list[tuple[int, float]] = []
+        seen: set[int] = set()
+        for item in raw_results:
+            if not isinstance(item, dict):
+                raise ValueError("Docker Model Runner returned an invalid rerank item")
+            index = item.get("index")
+            score = item.get("relevance_score")
+            if not isinstance(index, int) or index < 0 or index >= len(documents):
+                raise ValueError("Docker Model Runner returned an invalid document index")
+            if index in seen:
+                raise ValueError("Docker Model Runner returned a duplicate document index")
+            if not isinstance(score, int | float) or not math.isfinite(float(score)):
+                raise ValueError("Docker Model Runner returned a non-finite relevance score")
+            seen.add(index)
+            scored.append((index, float(score)))
+        return scored
 
     async def rerank(
         self,
@@ -68,75 +120,68 @@ class CrossEncoderReranker(BaseReranker):
         results: list[SearchResult],
         top_k: int,
     ) -> list[SearchResult]:
-        if not results:
+        if not results or top_k <= 0:
             return []
 
-        logger.debug(
-            "[RERANKER] Cross Encoder reranking %d documents, query: '%.50s...', top_k: %d",
-            len(results),
-            query,
-            top_k,
-        )
-
-        start_time = time.time()
-
+        started = time.monotonic()
         try:
-            pairs = [[query, result.content] for result in results]
-            scores = self.model.predict(pairs)
-
-            elapsed = time.time() - start_time
-            logger.info("[RERANKER] Cross Encoder reranking completed in %.3fs", elapsed)
-
-            scored_results = []
-            for i, (result, score) in enumerate(zip(results, scores)):
-                logger.debug(
-                    "[RERANKER] CrossEncoder doc %d: score=%.4f (was %.4f)",
-                    i,
-                    score,
-                    result.score,
+            scored = await self._request(
+                query=query,
+                documents=[result.content for result in results],
+                top_n=min(top_k, len(results)),
+            )
+            reranked = [
+                SearchResult(
+                    content=results[index].content,
+                    score=score,
+                    metadata=results[index].metadata,
+                    parent_doc_id=results[index].parent_doc_id,
                 )
-                scored_results.append(
-                    SearchResult(
-                        content=result.content,
-                        score=float(score),
-                        metadata=result.metadata,
-                        parent_doc_id=result.parent_doc_id,
-                    )
-                )
-
-            scored_results.sort(key=lambda x: x.score, reverse=True)
-
-            for i, r in enumerate(scored_results[:3]):
-                logger.debug("[RERANKER] Rank #%d: score=%.4f", i + 1, r.score)
-
-            return scored_results[:top_k]
-
-        except Exception as e:
-            logger.error("[RERANKER] Cross Encoder reranking failed: %s", e)
+                for index, score in scored
+            ]
+            reranked.sort(key=lambda result: result.score, reverse=True)
+            logger.info(
+                "[RERANKER] Docker Model Runner reranked %d documents in %.3fs",
+                len(results),
+                time.monotonic() - started,
+            )
+            return reranked[:top_k]
+        except Exception:
+            logger.exception(
+                "[RERANKER] Docker Model Runner reranking failed; preserving vector order"
+            )
             return results[:top_k]
 
-    def warmup(self) -> None:
-        logger.info("[RERANKER] Cross Encoder warmup: loading model %s", self.model_name)
-        _ = self.model
-        logger.info("[RERANKER] Cross Encoder ready: %s", self.model_name)
+    async def warmup(self) -> None:
+        await self._request(
+            query="Docker Model Runner reranker warmup",
+            documents=["Reranking service warmup document."],
+            top_n=1,
+        )
+        logger.info("[RERANKER] Docker Model Runner ready: %s", self.model_name)
+
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self.client.aclose()
 
 
 class RerankService:
-    """Orchestrates reranking with the configured reranker provider."""
+    """Orchestrate reranking with the configured provider."""
 
-    def __init__(self, settings: RAGSettings):
+    def __init__(
+        self,
+        settings: RAGSettings,
+        client: httpx.AsyncClient | None = None,
+    ) -> None:
         self.settings = settings
-        config = settings.reranker_config  # type: ignore[attr-defined]
+        config = settings.reranker_config
         self._reranker: BaseReranker | None = None
-        if config.model == "cross_encoder":
-            self._reranker = CrossEncoderReranker()
-            logger.info("[RERANKER] Using Cross Encoder reranker")
+        if config.provider == "docker_model_runner":
+            self._reranker = DockerModelRunnerReranker(config, client=client)
+            logger.info("[RERANKER] Using Docker Model Runner reranker")
 
         if self._reranker is None:
-            logger.warning(
-                "[RERANKER] No reranker configured (model: %s). Reranking will be skipped.",
-                config.model,
-            )
+            logger.info("[RERANKER] Reranking disabled")
 
     @property
     def reranker(self) -> BaseReranker | None:
@@ -153,29 +198,32 @@ class RerankService:
         top_k: int,
     ) -> list[SearchResult]:
         if not self._reranker:
-            logger.debug("[RERANKER] No reranker configured, returning original results")
             return results[:top_k]
+        return await self._reranker.rerank(query, results, top_k)
 
-        logger.debug(
-            "[RERANKER] Starting reranking with %s, query: '%.50s...', results: %d, top_k: %d",
-            self._reranker.name,
-            query,
-            len(results),
-            top_k,
-        )
-
-        for i, r in enumerate(results[:5]):
-            logger.debug("[RERANKER] Pre-rerank #%d: score=%.4f", i + 1, r.score)
-
-        reranked = await self._reranker.rerank(query, results, top_k)
-
-        for i, r in enumerate(reranked[:5]):
-            logger.debug("[RERANKER] Post-rerank #%d: score=%.4f", i + 1, r.score)
-
-        return reranked
-
-    def warmup(self) -> None:
+    async def warmup(self) -> None:
         if self._reranker:
-            logger.info("[RERANKER] Warming up %s", self._reranker.name)
-            self._reranker.warmup()
-            logger.info("[RERANKER] %s warmup complete", self._reranker.name)
+            await self._reranker.warmup()
+
+    async def aclose(self) -> None:
+        if self._reranker:
+            await self._reranker.aclose()
+
+
+_shared_service: RerankService | None = None
+
+
+def get_rerank_service(settings: RAGSettings) -> RerankService:
+    """Return one reusable reranker service per process."""
+    global _shared_service
+    if _shared_service is None:
+        _shared_service = RerankService(settings)
+    return _shared_service
+
+
+async def close_rerank_service() -> None:
+    """Close and clear the process-level reranker service."""
+    global _shared_service
+    if _shared_service is not None:
+        await _shared_service.aclose()
+        _shared_service = None

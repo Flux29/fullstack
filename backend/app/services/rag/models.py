@@ -27,6 +27,7 @@ class DocumentPage(BaseModel):
     content: str
     parent_doc_id: str | None = None
     images: list[DocumentImage] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class DocumentPageChunk(DocumentPage):

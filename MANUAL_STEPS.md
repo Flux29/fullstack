@@ -39,11 +39,17 @@ These are used to sign JWTs and authenticate service-to-service calls. Rotate at
 - [ ] Authorized redirect URIs: `http://localhost:3000/auth/callback`. Add prod URL when deploying.
 - [ ] Copy **Client ID** + **Client secret** → set `GOOGLE_OAUTH_CLIENT_ID` + `GOOGLE_OAUTH_CLIENT_SECRET` in `.env`.
 
-## RAG (pgvector)
+## RAG, Docker Model Runner, and Docling
 
-- [ ] Run `CREATE EXTENSION vector;` against your Postgres database (already added to migration `0007`).
+- [ ] Apply Alembic through `0027_embedding_cache`; it creates pgvector, the durable embedding cache, and collection fingerprint registry.
+- [ ] Confirm `GET http://localhost:12434/engines/v1/models` contains the inspected Qwen 4B artifact and that a `dimensions: 1024` request succeeds.
+- [ ] Confirm Docker Model Runner contains `huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0` and its native `/rerank` endpoint succeeds.
+- [ ] Preserve the external `redis-data` and `docling-models` volumes. Normal Make targets never delete them.
+- [ ] Verify CUDA Docling Serve `/health`, then perform one warm PDF conversion before ingestion.
+- [ ] Keep Taskiq at one worker and `TASKIQ_MAX_ASYNC_TASKS=1` until simultaneous Qwen/Docling GPU load is measured.
 
-- [ ] (Optional) Ingest seed documents: `uv run fullstack rag-ingest /path/to/file.pdf --collection docs`.
+- [ ] Set `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD` before the one-time `make seed`/`make quickstart` step.
+- [ ] (Optional) Ingest seed documents: `uv run fullstack cmd rag-ingest /path/to/file.pdf --collection docs`.
 
 ### Google Drive sync source
 
@@ -62,6 +68,20 @@ These are used to sign JWTs and authenticate service-to-service calls. Rotate at
 
 - [ ] Local: `docker compose up -d redis` (already in compose file).
 - [ ] Managed: Upstash / Redis Cloud / ElastiCache. Set `REDIS_URL` in `.env`.
+- [ ] Preserve logical DB assignments: application 0, Taskiq broker 1, Taskiq results 2, embedding L1 3; enable AOF without a global eviction policy.
+
+## MCP sidecars
+
+- [ ] Generate a strong `BROWSERLESS_TOKEN`; Browserless and Chrome DevTools MCP stay private.
+- [ ] Create a fine-grained read-only GitHub token and set `GITHUB_MCP_TOKEN`. Never place it inside `MCP_SERVERS` JSON.
+- [ ] Confirm the GitHub deployment allowlist contains read-only tools only and the startup probe exposes no mutation tool.
+
+## Traefik and production TLS
+
+- [ ] Set `DOMAIN` and `ACME_EMAIL`, point public DNS at the deployment host, and choose the intended ACME resolver/certificate policy.
+- [ ] Free or deliberately remap host ports 80/443 before `make prod`; this workstation currently has IIS/HTTP.sys on port 80, and the edge preflight intentionally blocks while it is occupied.
+- [ ] Keep the dashboard loopback-only and verify DB, Redis, MinIO, Browserless, and Chrome MCP have no production host publications.
+- [ ] Complete a real-domain HTTPS request after DNS and production secrets are provisioned; Compose validation alone cannot prove certificate issuance.
 
 ## Transactional email
 

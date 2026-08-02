@@ -1,13 +1,13 @@
 
 # Build stage
-FROM python:3.12-slim AS builder
+FROM python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de AS builder
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.8.3@sha256:ef11ed817e6a5385c02cd49fdcc99c23d02426088252a8eace6b6e6a2a511f36 /uv /bin/uv
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
@@ -26,19 +26,11 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 
 # Runtime stage
-FROM python:3.12-slim
+FROM python:3.12-slim@sha256:57cd7c3a7a273101a6485ba99423ee568157882804b1124b4dd04266317710de
 
 ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
-# LiteParse needs the Node.js CLI. Pre-installing here avoids a 30-60s
-# blocking npm install on the first parse request from a fresh container.
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl ca-certificates gnupg \
-    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y --no-install-recommends nodejs \
-    && npm install -g @llamaindex/liteparse \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
@@ -49,7 +41,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 
 # Create non-root user and writable directories
 RUN adduser --disabled-password --gecos "" appuser && \
-    mkdir -p /app/media /app/data /app/chroma_data /app/models_cache && \
+    mkdir -p /app/media /app/data /app/models_cache && \
     chown -R appuser:appuser /app
 USER appuser
 

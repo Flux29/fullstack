@@ -4,6 +4,7 @@ import io
 import logging
 import os
 import tempfile
+from pathlib import Path
 from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,6 +21,31 @@ from app.services.file_storage import (
 )
 
 logger = logging.getLogger(__name__)
+
+_chat_docling_parser: Any = None
+
+
+def _get_chat_docling_parser() -> Any:
+    global _chat_docling_parser
+    if _chat_docling_parser is None:
+        from app.services.rag.documents import DoclingServeParser
+
+        pdf = settings.rag.pdf_parser
+        _chat_docling_parser = DoclingServeParser(
+            base_url=pdf.docling_serve_url,
+            enable_ocr=settings.rag.enable_ocr,
+            timeout_seconds=pdf.docling_timeout_seconds,
+            max_retries=pdf.docling_max_retries,
+            max_upload_size_mb=settings.MAX_UPLOAD_SIZE_MB,
+        )
+    return _chat_docling_parser
+
+
+async def close_chat_docling_parser() -> None:
+    global _chat_docling_parser
+    if _chat_docling_parser is not None:
+        await _chat_docling_parser.aclose()
+        _chat_docling_parser = None
 
 
 class FileUploadService:
@@ -118,35 +144,20 @@ class FileUploadService:
             logger.warning("LlamaParse PDF parsing failed: %s", e)
             return self._parse_pdf_pymupdf(data)
 
-    async def _parse_pdf_liteparse(self, data: bytes) -> str | None:
-        """Extract text from PDF using LiteParse.
-
-        Falls back to PyMuPDF on any failure so chat uploads stay best-effort.
-        """
+    async def _parse_pdf_docling(self, data: bytes) -> str | None:
+        """Extract chat PDF text through Docling, with PyMuPDF fallback."""
         try:
-            from liteparse import LiteParse
-
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
                 f.write(data)
                 temp_path = f.name
             try:
-                parser = LiteParse()
-                ocr_url = getattr(settings, "LITEPARSE_OCR_SERVER_URL", "") or None
-                ocr_lang = getattr(settings, "LITEPARSE_OCR_LANGUAGE", "en")
-                timeout_s = float(getattr(settings, "LITEPARSE_TIMEOUT_SECONDS", 600.0))
-                result = await parser.parse_async(
-                    temp_path,
-                    ocr_enabled=getattr(settings, "RAG_ENABLE_OCR", False),
-                    ocr_server_url=ocr_url,
-                    ocr_language=ocr_lang,
-                    timeout=timeout_s,
-                )
-                text = "\n\n".join(p.text for p in result.pages if p.text.strip())
+                result = await _get_chat_docling_parser().parse(Path(temp_path))
+                text = "\n\n".join(page.content for page in result.pages if page.content.strip())
                 return text if text.strip() else None
             finally:
                 os.unlink(temp_path)
         except Exception as e:
-            logger.warning("LiteParse PDF parsing failed: %s", e)
+            logger.warning("Docling PDF parsing failed; using PyMuPDF fallback: %s", e)
             return self._parse_pdf_pymupdf(data)
 
     async def _parse_pdf_content(self, data: bytes) -> str | None:
@@ -155,8 +166,8 @@ class FileUploadService:
         parser = getattr(settings, "CHAT_PDF_PARSER", "pymupdf")
         if parser == "llamaparse":
             return await self._parse_pdf_llamaparse(data)
-        elif parser == "liteparse":
-            return await self._parse_pdf_liteparse(data)
+        elif parser == "docling":
+            return await self._parse_pdf_docling(data)
         return self._parse_pdf_pymupdf(data)
 
     @staticmethod

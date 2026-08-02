@@ -263,6 +263,37 @@ class TestStaticServerSpecs:
         with pytest.raises(ValidationError):
             McpServerConfig(name="My Server!", url="https://example.com/mcp")
 
+    def test_github_secret_is_injected_only_into_runtime_spec(self, monkeypatch):
+        from pydantic import SecretStr
+
+        config = McpServerConfig(
+            name="github",
+            url="http://github-mcp:8082/",
+            auth="github",
+            allowed_tools=["search_code"],
+        )
+        monkeypatch.setattr(settings, "MCP_SERVERS", [config])
+        monkeypatch.setattr(settings, "GITHUB_MCP_TOKEN", SecretStr("secret-token"))
+
+        spec = static_server_specs()[0]
+        assert config.headers == {}
+        assert spec.headers == {"Authorization": "Bearer secret-token"}
+        assert spec.assert_read_only is True
+
+    def test_github_mutation_allowlist_is_rejected(self):
+        with pytest.raises(ValidationError, match="mutation tools are forbidden"):
+            type(settings)(
+                GITHUB_MCP_TOKEN="token",
+                MCP_SERVERS=[
+                    {
+                        "name": "github",
+                        "url": "http://github-mcp:8082/",
+                        "auth": "github",
+                        "allowed_tools": ["search_code", "create_issue"],
+                    }
+                ],
+            )
+
     def test_duplicate_names_are_rejected_at_startup(self):
         """Two servers with one name means one of them never reaches a chat
         turn. Fail at boot rather than at runtime, where nobody would see it."""

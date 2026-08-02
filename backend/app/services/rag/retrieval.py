@@ -5,6 +5,7 @@ import logging
 import time
 from abc import ABC, abstractmethod
 
+from app.core.exceptions import ValidationError
 from app.services.rag.config import RAGSettings
 from app.services.rag.models import SearchResult
 from app.services.rag.reranker import RerankService
@@ -248,6 +249,8 @@ class RetrievalService(BaseRetrievalService):
                 for r in results:
                     r.metadata["collection"] = name
                 all_results.extend(results)
+            except ValidationError:
+                raise
             except Exception:
                 logger.exception("[RETRIEVAL] Failed to search collection '%s'", name)
 

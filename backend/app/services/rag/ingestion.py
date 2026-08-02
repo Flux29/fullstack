@@ -6,7 +6,7 @@ from pathlib import Path
 
 from app.core.config import settings
 from app.services.rag.documents import DocumentProcessor
-from app.services.rag.embeddings import EmbeddingService
+from app.services.rag.embeddings import get_embedding_service
 from app.services.rag.models import Document, IngestionResult, IngestionStatus
 from app.services.rag.vectorstore import BaseVectorStore
 from app.services.rag.vectorstore import PgVectorStore as VectorStore
@@ -33,10 +33,15 @@ class IngestionService:
         on_event: Callable[..., Awaitable[None]] | None = None,
     ) -> IngestionService:
         rag_settings = settings.rag
-        embed_service = EmbeddingService(settings=rag_settings)
+        embed_service = get_embedding_service(rag_settings)
         vector_store = VectorStore(settings=rag_settings, embedding_service=embed_service)
         processor = DocumentProcessor(settings=rag_settings)
         return cls(processor=processor, vector_store=vector_store, on_event=on_event)
+
+    async def aclose(self) -> None:
+        """Close parser and vector-store resources owned by this service."""
+        await self.processor.aclose()
+        await self.store.aclose()
 
     async def _emit(self, event: str, data: dict[str, object]) -> None:
         if self._on_event:

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError
-from app.services.rag.embeddings import EmbeddingService
+from app.services.rag.embeddings import get_embedding_service
 from app.services.rag.retrieval import RetrievalService
 from app.services.rag.vectorstore import PgVectorStore
 
@@ -24,7 +24,7 @@ def get_retrieval_service() -> "BaseRetrievalService":
         return _retrieval_service
 
     rag_settings = settings.rag
-    embedding_service = EmbeddingService(rag_settings)
+    embedding_service = get_embedding_service(rag_settings)
     vector_store = PgVectorStore(rag_settings, embedding_service)
     _retrieval_service = RetrievalService(vector_store, rag_settings)
     return _retrieval_service

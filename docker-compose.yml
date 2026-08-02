@@ -1,140 +1,357 @@
+name: fullstack
 
-# Backend development configuration
-# Usage: docker-compose up -d
+x-backend-environment: &backend-environment
+  POSTGRES_HOST: db
+  POSTGRES_USER: ${POSTGRES_USER:-postgres}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+  POSTGRES_DB: ${POSTGRES_DB:-fullstack}
+  REDIS_HOST: redis
+  REDIS_PASSWORD: ""
+  TASKIQ_BROKER_URL: redis://redis:6379/1
+  TASKIQ_RESULT_BACKEND: redis://redis:6379/2
+  TASKIQ_MAX_ASYNC_TASKS: "1"
+  S3_ENDPOINT: http://minio:9000
+  S3_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+  S3_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin-change-me}
+  S3_RAG_ENDPOINT: http://minio:9000
+  S3_RAG_ACCESS_KEY: ${MINIO_ROOT_USER:-minioadmin}
+  S3_RAG_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-minioadmin-change-me}
+  EMBEDDING_BASE_URL: http://model-runner.docker.internal/engines/v1
+  RERANKER_BASE_URL: http://model-runner.docker.internal
+  EMBEDDING_CACHE_URL: redis://redis:6379/3
+  DOCLING_SERVE_URL: http://docling-serve:5001
+
+x-backend-volumes: &backend-volumes
+  - media_data:/app/media
+  - models_cache:/app/models_cache
+  - ./emails:/app/emails:ro
+
+x-backend-depends: &backend-depends
+  db:
+    condition: service_healthy
+  redis:
+    condition: service_healthy
+  minio:
+    condition: service_healthy
+  docling-serve:
+    condition: service_healthy
 
 services:
   app:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: fullstack_backend:dev
-    container_name: fullstack_backend
-    ports:
-      - "8100:8100"
-    volumes:
-      - ./backend/app:/app/app:ro
-      - ./backend/cli:/app/cli:ro
-      - media_data:/app/media
-      # email/templates.py reads pre-compiled HTML/text from /app/emails/compiled.
-      # Build context is ./backend so the dir isn't in the image — mount it.
-      - ./emails:/app/emails:ro
+    image: fullstack-backend:local
     env_file:
       - ./backend/.env
     environment:
-      - DEBUG=true
-      - ENVIRONMENT=local
-      - POSTGRES_HOST=db
-      - REDIS_HOST=redis
-      - TASKIQ_BROKER_URL=redis://redis:6379/1
-      - TASKIQ_RESULT_BACKEND=redis://redis:6379/1
-    # --ws websockets-sansio: uvicorn's `auto` picks the legacy websockets impl,
-    # which is broken with websockets >=14 (handshake → HTTP 500). The sansio
-    # implementation is the modern, compatible one. Required for the chat WS.
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8100 --reload --ws websockets-sansio
+      <<: *backend-environment
+      DEBUG: "false"
+      ENVIRONMENT: staging
+    command:
+      - uvicorn
+      - app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8100"
+      - --ws
+      - websockets-sansio
+    expose:
+      - "8100"
+    volumes: *backend-volumes
     networks:
-      - backend
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
-
-  db:
-    image: postgres:16-alpine
-    container_name: fullstack_db
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}
-      - POSTGRES_DB=${POSTGRES_DB:-fullstack}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    # Port exposed only for local development - remove in production
-    ports:
-      - "5432:5432"
-    networks:
-      - backend
+      - data-internal
+      - service-egress
+    depends_on: *backend-depends
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
-      interval: 10s
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8100/api/v1/health/live', timeout=5)"
+      interval: 15s
       timeout: 5s
+      start_period: 30s
       retries: 5
     restart: unless-stopped
 
+  db:
+    image: pgvector/pgvector@sha256:7ae6051efd0e60444282c27c7e141af07f322ce033300e727a49c3dd11075e38
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-fullstack}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - data-internal
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
   redis:
-    image: redis:7-alpine
-    container_name: fullstack_redis
-    # Port exposed only for local development - remove in production
-    ports:
-      - "6379:6379"
+    image: redis@sha256:c29e49ab2f85760a3827b53882e6dd9f5c6c3f0bb7d724e07bb31cbf275a5236
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
     volumes:
       - redis_data:/data
     networks:
-      - backend
+      - data-internal
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
     restart: unless-stopped
 
-  taskiq_worker:
-    image: fullstack_backend:dev
-    pull_policy: never
-    container_name: fullstack_taskiq_worker
+  minio:
+    image: minio-local@sha256:978f75e6d6240261fd3a2f6a760729f45f30ea11fd1cf8b51391694c6fb279d0
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-minioadmin-change-me}
+    expose:
+      - "9000"
+      - "9001"
     volumes:
-      - ./backend/app:/app/app:ro
-      - media_data:/app/media
-      - ./emails:/app/emails:ro
-    command: taskiq worker app.worker.taskiq_app:broker --workers 1 --reload
+      - minio_data:/data
+    networks:
+      - data-internal
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  docling-serve:
+    image: ghcr.io/docling-project/docling-serve-cu128@sha256:6b27338eea4981a8c51c3cdccda83441a62053ce5cf708f4fdf70aad5f3c10e8
+    gpus: all
+    environment:
+      DOCLING_DEVICE: cuda:0
+      DOCLING_SERVE_ENABLE_UI: "false"
+      DOCLING_SERVE_ENG_LOC_NUM_WORKERS: "1"
+      DOCLING_SERVE_ENG_LOC_SHARE_MODELS: "true"
+      DOCLING_SERVE_ARTIFACTS_PATH: /modelcache
+      DOCLING_SERVE_LOAD_MODELS_AT_BOOT: "false"
+      NVIDIA_VISIBLE_DEVICES: all
+    expose:
+      - "5001"
+    volumes:
+      - docling_models:/modelcache:ro
+    networks:
+      - service-egress
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=5)"
+      interval: 20s
+      timeout: 10s
+      start_period: 90s
+      retries: 10
+    restart: unless-stopped
+
+  taskiq-worker:
+    image: fullstack-backend:local
+    pull_policy: never
     env_file:
       - ./backend/.env
     environment:
-      - DEBUG=true
-      - POSTGRES_HOST=db
-      - REDIS_HOST=redis
-      - TASKIQ_BROKER_URL=redis://redis:6379/1
-      - TASKIQ_RESULT_BACKEND=redis://redis:6379/1
+      <<: *backend-environment
+      DEBUG: "false"
+    command:
+      - taskiq
+      - worker
+      - app.worker.taskiq_app:broker
+      - --workers
+      - "1"
+      - --max-async-tasks
+      - "1"
+    volumes: *backend-volumes
     networks:
-      - backend
+      - data-internal
+      - service-egress
+    depends_on: *backend-depends
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  taskiq-scheduler:
+    image: fullstack-backend:local
+    pull_policy: never
+    env_file:
+      - ./backend/.env
+    environment:
+      <<: *backend-environment
+      DEBUG: "false"
+    command:
+      - taskiq
+      - scheduler
+      - app.worker.taskiq_app:scheduler
+    volumes:
+      - media_data:/app/media
+    networks:
+      - data-internal
+      - service-egress
     depends_on:
-      app:
-        condition: service_started
+      db:
+        condition: service_healthy
       redis:
         condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  frontend:
+    profiles: ["frontend"]
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8100}
+        NEXT_PUBLIC_WS_URL: ${NEXT_PUBLIC_WS_URL:-ws://localhost:8100}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-50}
+        NEXT_PUBLIC_OAUTH_PROVIDERS: ${NEXT_PUBLIC_OAUTH_PROVIDERS:-google}
+        NEXT_PUBLIC_RAG_ENABLED: "true"
+    image: fullstack-frontend:local
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://app:8100
+      BACKEND_WS_URL: ws://app:8100
+      NEXT_PUBLIC_RAG_ENABLED: "true"
+    expose:
+      - "3000"
+    networks:
+      - service-egress
+    depends_on:
+      app:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - bun
+        - -e
+        - "fetch('http://localhost:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      start_period: 40s
+      retries: 3
+    restart: unless-stopped
+
+  docling-mcp:
+    profiles: ["mcp"]
+    build:
+      context: ./docker/mcp/docling
+    environment:
+      DOCLING_CONVERSION_MODE: remote
+      DOCLING_SERVICE_URL: http://docling-serve:5001
+      DOCLING_SERVICE_TIMEOUT: "600"
+      DOCLING_SERVICE_MAX_RETRIES: "2"
+      DOCLING_FALLBACK_TO_LOCAL: "false"
+      CACHE_DIR: /cache
+    expose:
+      - "8000"
+    volumes:
+      - docling_mcp_cache:/cache
+    networks:
+      - service-egress
+    depends_on:
+      docling-serve:
+        condition: service_healthy
+    restart: unless-stopped
+
+  browserless:
+    profiles: ["mcp"]
+    image: ghcr.io/browserless/chromium@sha256:07f6561d607b80312cc9b2500e98e40cf1eb0276fb647984fa074c96b9dd41dc
+    environment:
+      TOKEN: ${BROWSERLESS_TOKEN:-change-me-before-enabling-mcp}
+      CONCURRENT: "2"
+      TIMEOUT: "600000"
+      QUEUED: "2"
+    expose:
+      - "3000"
+    networks:
+      - service-egress
+    restart: unless-stopped
+
+  chrome-devtools-mcp:
+    profiles: ["mcp"]
+    build:
+      context: ./docker/mcp/chrome-devtools
+    environment:
+      BROWSERLESS_TOKEN: ${BROWSERLESS_TOKEN:-change-me-before-enabling-mcp}
+    expose:
+      - "8000"
+    networks:
+      - service-egress
+    depends_on:
+      browserless:
+        condition: service_started
+    restart: unless-stopped
+
+  github-mcp:
+    profiles: ["mcp"]
+    image: ghcr.io/github/github-mcp-server@sha256:d5a18c04b92714c309eb46a2305087e91a4dbd80420f6e462656699f95093520
+    command:
+      - http
+      - --port
+      - "8082"
+      - --listen-host
+      - 0.0.0.0
+      - --read-only
+      - --tools
+      - get_file_contents,search_code,search_issues,issue_read,pull_request_read,list_commits
+    environment:
+      GITHUB_READ_ONLY: "1"
+    expose:
+      - "8082"
+    networks:
+      - service-egress
+    restart: unless-stopped
+
+  pgweb:
+    profiles: ["db-ui"]
+    image: sosedoff/pgweb@sha256:a5256d416e2e8b92d69a4459058e3eca33a9f075d8325491644411d0bc3bd70b
+    environment:
+      PGWEB_DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-fullstack}?sslmode=disable
+    expose:
+      - "8081"
+    networks:
+      - data-internal
+    depends_on:
       db:
         condition: service_healthy
     restart: unless-stopped
 
-  taskiq_scheduler:
-    image: fullstack_backend:dev
-    pull_policy: never
-    container_name: fullstack_taskiq_scheduler
-    volumes:
-      - ./backend/app:/app/app:ro
-    command: taskiq scheduler app.worker.taskiq_app:scheduler
-    env_file:
-      - ./backend/.env
-    environment:
-      - DEBUG=true
-      - REDIS_HOST=redis
-      - TASKIQ_BROKER_URL=redis://redis:6379/1
-      - TASKIQ_RESULT_BACKEND=redis://redis:6379/1
-    networks:
-      - backend
-    depends_on:
-      app:
-        condition: service_started
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-
 networks:
-  backend:
+  data-internal:
+    driver: bridge
+    internal: true
+  service-egress:
     driver: bridge
 
 volumes:
-  media_data:
   postgres_data:
+  minio_data:
+  media_data:
+  models_cache:
+  docling_mcp_cache:
   redis_data:
+    external: true
+    name: redis-data
+  docling_models:
+    external: true
+    name: docling-models

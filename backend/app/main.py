@@ -2,12 +2,14 @@
 """FastAPI application entry point."""
 
 import logging
+import inspect
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager, suppress
 from typing import TypedDict
 
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
+import fastapi_pagination.api as pagination_api
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -25,10 +27,19 @@ from app.core.middleware import RequestIDMiddleware
 from app.db.todo_pool import close_todo_pool, init_todo_pool
 from app.core.cache import setup_cache
 from app.clients.redis import RedisClient
-from app.services.rag.embeddings import EmbeddingService
+from app.services.rag.embeddings import (
+    EmbeddingService,
+    close_embedding_service,
+    get_embedding_service,
+)
 from app.services.rag.vectorstore import PgVectorStore
 from app.services.rag.vectorstore import BaseVectorStore
-from app.services.rag.reranker import RerankService
+from app.services.rag.reranker import (
+    RerankService,
+    close_rerank_service,
+    get_rerank_service,
+)
+from app.services.file_upload import close_chat_docling_parser
 from app.admin import setup_admin
 
 logger = logging.getLogger(__name__)
@@ -40,6 +51,7 @@ class LifespanState(TypedDict, total=False):
     redis: RedisClient
     embedding_service: EmbeddingService
     vector_store: BaseVectorStore
+    rerank_service: RerankService
 
 
 @asynccontextmanager
@@ -64,15 +76,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     setup_cache(redis_client)
     embedder: EmbeddingService | None = None
     try:
-        embedder = EmbeddingService(settings=settings.rag)
-        embedder.warmup()
+        embedder = get_embedding_service(settings.rag)
+        await embedder.warmup()
         state["embedding_service"] = embedder
     except Exception as e:
         logger.error("Embedding service warmup failed: %s. RAG will not be available.", e)
-    # Initialize and warmup reranker (downloads model or validates API key)
+        with suppress(Exception):
+            await close_embedding_service()
+        embedder = None
+    # Initialize and warm up the Docker Model Runner reranker.
     try:
-        rerank_service = RerankService(settings=settings.rag)
-        rerank_service.warmup()
+        rerank_service = get_rerank_service(settings.rag)
+        await rerank_service.warmup()
         state["rerank_service"] = rerank_service
     except Exception as e:
         logger.warning("Reranker warmup failed: %s. Reranking will be disabled.", e)
@@ -85,7 +100,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[LifespanState, None]:
     yield state
     if "vector_store" in state:
         with suppress(Exception):
-            await state["vector_store"].engine.dispose()  # type: ignore[attr-defined]
+            await state["vector_store"].aclose()  # type: ignore[attr-defined]
+    with suppress(Exception):
+        await close_embedding_service()
+    with suppress(Exception):
+        await close_rerank_service()
+    with suppress(Exception):
+        await close_chat_docling_parser()
     if settings.ENABLE_DEEP_RESEARCH:
         await close_todo_pool()
     if "redis" in state:
@@ -207,6 +228,11 @@ Harness
 
     app.include_router(api_router, prefix=settings.API_V1_STR)
 
+    # fastapi-pagination 0.15.16 detects FastAPI's private body helper as the
+    # future body_params signature even on 0.135/0.136, where it still accepts
+    # flat_dependant. Select the installed signature instead of version guessing.
+    if "body_params" not in inspect.signature(pagination_api.get_body_field).parameters:
+        pagination_api._get_body_field_new_signature = False  # type: ignore[invalid-assignment]
     add_pagination(app)
 
     return app

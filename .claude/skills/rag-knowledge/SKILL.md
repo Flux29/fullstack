@@ -1,6 +1,6 @@
 ---
 name: rag-knowledge
-description: Work with the RAG knowledge base — ingest documents, run semantic search, manage collections, or add a sync source/connector (Google Drive, S3). Use when populating or debugging the knowledge base, tuning retrieval, or adding a new document source. This project uses pgvector + openai embeddings.
+description: Work with the RAG knowledge base — ingest documents, run semantic search, manage collections, or add a sync source/connector (Google Drive, S3). Use when populating or debugging the knowledge base, tuning retrieval, or adding a new document source. This project uses pgvector, Docker Model Runner, Docling Serve, and a durable embedding cache.
 ---
 
 # RAG Knowledge Base (pgvector)
@@ -37,12 +37,16 @@ Implement a connector in `backend/app/services/rag/connectors/` following the ex
 
 ## Tuning retrieval
 
-- Chunk size/overlap and parser (PyMuPDF / LlamaParse) are configured via env — see `docs/configuration.md` and `docs/rag.md`.
-- Reranking (Cohere or local CrossEncoder) improves result ordering when enabled.
+- Chunk size/overlap and parser (Docling Serve by default; PyMuPDF/LlamaParse opt-in) are configured via env — see `docs/configuration.md` and `docs/rag.md`.
+- Reranking uses Docker Model Runner's native `/rerank` endpoint with the configured GGUF reranker and improves result ordering when enabled.
 - If search returns poor results: confirm the collection is populated (`rag-stats`), check the active collection in the chat's KB selector, and verify the embedding provider/key.
 
 ## Rules
 
-- Embedding provider and dimensions are fixed per project (openai) — don't mix embeddings across a collection; re-ingest if you change them.
+- Qwen 4B through Docker Model Runner is the default and always stores normalized 1,024-dimensional vectors.
+- The default reranker is `huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0`; do not download or load a SentenceTransformers cross-encoder inside the backend.
+- Collection fingerprints include the exact model request ID, artifact revision, dimensions, normalization version, and query/document instructions. A mismatch is an intentional hard failure; delete/re-create and re-ingest the collection explicitly.
+- Embedding results use Redis DB 3 as L1 and PostgreSQL `embedding_cache` as durable L2. Query and document keys remain distinct.
+- PDF/DOCX/PPTX/XLSX/images go through the shared Docling Serve container; TXT/Markdown remain local. Do not add an in-process Docling model.
 - Heavy ingestion runs as a background job, not inline in a request.
 - See `docs/rag.md` for the full pipeline reference.

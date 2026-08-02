@@ -15,7 +15,7 @@ Harness
 | **Auth** | JWT + refresh tokens + API keys + OAuth |
 | **Cache** | Redis |
 | **AI Framework** | pydantic_ai (openrouter) |
-| **RAG** | pgvector vector store |
+| **RAG** | pgvector + Docker Model Runner Qwen 4B + Docling Serve |
 | **Tasks** | taskiq |
 | **Frontend** | Next.js 15 + React 19 + Tailwind v4 |
 
@@ -38,11 +38,16 @@ Harness
 
 ### First time
 
-```bash
-make bootstrap       # = make dev + make seed
+```powershell
+make preflight       # verify models, protected volumes, ports, and Compose
+$env:ADMIN_EMAIL="you@example.com"
+$env:ADMIN_PASSWORD="use-a-strong-local-password"
+make quickstart SOURCE_PLAN_AUDITED=1
 ```
 
-That's the only command you need on a fresh clone. After this, day-to-day is just `make dev`.
+Set `SOURCE_PLAN_AUDITED=1` only after reconciling Sections 1–15 of
+`docs/Full_Stack_Docker_Integration_Plan.md`. After the first bootstrap, day-to-day is just
+`make dev`.
 
 ### Subsequent runs
 
@@ -53,8 +58,8 @@ make dev
 `make dev` is **idempotent** — re-run it any time. It will:
 
 1. Build the backend Docker image (cached after first run)
-2. Start services via `docker-compose.dev.yml` (with hot-reload bind mounts)
-3. Poll Postgres until it accepts connections (`pg_isready` — no fixed sleeps)
+2. Start the canonical `docker-compose.yml` plus the dev override
+3. Wait for Compose health checks to pass (`--wait` — no fixed sleeps)
 4. Apply pending Alembic migrations (no-op if already at head)
 
 It does **not** re-seed the admin user — that lives in `make seed` and is run once. This way `make dev` stays cheap to re-run after every code/config change.
@@ -63,25 +68,27 @@ It does **not** re-seed the admin user — that lives in `make seed` and is run 
 
 - API: <http://localhost:8100>
 - Docs: <http://localhost:8100/docs>
-- Admin: <http://localhost:8100/admin> — `admin@example.com` / `admin123` after `make seed`
+- Admin: <http://localhost:8100/admin> — credentials come from `ADMIN_EMAIL` and `ADMIN_PASSWORD` when `make seed` runs
 - Frontend: <http://localhost:3000> — start with `make dev-frontend` (Docker) or `cd frontend && bun install && bun dev` (local)
 
 ### Day-to-day commands
 
 ```bash
 make dev           # bootstrap or restart (idempotent, no admin re-seed)
-make seed          # one-shot admin creation (no-op if admin already exists)
+make seed          # one-shot admin creation; requires ADMIN_EMAIL and ADMIN_PASSWORD
 make dev-down      # stop everything
 make dev-logs      # tail logs (Ctrl-C to exit)
 make dev-rebuild   # force-rebuild backend image (after pyproject.toml change)
 make dev-frontend  # start the Next.js container
+make dev-mcp       # start private Docling/Chrome/GitHub MCP sidecars
+make dev-db-ui     # start pgweb on loopback
 ```
 
 If you prefer running the backend on the host (not in Docker) — useful for breakpoints / IDE debugging:
 
 ```bash
 make install       # uv sync + pre-commit install
-docker compose -f docker-compose.dev.yml up -d db redis milvus etcd minio
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db redis minio docling-serve
 make db-upgrade    # apply migrations
 make run           # run uvicorn locally with --reload
 ```
@@ -92,11 +99,17 @@ make run           # run uvicorn locally with --reload
 
 | `make` target | Compose file | Use case |
 |---|---|---|
-| `make dev` | `docker-compose.dev.yml` | Local development with hot-reload + bind-mounted source. |
+| `make dev` | base + `docker-compose.dev.yml` | Local development with hot-reload + loopback ports. |
 | `make stage` | `docker-compose.yml` | Production-like build, no bind mounts, runs on localhost. Good for sanity-checking before deploy. |
-| `make prod` | `docker-compose.prod.yml` | Production. Requires `backend/.env` (copy from `backend/.env.example`, fill real secrets) and an external Nginx using `nginx/nginx.conf`. |
+| `make prod` | base + `docker-compose.prod.yml` | Production with Traefik. Requires real secrets in `backend/.env`. |
 
 Each env has matching `-down`, `-logs`, `-rebuild` siblings (e.g. `make stage-down`).
+
+Redis logical DBs are fixed: application 0, Taskiq broker 1, Taskiq results 2,
+and embedding L1 cache 3. `redis-data` and `docling-models` are external volumes;
+normal cleanup never removes them. Collections are fingerprinted against the
+exact model artifact, instructions, dimension, and normalization contract, so
+configuration changes require explicit re-embedding.
 
 ---
 
@@ -151,9 +164,9 @@ fullstack server run --reload          # dev server
 fullstack db upgrade                   # apply migrations
 fullstack db migrate -m "message"      # create new migration
 fullstack user create-admin            # interactive admin creation
-fullstack rag-ingest <path> -c docs    # ingest local files
-fullstack rag-search "query" -c docs   # semantic search
-fullstack rag-collections              # list collections
+fullstack cmd rag-ingest <path> -c docs    # ingest local files
+fullstack cmd rag-search "query" -c docs   # semantic search
+fullstack cmd rag-collections              # list collections
 fullstack taskiq worker                # start worker
 fullstack taskiq scheduler             # start scheduler
 ```
@@ -208,21 +221,23 @@ For production, **never** commit secrets — `backend/.env` is gitignored. Fill 
 
 ## RAG (Knowledge Base)
 
-Using **pgvector** as the vector store with **openai** embeddings.
+Using **pgvector** with normalized 1,024-dimensional Qwen embeddings and the
+ModernBERT GGUF reranker served by Docker Model Runner.
 
 ```bash
 # Ingest local files (recursive)
-fullstack rag-ingest /path/to/docs/ --collection documents --recursive
+fullstack cmd rag-ingest /path/to/docs/ --collection documents --recursive
 # Pull from Google Drive (service-account auth)
-fullstack rag-sync-gdrive --collection documents --folder-id <id>
+fullstack cmd rag-sync-gdrive --collection documents --folder-id <id>
 # Pull from S3 / MinIO
-fullstack rag-sync-s3 --collection documents --prefix docs/
+fullstack cmd rag-sync-s3 --collection documents --prefix docs/
 
 # Semantic search
-fullstack rag-search "your query" --collection documents
+fullstack cmd rag-search "your query" --collection documents
 ```
 
-PDF parsing uses **all**. See `docs/howto/add-rag-source.md` to add a new source connector.
+Docling Serve handles PDF, Office, and image conversion; TXT/Markdown remain local. See
+`docs/howto/add-rag-source.md` to add a new source connector.
 
 ---
 
@@ -262,7 +277,7 @@ Set in the Vercel dashboard:
 ```bash
 # 1. SSH to the box, clone the repo
 # 2. cp backend/.env.example backend/.env, fill in real secrets
-# 3. Configure nginx using nginx/nginx.conf as reference
+# 3. Configure the Traefik hostnames and TLS settings in docker-compose.prod.yml
 # 4. Bring up the stack:
 make prod
 

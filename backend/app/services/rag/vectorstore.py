@@ -14,11 +14,19 @@ from app.services.rag.models import (
 
 logger = logging.getLogger(__name__)
 
-_COLLECTION_NAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,63}$")
+_COLLECTION_NAME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9_]{0,58}$")
 _RESERVED_COLLECTION_NAMES = frozenset({"all"})
 
 
 class BaseVectorStore(ABC):
+    @abstractmethod
+    async def _ensure_collection(self, name: str) -> None:
+        pass
+
+    @abstractmethod
+    async def aclose(self) -> None:
+        pass
+
     @abstractmethod
     async def insert_document(self, collection_name: str, document: Document) -> None:
         pass
@@ -70,7 +78,7 @@ class BaseVectorStore(ABC):
         if not _COLLECTION_NAME_RE.match(name):
             raise ValueError(
                 "Collection name must start with a letter and contain only "
-                "letters, numbers, and underscores (max 64 chars)"
+                "letters, numbers, and underscores (max 59 chars)"
             )
         if name.lower() in _RESERVED_COLLECTION_NAMES:
             raise ValueError(f"'{name}' is a reserved collection name")
@@ -83,11 +91,12 @@ class BaseVectorStore(ABC):
         # defaults. `getattr` with defaults is used for optional image fields that may
         # not be present on all chunk types.
         meta = {
+            **document.metadata.model_dump(),
             "page_num": chunk.page_num,
             "chunk_num": chunk.chunk_num,
             "has_images": bool(getattr(chunk, "images", None)),
             "image_count": len(getattr(chunk, "images", [])),
-            **document.metadata.model_dump(),
+            **chunk.metadata,
         }
         return meta
 
@@ -135,10 +144,10 @@ class BaseVectorStore(ABC):
 import json
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.config import settings as app_settings
+from app.core.exceptions import ValidationError
 from app.services.rag.config import RAGSettings
 from app.services.rag.embeddings import EmbeddingService
 
@@ -167,9 +176,14 @@ class PgVectorStore(BaseVectorStore):
     def __init__(self, settings: RAGSettings, embedding_service: EmbeddingService):
         self.settings = settings
         self.embedder = embedding_service
-        self.dim = settings.embeddings_config.dim
+        configured_dim = settings.embeddings_config.dim
+        if configured_dim != 1024:
+            raise ValueError("PgVectorStore currently requires EMBEDDING_DIMENSION=1024")
+        self.dim: int = configured_dim
         self.engine = create_async_engine(app_settings.DATABASE_URL, echo=False)
-        self.async_session = sessionmaker(self.engine, class_=AsyncSession, expire_on_commit=False)
+        self.async_session = async_sessionmaker(
+            self.engine, class_=AsyncSession, expire_on_commit=False
+        )
 
     async def aclose(self) -> None:
         """Dispose the connection pool. Call during application shutdown."""
@@ -180,28 +194,89 @@ class PgVectorStore(BaseVectorStore):
         return f"rag_{_validate_collection_name(name)}"
 
     async def _ensure_collection(self, name: str) -> None:
-        """Create table for collection if not exists."""
+        """Create a collection and fail closed on embedding-space mismatch."""
         table = self._table(name)
-        async with self.async_session() as session:
-            await session.execute(text("CREATE EXTENSION IF NOT EXISTS vector"))
-            await session.execute(
-                text(f"""
-                CREATE TABLE IF NOT EXISTS {table} (
-                    id VARCHAR(100) PRIMARY KEY,
-                    parent_doc_id VARCHAR(100),
-                    content TEXT,
-                    embedding vector({self.dim}),
-                    metadata JSONB DEFAULT '{{}}'::jsonb
+        async with self.async_session() as session, session.begin():
+            exists = (
+                await session.execute(
+                    text(
+                        "SELECT 1 FROM information_schema.tables "
+                        "WHERE table_name = :table AND table_schema = 'public'"
+                    ),
+                    {"table": table},
                 )
-            """)
+            ).scalar_one_or_none() is not None
+            metadata = (
+                await session.execute(
+                    text(
+                        "SELECT embedding_fingerprint, dimensions "
+                        "FROM rag_collection_metadata WHERE collection_name = :name"
+                    ),
+                    {"name": name},
+                )
+            ).first()
+
+            if metadata and (
+                metadata.embedding_fingerprint != self.embedder.fingerprint
+                or metadata.dimensions != self.dim
+            ):
+                raise ValidationError(
+                    message=(
+                        f"Collection '{name}' uses a different embedding fingerprint; "
+                        "explicit re-embedding is required"
+                    ),
+                    code="EMBEDDING_FINGERPRINT_MISMATCH",
+                )
+            if exists and metadata is None:
+                row_count = (await session.execute(text(f"SELECT COUNT(*) FROM {table}"))).scalar()
+                if row_count:
+                    raise ValidationError(
+                        message=(
+                            f"Collection '{name}' predates embedding fingerprint metadata; "
+                            "explicit re-embedding is required"
+                        ),
+                        code="EMBEDDING_FINGERPRINT_MISSING",
+                    )
+
+            await session.execute(
+                text(f"""
+                    CREATE TABLE IF NOT EXISTS {table} (
+                        id VARCHAR(100) PRIMARY KEY,
+                        parent_doc_id VARCHAR(100),
+                        content TEXT,
+                        embedding vector(1024),
+                        metadata JSONB DEFAULT '{{}}'::jsonb
+                    )
+                """)
             )
             await session.execute(
                 text(f"""
-                CREATE INDEX IF NOT EXISTS {table}_embedding_idx
-                ON {table} USING hnsw (embedding vector_cosine_ops)
-            """)
+                    CREATE INDEX IF NOT EXISTS {table}_embedding_idx
+                    ON {table} USING hnsw (embedding vector_cosine_ops)
+                """)
             )
-            await session.commit()
+            if metadata is None:
+                await session.execute(
+                    text(
+                        """
+                            INSERT INTO rag_collection_metadata (
+                                collection_name, embedding_fingerprint, model_id,
+                                model_version, model_revision, dimensions
+                            ) VALUES (
+                                :name, :fingerprint, :model_id, :model_version,
+                                :model_revision, :dimensions
+                            )
+                            """
+                    ),
+                    {
+                        "name": name,
+                        "fingerprint": self.embedder.fingerprint,
+                        "model_id": self.embedder.model,
+                        "model_version": self.embedder.model_version,
+                        "model_revision": self.embedder.model_revision,
+                        "dimensions": self.dim,
+                    },
+                )
 
     async def _collection_exists(self, name: str) -> bool:
         """Return True if the backing table for a collection exists."""
@@ -221,7 +296,7 @@ class PgVectorStore(BaseVectorStore):
         await self._ensure_collection(collection_name)
         if not document.chunked_pages:
             raise ValueError("Document has no chunked pages.")
-        vectors = self.embedder.embed_document(document)
+        vectors = await self.embedder.embed_document(document)
         async with self.async_session() as session:
             for i, chunk in enumerate(document.chunked_pages):
                 meta = self._build_chunk_metadata(chunk, document)
@@ -245,7 +320,8 @@ class PgVectorStore(BaseVectorStore):
         self, collection_name: str, query: str, limit: int = 4, filter_expr: str = ""
     ) -> list[SearchResult]:
         table = self._table(collection_name)
-        query_vector = self.embedder.embed_query(query)
+        await self._ensure_collection(collection_name)
+        query_vector = await self.embedder.embed_query(query)
 
         # Parse the shared `parent_doc_id == "<value>"` filter format and apply
         # it as a parameterised WHERE clause to avoid returning results from
@@ -295,6 +371,10 @@ class PgVectorStore(BaseVectorStore):
         table = self._table(collection_name)
         async with self.async_session() as session:
             await session.execute(text(f"DROP TABLE IF EXISTS {table}"))
+            await session.execute(
+                text("DELETE FROM rag_collection_metadata WHERE collection_name = :name"),
+                {"name": collection_name},
+            )
             await session.commit()
 
     async def delete_document(self, collection_name: str, document_id: str) -> None:
@@ -335,4 +415,8 @@ class PgVectorStore(BaseVectorStore):
             )
             # removeprefix (Python 3.9+) strips only the leading "rag_" occurrence,
             # unlike str.replace which would also hit inner occurrences.
-            return [row[0].removeprefix("rag_") for row in result.fetchall()]
+            return [
+                row[0].removeprefix("rag_")
+                for row in result.fetchall()
+                if row[0] != "rag_collection_metadata"
+            ]

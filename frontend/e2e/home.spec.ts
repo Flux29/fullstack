@@ -34,7 +34,7 @@ test.describe("Navigation", () => {
     await page.goto("/");
 
     // Should have login/sign in link
-    const loginLink = page.getByRole("link", { name: /log in|sign in/i });
+    const loginLink = page.getByRole("link", { name: /log in|sign in|login/i });
     await expect(loginLink).toBeVisible();
   });
 

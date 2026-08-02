@@ -24,7 +24,7 @@ from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
 
-from app.core.config import settings
+from app.core.config import GITHUB_MCP_READ_ONLY_TOOLS, settings
 from app.core.sanitize import validate_webhook_url
 
 logger = logging.getLogger(__name__)
@@ -67,19 +67,27 @@ class McpServerSpec:
     headers: dict[str, str] = field(default_factory=dict)
     # None = expose every tool the server offers.
     allowed_tools: list[str] | None = None
+    assert_read_only: bool = False
 
 
 def static_server_specs() -> list[McpServerSpec]:
     """Specs for the deployment-managed servers from ``MCP_SERVERS``."""
-    return [
-        McpServerSpec(
-            name=cfg.name,
-            url=cfg.url,
-            headers=cfg.headers,
-            allowed_tools=cfg.allowed_tools,
+    specs: list[McpServerSpec] = []
+    for cfg in settings.MCP_SERVERS:
+        headers = dict(cfg.headers)
+        if cfg.auth == "github":
+            token = settings.GITHUB_MCP_TOKEN.get_secret_value()
+            headers["Authorization"] = f"Bearer {token}"
+        specs.append(
+            McpServerSpec(
+                name=cfg.name,
+                url=cfg.url,
+                headers=headers,
+                allowed_tools=cfg.allowed_tools,
+                assert_read_only=cfg.auth == "github",
+            )
         )
-        for cfg in settings.MCP_SERVERS
-    ]
+    return specs
 
 
 @asynccontextmanager
@@ -223,7 +231,15 @@ async def build_mcp_toolsets(specs: list[McpServerSpec]) -> list[Any]:
 
     async def _try(spec: McpServerSpec) -> Any | None:
         try:
-            await probe_mcp_server(spec.url, spec.headers)
+            tools = await probe_mcp_server(spec.url, spec.headers)
+            if spec.assert_read_only:
+                advertised = {tool.name for tool in tools}
+                exposed = advertised.intersection(spec.allowed_tools or [])
+                unsafe = sorted(exposed - GITHUB_MCP_READ_ONLY_TOOLS)
+                if unsafe:
+                    raise McpProbeError(
+                        f"GitHub MCP exposed forbidden mutation tools: {', '.join(unsafe)}"
+                    )
         except Exception as exc:
             logger.warning(
                 "Skipping MCP server %r for this turn: %s", spec.name, probe_error_message(exc)

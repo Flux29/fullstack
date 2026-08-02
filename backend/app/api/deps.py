@@ -347,20 +347,23 @@ from typing import Any
 from fastapi import Request
 
 from app.core.config import settings
-from app.services.rag.embeddings import EmbeddingService
+from app.services.rag.embeddings import (
+    EmbeddingService,
+    get_embedding_service as get_shared_embedder,
+)
 from app.services.rag.ingestion import IngestionService
 from app.services.rag.documents import DocumentProcessor
 from app.services.rag.retrieval import RetrievalService
 from app.services.rag.vectorstore import PgVectorStore
 from app.services.rag.vectorstore import BaseVectorStore
-from app.services.rag.reranker import RerankService
+from app.services.rag.reranker import get_rerank_service
 
 
 def get_embedding_service(request: Request) -> EmbeddingService:
     """Get embedding service from lifespan state or create new if not available."""
     if hasattr(request.state, "embedding_service"):
         return request.state.embedding_service  # type: ignore[no-any-return]
-    return EmbeddingService(settings=settings.rag)
+    return get_shared_embedder(settings.rag)
 
 
 EmbeddingSvc = Annotated[EmbeddingService, Depends(get_embedding_service)]
@@ -376,9 +379,13 @@ def get_vectorstore(request: Request, embedder: EmbeddingSvc) -> BaseVectorStore
 VectorStoreSvc = Annotated[BaseVectorStore, Depends(get_vectorstore)]
 
 
-def get_retrieval_service(vector_store: VectorStoreSvc) -> RetrievalService:
+def get_retrieval_service(request: Request, vector_store: VectorStoreSvc) -> RetrievalService:
     """Create RetrievalService instance."""
-    rerank_service = RerankService(settings=settings.rag)
+    rerank_service = (
+        request.state.rerank_service
+        if hasattr(request.state, "rerank_service")
+        else get_rerank_service(settings.rag)
+    )
     return RetrievalService(
         vector_store=vector_store,
         settings=settings.rag,

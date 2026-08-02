@@ -45,16 +45,42 @@ group is for and which are required vs optional.
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `LLAMA_CLOUD_API_KEY` | required for PDF parsing | — | From cloud.llamaindex.ai |
-| `GOOGLE_DRIVE_CREDENTIALS_FILE` | required | — | Path to service-account JSON |
-| `RAG_S3_BUCKET` | required | — | Source bucket for ingestion |
-| `RAG_S3_PREFIX` | optional | `""` | Path prefix to scan |
+| `EMBEDDING_BASE_URL` | optional | `http://localhost:12434/engines/v1` | Docker Model Runner OpenAI-compatible endpoint |
+| `EMBEDDING_MODEL` | optional | `docker.io/ai/qwen3-embedding:latest` | Exact Qwen 4B request ID |
+| `EMBEDDING_MODEL_VERSION` | optional | `4B-Q4_K_M` | Artifact variant in cache/collection identity |
+| `EMBEDDING_MODEL_REVISION` | optional | `731f733db2ef` | Inspected local artifact revision |
+| `EMBEDDING_DIMENSION` | optional | `1024` | Required pgvector dimension |
+| `EMBEDDING_CACHE_URL` | optional | `redis://localhost:6379/3` | Redis L1; PostgreSQL is durable L2 |
+| `RERANKER_PROVIDER` | optional | `docker_model_runner` | Use DMR native `/rerank`, or `disabled` |
+| `CROSS_ENCODER_MODEL` | optional | `huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0` | Exact DMR reranker request ID; legacy variable name retained for compatibility |
+| `RERANKER_BASE_URL` | optional | `http://localhost:12434` | Docker Model Runner native API root |
+| `RERANKER_TIMEOUT_SECONDS` | optional | `120` | Rerank request and warmup timeout |
+| `RERANKER_MAX_RETRIES` | optional | `3` | Retries transient DMR load/routing responses |
+| `PDF_PARSER` | optional | `docling` | RAG parser (`docling`, `pymupdf`, `llamaparse`) |
+| `CHAT_PDF_PARSER` | optional | `docling` | Chat PDF parser; falls back to PyMuPDF |
+| `DOCLING_SERVE_URL` | optional | `http://localhost:5001` | Shared Docling Serve URL |
+| `DOCLING_SERVE_TIMEOUT_SECONDS` | optional | `600` | Conversion timeout |
+| `GOOGLE_DRIVE_CREDENTIALS_FILE` | connector-specific | — | Path to service-account JSON |
+| `S3_RAG_BUCKET` | connector-specific | `fullstack-rag` | Source bucket for ingestion |
 
 ## Redis
 
 | Variable | Required | Default | Description |
 |---|---|---|---|
-| `REDIS_URL` | **required** | `redis://localhost:6379/0` | Used by cache, session store |
+| `REDIS_DB` | optional | `0` | Application cache/session namespace |
+| `REDIS_PASSWORD` | **required in prod** | — | Strong secret propagated to app, Taskiq, and embedding-cache clients |
+| `TASKIQ_BROKER_URL` | optional | `redis://localhost:6379/1` | Taskiq broker namespace |
+| `TASKIQ_RESULT_BACKEND` | optional | `redis://localhost:6379/2` | Taskiq result namespace |
+| `TASKIQ_MAX_ASYNC_TASKS` | optional | `1` | Initial serialized ingestion concurrency |
+| `EMBEDDING_CACHE_URL` | optional | `redis://localhost:6379/3` | Embedding L1 namespace |
+
+## Deployment-managed MCP
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `MCP_SERVERS` | optional | `[]` | Non-secret runtime server configuration JSON |
+| `GITHUB_MCP_TOKEN` | with GitHub MCP | — | Fine-grained read-only token injected at runtime |
+| `BROWSERLESS_TOKEN` | with browser MCP | — | Strong internal Browserless token |
 
 ## Email (log)
 
@@ -76,7 +102,7 @@ group is for and which are required vs optional.
 
 ```bash
 # Confirm settings load without errors:
-cd backend && uv run python -c "from app.core.config import settings; print(settings.model_dump_json(indent=2))"
+cd backend && uv run python -c "from app.core.config import settings; print(settings.ENVIRONMENT, settings.PROJECT_NAME)"
 ```
 
 If any **Required** var is missing, FastAPI raises `pydantic_settings.SettingsError` on startup — check the message for which field.

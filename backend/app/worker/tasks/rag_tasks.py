@@ -17,7 +17,7 @@ from app.repositories import sync_source as sync_source_repo
 from app.services.rag.config import DocumentExtensions
 from app.services.rag.connectors import CONNECTOR_REGISTRY
 from app.services.rag.documents import DocumentProcessor
-from app.services.rag.embeddings import EmbeddingService
+from app.services.rag.embeddings import get_embedding_service
 from app.services.rag.ingestion import IngestionService
 from app.services.sync_source import SyncSourceService
 from app.services.rag.vectorstore import PgVectorStore as VectorStore
@@ -25,12 +25,26 @@ from app.services.rag.vectorstore import PgVectorStore as VectorStore
 logger = logging.getLogger(__name__)
 
 
+_ingestion_service: IngestionService | None = None
+
+
 def _build_ingestion_service() -> IngestionService:
+    global _ingestion_service
+    if _ingestion_service is not None:
+        return _ingestion_service
     rag_settings = settings.rag
-    embed_service = EmbeddingService(settings=rag_settings)
+    embed_service = get_embedding_service(rag_settings)
     vector_store = VectorStore(settings=rag_settings, embedding_service=embed_service)
     processor = DocumentProcessor(settings=rag_settings)
-    return IngestionService(processor=processor, vector_store=vector_store)
+    _ingestion_service = IngestionService(processor=processor, vector_store=vector_store)
+    return _ingestion_service
+
+
+async def close_rag_task_resources() -> None:
+    global _ingestion_service
+    if _ingestion_service is not None:
+        await _ingestion_service.aclose()
+        _ingestion_service = None
 
 
 @broker.task

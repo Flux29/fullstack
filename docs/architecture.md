@@ -199,8 +199,8 @@ Upload (POST /files/upload)
 
 ### Parser Selection
 The `CHAT_PDF_PARSER` environment variable controls which parser handles PDFs in
-chat file uploads. Options: `pymupdf` (default, fastest, local), `llamaparse`
-(AI-powered, requires API key), `liteparse`. Falls back to `pymupdf` on failure.
+chat file uploads. Options: `docling` (default, remote conversion/OCR),
+`pymupdf`, or `llamaparse`. The Docling path falls back to PyMuPDF on failure.
 
 ### Storage
 

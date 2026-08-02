@@ -1,16 +1,18 @@
 import asyncio
 import hashlib
 import logging
+import mimetypes
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pymupdf
 from docx import Document as DOCXDocument
 from langchain_text_splitters import MarkdownHeaderTextSplitter, RecursiveCharacterTextSplitter
 
 from app.core.config import settings as app_settings
-from app.services.rag.config import DocumentExtensions, RAGSettings
+from app.services.rag.config import DOCLING_FORMATS, DocumentExtensions, RAGSettings
 from app.services.rag.image_describer import PydanticAIImageDescriber
 from app.services.rag.models import (
     Document,
@@ -357,76 +359,172 @@ class LlamaParseParser(BaseDocumentParser):
         return Document(pages=pages, metadata=self.get_document_metadata(filepath))
 
 
-class LiteParseParser(BaseDocumentParser):
-    """Document parser using LiteParse -- fast, local, AI-native parsing.
+class DoclingServeParser(BaseDocumentParser):
+    """Remote parser backed by the stack's single Docling Serve instance."""
 
-    Uses LiteParse (from LlamaIndex) for layout-aware text extraction.
-    Preserves spatial relationships (tables as ASCII grids) instead of
-    converting to markdown. Built-in OCR via Tesseract.js for scanned pages,
-    or pluggable HTTP OCR servers (EasyOCR / PaddleOCR / your own).
-
-    Production note: pre-install the Node.js CLI in your Docker image
-    (`RUN npm install -g @llamaindex/liteparse`). The Python wrapper will
-    auto-install on first parse otherwise -- 30-60 s of cold-start latency
-    blocking the request.
-
-    Requires: pip install liteparse && npm i -g @llamaindex/liteparse
-    """
+    PAGE_BREAK = "<!-- fullstack-docling-page-break -->"
+    TRANSIENT_STATUS_CODES = {408, 429, 500, 502, 503, 504}
 
     def __init__(
         self,
         *,
+        base_url: str,
         enable_ocr: bool = True,
-        ocr_server_url: str | None = None,
-        ocr_language: str = "en",
         timeout_seconds: float = 600.0,
+        max_retries: int = 2,
+        max_upload_size_mb: int = 50,
+        client: httpx.AsyncClient | None = None,
     ) -> None:
-        from liteparse import LiteParse
-
-        self.parser = LiteParse()
         self.enable_ocr = enable_ocr
-        self.ocr_server_url = ocr_server_url
-        self.ocr_language = ocr_language
         self.timeout_seconds = timeout_seconds
+        self.max_retries = max_retries
+        self.max_upload_bytes = max_upload_size_mb * 1024 * 1024
+        self._owns_client = client is None
+        self.client = client or httpx.AsyncClient(
+            base_url=base_url.rstrip("/"),
+            timeout=httpx.Timeout(timeout_seconds),
+        )
+        self.allowed = sorted(DOCLING_FORMATS)
+
+    @staticmethod
+    def _item_page_numbers(item: dict[str, Any]) -> set[int]:
+        return {
+            int(prov["page_no"])
+            for prov in item.get("prov", [])
+            if isinstance(prov, dict) and prov.get("page_no") is not None
+        }
+
+    def _pages_from_response(
+        self, markdown: str, docling_json: dict[str, Any], filepath: Path
+    ) -> list[DocumentPage]:
+        page_records = docling_json.get("pages") or {}
+        page_numbers = sorted(int(number) for number in page_records) or [1]
+        markdown_pages = markdown.split(self.PAGE_BREAK)
+        if len(markdown_pages) != len(page_numbers):
+            markdown_pages = [markdown] + [""] * (len(page_numbers) - 1)
+
+        elements = [
+            item
+            for group in ("texts", "tables", "pictures", "key_value_items", "form_items")
+            for item in (docling_json.get(group) or [])
+            if isinstance(item, dict)
+        ]
+        origin = docling_json.get("origin") or {}
+        pages: list[DocumentPage] = []
+        for index, page_num in enumerate(page_numbers):
+            page_elements = [item for item in elements if page_num in self._item_page_numbers(item)]
+            bounding_boxes = [
+                {
+                    "bbox": prov.get("bbox"),
+                    "label": item.get("label"),
+                    "self_ref": item.get("self_ref"),
+                }
+                for item in page_elements
+                for prov in item.get("prov", [])
+                if prov.get("page_no") == page_num and prov.get("bbox")
+            ]
+            tables = [
+                {
+                    "self_ref": item.get("self_ref"),
+                    "label": item.get("label"),
+                    "provenance": item.get("prov", []),
+                }
+                for item in page_elements
+                if item.get("label") == "table"
+                or str(item.get("self_ref", "")).startswith("#/tables/")
+            ]
+            pages.append(
+                DocumentPage(
+                    page_num=page_num,
+                    content=markdown_pages[index].strip(),
+                    metadata={
+                        "docling": {
+                            "bounding_boxes": bounding_boxes,
+                            "page": page_records.get(str(page_num), {}),
+                            "schema_version": docling_json.get("version"),
+                            "source": {
+                                "filename": origin.get("filename", filepath.name),
+                                "mimetype": origin.get("mimetype"),
+                            },
+                            "tables": tables,
+                        }
+                    },
+                )
+            )
+        return pages
 
     async def parse(self, filepath: Path) -> Document:
-        """Parse a document using LiteParse.
-
-        Catches LiteParse exceptions and re-raises as RuntimeError so callers
-        can surface them as a structured ingestion failure instead of an
-        opaque subprocess error.
-        """
-
-        from liteparse.types import ParseError  # type: ignore[import-not-found]
-
-        try:
-            # LiteParse Python wrapper is synchronous -- run in thread
-            result = await asyncio.to_thread(
-                self.parser.parse,
-                str(filepath),
-                ocr_enabled=self.enable_ocr,
-                ocr_server_url=self.ocr_server_url,
-                ocr_language=self.ocr_language,
-                timeout=self.timeout_seconds,
+        if not self.is_extension_allowed(filepath):
+            raise ValueError(f"Extension {filepath.suffix} not supported by Docling Serve")
+        if filepath.stat().st_size > self.max_upload_bytes:
+            raise ValueError(
+                f"File exceeds the {self.max_upload_bytes // (1024 * 1024)} MB upload limit"
             )
-        except FileNotFoundError as e:
-            raise RuntimeError(f"LiteParse: file not found: {filepath}") from e
-        except TimeoutError as e:
-            raise RuntimeError(
-                f"LiteParse: parse timed out after {self.timeout_seconds}s for {filepath.name}"
-            ) from e
-        except ParseError as e:
-            raise RuntimeError(f"LiteParse: parse failed for {filepath.name}: {e}") from e
 
-        pages: list[DocumentPage] = [
-            DocumentPage(page_num=page.pageNum, content=page.text)
-            for page in result.pages
-            if page.text.strip()
-        ]
+        response: httpx.Response | None = None
+        for attempt in range(self.max_retries + 1):
+            try:
+                with filepath.open("rb") as file_handle:
+                    response = await self.client.post(
+                        "/v1/convert/file",
+                        files={
+                            "files": (
+                                filepath.name,
+                                file_handle,
+                                mimetypes.guess_type(filepath.name)[0]
+                                or "application/octet-stream",
+                            )
+                        },
+                        data={
+                            "to_formats": ["md", "json"],
+                            "do_ocr": str(self.enable_ocr).lower(),
+                            "do_table_structure": "true",
+                            "include_images": "false",
+                            "md_page_break_placeholder": self.PAGE_BREAK,
+                            "document_timeout": str(self.timeout_seconds),
+                            "abort_on_error": "true",
+                        },
+                    )
+                if response.status_code not in self.TRANSIENT_STATUS_CODES:
+                    break
+            except (httpx.ConnectError, httpx.TimeoutException) as exc:
+                if attempt >= self.max_retries:
+                    raise RuntimeError(
+                        f"Docling Serve is unavailable while converting {filepath.name}: {exc}"
+                    ) from exc
+            if attempt < self.max_retries:
+                await asyncio.sleep(0.5 * (2**attempt))
+
+        if response is None:
+            raise RuntimeError(f"Docling Serve did not respond while converting {filepath.name}")
+        try:
+            response.raise_for_status()
+        except httpx.HTTPStatusError as exc:
+            raise RuntimeError(
+                f"Docling Serve rejected {filepath.name} with HTTP {response.status_code}"
+            ) from exc
+        payload = response.json()
+        if payload.get("status") not in {"success", "partial_success"}:
+            raise RuntimeError(
+                f"Docling Serve failed to convert {filepath.name}: {payload.get('errors', [])}"
+            )
+        exported = payload.get("document") or {}
+        docling_json = exported.get("json_content") or {}
+        pages = self._pages_from_response(exported.get("md_content") or "", docling_json, filepath)
+        if not any(page.content for page in pages):
+            raise RuntimeError(f"Docling Serve returned no content for {filepath.name}")
         return Document(
             pages=pages,
             metadata=self.get_document_metadata(filepath),
         )
+
+    async def warmup(self) -> None:
+        response = await self.client.get("/health")
+        response.raise_for_status()
+
+    async def aclose(self) -> None:
+        if self._owns_client:
+            await self.client.aclose()
 
 
 class PdfParserFactory:
@@ -443,13 +541,14 @@ class PdfParserFactory:
                 api_key=settings.pdf_parser.api_key,
                 tier=settings.pdf_parser.tier,
             )
-        elif parser_name == "liteparse":
+        elif parser_name == "docling":
             pdf = settings.pdf_parser if settings else None
-            return LiteParseParser(
+            return DoclingServeParser(
+                base_url=getattr(pdf, "docling_serve_url", "http://localhost:5001"),
                 enable_ocr=settings.enable_ocr if settings else True,
-                ocr_server_url=getattr(pdf, "liteparse_ocr_server_url", None),
-                ocr_language=getattr(pdf, "liteparse_ocr_language", "en"),
-                timeout_seconds=getattr(pdf, "liteparse_timeout_seconds", 600.0),
+                timeout_seconds=getattr(pdf, "docling_timeout_seconds", 600.0),
+                max_retries=getattr(pdf, "docling_max_retries", 2),
+                max_upload_size_mb=app_settings.MAX_UPLOAD_SIZE_MB,
             )
         else:
             return PyMuPDFParser(
@@ -467,8 +566,8 @@ class DocumentProcessor:
     3. Chunk document pages using RecursiveCharacterTextSplitter
     Supported file types:
     - TXT, MD: TextDocumentParser (Python native)
-    - DOCX: DocxDocumentParser (Python native)
-    - PDF: PdfParserFactory selects PyMuPDF, LlamaParse, or LiteParse at runtime
+    - Binary documents/images: Docling Serve by default
+    - PDF alternatives: PyMuPDF or LlamaParse when explicitly configured
     """
 
     def __init__(self, settings: RAGSettings):
@@ -535,6 +634,8 @@ class DocumentProcessor:
 
     async def _describe_images(self, document: Document) -> None:
         """Generate text descriptions for all images in document pages."""
+        if self.image_describer is None:
+            return
         for page in document.pages:
             if not page.images:
                 continue
@@ -562,6 +663,11 @@ class DocumentProcessor:
         """
         if filepath.suffix in (".txt", ".md"):
             document = await self.text_parser.parse(filepath)
+        elif (
+            self.settings.pdf_parser.method == "docling"
+            and filepath.suffix.lower() in DOCLING_FORMATS
+        ):
+            document = await self.pdf_parser.parse(filepath)
         elif filepath.suffix == ".docx":
             document = await self.docx_parser.parse(filepath)
         elif filepath.suffix == ".pdf":
@@ -595,3 +701,13 @@ class DocumentProcessor:
         # Add chunked pages to original document
         document.chunked_pages = chunked_pages
         return document
+
+    async def warmup(self) -> None:
+        warmup = getattr(self.pdf_parser, "warmup", None)
+        if callable(warmup):
+            await warmup()
+
+    async def aclose(self) -> None:
+        close = getattr(self.pdf_parser, "aclose", None)
+        if callable(close):
+            await close()

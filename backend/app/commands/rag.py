@@ -21,11 +21,12 @@ from pathlib import Path
 import click
 
 from app.commands import command, error, info, success, warning
+from app.core.config import settings as app_settings
 from app.db.session import get_db_context
 from app.schemas.sync_source import SyncSourceCreate
 from app.services.rag.config import DocumentExtensions, RAGSettings
 from app.services.rag.documents import DocumentProcessor
-from app.services.rag.embeddings import EmbeddingService
+from app.services.rag.embeddings import get_embedding_service
 from app.services.rag.ingestion import IngestionService
 from app.services.rag.retrieval import RetrievalService
 from app.services.rag.sources.google_drive import GoogleDriveSource
@@ -51,13 +52,13 @@ def get_rag_services() -> tuple[
     Returns:
         Tuple of (settings, vector_store, processor, retrieval, ingestion) services.
     """
-    settings = RAGSettings()
-    embedder = EmbeddingService(settings=settings)
-    vector_store = PgVectorStore(settings=settings, embedding_service=embedder)
-    processor = DocumentProcessor(settings=settings)
-    retrieval = RetrievalService(vector_store=vector_store, settings=settings)
+    rag_settings = app_settings.rag
+    embedder = get_embedding_service(rag_settings)
+    vector_store = PgVectorStore(settings=rag_settings, embedding_service=embedder)
+    processor = DocumentProcessor(settings=rag_settings)
+    retrieval = RetrievalService(vector_store=vector_store, settings=rag_settings)
     ingestion = IngestionService(processor=processor, vector_store=vector_store)
-    return settings, vector_store, processor, retrieval, ingestion
+    return rag_settings, vector_store, processor, retrieval, ingestion
 
 
 async def list_collections_async(vector_store: BaseVectorStore) -> None:

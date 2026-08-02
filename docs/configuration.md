@@ -143,7 +143,12 @@ is needed.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `EMBEDDING_MODEL` | `text-embedding-3-small` | OpenAI embedding model |
+| `EMBEDDING_BASE_URL` | `http://localhost:12434/engines/v1` | Docker Model Runner OpenAI-compatible endpoint |
+| `EMBEDDING_MODEL` | `docker.io/ai/qwen3-embedding:latest` | Exact Model Runner request ID |
+| `EMBEDDING_MODEL_VERSION` | `4B-Q4_K_M` | Model artifact variant used in the fingerprint |
+| `EMBEDDING_MODEL_REVISION` | `731f733db2ef` | Inspected local artifact revision |
+| `EMBEDDING_DIMENSION` | `1024` | Requested/truncated pgvector dimension |
+| `EMBEDDING_CACHE_URL` | `redis://localhost:6379/3` | Embedding L1 cache namespace; PostgreSQL is L2 |
 
 ### Chunking & Retrieval
 
@@ -155,14 +160,16 @@ is needed.
 | `RAG_DEFAULT_COLLECTION` | `documents` | Default collection for search (used by agent tool) |
 | `RAG_TOP_K` | `10` | Default number of results to return |
 | `RAG_HYBRID_SEARCH` | `false` | Enable BM25 + vector hybrid search |
-| `RAG_ENABLE_OCR` | `false` | OCR fallback for scanned PDFs (requires `tesseract-ocr`) |
+| `RAG_ENABLE_OCR` | `true` | Enable Docling OCR for scanned documents/images |
 
 ### Document Parsing
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `PDF_PARSER` | `pymupdf` | PDF parser for RAG ingestion: `pymupdf`, `llamaparse`, `liteparse` |
-| `CHAT_PDF_PARSER` | `pymupdf` | PDF parser for chat file uploads: `pymupdf`, `llamaparse`, `liteparse` |
+| `PDF_PARSER` | `docling` | RAG parser: `docling`, `pymupdf`, or `llamaparse` |
+| `CHAT_PDF_PARSER` | `docling` | Chat PDF parser; Docling failures fall back to PyMuPDF |
+| `DOCLING_SERVE_URL` | `http://localhost:5001` | Shared Docling Serve REST endpoint |
+| `DOCLING_SERVE_TIMEOUT_SECONDS` | `600` | Per-document conversion timeout |
 | `LLAMAPARSE_API_KEY` | (empty) | LlamaParse API key (required for `llamaparse` parser) |
 | `LLAMAPARSE_TIER` | `agentic` | LlamaParse tier: `fast`, `cost_effective`, `agentic`, `agentic_plus` |
 
@@ -170,8 +177,11 @@ is needed.
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `HF_TOKEN` | (empty) | HuggingFace token (for gated models) |
-| `CROSS_ENCODER_MODEL` | `cross-encoder/ms-marco-MiniLM-L6-v2` | Cross-encoder model for reranking |
+| `RERANKER_PROVIDER` | `docker_model_runner` | DMR native `/rerank`, or `disabled` |
+| `CROSS_ENCODER_MODEL` | `huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0` | Exact Docker Model Runner reranker ID; the legacy variable name is retained for compatibility |
+| `RERANKER_BASE_URL` | `http://localhost:12434` | Docker Model Runner native API root |
+| `RERANKER_TIMEOUT_SECONDS` | `120` | Reranking request timeout |
+| `RERANKER_MAX_RETRIES` | `3` | Retries transient DMR model-load responses |
 
 ### Image Description
 
@@ -200,7 +210,8 @@ is needed.
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `TASKIQ_BROKER_URL` | `redis://localhost:6379/1` | Taskiq broker URL |
-| `TASKIQ_RESULT_BACKEND` | `redis://localhost:6379/1` | Taskiq result backend URL |
+| `TASKIQ_RESULT_BACKEND` | `redis://localhost:6379/2` | Taskiq result backend URL |
+| `TASKIQ_MAX_ASYNC_TASKS` | `1` | Initial ingestion concurrency for CUDA Docling |
 
 ## CORS
 

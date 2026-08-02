@@ -1,0 +1,10 @@
+{
+  "name": "fullstack-chrome-devtools-mcp-gateway",
+  "version": "1.0.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "dependencies": {
+    "chrome-devtools-mcp": "1.6.0",
+    "supergateway": "3.4.3"
+  }
+}

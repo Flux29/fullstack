@@ -263,6 +263,15 @@ class RAGDocumentService:
         mime_map = {
             "pdf": "application/pdf",
             "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "png": "image/png",
+            "tif": "image/tiff",
+            "tiff": "image/tiff",
+            "bmp": "image/bmp",
+            "webp": "image/webp",
             "txt": "text/plain",
             "md": "text/markdown",
         }

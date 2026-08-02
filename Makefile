@@ -1,154 +1,123 @@
-.PHONY: install format lint test run clean help db-init dev dev-down dev-logs dev-rebuild dev-frontend docker-clean stage stage-down prod prod-down upgrade upgrade-dry-run upgrade-new-features upgrade-finalize
+.PHONY: help install format lint test test-cov frontend-test playwright run run-prod \
+	preflight preflight-volumes preflight-model preflight-ports preflight-edge-ports preflight-mcp compose-check \
+	dev dev-frontend dev-mcp dev-db-ui dev-all dev-down dev-logs dev-rebuild stage stage-down \
+	prod prod-down prod-logs quickstart seed bootstrap docker-clean docker-reset \
+	db-migrate db-upgrade db-downgrade db-current db-history taskiq-worker taskiq-scheduler \
+	upgrade upgrade-dry-run upgrade-new-features upgrade-finalize
 
-# === Environments ===========================================================
-# `make dev`   — local development (docker-compose.dev.yml + bind-mounted source)
-# `make stage` — staging (docker-compose.yml — built images, no live reload)
-# `make prod`  — production (docker-compose.prod.yml — needs backend/.env + nginx)
-# Each env has matching -down / -logs / -rebuild siblings.
+COMPOSE_BASE := docker compose -f docker-compose.yml
+COMPOSE_DEV := $(COMPOSE_BASE) -f docker-compose.dev.yml
+COMPOSE_FRONTEND := $(COMPOSE_DEV) -f docker-compose.frontend.yml --profile frontend
+COMPOSE_PROD := docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.prod.yml
+TASKIQ_MAX_ASYNC_TASKS ?= 1
+EMBEDDING_MODEL ?= docker.io/ai/qwen3-embedding:latest
+RERANKER_MODEL ?= huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0
 
-# Wait for postgres to accept connections. Polls pg_isready instead of a
-# fixed sleep — handles slow startups and cold-start image pulls.
-define _wait_for_db
-	@echo "Waiting for PostgreSQL ($(1))..."
-	@for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do \
-		if docker compose -f $(1) exec -T db pg_isready -U postgres >/dev/null 2>&1; then \
-			echo "  ✅ DB ready"; exit 0; \
-		fi; \
-		printf '.'; sleep 2; \
-	done; \
-	echo "  ❌ DB not ready after 30s — check 'make dev-logs'"; exit 1
-endef
+preflight-volumes:
+	@powershell.exe -NoProfile -Command "docker volume inspect redis-data | Out-Null; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; docker volume inspect docling-models | Out-Null; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE }; Write-Output 'External volumes redis-data and docling-models are present and protected.'"
 
-# === Local dev: build → up → migrate ===
-# Idempotent — re-run anytime. Migrations are no-ops when already at head;
-# admin seeding is a separate target (`make seed`) so re-running `make dev`
-# doesn't keep retrying user creation.
-dev:
-	@echo "▶ Building backend image…"
-	docker compose -f docker-compose.dev.yml build app
-	@echo "▶ Starting services…"
-	@if ! docker compose -f docker-compose.dev.yml $(COMPOSE_DEV_PROFILES) up -d; then \
-		echo ""; \
-		echo "⚠ First start failed. Tearing down stale containers and retrying once…"; \
-		echo "  (volumes preserved — DB data is safe; use 'make clean' for a full wipe)"; \
-		docker compose -f docker-compose.dev.yml down --remove-orphans; \
-		docker compose -f docker-compose.dev.yml $(COMPOSE_DEV_PROFILES) up -d; \
-	fi
-	$(call _wait_for_db,docker-compose.dev.yml)
-	@echo "▶ Applying migrations…"
-	docker compose -f docker-compose.dev.yml exec -T app fullstack db upgrade
-	@echo ""
-	@echo "🚀 Dev stack ready:"
-	@echo "   API:      http://localhost:8100"
-	@echo "   Docs:     http://localhost:8100/docs"
-	@echo "   Admin:    http://localhost:8100/admin"
-	@echo "   Frontend: http://localhost:3000  (run 'make dev-frontend' or 'cd frontend && bun dev')"
-	@echo ""
-	@echo "First time? Run 'make seed' to create the default admin user."
+preflight-model:
+	@powershell.exe -NoProfile -Command "$$models=Invoke-RestMethod -Uri 'http://localhost:12434/engines/v1/models' -TimeoutSec 15; if (($$models | ConvertTo-Json -Depth 10) -notmatch 'qwen3-embedding') { throw 'Docker Model Runner qwen3-embedding model is unavailable.' }; $$body=@{model='$(EMBEDDING_MODEL)'; input=@('docker integration preflight'); dimensions=1024} | ConvertTo-Json -Depth 5; $$response=Invoke-RestMethod -Method Post -Uri 'http://localhost:12434/engines/v1/embeddings' -ContentType 'application/json' -Body $$body -TimeoutSec 120; $$vector=@($$response.data[0].embedding); if ($$vector.Count -lt 1024) { throw ('Embedding vector is too short: ' + $$vector.Count) }; foreach ($$value in $$vector) { if ([double]::IsNaN([double]$$value) -or [double]::IsInfinity([double]$$value)) { throw 'Embedding vector contains a non-finite value.' } }; Write-Output ('Docker Model Runner ready; native vector length=' + $$vector.Count + ', application target=1024.')"
+	@powershell.exe -NoProfile -Command "$$body=@{model='$(RERANKER_MODEL)'; query='Which passage is about Docker?'; documents=@('Docker runs containers.','Bananas are fruit.'); top_n=1} | ConvertTo-Json -Depth 5; $$response=Invoke-RestMethod -Method Post -Uri 'http://localhost:12434/rerank' -ContentType 'application/json' -Body $$body -TimeoutSec 120; if (@($$response.results).Count -ne 1 -or $$response.results[0].index -ne 0) { throw 'Docker Model Runner reranker returned an unexpected result.' }; $$score=[double]$$response.results[0].relevance_score; if ([double]::IsNaN($$score) -or [double]::IsInfinity($$score)) { throw 'Reranker returned a non-finite score.' }; Write-Output ('Docker Model Runner reranker ready: $(RERANKER_MODEL)')"
 
-# === First-time setup: seed default admin user (one-shot) ===
-# Skipped when admin@example.com already exists. Safe to run again — exits
-# clean either way. Replace email/password before deploying anywhere real.
-seed:
-	@echo "▶ Seeding admin user (admin@example.com / admin123)…"
-	@if docker compose -f docker-compose.dev.yml exec -T app \
-		fullstack user list 2>/dev/null \
-		| grep -q "admin@example.com"; then \
-		echo "  (admin@example.com already exists — nothing to do)"; \
-	else \
-		docker compose -f docker-compose.dev.yml exec -T app \
-			fullstack user create \
-				--email admin@example.com --password admin123 --superuser \
-		&& echo "  ✅ Admin created. Login at http://localhost:8100/admin"; \
-	fi
+preflight-ports:
+	@powershell.exe -NoProfile -Command "$$ports=8100,5432,6379,9000,9001,5001,3000,8081,8201,8202,8203; $$busy=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object LocalPort -in $$ports; if($$busy){Write-Error ('Occupied development ports: ' + (($$busy.LocalPort | Sort-Object -Unique) -join ', ')); exit 1}"
 
-# Convenience: bootstrap a fresh checkout end-to-end.
-bootstrap: dev seed
+preflight-edge-ports:
+	@powershell.exe -NoProfile -Command "$$ports=80,443,8080; $$busy=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object LocalPort -in $$ports; if($$busy){Write-Error ('Occupied edge ports: ' + (($$busy.LocalPort | Sort-Object -Unique) -join ', ')); exit 1}"
+
+preflight-mcp:
+	@powershell.exe -NoProfile -Command "if ('$(MCP)') { if (-not $$env:BROWSERLESS_TOKEN -or $$env:BROWSERLESS_TOKEN -eq 'change-me-before-enabling-mcp') { throw 'Set a strong BROWSERLESS_TOKEN before enabling MCP.' }; if (-not $$env:GITHUB_MCP_TOKEN) { throw 'Set GITHUB_MCP_TOKEN before enabling MCP.' } }"
+
+compose-check:
+	@$(COMPOSE_BASE) config --quiet
+	@$(COMPOSE_DEV) config --quiet
+	@$(COMPOSE_FRONTEND) config --quiet
+	@$(COMPOSE_DEV) --profile frontend config --quiet
+	@$(COMPOSE_DEV) --profile mcp config --quiet
+	@$(COMPOSE_DEV) --profile db-ui config --quiet
+	@$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui config --quiet
+	@$(MAKE) --no-print-directory compose-check-prod DOMAIN=example.invalid \
+		ACME_EMAIL=ops@example.invalid POSTGRES_PASSWORD=validation-only \
+		REDIS_PASSWORD=validation-only MINIO_ROOT_USER=validation \
+		MINIO_ROOT_PASSWORD=validation-only BROWSERLESS_TOKEN=validation-only \
+		GITHUB_MCP_TOKEN=validation-only
+
+compose-check-prod:
+	@$(COMPOSE_PROD) --profile frontend --profile edge --profile mcp config --quiet
+
+preflight: preflight-volumes preflight-model preflight-ports preflight-mcp compose-check
+
+dev: preflight-volumes preflight-model compose-check
+	$(COMPOSE_DEV) up -d --build --wait --wait-timeout 180
+	$(COMPOSE_DEV) exec -T app fullstack db upgrade
+	@echo "API: http://localhost:8100  Docs: http://localhost:8100/docs"
+
+dev-frontend:
+	$(COMPOSE_FRONTEND) up -d frontend
+
+dev-mcp: MCP=1
+dev-mcp: preflight-mcp
+	$(COMPOSE_DEV) --profile mcp up -d --build docling-mcp browserless chrome-devtools-mcp github-mcp
+
+dev-db-ui:
+	$(COMPOSE_DEV) --profile db-ui up -d pgweb
+
+dev-all: MCP=1
+dev-all: preflight
+	$(COMPOSE_FRONTEND) --profile mcp --profile db-ui up -d --build
 
 dev-down:
-	docker compose -f docker-compose.dev.yml $(COMPOSE_DEV_PROFILES) down
-
-# Full wipe — containers, networks, AND volumes. Use after a corrupted state
-# (e.g. detached networks, port conflicts that left orphans). DESTROYS DB data.
-docker-clean:
-	@echo "▶ Removing containers, networks, AND volumes for the dev stack…"
-	@echo "  ⚠️  This deletes all local DB data and uploaded files."
-	docker compose -f docker-compose.dev.yml $(COMPOSE_DEV_PROFILES) down -v --remove-orphans
-	@echo "✅ Cleaned. Run 'make dev' to start fresh."
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui down --remove-orphans
 
 dev-logs:
-	docker compose -f docker-compose.dev.yml $(COMPOSE_DEV_PROFILES) logs -f
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui logs -f
 
 dev-rebuild:
-	docker compose -f docker-compose.dev.yml build --no-cache app
-	docker compose -f docker-compose.dev.yml up -d --force-recreate app
-dev-frontend:
-	docker compose -f docker-compose.frontend.yml up -d
-	@echo ""
-	@echo "✅ Frontend at http://localhost:3000  (backend must be up — 'make dev')"
+	$(COMPOSE_DEV) build --no-cache app
+	$(COMPOSE_DEV) up -d --force-recreate app taskiq-worker taskiq-scheduler
 
-# === Staging: built images, no bind mounts (production-like, local DB) ===
-stage:
-	docker compose -f docker-compose.yml up -d --build
-	$(call _wait_for_db,docker-compose.yml)
-	docker compose -f docker-compose.yml exec -T app fullstack db upgrade
-	@echo "✅ Staging stack at http://localhost:8100"
+stage: preflight-volumes preflight-model compose-check
+	$(COMPOSE_BASE) up -d --build --wait --wait-timeout 180
+	$(COMPOSE_BASE) exec -T app fullstack db upgrade
 
 stage-down:
-	docker compose -f docker-compose.yml down
+	$(COMPOSE_BASE) down --remove-orphans
 
-# === Production: external Nginx, real secrets in backend/.env ===
-prod:
-	@test -f backend/.env || (echo "❌ backend/.env missing — run 'cp backend/.env.example backend/.env' and fill in real secrets" && exit 1)
-	docker compose --env-file backend/.env -f docker-compose.prod.yml up -d --build
-	@echo "▶ Waiting for DB then running migrations…"
-	@sleep 5
-	docker compose --env-file backend/.env -f docker-compose.prod.yml exec -T app fullstack db upgrade
-	@echo "✅ Production stack up. Configure your nginx host with nginx/nginx.conf"
+prod: preflight-volumes preflight-edge-ports compose-check
+	@powershell.exe -NoProfile -Command "if (-not (Test-Path 'backend/.env')) { throw 'backend/.env is required' }"
+	$(COMPOSE_PROD) --profile frontend --profile edge up -d --build --wait --wait-timeout 180
+	$(COMPOSE_PROD) exec -T app fullstack db upgrade
 
 prod-down:
-	docker compose --env-file backend/.env -f docker-compose.prod.yml down
+	$(COMPOSE_PROD) --profile frontend --profile edge down --remove-orphans
 
 prod-logs:
-	docker compose --env-file backend/.env -f docker-compose.prod.yml logs -f
+	$(COMPOSE_PROD) --profile frontend --profile edge logs -f
 
-# Legacy alias
-quickstart: dev
+# The authoritative source-plan audit is a deliberate human gate.
+quickstart:
+	@powershell.exe -NoProfile -Command "if ('$(SOURCE_PLAN_AUDITED)' -ne '1') { throw 'Set SOURCE_PLAN_AUDITED=1 only after the Sections 1-15 audit.' }"
+	$(MAKE) bootstrap
 
-# === Setup ===
+seed:
+	@powershell.exe -NoProfile -Command "$$email=$$env:ADMIN_EMAIL; $$password=$$env:ADMIN_PASSWORD; if (-not $$email -or -not $$password) { throw 'Set ADMIN_EMAIL and ADMIN_PASSWORD before seeding.' }; $$users=docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T app fullstack user list; if (-not ($$users | Select-String -SimpleMatch $$email -Quiet)) { docker compose -f docker-compose.yml -f docker-compose.dev.yml exec -T app fullstack user create --email $$email --password $$password --superuser; if ($$LASTEXITCODE -ne 0) { exit $$LASTEXITCODE } } else { Write-Output ('Admin already exists: ' + $$email) }"
+
+bootstrap: preflight dev seed
+
+# Safe cleanup: never passes -v, so all named and external data survives.
+docker-clean:
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui down --remove-orphans
+
+# Explicit opt-in removes only project-managed volumes; external preservation volumes survive.
+docker-reset:
+	@powershell.exe -NoProfile -Command "if ('$(CONFIRM_DESTROY_LOCAL_DATA)' -ne '1') { throw 'Set CONFIRM_DESTROY_LOCAL_DATA=1 to remove project-managed data volumes.' }"
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui down -v --remove-orphans
+
 install:
 	uv sync --directory backend --dev
-	@if git rev-parse --git-dir > /dev/null 2>&1; then \
-		uv run --directory backend pre-commit install; \
-	else \
-		echo "⚠️  Not a git repository - skipping pre-commit install"; \
-		echo "   Run 'git init && make install' to set up pre-commit hooks"; \
-	fi
-	@echo ""
-	@echo "✅ Installation complete!"
-	@echo ""
-	@echo "Next steps:"
-	@echo "  • make docker-db        # Start PostgreSQL"
-	@echo "  • make db-upgrade       # Apply migrations"
-	@echo "  • make run              # Start development server"
-	@echo ""
-	@echo "Note: backend/.env is pre-configured for development"
+	uv run --directory backend pre-commit install
 
-# === Template upgrade ===
-# Pull latest template changes via 3-way merge. `make help` lists the targets.
-upgrade:
-	uvx fastapi-fullstack@latest upgrade $(ARGS)
-
-upgrade-dry-run:
-	uvx fastapi-fullstack@latest upgrade --dry-run $(ARGS)
-
-upgrade-new-features:
-	uvx fastapi-fullstack@latest upgrade --with-new-features $(ARGS)
-
-upgrade-finalize:
-	uvx fastapi-fullstack@latest upgrade finalize $(ARGS)
-
-# === Code Quality ===
 format:
 	uv run --directory backend ruff format app tests cli
 	uv run --directory backend ruff check app tests cli --fix
@@ -158,26 +127,26 @@ lint:
 	uv run --directory backend ruff format app tests cli --check
 	uv run --directory backend ty check
 
-# === Testing ===
 test:
 	uv run --directory backend pytest tests/ -v
 
 test-cov:
-	uv run --directory backend pytest tests/ -v --cov=app --cov-report=html --cov-report=term-missing
+	uv run --directory backend pytest tests/ -v --cov=app --cov-report=term-missing
 
+frontend-test:
+	cd frontend && npm run lint && npm run type-check && npm test -- --run
 
-# === Database ===
-db-init: docker-db
-	@echo "Waiting for PostgreSQL to be ready..."
-	@sleep 8
-	cd backend && uv run fullstack db migrate -m "initial" || true
-	cd backend && uv run fullstack db upgrade
-	@echo ""
-	@echo "✅ Database initialized!"
+playwright:
+	cd frontend && npm run test:e2e
+
+run:
+	uv run --directory backend fullstack server run --reload --port 8100
+
+run-prod:
+	uv run --directory backend fullstack server run --host 0.0.0.0 --port 8100
 
 db-migrate:
-	@read -p "Migration message: " msg; \
-	uv run --directory backend fullstack db migrate -m "$$msg"
+	@read -p "Migration message: " msg; uv run --directory backend fullstack db migrate -m "$$msg"
 
 db-upgrade:
 	uv run --directory backend fullstack db upgrade
@@ -191,211 +160,28 @@ db-current:
 db-history:
 	uv run --directory backend fullstack db history
 
-# === Server ===
-run:
-	uv run --directory backend fullstack server run --reload
-
-run-prod:
-	uv run --directory backend fullstack server run --host 0.0.0.0 --port 8000
-
-routes:
-	uv run --directory backend fullstack server routes
-
-# === Users ===
-create-admin:
-	@echo "Creating admin user..."
-	uv run --directory backend fullstack user create-admin
-
-user-create:
-	uv run --directory backend fullstack user create
-
-user-list:
-	uv run --directory backend fullstack user list
-
-# === Taskiq ===
 taskiq-worker:
-	uv run --directory backend fullstack taskiq worker
+	uv run --directory backend taskiq worker app.worker.taskiq_app:broker --workers 1 --max-async-tasks $(TASKIQ_MAX_ASYNC_TASKS)
 
 taskiq-scheduler:
-	uv run --directory backend fullstack taskiq scheduler
+	uv run --directory backend taskiq scheduler app.worker.taskiq_app:scheduler
 
-# === Docker: Backend (Development) ===
-docker-up:
-	docker compose build app
-	docker compose up -d
-	@echo ""
-	@echo "✅ Backend services started!"
-	@echo "   API: http://localhost:8100"
-	@echo "   Docs: http://localhost:8100/docs"
-	@echo "   PostgreSQL: localhost:5432"
-	@echo "   Redis: localhost:6379"
+upgrade:
+	uvx fastapi-fullstack@latest upgrade $(ARGS)
 
-docker-down:
-	docker compose down
-	docker compose -f docker-compose.frontend.yml down 2>/dev/null || true
+upgrade-dry-run:
+	uvx fastapi-fullstack@latest upgrade --dry-run $(ARGS)
 
-docker-logs:
-	docker compose logs -f
+upgrade-new-features:
+	uvx fastapi-fullstack@latest upgrade --with-new-features $(ARGS)
 
-docker-build:
-	docker compose build
+upgrade-finalize:
+	uvx fastapi-fullstack@latest upgrade finalize $(ARGS)
 
-docker-shell:
-	docker compose exec app /bin/bash
-
-# === Docker: Frontend (Development) ===
-docker-frontend:
-	docker compose -f docker-compose.frontend.yml up -d
-	@echo ""
-	@echo "✅ Frontend started!"
-	@echo "   URL: http://localhost:3000"
-	@echo ""
-	@echo "Note: Backend must be running (make docker-up)"
-
-docker-frontend-down:
-	docker compose -f docker-compose.frontend.yml down
-
-docker-frontend-logs:
-	docker compose -f docker-compose.frontend.yml logs -f
-
-docker-frontend-build:
-	docker compose -f docker-compose.frontend.yml build
-
-# === Docker: Production (with Traefik) ===
-docker-prod:
-	docker compose -f docker-compose.prod.yml up -d
-	@echo ""
-	@echo "✅ Production services started with Traefik!"
-	@echo ""
-	@echo "Endpoints (replace DOMAIN with your domain):"
-	@echo "   Frontend: https://$$DOMAIN"
-	@echo "   API: https://api.$$DOMAIN"
-	@echo "   Traefik: https://traefik.$$DOMAIN"
-
-docker-prod-down:
-	docker compose -f docker-compose.prod.yml down
-
-docker-prod-logs:
-	docker compose -f docker-compose.prod.yml logs -f
-
-docker-prod-build:
-	docker compose -f docker-compose.prod.yml build
-
-
-# === Docker: Individual Services ===
-docker-db:
-	docker compose up -d db
-	@echo ""
-	@echo "✅ PostgreSQL started on port 5432"
-	@echo "   Connection: postgresql://postgres:postgres@localhost:5432/fullstack"
-
-docker-db-stop:
-	docker compose stop db
-
-docker-redis:
-	docker compose up -d redis
-	@echo ""
-	@echo "✅ Redis started on port 6379"
-
-docker-redis-stop:
-	docker compose stop redis
-
-# === Vercel (Frontend Deployment) ===
-vercel-deploy:
-	cd frontend && npx vercel --prod
-	@echo ""
-	@echo "✅ Frontend deployed to Vercel!"
-	@echo "   Set environment variables in Vercel dashboard:"
-	@echo "   BACKEND_URL=https://api.your-domain.com"
-	@echo "   BACKEND_WS_URL=wss://api.your-domain.com"
-	@echo "   NEXT_PUBLIC_AUTH_ENABLED=true"
-	@echo "   NEXT_PUBLIC_RAG_ENABLED=true"
-
-# === Cleanup ===
-clean:
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .ruff_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .ty_cache -exec rm -rf {} + 2>/dev/null || true
-	rm -rf htmlcov/ .coverage coverage.xml
-
-# === Help ===
 help:
-	@echo ""
-	@echo "fullstack - Available Commands"
-	@echo "======================================"
-	@echo ""
-	@echo "🚀 Bootstrap (first-time setup):"
-	@echo "  make bootstrap      'make dev' + 'make seed' — full setup from a fresh clone"
-	@echo ""
-	@echo "Day-to-day dev:"
-	@echo "  make dev            Build + start dev stack + apply migrations (idempotent)"
-	@echo "  make seed           One-shot admin seed (admin@example.com / admin123)"
-	@echo "  make dev-down       Stop dev stack"
-	@echo "  make dev-logs       Tail dev container logs"
-	@echo "  make dev-rebuild    Force-rebuild backend image"
-	@echo "  make docker-clean   Wipe containers + networks + volumes (DESTROYS data)"
-	@echo "  make dev-frontend   Start frontend container (after 'make dev')"
-	@echo ""
-	@echo "📦 Other environments:"
-	@echo "  make stage          Production-like stack on localhost (no bind mounts)"
-	@echo "  make prod           Production stack (requires backend/.env + nginx)"
-	@echo ""
-	@echo "Setup (without Docker):"
-	@echo "  make install       Install Python deps + pre-commit hooks"
-	@echo ""
-	@echo "Development:"
-	@echo "  make run           Start dev server (with hot reload)"
-	@echo "  make test          Run tests"
-	@echo "  make lint          Check code quality"
-	@echo "  make format        Auto-format code"
-	@echo ""
-	@echo "Database:"
-	@echo "  make db-init       Initialize database (start + migrate)"
-	@echo "  make db-migrate    Create new migration"
-	@echo "  make db-upgrade    Apply migrations"
-	@echo "  make db-downgrade  Rollback last migration"
-	@echo "  make db-current    Show current migration"
-	@echo ""
-	@echo "Users:"
-	@echo "  make create-admin  Create admin user (for SQLAdmin access)"
-	@echo "  make user-create   Create new user (interactive)"
-	@echo "  make user-list     List all users"
-	@echo ""
-	@echo "RAG:"
-	@echo "  uv run fullstack rag-ingest <path> -c <collection>  Ingest files"
-	@echo "  uv run fullstack rag-search <query> -c <collection>  Search"
-	@echo "  uv run fullstack rag-collections                     List collections"
-	@echo "  uv run fullstack rag-sources                         List sync sources"
-	@echo "  uv run fullstack rag-source-add                      Add sync source"
-	@echo "  uv run fullstack rag-source-sync <id>                Trigger sync"
-	@echo ""
-	@echo "Taskiq:"
-	@echo "  make taskiq-worker     Start Taskiq worker"
-	@echo "  make taskiq-scheduler  Start Taskiq scheduler"
-	@echo ""
-	@echo "Docker (Development):"
-	@echo "  make docker-up            Start backend services"
-	@echo "  make docker-down          Stop all services"
-	@echo "  make docker-logs          View backend logs"
-	@echo "  make docker-build         Build backend images"
-	@echo "  make docker-frontend      Start frontend (separate)"
-	@echo "  make docker-frontend-down Stop frontend"
-	@echo "  make docker-db            Start only PostgreSQL"
-	@echo "  make docker-redis         Start only Redis"
-	@echo ""
-	@echo "Docker (Production with Traefik):"
-	@echo "  make docker-prod          Start production stack"
-	@echo "  make docker-prod-down     Stop production stack"
-	@echo "  make docker-prod-logs     View production logs"
-	@echo ""
-	@echo "Template upgrade:"
-	@echo "  make upgrade-dry-run       Preview template updates (no changes)"
-	@echo "  make upgrade               Pull latest template changes (3-way merge)"
-	@echo "  make upgrade-new-features  Upgrade + opt into newly added features"
-	@echo "  make upgrade-finalize      Bump manifest after resolving conflicts"
-	@echo ""
-	@echo "Other:"
-	@echo "  make routes        Show all API routes"
-	@echo "  make clean         Clean cache files"
-	@echo ""
+	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-all"
+	@echo "Lifecycle: dev-down dev-logs stage prod docker-clean (preserves data)"
+	@echo "Validation: lint test frontend-test playwright"
+	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"
+	@echo "Local API: make run (port 8100); Taskiq concurrency defaults to 1"
+	@echo "External redis-data and docling-models volumes are never removed by normal targets."

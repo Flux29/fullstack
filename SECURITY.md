@@ -29,7 +29,7 @@ We aim to acknowledge within 48h and ship a fix within 7 days for high-severity 
 ### Transport / network
 
 - **CORS** — origin list from `settings.CORS_ORIGINS`. Restrict to your domains in production.
-- **HTTPS** — enforce via reverse proxy (Nginx / Traefik / ALB). Strict-Transport-Security header set in middleware when `ENVIRONMENT=production`.
+- **HTTPS** — enforce via Traefik or the platform load balancer. Strict-Transport-Security header set in middleware when `ENVIRONMENT=production`.
 - **CSP** — frontend sets `frame-ancestors 'none'` by default to prevent click-jacking. See `frontend/next.config.ts` headers block.
 
 ### Data

@@ -43,9 +43,9 @@ uploaded in chat. This is separate from the RAG ingestion parser (`PDF_PARSER`).
 
 | Parser | `CHAT_PDF_PARSER=` | Requirements | Speed | Quality |
 |--------|-------------------|--------------|-------|---------|
-| PyMuPDF | `pymupdf` (default) | None (bundled) | Fast | Good for text-heavy PDFs |
+| Docling Serve | `docling` (default) | Local Compose service | GPU conversion/OCR | Complex layouts, scans, and tables |
+| PyMuPDF | `pymupdf` | None (bundled) | Fast | Good for text-heavy PDFs |
 | LlamaParse | `llamaparse` | `LLAMAPARSE_API_KEY` | Slow (API call) | Best for complex layouts |
-| LiteParse | `liteparse` | None | Medium | Good balance |
 
 If the selected parser fails, it automatically falls back to PyMuPDF.
 
@@ -118,6 +118,10 @@ different pipeline handles parsing, chunking, and embedding.
 
 The set of supported formats depends on the configured PDF parser:
 
+**Docling Serve** handles PDF, DOCX, PPTX, XLSX, common images/OCR, while TXT
+and Markdown stay local. Page, table, bounding-box, and source metadata flow
+into stored chunks.
+
 **LlamaParse** supports 130+ formats including PDF, DOCX, XLSX, PPTX, HTML,
 CSV, RTF, and many more.
 
@@ -133,9 +137,9 @@ during RAG ingestion:
 
 | Parser | `PDF_PARSER=` | Best For |
 |--------|--------------|----------|
-| PyMuPDF | `pymupdf` (default) | Fast local processing, text-heavy documents |
+| Docling Serve | `docling` (default) | Binary documents, scanned PDFs, images, and tables |
+| PyMuPDF | `pymupdf` | Fast local processing, text-heavy PDFs |
 | LlamaParse | `llamaparse` | Complex layouts, scanned PDFs, 130+ formats |
-| LiteParse | `liteparse` | Balance of speed and quality |
 
 Note: `PDF_PARSER` controls RAG ingestion. `CHAT_PDF_PARSER` controls chat
 file uploads. They can be set independently.
@@ -159,8 +163,11 @@ Text is split into chunks before embedding. Configure via environment variables:
 | `fixed` | Uniform chunk sizes; simplest but may split mid-sentence |
 
 ### Embedding Providers
-Embeddings are generated using **OpenAI** (`text-embedding-3-small` by default).
-Set `EMBEDDING_MODEL` to change the model.
+Embeddings use Docker Model Runner with Qwen 4B by default. Query and document
+inputs are formatted separately, normalized to 1,024 dimensions, and cached in
+Redis DB 3 plus durable PostgreSQL. Model, artifact, instructions, dimension,
+and normalization changes alter the collection fingerprint and require explicit
+re-embedding.
 
 ### Vector Storage
 Vectors are stored in **pgvector** using the existing PostgreSQL database.
@@ -215,5 +222,7 @@ descriptions are included in the document text for better semantic search.
 
 Search results can optionally be reranked for better relevance. Enable
 reranking by passing `use_reranker=True` to the search API.
-Reranking uses a cross-encoder model (`CROSS_ENCODER_MODEL`, default:
-`cross-encoder/ms-marco-MiniLM-L6-v2`). Runs locally, no API key needed.
+Reranking calls Docker Model Runner's native `/rerank` endpoint using
+`CROSS_ENCODER_MODEL` (the variable name is retained for compatibility). The default is
+`huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0`; no
+Hugging Face download or application API key is required.

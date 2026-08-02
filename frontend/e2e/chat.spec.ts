@@ -48,7 +48,7 @@ test.describe("AI Chat", () => {
       await sendButton.click();
 
       // User message should appear in chat
-      await expect(page.getByText("Hello!")).toBeVisible();
+      await expect(page.getByRole("paragraph").filter({ hasText: /^Hello!$/ })).toBeVisible();
 
       // Wait for AI response (with reasonable timeout)
       await expect(
@@ -99,7 +99,9 @@ test.describe("AI Chat", () => {
       await sendButton.click();
 
       // Message should be styled as user message
-      const userMessage = page.locator("[data-role='user']").or(page.getByText("My test message"));
+      const userMessage = page
+        .getByRole("paragraph")
+        .filter({ hasText: /^My test message$/ });
       await expect(userMessage).toBeVisible();
     });
 
@@ -112,7 +114,9 @@ test.describe("AI Chat", () => {
       // Send first message
       await input.fill("First message");
       await sendButton.click();
-      await expect(page.getByText("First message")).toBeVisible();
+      await expect(
+        page.getByRole("paragraph").filter({ hasText: /^First message$/ }),
+      ).toBeVisible();
 
       // Wait for response
       await page.waitForTimeout(1000);
@@ -120,11 +124,17 @@ test.describe("AI Chat", () => {
       // Send second message
       await input.fill("Second message");
       await sendButton.click();
-      await expect(page.getByText("Second message")).toBeVisible();
+      await expect(
+        page.getByRole("paragraph").filter({ hasText: /^Second message$/ }),
+      ).toBeVisible();
 
       // Both messages should be visible
-      await expect(page.getByText("First message")).toBeVisible();
-      await expect(page.getByText("Second message")).toBeVisible();
+      await expect(
+        page.getByRole("paragraph").filter({ hasText: /^First message$/ }),
+      ).toBeVisible();
+      await expect(
+        page.getByRole("paragraph").filter({ hasText: /^Second message$/ }),
+      ).toBeVisible();
     });
   });
 
@@ -136,7 +146,9 @@ test.describe("AI Chat", () => {
       await input.press("Enter");
 
       // Message should be sent
-      await expect(page.getByText("Keyboard test")).toBeVisible();
+      await expect(
+        page.getByRole("paragraph").filter({ hasText: /^Keyboard test$/ }),
+      ).toBeVisible();
     });
 
     test("should support Shift+Enter for new line", async ({ page }) => {

@@ -55,16 +55,28 @@ export function ToolApprovalDialog({
 
         if (original !== edited) {
           return {
+            id: a.id,
+            tool_name: a.tool_name,
             type: "edit" as const,
-            editedAction: { id: a.id, tool_name: a.tool_name, args: parsed },
+            args: parsed,
           };
         }
-        return { type: "approve" as const };
+        return { id: a.id, tool_name: a.tool_name, type: "approve" as const };
       } catch {
-        return { type: "reject" as const };
+        return { id: a.id, tool_name: a.tool_name, type: "reject" as const };
       }
     });
     onDecisions(decisions);
+  };
+
+  const handleRejectAll = () => {
+    onDecisions(
+      actionRequests.map((action) => ({
+        id: action.id,
+        tool_name: action.tool_name,
+        type: "reject" as const,
+      })),
+    );
   };
 
   return (
@@ -94,6 +106,15 @@ export function ToolApprovalDialog({
       ))}
 
       <div className="flex justify-end gap-2 border-t pt-1">
+        <Button
+          size="sm"
+          variant="destructive"
+          className="h-7 text-xs"
+          onClick={handleRejectAll}
+          disabled={disabled}
+        >
+          Reject all
+        </Button>
         {hasChanges && (
           <>
             <Button

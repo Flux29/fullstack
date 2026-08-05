@@ -76,17 +76,18 @@ These are used to sign JWTs and authenticate service-to-service calls. Rotate at
 - [ ] Create a fine-grained read-only GitHub token and set `GITHUB_MCP_TOKEN`. Never place it inside `MCP_SERVERS` JSON.
 - [ ] Confirm the GitHub deployment allowlist contains read-only tools only and the startup probe exposes no mutation tool.
 
-### Google Workspace MCP (Developer Preview)
+### Google Workspace standard APIs
 
-- [ ] Enroll the Google Cloud project/account in the Google Workspace Developer Preview where required.
-- [ ] Enable the product APIs and their MCP services: Gmail, Drive, Docs, Sheets, Slides, Calendar, Chat, and People.
+- [ ] Enable the generally available Gmail, Drive, Docs, Sheets, Slides, Calendar, Chat, and People APIs in the Google Cloud project.
 - [ ] Create a Google OAuth **Web application** client and add this exact authorized redirect URI: `http://localhost:3000/api/me/mcp-connections/oauth/callback`.
 - [ ] Add the required scopes on Google Auth Platform → Data Access and add your account under Audience → Test users while the app is in testing.
-- [ ] Set `GOOGLE_WORKSPACE_MCP_CLIENT_ID` and `GOOGLE_WORKSPACE_MCP_CLIENT_SECRET` in `backend/.env`, then recreate the backend app.
+- [ ] Set `GOOGLE_API_CLIENT_ID` and `GOOGLE_API_CLIENT_SECRET` in `backend/.env` from the existing **Full Stack** Web OAuth client, then recreate the backend app.
+- [ ] In Google Auth Platform → Data Access, add the full scope URLs from the conversion plan: `https://www.googleapis.com/auth/gmail.readonly`, `https://www.googleapis.com/auth/gmail.compose`, `https://www.googleapis.com/auth/calendar.readonly`, `https://www.googleapis.com/auth/drive`, `https://www.googleapis.com/auth/documents`, `https://www.googleapis.com/auth/spreadsheets`, `https://www.googleapis.com/auth/presentations`, `https://www.googleapis.com/auth/chat.spaces`, `https://www.googleapis.com/auth/chat.messages`, `https://www.googleapis.com/auth/chat.memberships`, `https://www.googleapis.com/auth/chat.messages.reactions`, `https://www.googleapis.com/auth/chat.delete`, `https://www.googleapis.com/auth/contacts`, `https://www.googleapis.com/auth/contacts.other.readonly`, `https://www.googleapis.com/auth/directory.readonly`, and `https://www.googleapis.com/auth/userinfo.profile`; add every controlled test account under Audience → Test users while the app is in Testing.
 - [ ] Sign in to each desired product from Settings → Integrations. Access and refresh tokens are stored per user, encrypted in PostgreSQL; no `GOOGLE_DRIVE_REFRESH_TOKEN` environment variable is needed.
-- [ ] Review the initial read-oriented tool allowlists before enabling mutation tools. Gmail exposes `create_draft`, not send; use Gmail to review/send the draft or configure an explicitly approved Gmail action in Zapier.
+- [ ] Reauthorize each existing preview connection using **Upgrade to standard API**. The old URL/token remains active until the callback succeeds.
+- [ ] Confirm every mutation pauses at the approval dialog. Gmail exposes approved draft creation/deletion, not send; use Gmail to review/send the draft.
 
-Google Workspace MCP OAuth is separate from the Google Drive RAG sync source,
+Google Workspace per-user OAuth is separate from the Google Drive RAG sync source,
 which continues to use `GOOGLE_DRIVE_CREDENTIALS_FILE` and a service account.
 
 ## Traefik and production TLS

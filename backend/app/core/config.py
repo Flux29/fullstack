@@ -131,13 +131,16 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8100/api/v1/oauth/google/callback"
 
-    # Static Web OAuth client used only for Google's official Workspace MCP
-    # endpoints. Tokens remain per-user and encrypted in PostgreSQL; no refresh
-    # token belongs in the process environment.
+    # Static Web OAuth client used for direct Gmail/Calendar integrations.
+    # Tokens remain per-user and encrypted in PostgreSQL; no refresh token
+    # belongs in the process environment.
+    GOOGLE_API_CLIENT_ID: str = ""
+    GOOGLE_API_CLIENT_SECRET: SecretStr = SecretStr("")
+    # Compatibility with the preview-MCP variable names used by earlier builds.
     GOOGLE_WORKSPACE_MCP_CLIENT_ID: str = ""
     GOOGLE_WORKSPACE_MCP_CLIENT_SECRET: SecretStr = SecretStr("")
-    # Compatibility with the names shipped in earlier environment examples.
-    # Prefer GOOGLE_WORKSPACE_MCP_* for new installations.
+    # Compatibility with names shipped in earlier environment examples.
+    # Prefer GOOGLE_API_* for new installations.
     GOOGLE_DRIVE_CLIENT_ID: str = ""
     GOOGLE_DRIVE_CLIENT_SECRET: SecretStr = SecretStr("")
 

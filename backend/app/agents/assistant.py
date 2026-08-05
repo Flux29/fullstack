@@ -6,6 +6,7 @@ from typing import Any
 
 from pydantic_ai import Agent, ModelRetry, RunContext
 from pydantic_ai.capabilities import (
+    HandleDeferredToolCalls,
     ReinjectSystemPrompt,
     Thinking,
     WebFetch,
@@ -23,6 +24,7 @@ from pydantic_ai.messages import (
 from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 from pydantic_ai.settings import ModelSettings
+from pydantic_ai.tools import DeferredToolRequests, DeferredToolResults
 from pydantic_ai_skills import SkillsToolset
 from pydantic_ai_summarization import ContextManagerCapability
 from pydantic_ai_todo import TodoCapability
@@ -50,6 +52,7 @@ def _build_model(model_name: str) -> OpenRouterModel:
 
 
 AskUserCallback = Callable[[list[dict[str, Any]]], Awaitable[list[dict[str, Any]]]]
+ApproveToolsCallback = Callable[[DeferredToolRequests], Awaitable[DeferredToolResults]]
 
 
 @dataclass
@@ -60,6 +63,7 @@ class Deps:
     user_name: str | None = None
     metadata: dict[str, Any] = field(default_factory=dict)
     ask_user: AskUserCallback | None = None
+    approve_tools: ApproveToolsCallback | None = None
     # Required by SubAgentDepsProtocol; kept empty (capabilities carry the agents).
     subagents: dict[str, Any] = field(default_factory=dict)
 
@@ -70,8 +74,18 @@ class Deps:
             user_name=self.user_name,
             metadata=self.metadata,
             ask_user=None,
+            approve_tools=None,
             subagents={} if max_depth <= 0 else self.subagents,
         )
+
+
+async def _handle_deferred_tools(
+    ctx: RunContext[Deps], requests: DeferredToolRequests
+) -> DeferredToolResults | None:
+    """Resolve approval-gated tools inside the same agent run."""
+    if ctx.deps.approve_tools is None:
+        return None
+    return await ctx.deps.approve_tools(requests)
 
 
 class AssistantAgent:
@@ -112,6 +126,7 @@ class AssistantAgent:
         model = _build_model(self.model_name)
 
         capabilities: list[Any] = [ReinjectSystemPrompt()]
+        capabilities.append(HandleDeferredToolCalls(handler=_handle_deferred_tools))
         if self.thinking_effort:
             capabilities.append(Thinking(effort=self.thinking_effort))  # ty: ignore[invalid-argument-type]
         # Local DuckDuckGo / fetch (the installed extras) — works uniformly across

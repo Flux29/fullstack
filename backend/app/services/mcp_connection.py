@@ -22,9 +22,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents import mcp_oauth
+from app.agents.google_workspace_api import (
+    build_google_api_toolset,
+    google_api_kind,
+    probe_google_api,
+)
 from app.agents.mcp import (
     McpServerSpec,
     McpToolInfo,
+    _tool_prefix,
     build_mcp_toolsets,
     probe_error_message,
     probe_mcp_server,
@@ -267,7 +273,12 @@ class McpConnectionService:
             error = "This plugin needs to be authorized before it can connect."
         else:
             try:
-                tools = await probe_mcp_server(db_connection.url, headers)
+                if google_api_kind(db_connection.url):
+                    tools = await probe_google_api(
+                        db_connection.url, headers["Authorization"].removeprefix("Bearer ")
+                    )
+                else:
+                    tools = await probe_mcp_server(db_connection.url, headers)
             except Exception as exc:
                 error = probe_error_message(exc)
         db_connection = await mcp_connection_repo.update(
@@ -301,13 +312,17 @@ class McpConnectionService:
         after ``mcp_oauth.FLOW_TTL_SECS``.
         """
         url = await validate_mcp_url(url)
-        server = await mcp_oauth.discover(url)  # raises OAuthError if unsupported
         redirect_uri = _oauth_redirect_uri()
         provider = mcp_oauth.oauth_provider(url)
+        if provider == "google_api":
+            server = mcp_oauth.google_api_server(url)
+            client_id, client_secret = mcp_oauth.google_client_credentials()
+        else:
+            server = await mcp_oauth.discover(url)  # raises OAuthError if unsupported
         if provider == "google_workspace":
             mcp_oauth.validate_google_discovery(server)
             client_id, client_secret = mcp_oauth.google_client_credentials()
-        else:
+        elif provider == "generic":
             client_id, client_secret = await mcp_oauth.register_client(server, redirect_uri)
         pkce = mcp_oauth.new_pkce()
         state = secrets.token_urlsafe(32)
@@ -429,6 +444,8 @@ async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
     connections to add.
     """
     specs = static_server_specs()
+    direct_toolsets: list[Any] = []
+    used_prefixes = {_tool_prefix(spec.name) for spec in specs}
     if user_id is not None:
         async with get_db_context() as db:
             connections, _ = await mcp_connection_repo.list_for_user(
@@ -443,6 +460,26 @@ async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
                         "Skipping MCP connection %r: no usable credentials", connection.name
                     )
                     continue
+                if google_api_kind(connection.url):
+                    prefix = _tool_prefix(connection.name)
+                    if prefix in used_prefixes:
+                        logger.warning(
+                            "Skipping Google integration %r: tool prefix %r is already used",
+                            connection.name,
+                            prefix,
+                        )
+                        continue
+                    used_prefixes.add(prefix)
+                    direct_toolsets.append(
+                        build_google_api_toolset(
+                            name=connection.name,
+                            url=connection.url,
+                            access_token=headers["Authorization"].removeprefix("Bearer "),
+                            allowed_tools=connection.allowed_tools,
+                            user_id=str(user_id),
+                        )
+                    )
+                    continue
                 specs.append(
                     McpServerSpec(
                         name=connection.name,
@@ -451,4 +488,4 @@ async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
                         allowed_tools=connection.allowed_tools,
                     )
                 )
-    return await build_mcp_toolsets(specs)
+    return [*(await build_mcp_toolsets(specs)), *direct_toolsets]

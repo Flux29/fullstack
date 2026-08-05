@@ -23,6 +23,12 @@ from pydantic_ai.messages import (
     ThinkingPartDelta,
     ToolCallPart,
 )
+from pydantic_ai.tools import (
+    DeferredToolRequests,
+    DeferredToolResults,
+    ToolApproved,
+    ToolDenied,
+)
 
 from app.agents.assistant import Deps, get_agent
 from app.api.deps import get_conversation_service
@@ -31,6 +37,7 @@ from app.db.models.user import User
 from app.db.session import get_db_context
 from app.services.agent import (
     build_message_history,
+    load_conversation_history,
     persist_assistant_turn,
     persist_user_turn,
     send_event,
@@ -53,11 +60,16 @@ class AgentSession:
         self.websocket = websocket
         self.user = user
         self.conversation_history: list[dict[str, str]] = []
-        self.deps = Deps()
+        self.deps = Deps(
+            user_id=str(user.id),
+            user_name=getattr(user, "full_name", None) or getattr(user, "email", None),
+        )
         self.deps.ask_user = self._ask_user
+        self.deps.approve_tools = self._approve_tools
         self.current_conversation_id: str | None = None
         self._turn_task: asyncio.Task[None] | None = None
         self._ask_user_future: asyncio.Future[list[dict[str, Any]]] | None = None
+        self._approval_future: asyncio.Future[list[dict[str, Any]]] | None = None
         self._research: ResearchToolkit | None = None
         self._subagent_task_manager: Any | None = None
 
@@ -79,6 +91,13 @@ class AgentSession:
             if fut is not None and not fut.done():
                 answers = data.get("answers")
                 fut.set_result(answers if isinstance(answers, list) else [])
+            return
+
+        if msg_type == "resume":
+            fut = self._approval_future
+            if fut is not None and not fut.done():
+                decisions = data.get("decisions")
+                fut.set_result(decisions if isinstance(decisions, list) else [])
             return
 
         if msg_type is not None:
@@ -138,6 +157,18 @@ class AgentSession:
         if not user_message and not file_ids:
             await send_event(self.websocket, "error", {"message": "Empty message"})
             return
+        # A WebSocket is only transport state; PostgreSQL is the conversation
+        # source of truth. Reload before every resumed turn so reconnecting,
+        # opening the same chat in another tab, or switching conversations does
+        # not silently give the model an empty/stale history. This happens
+        # before persist_user_turn so the current prompt is not duplicated.
+        history_conversation_id = data.get("conversation_id") or self.current_conversation_id
+        if history_conversation_id:
+            self.conversation_history = await load_conversation_history(
+                self.user, history_conversation_id
+            )
+        else:
+            self.conversation_history = []
         self.current_conversation_id, newly_created, organization_id = await persist_user_turn(
             self.user,
             user_message,
@@ -269,6 +300,90 @@ class AgentSession:
             return await fut
         finally:
             self._ask_user_future = None
+
+    async def _approve_tools(self, requests: DeferredToolRequests) -> DeferredToolResults:
+        """Pause one run until the browser approves, edits, or rejects mutations."""
+        action_requests = [
+            {
+                "id": call.tool_call_id,
+                "tool_name": call.tool_name,
+                "args": call.args_as_dict(raise_if_invalid=False),
+                "metadata": requests.metadata.get(call.tool_call_id, {}),
+            }
+            for call in requests.approvals
+        ]
+        if not action_requests:
+            return requests.build_results(
+                calls={
+                    call.tool_call_id: "External deferred tool execution is not supported."
+                    for call in requests.calls
+                }
+            )
+
+        loop = asyncio.get_running_loop()
+        fut: asyncio.Future[list[dict[str, Any]]] = loop.create_future()
+        self._approval_future = fut
+        try:
+            await send_event(
+                self.websocket,
+                "tool_approval_required",
+                {
+                    "action_requests": action_requests,
+                    "review_configs": [
+                        {"tool_name": action["tool_name"], "allow_edit": True}
+                        for action in action_requests
+                    ],
+                },
+            )
+            decisions = await fut
+        finally:
+            self._approval_future = None
+
+        by_id: dict[str, dict[str, Any]] = {}
+        legacy: list[dict[str, Any]] = []
+        for decision in decisions:
+            if not isinstance(decision, dict):
+                continue
+            edited = decision.get("edited_action")
+            decision_id = decision.get("id")
+            if not decision_id and isinstance(edited, dict):
+                decision_id = edited.get("id")
+            if isinstance(decision_id, str):
+                by_id[decision_id] = decision
+            else:
+                legacy.append(decision)
+
+        approvals: dict[str, bool | ToolApproved | ToolDenied] = {}
+        for index, call in enumerate(requests.approvals):
+            decision = by_id.get(call.tool_call_id)
+            if decision is None and index < len(legacy):
+                decision = legacy[index]
+            if decision is None:
+                approvals[call.tool_call_id] = ToolDenied("No approval decision was received.")
+                continue
+
+            kind = decision.get("decision") or decision.get("type")
+            if kind == "approve":
+                approvals[call.tool_call_id] = ToolApproved()
+            elif kind == "edit":
+                edited = decision.get("edited_action")
+                override_args = decision.get("args")
+                if override_args is None and isinstance(edited, dict):
+                    override_args = edited.get("args")
+                if isinstance(override_args, dict):
+                    approvals[call.tool_call_id] = ToolApproved(override_args=override_args)
+                else:
+                    approvals[call.tool_call_id] = ToolDenied("Edited arguments were invalid.")
+            else:
+                approvals[call.tool_call_id] = ToolDenied("The user rejected this action.")
+
+        return requests.build_results(
+            approvals=approvals,
+            calls={
+                call.tool_call_id: "External deferred tool execution is not supported."
+                for call in requests.calls
+            },
+        )
 
     async def _send(self, event_type: str, data: Any) -> bool:
         """Emit a WebSocket event on this session's socket (bound for callbacks)."""
@@ -564,14 +679,15 @@ class AgentSession:
                 pending[tool_event.part.tool_call_id] = tc
                 await send_event(self.websocket, "tool_call", tc)
             elif isinstance(tool_event, FunctionToolResultEvent):
+                result_content = str(tool_event.part.content)
                 tc = pending.get(tool_event.tool_call_id)
                 if tc is not None:
-                    tc["result"] = str(tool_event.result.content)
+                    tc["result"] = result_content
                 await send_event(
                     self.websocket,
                     "tool_result",
                     {
                         "tool_call_id": tool_event.tool_call_id,
-                        "content": str(tool_event.result.content),
+                        "content": result_content,
                     },
                 )

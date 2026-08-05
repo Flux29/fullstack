@@ -496,15 +496,11 @@ export function useChat(options: UseChatOptions = {}) {
       // Send resume message to WebSocket
       sendMessage({
         type: "resume",
-        decisions: decisions.map((d) => {
-          if (d.type === "edit" && d.editedAction) {
-            return {
-              type: "edit",
-              edited_action: d.editedAction,
-            };
-          }
-          return { type: d.type };
-        }),
+        decisions: decisions.map((d) => ({
+          id: d.id,
+          decision: d.type,
+          ...(d.type === "edit" ? { args: d.args } : {}),
+        })),
       });
     },
     [updateMessage, sendMessage],

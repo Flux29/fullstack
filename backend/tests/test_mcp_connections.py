@@ -11,6 +11,8 @@ from mcp.shared.auth import OAuthToken
 from pydantic import SecretStr, ValidationError
 
 from app.agents import mcp_oauth
+from app.agents.google_apis.products import DIRECT_GOOGLE_PRODUCTS
+from app.agents.google_workspace_api import GMAIL_API_URL
 from app.agents.mcp import (
     McpProbeError,
     McpServerSpec,
@@ -386,6 +388,21 @@ class TestOAuthTokens:
         )
         assert mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com/mcp/v1?x=1") == "generic"
 
+    def test_direct_gmail_api_uses_standard_google_provider(self):
+        assert mcp_oauth.oauth_provider(GMAIL_API_URL) == "google_api"
+        server = mcp_oauth.google_api_server(GMAIL_API_URL)
+        assert server.token_endpoint == "https://oauth2.googleapis.com/token"
+        assert "gmail.readonly" in (server.scope or "")
+        assert "gmail.compose" in (server.scope or "")
+
+    @pytest.mark.parametrize("kind", ["drive", "docs", "sheets", "slides", "chat", "contacts"])
+    def test_direct_workspace_apis_use_static_google_oauth(self, kind):
+        product = DIRECT_GOOGLE_PRODUCTS[kind]
+        assert mcp_oauth.oauth_provider(product.url) == "google_api"
+        server = mcp_oauth.google_api_server(product.url)
+        assert server.authorization_endpoint == "https://accounts.google.com/o/oauth2/v2/auth"
+        assert set((server.scope or "").split()) == set(product.scopes)
+
     def test_google_authorization_requests_offline_consent_without_resource(self):
         server = mcp_oauth.DiscoveredServer(
             authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
@@ -713,6 +730,37 @@ class TestMcpConnectionService:
         assert payload.provider == "google_workspace"
         assert payload.client_id == "google-client"
         assert payload.client_secret == "google-secret"
+
+    @pytest.mark.anyio
+    async def test_direct_google_api_skips_mcp_discovery_and_registration(
+        self, service, repo, monkeypatch
+    ):
+        _allow_any_url(monkeypatch)
+        discovery = AsyncMock()
+        registration = AsyncMock()
+        monkeypatch.setattr(mcp_oauth, "discover", discovery)
+        monkeypatch.setattr(mcp_oauth, "register_client", registration)
+        monkeypatch.setattr(settings, "GOOGLE_API_CLIENT_ID", "full-stack-client")
+        monkeypatch.setattr(settings, "GOOGLE_API_CLIENT_SECRET", SecretStr("full-stack-secret"))
+
+        url = await service.oauth_start(
+            user_id=uuid4(),
+            name="gmail",
+            url=GMAIL_API_URL,
+            allowed_tools=["get_profile", "search_threads"],
+        )
+
+        discovery.assert_not_awaited()
+        registration.assert_not_awaited()
+        assert "accounts.google.com/o/oauth2/v2/auth" in url
+        payload = McpOAuthPayload.model_validate_json(
+            decrypt_value(
+                repo.create.call_args.kwargs["oauth_pending_payload"], settings.SECRET_KEY
+            )
+        )
+        assert payload.provider == "google_api"
+        assert payload.server_url == GMAIL_API_URL
+        assert "gmail.readonly" in (payload.scope or "")
 
     @pytest.mark.anyio
     async def test_google_oauth_rejects_unexpected_discovered_token_host(

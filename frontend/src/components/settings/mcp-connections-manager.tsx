@@ -260,7 +260,7 @@ export function McpConnectionsManager() {
    * entries (e.g. Zapier) match by the connection name. */
   const connectionFor = (entry: McpCatalogEntry) =>
     connections.find((c) =>
-      entry.auth === "personal-url"
+      entry.auth === "personal-url" || entry.auth === "oauth"
         ? c.name === entry.id
         : catalogBaseUrl(c.url) === catalogBaseUrl(entry.url),
     ) ?? null;
@@ -438,6 +438,9 @@ export function McpConnectionsManager() {
                       // really connected yet — offer to finish signing in.
                       const needsAuth =
                         existing?.auth_type === "oauth" && !existing.oauth_authorized;
+                      const needsUpgrade = Boolean(
+                        existing && entry.auth === "oauth" && existing.url !== entry.url,
+                      );
                       const isOAuth = entry.auth === "oauth";
                       return (
                         <div
@@ -471,6 +474,15 @@ export function McpConnectionsManager() {
                                 <Building2 className="text-foreground/45 h-3.5 w-3.5" />
                                 Provided by your workspace
                               </span>
+                            ) : existing && needsUpgrade ? (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleCatalogConnect(entry)}
+                                disabled={busy}
+                              >
+                                {busy ? "Redirecting…" : "Upgrade to standard API"}
+                              </Button>
                             ) : existing && !needsAuth ? (
                               <span className="text-foreground/65 inline-flex items-center gap-1 text-xs font-medium">
                                 <Check className="h-3.5 w-3.5 text-emerald-500" />
@@ -567,6 +579,34 @@ export function McpConnectionsManager() {
                   </Button>
                 ) : (
                   <>
+                    {connection.auth_type === "oauth" && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          const entry = MCP_CATALOG.find(
+                            (candidate) =>
+                              candidate.id === connection.name && candidate.auth === "oauth",
+                          );
+                          void startOAuth(
+                            connection.name,
+                            entry?.url ?? connection.url,
+                            entry?.title ?? connection.name,
+                            entry?.allowedTools ?? connection.allowed_tools ?? undefined,
+                          );
+                        }}
+                        disabled={connectingId === connection.name}
+                      >
+                        {connectingId === connection.name
+                          ? "Redirecting…"
+                          : MCP_CATALOG.some(
+                                (entry) =>
+                                  entry.id === connection.name && entry.url !== connection.url,
+                              )
+                            ? "Upgrade"
+                            : "Reauthorize"}
+                      </Button>
+                    )}
                     <Button
                       size="sm"
                       variant="outline"

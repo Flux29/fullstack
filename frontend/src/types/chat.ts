@@ -209,12 +209,10 @@ export interface PendingApproval {
 export type DecisionType = "approve" | "edit" | "reject";
 
 export interface Decision {
+  id: string;
+  tool_name: string;
   type: DecisionType;
-  editedAction?: {
-    id: string;
-    tool_name: string;
-    args: Record<string, unknown>;
-  };
+  args?: Record<string, unknown>;
 }
 
 export interface ToolApprovalRequiredEvent {

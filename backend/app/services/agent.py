@@ -3,6 +3,7 @@
 Houses framework-agnostic helpers used by every WebSocket agent route:
   - ``AgentConnectionManager`` + ``send_event`` — WebSocket fan-out
   - ``build_message_history`` — convert dicts to provider-native messages
+  - ``load_conversation_history`` — restore persisted turns for a resumed chat
   - ``persist_user_turn`` / ``persist_assistant_turn`` — DB persistence
   - ``resolve_kb_collections`` — Teams+RAG collection lookup
   - ``normalize_tool_args`` / ``truncate_title`` — small utilities
@@ -92,6 +93,40 @@ def build_message_history(history: list[dict[str, str]]) -> list[ModelRequest | 
             model_history.append(ModelRequest(parts=[SystemPromptPart(content=msg["content"])]))
 
     return model_history
+
+
+async def load_conversation_history(
+    user: Any, conversation_id: str, *, page_size: int = 200
+) -> list[dict[str, str]]:
+    """Load every persisted model-visible message for a conversation.
+
+    Ownership is checked before any messages are returned.  The caller invokes
+    this before persisting the new user prompt, so the prompt is supplied to
+    PydanticAI exactly once as the current input rather than duplicated in
+    ``message_history``.
+    """
+    conversation_uuid = UUID(conversation_id)
+    history: list[dict[str, str]] = []
+    async with get_db_context() as db:
+        conv_service = get_conversation_service(db)
+        await conv_service.get_conversation(conversation_uuid, user_id=user.id)
+
+        skip = 0
+        while True:
+            messages, total = await conv_service.list_messages(
+                conversation_uuid,
+                skip=skip,
+                limit=page_size,
+            )
+            history.extend(
+                {"role": message.role, "content": message.content}
+                for message in messages
+                if message.role in {"user", "assistant", "system"}
+            )
+            skip += len(messages)
+            if not messages or skip >= total:
+                break
+    return history
 
 
 def truncate_title(text: str, limit: int = 50) -> str:

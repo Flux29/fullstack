@@ -844,6 +844,29 @@ Automation may regenerate derived files, propose policy changes, produce evaluat
 
 Avoid building the complete graph platform before the basic governance workflow provides value. Use a narrow vertical slice and expand it.
 
+### Milestone 1: the compact kernel
+
+Phases 0–4, trimmed, form the first deliverable: a reviewed baseline, the 10–20 critical cross-file invariants (enumerated in the policy sections above), converged agent instructions wrapping the existing Makefile/CI checks, the generated configuration inventory with drift detection, the validator registry, and lightweight material-change records. Policies stay advisory until their accuracy is demonstrated. Determinism (two byte-identical syncs) is kernel scope, never deferred — noisy drift detection in week one would sink the system's credibility.
+
+Milestone 1 is accepted when governance answers three questions reliably:
+
+1. **What owns this behavior?** — from annotations and curated declarations.
+2. **What else can this change break?** — manifest-level blast radius: component dependencies, configuration references, and the proxy-route mapping. Conservative (over-inclusive) answers are acceptable at this stage.
+3. **Which existing checks prove it still works?** — validator IDs resolving to Make targets and CI jobs.
+
+One deliberate exception to deferring runtime evidence: a one-off, manually run, sanitized snapshot of the per-user connection inventory (aggregate counts, URLs stripped) is taken during Milestone 1, because the product-security decision on MCP approval gating needs it as input.
+
+### Growth triggers for the deferred phases
+
+Everything from Phase 6 onward is built in response to a named symptom, not in anticipation of one:
+
+- **Phase 6 (AST graph):** kernel impact sets are measurably too coarse — validators over-selected on repeated changes, or context token budgets blown by over-inclusive slices.
+- **Phase 7 (site maps, ranking, visualizers):** reviewers or agents demonstrably misjudge a dependency that a bounded view would have shown.
+- **Phase 8 (runtime-evidence pipeline):** static-vs-declared comparisons repeatedly miss relationships only runtime can see, or the one-off connection snapshot needs refreshing often enough that manual runs become the risk.
+- **Phase 9 (recursive improvement):** enough evaluation records exist that policy changes need shadow-mode replay to be trusted.
+
+Each trigger, when hit, becomes an evaluation record before it becomes a build task.
+
 ### Phase 0 — Local repository audit and stabilization
 
 0. Pre-step: land or stash the in-flight work and take the baseline on a clean tree; where that is impractical, baseline a named commit plus an explicitly recorded working-tree patch so drift stays explainable. Record the repo owner's decision on establishing a git remote (recommended for durability and enforcement substrate).

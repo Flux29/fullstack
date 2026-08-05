@@ -712,6 +712,9 @@ Connections are modeled along orthogonal dimensions (provisioning, executor, tra
 - All validation referenced by annotations, manifests, or impact analysis resolves through `governance/validators.json` — a reviewed registry mapping trusted validator IDs to Make targets or fixed commands.
 - Annotations and manifests never contain executable shell text.
 - Destructive or live-service validators (env-gated suites such as the live Google tests) are excluded from the registry and run only via an explicit human-invoked CLI flag.
+- Agent behavior is verified in two registered tiers:
+  - **`agent-evals`** — deterministic tool-routing and approval-policy evals (pydantic-evals, no live LLM), extending the existing `backend/evals/` harness to every tool. Cheap enough to run on every change; feeds the invariant-coverage metric in the Tests manifest.
+  - **`agent-smoke`** — a live but harmless smoke sweep: a fixed prompt list driven through the WebSocket agent API against a running stack, exercising each read-only capability (RAG search, web search, chart, code execution, MCP probes, Google reads). Verification is **structural pass/fail over the Logfire trace** — expected tool spans present, zero error spans, each tool succeeded — never raw-output or raw-telemetry diffing. Selected by impact analysis when a change touches the agent/tool/MCP/configuration surface, plus a nightly scheduled run; never per-commit and never UI-driven. Its traces and any captured records follow the runtime-evidence data-governance rules. Destructive mutation flows stay in the excluded, human-invoked tier.
 
 ### Runtime evidence
 
@@ -864,6 +867,7 @@ Everything from Phase 6 onward is built in response to a named symptom, not in a
 - **Phase 7 (site maps, ranking, visualizers):** reviewers or agents demonstrably misjudge a dependency that a bounded view would have shown.
 - **Phase 8 (runtime-evidence pipeline):** static-vs-declared comparisons repeatedly miss relationships only runtime can see, or the one-off connection snapshot needs refreshing often enough that manual runs become the risk.
 - **Phase 9 (recursive improvement):** enough evaluation records exist that policy changes need shadow-mode replay to be trusted.
+- **Telemetry baselining for `agent-smoke`** (numeric latency/token tolerance bands, baseline capture and re-baseline workflow): a regression ships that the smoke's structural pass/fail assertions missed — e.g., a performance degradation while every tool span still succeeded.
 
 Each trigger, when hit, becomes an evaluation record before it becomes a build task.
 

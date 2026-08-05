@@ -131,6 +131,16 @@ class Settings(BaseSettings):
     GOOGLE_CLIENT_SECRET: str = ""
     GOOGLE_REDIRECT_URI: str = "http://localhost:8100/api/v1/oauth/google/callback"
 
+    # Static Web OAuth client used only for Google's official Workspace MCP
+    # endpoints. Tokens remain per-user and encrypted in PostgreSQL; no refresh
+    # token belongs in the process environment.
+    GOOGLE_WORKSPACE_MCP_CLIENT_ID: str = ""
+    GOOGLE_WORKSPACE_MCP_CLIENT_SECRET: SecretStr = SecretStr("")
+    # Compatibility with the names shipped in earlier environment examples.
+    # Prefer GOOGLE_WORKSPACE_MCP_* for new installations.
+    GOOGLE_DRIVE_CLIENT_ID: str = ""
+    GOOGLE_DRIVE_CLIENT_SECRET: SecretStr = SecretStr("")
+
     API_KEY: str = "change-me-in-production"
     API_KEY_HEADER: str = "X-API-Key"
 
@@ -285,8 +295,7 @@ class Settings(BaseSettings):
     HF_TOKEN: str = ""
     RERANKER_PROVIDER: Literal["docker_model_runner", "disabled"] = "docker_model_runner"
     CROSS_ENCODER_MODEL: str = (
-        "huggingface.co/keisuke-miyako/"
-        "gte-reranker-modernbert-base-gguf-q8_0:Q8_0"
+        "huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0"
     )
     RERANKER_BASE_URL: str = "http://localhost:12434"
     RERANKER_TIMEOUT_SECONDS: float = 120.0

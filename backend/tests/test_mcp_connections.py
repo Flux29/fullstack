@@ -8,7 +8,7 @@ from uuid import uuid4
 import httpx
 import pytest
 from mcp.shared.auth import OAuthToken
-from pydantic import ValidationError
+from pydantic import SecretStr, ValidationError
 
 from app.agents import mcp_oauth
 from app.agents.mcp import (
@@ -376,6 +376,55 @@ def _base_payload(**overrides) -> McpOAuthPayload:
 
 
 class TestOAuthTokens:
+    def test_google_provider_requires_exact_official_endpoint(self):
+        assert (
+            mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com/mcp/v1") == "google_workspace"
+        )
+        assert (
+            mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com.evil.test/mcp/v1")
+            == "generic"
+        )
+        assert mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com/mcp/v1?x=1") == "generic"
+
+    def test_google_authorization_requests_offline_consent_without_resource(self):
+        server = mcp_oauth.DiscoveredServer(
+            authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+            token_endpoint="https://oauth2.googleapis.com/token",
+            registration_endpoint=None,
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            scope="gmail.readonly gmail.compose",
+            metadata=MagicMock(),
+        )
+        url = mcp_oauth.authorization_url(
+            server,
+            client_id="cid",
+            redirect_uri="http://localhost:3000/callback",
+            state="state",
+            code_challenge="challenge",
+            provider="google_workspace",
+        )
+        params = httpx.QueryParams(httpx.URL(url).query)
+        assert params["access_type"] == "offline"
+        assert params["prompt"] == "consent"
+        assert params["include_granted_scopes"] == "true"
+        assert "resource" not in params
+
+    @pytest.mark.anyio
+    async def test_google_token_exchange_does_not_send_resource(self, monkeypatch):
+        request = AsyncMock(return_value=OAuthToken(access_token="AT"))
+        monkeypatch.setattr(mcp_oauth, "_token_request", request)
+        await mcp_oauth.exchange_code(
+            token_endpoint="https://oauth2.googleapis.com/token",
+            client_id="cid",
+            client_secret="secret",
+            code="code",
+            code_verifier="verifier",
+            redirect_uri="http://localhost:3000/callback",
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            provider="google_workspace",
+        )
+        assert "resource" not in request.await_args.args[1]
+
     def test_apply_token_folds_grant(self):
         payload = _base_payload(code_verifier="verifier", refresh_token="old-refresh")
         token = OAuthToken(access_token="AT", refresh_token="new-refresh", expires_in=3600)
@@ -625,6 +674,68 @@ class TestMcpConnectionService:
         assert payload.client_id == "cid"
         # Stamped so the callback can refuse a flow the user never finished.
         assert datetime.now(UTC).timestamp() - payload.started_at < mcp_oauth.FLOW_TTL_SECS
+
+    @pytest.mark.anyio
+    async def test_google_oauth_uses_static_client_and_initial_allowlist(
+        self, service, repo, monkeypatch
+    ):
+        _allow_any_url(monkeypatch)
+        discovered = mcp_oauth.DiscoveredServer(
+            authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+            token_endpoint="https://oauth2.googleapis.com/token",
+            registration_endpoint=None,
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            scope="https://www.googleapis.com/auth/gmail.readonly",
+            metadata=MagicMock(),
+        )
+        monkeypatch.setattr(mcp_oauth, "discover", AsyncMock(return_value=discovered))
+        registration = AsyncMock()
+        monkeypatch.setattr(mcp_oauth, "register_client", registration)
+        monkeypatch.setattr(settings, "GOOGLE_WORKSPACE_MCP_CLIENT_ID", "google-client")
+        monkeypatch.setattr(
+            settings, "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET", SecretStr("google-secret")
+        )
+
+        url = await service.oauth_start(
+            user_id=uuid4(),
+            name="gmail",
+            url="https://gmailmcp.googleapis.com/mcp/v1",
+            allowed_tools=["search_threads", "create_draft"],
+        )
+
+        registration.assert_not_awaited()
+        assert "access_type=offline" in url and "prompt=consent" in url
+        kwargs = repo.create.call_args.kwargs
+        assert kwargs["allowed_tools"] == ["search_threads", "create_draft"]
+        payload = McpOAuthPayload.model_validate_json(
+            decrypt_value(kwargs["oauth_pending_payload"], settings.SECRET_KEY)
+        )
+        assert payload.provider == "google_workspace"
+        assert payload.client_id == "google-client"
+        assert payload.client_secret == "google-secret"
+
+    @pytest.mark.anyio
+    async def test_google_oauth_rejects_unexpected_discovered_token_host(
+        self, service, repo, monkeypatch
+    ):
+        _allow_any_url(monkeypatch)
+        discovered = mcp_oauth.DiscoveredServer(
+            authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+            token_endpoint="https://attacker.example/token",
+            registration_endpoint=None,
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            scope=None,
+            metadata=MagicMock(),
+        )
+        monkeypatch.setattr(mcp_oauth, "discover", AsyncMock(return_value=discovered))
+
+        with pytest.raises(mcp_oauth.OAuthError, match="unexpected OAuth endpoint"):
+            await service.oauth_start(
+                user_id=uuid4(),
+                name="gmail",
+                url="https://gmailmcp.googleapis.com/mcp/v1",
+            )
+        repo.create.assert_not_called()
 
     @pytest.mark.anyio
     async def test_oauth_start_keeps_working_tokens_until_consent(self, service, repo, monkeypatch):

@@ -119,3 +119,15 @@ test.describe("Authentication", () => {
     });
   });
 });
+
+test.describe("MCP OAuth callback", () => {
+  test("redirects to the public localhost origin instead of the container bind address", async ({
+    page,
+  }) => {
+    await page.goto("/api/me/mcp-connections/oauth/callback?error=access_denied");
+
+    await expect(page).toHaveURL(
+      "http://localhost:3000/settings/integrations?mcp_oauth=error&reason=access_denied",
+    );
+  });
+});

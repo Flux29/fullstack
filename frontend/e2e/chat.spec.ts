@@ -165,6 +165,21 @@ test.describe("AI Chat", () => {
   });
 });
 
+test.describe("Integrations settings", () => {
+  test.use({ storageState: ".playwright/.auth/user.json" });
+
+  test("shows Google Workspace and deployment-managed MCP servers", async ({ page }) => {
+    await page.goto("/settings/integrations");
+
+    await expect(page.getByRole("heading", { name: "Integrations" })).toBeVisible();
+    await expect(page.getByText("Gmail", { exact: true })).toBeVisible();
+    await expect(page.getByText("Google Drive", { exact: true })).toBeVisible();
+    await expect(page.getByText("docling-internal", { exact: true })).toBeVisible();
+    await expect(page.getByText("chrome-internal", { exact: true })).toBeVisible();
+    await expect(page.getByText("github-internal", { exact: true })).toBeVisible();
+  });
+});
+
 test.describe("Conversation Persistence", () => {
   test.use({
     storageState: ".playwright/.auth/user.json",

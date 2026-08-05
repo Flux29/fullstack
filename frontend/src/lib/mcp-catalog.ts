@@ -45,6 +45,8 @@ export interface McpCatalogEntry {
   tokenHelp?: { label: string; url: string };
   /** Short "what you can ask" example shown on the card. */
   example?: string;
+  /** Conservative tool allowlist applied when the OAuth connection is created. */
+  allowedTools?: string[];
 }
 
 /** Base URL (no query string) — used to match catalog entries to connections. */
@@ -110,6 +112,109 @@ export function matchCatalogMcpTool(
 }
 
 export const MCP_CATALOG: McpCatalogEntry[] = [
+  {
+    id: "gmail",
+    category: "business",
+    title: "Gmail",
+    domain: "google.com",
+    description:
+      "Search mail, read threads and create reviewable drafts through Google's official MCP server.",
+    url: "https://gmailmcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: [
+      "create_draft",
+      "get_message",
+      "get_thread",
+      "list_drafts",
+      "list_labels",
+      "search_threads",
+    ],
+    example: "“Find the latest service email and draft a reply for me to review.”",
+  },
+  {
+    id: "google-drive",
+    category: "research",
+    title: "Google Drive",
+    domain: "google.com",
+    description: "Search and read your Drive files through Google's official MCP server.",
+    url: "https://drivemcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: [
+      "download_file_content",
+      "get_file_metadata",
+      "get_file_permissions",
+      "list_recent_files",
+      "read_file_content",
+      "search_files",
+    ],
+    example: "“Find the latest machine setup document in my Drive.”",
+  },
+  {
+    id: "google-docs",
+    category: "research",
+    title: "Google Docs",
+    domain: "google.com",
+    description: "Read Google Docs through Google's official Workspace MCP server.",
+    url: "https://docsmcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: ["read_doc"],
+    example: "“Summarize the troubleshooting document I shared.”",
+  },
+  {
+    id: "google-sheets",
+    category: "business",
+    title: "Google Sheets",
+    domain: "google.com",
+    description: "Read spreadsheet values and structure through Google's official MCP server.",
+    url: "https://sheetsmcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: ["get_spreadsheet", "get_values"],
+    example: "“Read the open issues from my maintenance tracker.”",
+  },
+  {
+    id: "google-slides",
+    category: "research",
+    title: "Google Slides",
+    domain: "google.com",
+    description: "Read presentation content through Google's official MCP server.",
+    url: "https://slidesmcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: ["read_presentation"],
+    example: "“Summarize this applications training presentation.”",
+  },
+  {
+    id: "google-calendar",
+    category: "business",
+    title: "Google Calendar",
+    domain: "google.com",
+    description: "Read calendars, events and suggested times through Google's official MCP server.",
+    url: "https://calendarmcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: ["get_event", "list_calendars", "list_events", "search_events", "suggest_time"],
+    example: "“What customer visits do I have next week?”",
+  },
+  {
+    id: "google-chat",
+    category: "business",
+    title: "Google Chat",
+    domain: "google.com",
+    description: "Search conversations and read messages through Google's official MCP server.",
+    url: "https://chatmcp.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: ["list_messages", "search_conversations", "search_messages"],
+    example: "“Find the discussion about that spindle alarm.”",
+  },
+  {
+    id: "google-contacts",
+    category: "business",
+    title: "Google Contacts",
+    domain: "google.com",
+    description: "Search your contacts and directory through Google's official People MCP server.",
+    url: "https://people.googleapis.com/mcp/v1",
+    auth: "oauth",
+    allowedTools: ["get_user_profile", "search_contacts", "search_directory_people"],
+    example: "“Find the contact details for our regional applications engineer.”",
+  },
   {
     id: "coingecko",
     category: "finance",

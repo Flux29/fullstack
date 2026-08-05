@@ -105,6 +105,7 @@ export async function testMcpConnection(id: string): Promise<McpConnectionTestRe
 export async function startMcpOAuth(input: {
   name: string;
   url: string;
+  allowed_tools?: string[];
 }): Promise<{ authorization_url: string }> {
   return apiClient.post<{ authorization_url: string }>(`${ROOT}/oauth/start`, input);
 }

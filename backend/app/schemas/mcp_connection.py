@@ -117,6 +117,7 @@ class McpOAuthStart(BaseSchema):
 
     name: str = Field(..., min_length=1, max_length=32, pattern=NAME_PATTERN)
     url: str = Field(..., min_length=1, max_length=2048)
+    allowed_tools: list[str] | None = Field(default=None, max_length=MAX_ALLOWED_TOOLS)
 
 
 class McpOAuthStartResult(BaseSchema):

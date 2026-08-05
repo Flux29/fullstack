@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from typing import Literal
+from urllib.parse import urlsplit
 
 import httpx
 from mcp.client.auth import PKCEParameters
@@ -107,6 +109,7 @@ class McpOAuthPayload(BaseModel):
     # only once tokens arrive, so a re-authorization that points at a new URL
     # cannot move the connection while the old tokens are still stored.
     server_url: str
+    provider: Literal["generic", "google_workspace"] = "generic"
     # Epoch seconds when the consent redirect was issued — see FLOW_TTL_SECS.
     started_at: float
     authorization_endpoint: str
@@ -133,6 +136,67 @@ class DiscoveredServer:
     resource: str
     scope: str | None
     metadata: OAuthMetadata
+
+
+_GOOGLE_WORKSPACE_MCP_HOSTS = frozenset(
+    {
+        "gmailmcp.googleapis.com",
+        "drivemcp.googleapis.com",
+        "docsmcp.googleapis.com",
+        "sheetsmcp.googleapis.com",
+        "slidesmcp.googleapis.com",
+        "calendarmcp.googleapis.com",
+        "chatmcp.googleapis.com",
+        "people.googleapis.com",
+    }
+)
+
+
+def oauth_provider(server_url: str) -> Literal["generic", "google_workspace"]:
+    """Identify exact official Google Workspace MCP v1 endpoints.
+
+    Static Google client credentials must never be sent to a user-controlled
+    server or a lookalike hostname, so this deliberately accepts no alternate
+    paths, query strings, fragments, ports, or subdomains.
+    """
+    parsed = urlsplit(server_url)
+    if (
+        parsed.scheme == "https"
+        and parsed.hostname in _GOOGLE_WORKSPACE_MCP_HOSTS
+        and parsed.port is None
+        and parsed.path == "/mcp/v1"
+        and not parsed.query
+        and not parsed.fragment
+    ):
+        return "google_workspace"
+    return "generic"
+
+
+def google_client_credentials() -> tuple[str, str]:
+    """Return the deployment's static Google Workspace MCP OAuth client."""
+    client_id = settings.GOOGLE_WORKSPACE_MCP_CLIENT_ID or settings.GOOGLE_DRIVE_CLIENT_ID
+    secret = settings.GOOGLE_WORKSPACE_MCP_CLIENT_SECRET.get_secret_value()
+    if not secret:
+        secret = settings.GOOGLE_DRIVE_CLIENT_SECRET.get_secret_value()
+    if not client_id or not secret:
+        raise OAuthError(
+            "Google Workspace MCP requires GOOGLE_WORKSPACE_MCP_CLIENT_ID and "
+            "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET."
+        )
+    return client_id, secret
+
+
+def validate_google_discovery(server: DiscoveredServer) -> None:
+    """Prevent Google credentials from being posted to discovered lookalikes."""
+    auth = urlsplit(server.authorization_endpoint)
+    token = urlsplit(server.token_endpoint)
+    if not (
+        auth.scheme == "https"
+        and auth.hostname == "accounts.google.com"
+        and token.scheme == "https"
+        and token.hostname == "oauth2.googleapis.com"
+    ):
+        raise OAuthError("Google Workspace MCP advertised an unexpected OAuth endpoint.")
 
 
 def client_metadata(redirect_uri: str, scope: str | None) -> OAuthClientMetadata:
@@ -276,6 +340,7 @@ def authorization_url(
     redirect_uri: str,
     state: str,
     code_challenge: str,
+    provider: Literal["generic", "google_workspace"] = "generic",
 ) -> str:
     """Build the consent URL the browser is redirected to."""
     params: dict[str, str] = {
@@ -285,8 +350,16 @@ def authorization_url(
         "state": state,
         "code_challenge": code_challenge,
         "code_challenge_method": "S256",
-        "resource": server.resource,
     }
+    if provider == "google_workspace":
+        # Required to receive a refresh token for background agent turns.
+        params.update(
+            access_type="offline",
+            prompt="consent",
+            include_granted_scopes="true",
+        )
+    else:
+        params["resource"] = server.resource
     if server.scope:
         params["scope"] = server.scope
     query = httpx.QueryParams(params)
@@ -308,6 +381,7 @@ async def exchange_code(
     code_verifier: str,
     redirect_uri: str,
     resource: str,
+    provider: Literal["generic", "google_workspace"] = "generic",
 ) -> OAuthToken:
     """Exchange an authorization code for tokens (called from the callback)."""
     data = {
@@ -316,8 +390,9 @@ async def exchange_code(
         "redirect_uri": redirect_uri,
         "client_id": client_id,
         "code_verifier": code_verifier,
-        "resource": resource,
     }
+    if provider != "google_workspace":
+        data["resource"] = resource
     if client_secret:
         data["client_secret"] = client_secret
     return await _token_request(token_endpoint, data)
@@ -331,14 +406,16 @@ async def refresh_tokens(
     refresh_token: str,
     resource: str,
     scope: str | None,
+    provider: Literal["generic", "google_workspace"] = "generic",
 ) -> OAuthToken:
     """Refresh an expired access token using the stored refresh token."""
     data = {
         "grant_type": "refresh_token",
         "refresh_token": refresh_token,
         "client_id": client_id,
-        "resource": resource,
     }
+    if provider != "google_workspace":
+        data["resource"] = resource
     if client_secret:
         data["client_secret"] = client_secret
     if scope:

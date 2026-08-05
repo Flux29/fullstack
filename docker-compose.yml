@@ -231,6 +231,7 @@ services:
       NODE_ENV: production
       BACKEND_URL: http://app:8100
       BACKEND_WS_URL: ws://app:8100
+      NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
       NEXT_PUBLIC_RAG_ENABLED: "true"
     expose:
       - "3000"

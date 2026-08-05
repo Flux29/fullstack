@@ -82,6 +82,18 @@ group is for and which are required vs optional.
 | `GITHUB_MCP_TOKEN` | with GitHub MCP | — | Fine-grained read-only token injected at runtime |
 | `BROWSERLESS_TOKEN` | with browser MCP | — | Strong internal Browserless token |
 
+## Per-user Google Workspace MCP
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `GOOGLE_WORKSPACE_MCP_CLIENT_ID` | for Google Workspace MCP | — | Google OAuth Web client ID used only for exact official Workspace MCP endpoints |
+| `GOOGLE_WORKSPACE_MCP_CLIENT_SECRET` | for Google Workspace MCP | — | Google OAuth Web client secret; never sent to custom MCP URLs |
+
+The MCP OAuth callback obtains each user's access and refresh tokens and stores
+them encrypted in PostgreSQL. Do not put a Google refresh token in `.env`.
+These credentials are independent of `GOOGLE_DRIVE_CREDENTIALS_FILE`, which is
+the service-account credential used by the RAG Google Drive sync source.
+
 ## Email (log)
 
 | Variable | Required | Default | Description |

@@ -76,6 +76,19 @@ These are used to sign JWTs and authenticate service-to-service calls. Rotate at
 - [ ] Create a fine-grained read-only GitHub token and set `GITHUB_MCP_TOKEN`. Never place it inside `MCP_SERVERS` JSON.
 - [ ] Confirm the GitHub deployment allowlist contains read-only tools only and the startup probe exposes no mutation tool.
 
+### Google Workspace MCP (Developer Preview)
+
+- [ ] Enroll the Google Cloud project/account in the Google Workspace Developer Preview where required.
+- [ ] Enable the product APIs and their MCP services: Gmail, Drive, Docs, Sheets, Slides, Calendar, Chat, and People.
+- [ ] Create a Google OAuth **Web application** client and add this exact authorized redirect URI: `http://localhost:3000/api/me/mcp-connections/oauth/callback`.
+- [ ] Add the required scopes on Google Auth Platform → Data Access and add your account under Audience → Test users while the app is in testing.
+- [ ] Set `GOOGLE_WORKSPACE_MCP_CLIENT_ID` and `GOOGLE_WORKSPACE_MCP_CLIENT_SECRET` in `backend/.env`, then recreate the backend app.
+- [ ] Sign in to each desired product from Settings → Integrations. Access and refresh tokens are stored per user, encrypted in PostgreSQL; no `GOOGLE_DRIVE_REFRESH_TOKEN` environment variable is needed.
+- [ ] Review the initial read-oriented tool allowlists before enabling mutation tools. Gmail exposes `create_draft`, not send; use Gmail to review/send the draft or configure an explicitly approved Gmail action in Zapier.
+
+Google Workspace MCP OAuth is separate from the Google Drive RAG sync source,
+which continues to use `GOOGLE_DRIVE_CREDENTIALS_FILE` and a service account.
+
 ## Traefik and production TLS
 
 - [ ] Set `DOMAIN` and `ACME_EMAIL`, point public DNS at the deployment host, and choose the intended ACME resolver/certificate policy.

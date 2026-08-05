@@ -11,8 +11,12 @@ import { backendFetch } from "@/lib/server-api";
  */
 export async function GET(request: NextRequest) {
   const params = request.nextUrl.searchParams;
+  // In the standalone Docker image Next binds to 0.0.0.0, and request.url can
+  // therefore use that non-routable bind address even when the browser reached
+  // localhost. Always return the browser to the configured public site origin.
+  const publicOrigin = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
   const settings = (query: string) =>
-    NextResponse.redirect(new URL(`/settings/integrations?${query}`, request.url));
+    NextResponse.redirect(new URL(`/settings/integrations?${query}`, publicOrigin));
 
   const providerError = params.get("error");
   if (providerError) {

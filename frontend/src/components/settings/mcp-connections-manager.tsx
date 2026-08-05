@@ -296,10 +296,14 @@ export function McpConnectionsManager() {
   };
 
   /** Kick off the OAuth flow: get the consent URL, then send the browser there. */
-  const startOAuth = async (name: string, url: string, title: string) => {
+  const startOAuth = async (name: string, url: string, title: string, allowedTools?: string[]) => {
     setConnectingId(name);
     try {
-      const { authorization_url } = await startMcpOAuth({ name, url });
+      const { authorization_url } = await startMcpOAuth({
+        name,
+        url,
+        ...(allowedTools ? { allowed_tools: allowedTools } : {}),
+      });
       window.location.href = authorization_url;
     } catch (e) {
       toast.error(errorMessage(e, `Couldn't start sign-in for ${title}`));
@@ -310,7 +314,7 @@ export function McpConnectionsManager() {
 
   const handleCatalogConnect = (entry: McpCatalogEntry) => {
     if (entry.auth === "oauth") {
-      void startOAuth(entry.id, entry.url, entry.title);
+      void startOAuth(entry.id, entry.url, entry.title, entry.allowedTools);
       return;
     }
     if (entry.auth === "token" || entry.auth === "personal-url") {

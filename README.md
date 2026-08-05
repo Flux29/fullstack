@@ -190,12 +190,23 @@ POSTGRES_DB=fullstack
 GOOGLE_CLIENT_ID=…
 GOOGLE_CLIENT_SECRET=…
 
+# Google Workspace MCP (Settings → Integrations)
+GOOGLE_WORKSPACE_MCP_CLIENT_ID=…
+GOOGLE_WORKSPACE_MCP_CLIENT_SECRET=…
+
 # Email (transactional + lifecycle)
 EMAIL_PROVIDER=log
 EMAIL_FROM=noreply@your-domain.com
 ```
 
 See `backend/.env.example` for the full list with comments.
+
+Google Workspace MCP is per-user OAuth: sign in to Gmail, Drive, Docs, Sheets,
+Slides, Calendar, Chat, or Contacts from **Settings → Integrations**. The OAuth
+callback stores access/refresh tokens encrypted in PostgreSQL, so no refresh
+token is copied into `.env`. This is separate from the service-account-based
+Google Drive RAG sync connector. Google Gmail MCP creates reviewable drafts;
+configure Zapier MCP when an explicitly approved direct-send action is needed.
 
 For production, **never** commit secrets — `backend/.env` is gitignored. Fill it with real values on the server (or inject them via your platform's secret manager: Doppler, AWS Secrets Manager, GitHub Actions secrets, etc.). The same `backend/.env` is used for dev and prod — there is no separate `.env.prod`.
 

@@ -122,6 +122,7 @@ async def _refresh_under_lock(db: AsyncSession, connection: McpConnection) -> st
             refresh_token=payload.refresh_token,
             resource=payload.resource,
             scope=payload.scope,
+            provider=payload.provider,
         )
     except OAuthError as exc:
         logger.warning("OAuth token refresh failed for %r: %s", connection.name, exc)
@@ -280,7 +281,14 @@ class McpConnectionService:
         )
         return db_connection, tools, error
 
-    async def oauth_start(self, *, user_id: UUID, name: str, url: str) -> str:
+    async def oauth_start(
+        self,
+        *,
+        user_id: UUID,
+        name: str,
+        url: str,
+        allowed_tools: list[str] | None = None,
+    ) -> str:
         """Begin the OAuth authorization-code flow for a server.
 
         Discovers the authorization server, dynamically registers this app,
@@ -295,11 +303,17 @@ class McpConnectionService:
         url = await validate_mcp_url(url)
         server = await mcp_oauth.discover(url)  # raises OAuthError if unsupported
         redirect_uri = _oauth_redirect_uri()
-        client_id, client_secret = await mcp_oauth.register_client(server, redirect_uri)
+        provider = mcp_oauth.oauth_provider(url)
+        if provider == "google_workspace":
+            mcp_oauth.validate_google_discovery(server)
+            client_id, client_secret = mcp_oauth.google_client_credentials()
+        else:
+            client_id, client_secret = await mcp_oauth.register_client(server, redirect_uri)
         pkce = mcp_oauth.new_pkce()
         state = secrets.token_urlsafe(32)
         payload = McpOAuthPayload(
             server_url=url,
+            provider=provider,
             started_at=_now_epoch(),
             authorization_endpoint=server.authorization_endpoint,
             token_endpoint=server.token_endpoint,
@@ -329,6 +343,7 @@ class McpConnectionService:
                     "is_enabled": True,
                     "oauth_state": state,
                     "oauth_pending_payload": enc,
+                    **({"allowed_tools": allowed_tools} if allowed_tools is not None else {}),
                 },
             )
         else:
@@ -338,7 +353,7 @@ class McpConnectionService:
                 name=name,
                 url=url,
                 auth_token=None,
-                allowed_tools=None,
+                allowed_tools=allowed_tools,
                 is_enabled=True,
                 auth_type="oauth",
                 oauth_state=state,
@@ -350,6 +365,7 @@ class McpConnectionService:
             redirect_uri=redirect_uri,
             state=state,
             code_challenge=pkce.code_challenge,
+            provider=provider,
         )
 
     async def oauth_callback(self, *, state: str, code: str) -> McpConnection:
@@ -376,6 +392,7 @@ class McpConnectionService:
             code_verifier=payload.code_verifier,
             redirect_uri=payload.redirect_uri,
             resource=payload.resource,
+            provider=payload.provider,
         )
         payload = _apply_token(payload, token)
         return await mcp_connection_repo.update(

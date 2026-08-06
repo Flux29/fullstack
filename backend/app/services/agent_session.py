@@ -31,6 +31,7 @@ from pydantic_ai.tools import (
 )
 
 from app.agents.assistant import Deps, get_agent
+from app.agents.google_loadout import GoogleLoadout
 from app.api.deps import get_conversation_service
 from app.core.config import settings
 from app.db.models.user import User
@@ -47,6 +48,9 @@ from app.services.mcp_connection import build_toolsets_for_user
 from app.services.research import RESEARCH_TOOL_NAMES, ResearchToolkit
 
 logger = logging.getLogger(__name__)
+
+#: Conversations whose Google loadout one socket keeps routing state for.
+_MAX_TRACKED_LOADOUTS = 16
 
 
 class AgentSession:
@@ -72,6 +76,11 @@ class AgentSession:
         self._approval_future: asyncio.Future[list[dict[str, Any]]] | None = None
         self._research: ResearchToolkit | None = None
         self._subagent_task_manager: Any | None = None
+        # Google loadouts are conversation-scoped, not run-scoped: a follow-up
+        # turn inherits the products the previous turns actually used, so "send
+        # that to Nikki" still finds Gmail. Keyed by conversation because one
+        # socket can switch between chats, and the loadout must switch with it.
+        self._google_loadouts: dict[str, GoogleLoadout] = {}
 
     async def handle_frame(self, data: dict[str, Any]) -> None:
         """Dispatch one incoming WebSocket frame.
@@ -199,9 +208,13 @@ class AgentSession:
                 ctx_manager_cap = caps.context_manager
             else:
                 deep_research = False
+            # Route this turn onto Google products before toolsets are built —
+            # build_toolsets_for_user gates each integration against the result.
+            loadout = self._google_loadout_for_turn(user_message)
+            self.deps.google_loadout = loadout
             # Rebuilt every turn so Settings → Integrations changes apply
             # immediately; unreachable/unauthorized servers are skipped there.
-            mcp_toolsets = await build_toolsets_for_user(self.user.id)
+            mcp_toolsets = await build_toolsets_for_user(self.user.id, loadout=loadout)
             assistant = get_agent(
                 model_name=data.get("model"),
                 thinking_effort=data.get("thinking_effort"),
@@ -247,6 +260,10 @@ class AgentSession:
                     self._subagent_task_manager = None
                 if self._research is not None:
                     await self._research.flush()
+                # Fold what was actually called into the sticky loadout, even
+                # when the turn was stopped — a product the user reached for
+                # before cancelling is still the right one to inherit.
+                loadout.end_turn([call["tool_name"] for call in collected_tool_calls])
 
             # Update in-memory history only after a complete agent run
             if agent_run.result is not None:
@@ -284,6 +301,30 @@ class AgentSession:
         except Exception as e:
             logger.exception("Error processing agent request")
             await send_event(self.websocket, "error", {"message": str(e)})
+
+    def _google_loadout_for_turn(self, user_message: str) -> GoogleLoadout:
+        """The loadout for this conversation, routed against this turn's prompt.
+
+        Sticky state belongs to the conversation, so switching chats on the same
+        socket switches loadouts rather than carrying one chat's products into
+        another. The map is capped because a long-lived socket can visit many
+        conversations, and an unbounded cache of routing state is a slow leak;
+        eviction is least-recently-used, so the chat being actively worked in is
+        never the one dropped.
+
+        A turn with no conversation id yet gets a throwaway loadout rather than
+        sharing one bucket, which would let one unsaved chat inherit another's
+        products.
+        """
+        loadout = GoogleLoadout()
+        key = self.current_conversation_id
+        if key is not None:
+            loadout = self._google_loadouts.pop(key, None) or loadout
+            if len(self._google_loadouts) >= _MAX_TRACKED_LOADOUTS:
+                self._google_loadouts.pop(next(iter(self._google_loadouts)))
+            self._google_loadouts[key] = loadout  # re-inserted last = most recent
+        loadout.begin_turn(user_message)
+        return loadout
 
     async def _ask_user(self, questions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Pause the run: ask the client questions and block until they answer.

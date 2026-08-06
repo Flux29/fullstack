@@ -2,6 +2,7 @@
 
 import contextlib
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, MagicMock
 from uuid import uuid4
 
@@ -12,7 +13,7 @@ from pydantic import SecretStr, ValidationError
 
 from app.agents import mcp_oauth
 from app.agents.google_apis.products import DIRECT_GOOGLE_PRODUCTS
-from app.agents.google_workspace_api import GMAIL_API_URL
+from app.agents.google_workspace_api import GMAIL_API_URL, google_api_url
 from app.agents.mcp import (
     McpProbeError,
     McpServerSpec,
@@ -25,6 +26,7 @@ from app.agents.mcp import (
     static_server_specs,
 )
 from app.agents.mcp_oauth import McpOAuthPayload
+from app.agents.tool_schema import synthetic_run_context
 from app.core.config import McpServerConfig, settings
 from app.core.crypto import decrypt_value, encrypt_value
 from app.core.exceptions import NotFoundError
@@ -334,6 +336,75 @@ class TestToolsetsForUser:
 
         assert await mcp_connection_service.build_toolsets_for_user(None) == ["toolset"]
         assert [spec.name for spec in seen[0]] == ["workspace"]
+
+    @pytest.mark.anyio
+    async def test_google_toolsets_serialize_in_canonical_product_order(self, monkeypatch):
+        """Database row order must not decide the tool block's shape.
+
+        Provider prompt caching keys on a stable prefix, so a catalog that
+        reorders between turns cannot be cached even when it is small. Products
+        sort by GOOGLE_PRODUCT_ORDER regardless of how connections come back.
+        """
+        from app.agents.google_loadout import GOOGLE_PRODUCT_ORDER, GoogleLoadout
+
+        user_id = uuid4()
+        # Deliberately reversed relative to the canonical order.
+        products = list(reversed(["gmail", "calendar", "drive", "sheets"]))
+        connections = [
+            MagicMock(
+                spec=McpConnection,
+                url=google_api_url(product),
+                allowed_tools=None,
+                auth_type="bearer",
+            )
+            for product in products
+        ]
+        for connection, product in zip(connections, products, strict=True):
+            connection.name = product
+
+        monkeypatch.setattr(mcp_connection_service, "static_server_specs", list)
+        monkeypatch.setattr(
+            mcp_connection_service,
+            "get_db_context",
+            lambda: _null_db_context(),
+        )
+        monkeypatch.setattr(
+            mcp_connection_service.mcp_connection_repo,
+            "list_for_user",
+            AsyncMock(return_value=(connections, len(connections))),
+        )
+        monkeypatch.setattr(
+            mcp_connection_service,
+            "_resolve_auth_headers",
+            AsyncMock(return_value={"Authorization": "Bearer AT"}),
+        )
+        monkeypatch.setattr(
+            mcp_connection_service, "build_mcp_toolsets", AsyncMock(return_value=[])
+        )
+
+        loadout = GoogleLoadout()
+        loadout.begin_turn("help me sort out my Google account")
+        toolsets = await mcp_connection_service.build_toolsets_for_user(user_id, loadout=loadout)
+
+        assert loadout.available_products() == tuple(
+            p for p in GOOGLE_PRODUCT_ORDER if p in set(products)
+        )
+        exposed = [
+            name
+            for toolset in toolsets
+            for name in await toolset.get_tools(
+                synthetic_run_context(SimpleNamespace(google_loadout=loadout))
+            )
+        ]
+        assert exposed == sorted(
+            exposed,
+            key=lambda name: GOOGLE_PRODUCT_ORDER.index(name.split("_", 1)[0]),
+        )
+
+
+@contextlib.asynccontextmanager
+async def _null_db_context():
+    yield MagicMock()
 
 
 class TestAuthHeaders:

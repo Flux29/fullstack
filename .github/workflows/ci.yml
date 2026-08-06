@@ -140,7 +140,7 @@ jobs:
         # is what broke this job originally).
         run: |
           uv export --no-hashes --no-emit-project -o requirements-audit.txt
-          uvx pip-audit -r requirements-audit.txt --disable-pip --progress-spinner=off
+          uvx pip-audit -r requirements-audit.txt --disable-pip --no-deps --progress-spinner=off
         working-directory: backend
 
   docker:

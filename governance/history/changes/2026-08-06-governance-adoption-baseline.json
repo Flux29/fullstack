@@ -1,0 +1,152 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "configuration-surface"
+  ],
+  "behavioral_effects": [
+    "No application code, test, migration, or Compose file changed; `ruff check`, `ruff format --check`, and `ty check` all pass unchanged.",
+    "`backend/.env.example` is a template and is never loaded at runtime (`find_env_file()` looks for `.env`, not `.env.example`), so no running service is affected.",
+    "Template defaults changed for a fresh copy: `LOGFIRE_TOKEN` and `OPENROUTER_API_KEY` are now empty (were populated with live values), matching the file's existing convention for every other credential. Anyone bootstrapping from the template must now supply an OpenRouter key, which was already true for `TAVILY_API_KEY`, `GITHUB_MCP_TOKEN`, and the S3 credentials.",
+    "Template defaults changed for a fresh copy: `EMAIL_FROM`, `EMAIL_FROM_NAME`, and `ACME_EMAIL` no longer carry a real person's address or name.",
+    "Seven duplicate assignments were removed from `backend/.env.example`. All seven pairs held identical values, so the effective configuration a copied template produces is byte-for-byte unchanged."
+  ],
+  "compatibility_impact": "None. No contract, schema, route, event, or migration changed. The configuration surface loses seven redundant duplicate lines whose values matched their surviving counterparts, so the set of declared variables and their effective values is unchanged.",
+  "date": "2026-08-06",
+  "evidence_refs": [],
+  "files_changed": [
+    ".gitattributes",
+    ".gitignore",
+    "backend/.env.example",
+    "governance/history/changes/2026-08-06-governance-adoption-baseline.json",
+    "governance/history/decisions/ADR-001-governance-adoption-baseline.md"
+  ],
+  "findings": [
+    {
+      "detail": "`ENV_VARS.md` has drifted from the actual configuration surface: it documents variables that do not exist (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `S3_ENDPOINT_URL`, `DB_POOL_SIZE`, `REFRESH_TOKEN_EXPIRE_MINUTES`), lists the computed property `DATABASE_URL` as a required input variable, documents `DEBUG` default `true` against a code default of `False`, and contains a placeholder description cell reading `jw`.",
+      "disposition": "resolved-in-phase-3",
+      "id": "env-vars-md-drift",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "detail": "`backend/.env.example` contained seven duplicated keys (`RAG_DEFAULT_COLLECTION`, `RAG_TOP_K`, `RAG_CHUNK_SIZE`, `RAG_CHUNK_OVERLAP`, `PDF_PARSER`, `CHAT_PDF_PARSER`, `LLAMAPARSE_API_KEY`), each appearing exactly twice with identical values. Fixed in this commit; the duplicate-key parse rule added in Phase 3 prevents recurrence by raising a finding instead of silently last-wins parsing.",
+      "disposition": "resolved-by-this-change",
+      "id": "env-example-duplicate-keys",
+      "severity": "low",
+      "status": "resolved"
+    },
+    {
+      "detail": "`TIMEZONE` defaults to `\"EDT\"` in `backend/app/core/config.py`, but the field's own comment requires an IANA zone name and `EDT` is not one (`America/New_York` is the intended value). This is an application fix with test impact, deliberately out of governance scope; it is tracked here until landed.",
+      "disposition": "app-fix-required",
+      "id": "timezone-not-iana",
+      "severity": "medium",
+      "status": "open"
+    },
+    {
+      "detail": "`.gitignore` did not cover `artifacts/` (governance rendered views) or `.uv-cache/`. Both added in this commit; `.cache/` was already covered and transitively covers `.cache/repo-governance/`.",
+      "disposition": "resolved-by-this-change",
+      "id": "gitignore-gaps",
+      "severity": "low",
+      "status": "resolved"
+    },
+    {
+      "detail": "The blueprint recorded the absence of a git remote as a durability and enforcement-substrate decision for the repo owner. The owner established `origin` at https://github.com/Flux29/fullstack.git (default branch `main`) on 2026-08-05. Phase 5 therefore attaches governance enforcement to real CI rather than the local-only fallback the blueprint described.",
+      "disposition": "resolved-by-repo-owner",
+      "id": "no-git-remote",
+      "severity": "medium",
+      "status": "resolved"
+    },
+    {
+      "detail": "`AGENTS.md` (66 lines, targeting Codex/Copilot/Cursor/Zed/OpenCode) is a near-duplicate of `CLAUDE.md` (69 lines) rather than a routing entry point, and neither file references the other. Conventions are restated a third time in `.claude/rules/*`.",
+      "disposition": "resolved-in-phase-1",
+      "id": "agents-claude-duplication",
+      "severity": "low",
+      "status": "open"
+    },
+    {
+      "detail": "The Trivy image scan in `.github/workflows/ci.yml` runs with `exit-code: 0` and can never fail the build. This is acceptable as an advisory scan, but was undocumented as a deliberate choice. Recorded here and, from Phase 5, in `governance/manifests/curated/exceptions.json` with explicit promotion criteria; it is the pilot for the advisory to blocking policy-maturity ladder.",
+      "disposition": "accepted-deliberate",
+      "id": "trivy-advisory-only",
+      "severity": "low",
+      "status": "accepted"
+    },
+    {
+      "detail": "Human-in-the-loop tool approval uses pydantic-ai deferred tools and currently covers Google mutation tools only; MCP-sourced tools bypass approval entirely. A per-user connection with `allowed_tools` unset (NULL) exposes every tool the server advertises, so a write-capable arbitrary server combines full tool exposure with no approval gate. This requires an explicit product-security decision (approval parity, default allowlists, or a documented restriction) before MCP policies are promoted past advisory; an accepted-risk ADR alone is not sufficient.",
+      "disposition": "product-security-decision-required",
+      "id": "mcp-approval-gating-asymmetry",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "detail": "`validate_mcp_url` (SSRF check, resolves DNS) runs at connection create/update and during OAuth flows, but the per-turn reachability probe and toolset attach open the stored URL directly with no revalidation, leaving a validation-to-connection window (DNS rebinding). Remediation options: revalidate at probe/attach time, and preferably network-level egress controls. This is an open security finding, never described as a protected invariant until the connection path is fixed.",
+      "disposition": "remediation-required",
+      "id": "mcp-no-connection-time-ssrf-revalidation",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "detail": "The frontend MCP catalog supports `tokenPlacement: \"url\"`, so a connection URL can carry a live API key. The `mcp_connections.url` column is stored unencrypted (unlike `auth_token`, which is Fernet-encrypted) and is returned verbatim by the connections API. Every governance surface that touches a connection URL strips query strings and userinfo first; remediating the storage design (store the token separately and substitute it at connect time) is tracked here.",
+      "disposition": "remediation-required",
+      "id": "mcp-url-embedded-credentials-unencrypted",
+      "severity": "high",
+      "status": "open"
+    },
+    {
+      "detail": "The generator's CI contract was never exercised before the first push (2026-08-05): coverage thresholds were aspirational 100% against roughly 55% backend and 4% frontend actuals, the pip-audit job could not run as shipped, the CI Postgres image lacked pgvector after migration 0027, and the Playwright E2E step cannot run on CI because its webServer is CI-disabled and it needs a running backend. Resolved by the CI-fix commits 9339d98 and d47bd8f: floors ratcheted to measured values (backend `fail_under = 54`, frontend vitest 3/17/6/3), pip-audit switched to auditing the exported lockfile via `uvx`, the CI Postgres service switched to the compose-pinned `pgvector/pgvector` digest, and the Playwright steps removed. Residual: E2E remains local-only (`make playwright`) until a composed CI stack exists, and the coverage floors are ratchets to raise alongside real new tests, not achievement claims.",
+      "disposition": "resolved-with-residuals",
+      "id": "generator-ci-contract-never-exercised",
+      "severity": "medium",
+      "status": "resolved"
+    },
+    {
+      "detail": "`backend/.env.example` contained live credentials — a Logfire write token (`LOGFIRE_TOKEN`, `pylf_v2_us_...`) and an OpenRouter API key (`OPENROUTER_API_KEY`, `sk-or-v1-...`) — plus a real personal email address in `EMAIL_FROM` and `ACME_EMAIL`. The file is tracked and was pushed to the public-capable remote https://github.com/Flux29/fullstack.git. This commit scrubs the working copy, but scrubbing does not rewrite history: both credentials remain retrievable from earlier commits on the remote and must be treated as compromised. REQUIRED OWNER ACTION: rotate the Logfire write token at https://logfire.pydantic.dev and the OpenRouter key at https://openrouter.ai/keys. This finding stays open until the owner confirms rotation; it cannot be closed by tooling.",
+      "disposition": "rotate-at-provider",
+      "id": "secrets-pushed-to-remote",
+      "severity": "high",
+      "status": "open"
+    }
+  ],
+  "id": "2026-08-06-governance-adoption-baseline",
+  "initiated_by": {
+    "kind": "user",
+    "ref": "Build the governance system described in docs/Fullstack_Agentic_Governance_Blueprint.md, following it exactly."
+  },
+  "limitations": [
+    "No governance tooling exists yet at this commit: the CLI, schemas, and validator registry arrive in Phase 1. This record is hand-authored to the change-record schema and is validated retroactively by `governance check` once that schema lands. Until then its conformance is unverified by machine.",
+    "`validators_run` names the backend lint trio only. The registry that would let impact analysis select validators does not exist yet, so validator selection here was manual and scoped by the observation that no Python, test, or Compose file changed.",
+    "The findings registry is the honest state at adoption, not a complete audit. Findings 8, 9, and 10 are recorded from the blueprint's verified review rather than re-derived here; Phase 3 wires the checks that would detect them independently."
+  ],
+  "manifests_changed": [],
+  "reason": "Blueprint Phase 0 requires a reviewed baseline taken on a clean tree before any governance machinery is built, so that later drift detection starts from an explainable state rather than discovering pre-existing problems as new drift. Three things had to be true before Phase 1 could begin: the repository's authoritative sources and generator provenance had to be recorded (ADR-001), the known problems had to be registered as findings with dispositions so checks start honest, and the hygiene gaps the blueprint names had to be closed. The secret scrub was added to this phase because leaving live credentials in a tracked file while building a system whose kernel rule is 'no secret values in governance output' would be incoherent.",
+  "risks": [
+    "The Logfire and OpenRouter credentials remain in git history on the remote. Scrubbing the working copy reduces future exposure but does not remediate the leak; only rotation does. Tracked as finding `secrets-pushed-to-remote`.",
+    "Removing duplicate keys is safe here only because all seven pairs held identical values, verified by reading both occurrences. Had they differed, deleting the later occurrence would have changed the effective value under last-wins parsing."
+  ],
+  "rollback": "`git revert` this commit. Nothing in it is stateful: no volumes, databases, caches, or running services are touched, and `.env.example` is a template that is never loaded. Reverting restores the duplicate keys and the leaked credential values in the working copy, which is why rotation — not revert — is the remediation for the secret exposure.",
+  "schema_version": 1,
+  "security_impact": "Net positive, but incomplete by nature. Live credentials and personal data were removed from a tracked, pushed file, and the secret boundary is now a recorded decision (ADR-001, Decision 4) rather than an implicit habit. The exposure itself is NOT remediated by this commit: both credentials remain in remote history and require rotation at the provider. Three pre-existing high-severity MCP security findings (approval-gating asymmetry, missing connection-time SSRF revalidation, URL-embedded credentials stored unencrypted) are registered here as open rather than silently inherited.",
+  "summary": "Establish the Phase 0 governance baseline: record the authority model and generator provenance in ADR-001, register the twelve known findings at adoption, scrub live credentials and duplicate keys from backend/.env.example, and close the .gitignore and line-ending hygiene gaps.",
+  "tool_version": "0.0.0-pre-kernel",
+  "validators_run": [
+    {
+      "evidence_ref": "ruff check app tests cli: All checks passed! / ruff format --check: 193 files already formatted / ty check: exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "No file under backend/app, backend/tests, backend/cli, or backend/alembic was modified; git diff --name-only lists only .gitignore, .gitattributes, backend/.env.example and the two new governance/ files.",
+      "id": "backend-unit",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "No Compose file, Makefile, or profile definition was modified.",
+      "id": "compose-check",
+      "result": "skipped"
+    }
+  ]
+}

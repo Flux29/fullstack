@@ -108,3 +108,8 @@ Thumbs.db
 .fastapi-fullstack.json.candidate
 
 # Project specific
+
+# Governance: rendered views and the uv cache are reproducible local/CI artifacts.
+# `.cache/` (incl. `.cache/repo-governance/`) is already covered above.
+artifacts/
+.uv-cache/

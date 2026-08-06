@@ -94,6 +94,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Declare the component boundaries and establish the reviewed baseline manifests: seven directory annotations, ten curated declarations, the exception register, four ADRs, six baseline manifests, four policy groups, and the merge engine that compiles them into the effective repository model.
   - Components: backend-api, frontend-app, rag, email, agents, docling-mcp, chrome-devtools-mcp, github-mcp, mcp-user-connections, chat-frontend, model-runner-host, postgres-pgvector, redis, minio, docling-serve, traefik, governance-kernel
   - Record: `governance/history/changes/2026-08-06-baseline-manifests-and-boundaries.json`
+- **2026-08-06** — Add three sprawl guardrails: new-file boundary, untracked-file check, simplification-pass rule
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-06-add-three-sprawl-guardrails-new-file-boundary-untracked-file-che.json`
 
 ## Decisions (5)
 

@@ -1,0 +1,69 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "proxy-hop-in-impact-analysis"
+  ],
+  "behavioral_effects": [
+    "governance context, impact, explain, summary, and change start/finish are implemented; they previously exited 2 naming Phase 4.",
+    "make governance-sync now writes Summary.md and the decision index in addition to the five documents it already produced.",
+    "Summary.md renders 17 components, 8 open findings, 10 accepted exceptions, the active cross-file contracts, and the most recent 20 changes.",
+    "No application code, migration, Compose file, or CI workflow changed."
+  ],
+  "compatibility_impact": "Additive within governance. Six commands that previously exited 2 with a deferral message now do their job; nothing that worked before behaves differently. Two new generated documents, Summary.md and the decision index, join the generated-file registry and are therefore subject to the regeneration comparison.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "M governance/catalog.json",
+    "M tools/repo_governance/src/repo_governance/builders.py",
+    "M tools/repo_governance/src/repo_governance/cli.py",
+    "M tools/repo_governance/src/repo_governance/pipeline.py",
+    "M tools/repo_governance/tests/test_idempotence.py",
+    "governance/Summary.md",
+    "governance/history/decisions/index.json",
+    "tools/repo_governance/src/repo_governance/renderers/context.py",
+    "tools/repo_governance/src/repo_governance/renderers/summary.py",
+    "tools/repo_governance/src/repo_governance/session.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-06-change-history-and-bounded-context",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Impact is manifest-level, not symbol-level. It answers which components and contracts are involved, not which functions. The AST graph that would sharpen it is Phase 6 and gated on a named symptom: impact sets measurably too coarse, or context budgets blown by over-inclusive slices.",
+    "Component ownership is matched by glob against declared owns patterns. A path no component claims is reported as unassigned rather than silently ignored, but the resulting blast radius is then incomplete and says so.",
+    "change finish reads the working tree, so it must run before committing. It has no way to describe a change already committed.",
+    "The Phase 3 change record failed to close the env-vars-md-drift finding that Phase 3 actually resolved, so Summary.md still lists it as open. Recorded here rather than by amending committed history."
+  ],
+  "manifests_changed": [],
+  "reason": "Blueprint Phase 4 requires that an agent can complete a normal change without recursively reading governance files. Until context, impact, and explain exist, the only way to find out what a path belongs to is to read the manifests directly, which is exactly the behaviour the context-management rules forbid. Change sessions come with it because the reason for a change has to be captured before it is lost, and Summary.md because orientation needs one bounded document rather than a directory.",
+  "risks": [
+    "Impact analysis is deliberately over-inclusive: configuration coupling pulls in every component that reads a shared variable, so a backend route change reaches the frontend. That is the intended trade for Milestone 1 — an over-large blast radius costs extra validator runs, an under-sized one costs a broken deployment — but it means the validator set is not yet a precise signal.",
+    "The context briefing trims by dropping whole sections when it exceeds budget. The trim order puts invariants and contracts last, but a large enough impact set could still drop history and decisions silently. The briefing does not currently say what it dropped."
+  ],
+  "rollback": "git revert this commit. Summary.md and the decision index disappear along with the six commands, which return to reporting themselves as deferred. Change sessions are cache-only, so no committed state depends on them. Change records already written stay valid: they conform to a schema that predates this phase.",
+  "schema_version": 1,
+  "security_impact": "None to the application. Within governance: change sessions live in the gitignored cache rather than committed history, so an in-flight change is not a fact about the repository. The context renderer returns references to the convention files rather than their contents, which keeps briefings from becoming a second place those conventions are stated. Summary.md renders open findings verbatim from change records, so the three standing MCP security findings and the credential-rotation finding are now visible from one document instead of requiring a history scan.",
+  "summary": "Change history and bounded context",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "75 passed, including a new regression test asserting no generated file reads another generated file from disk.",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "No file under backend/app, backend/tests, or backend/cli was modified.",
+      "id": "backend-lint",
+      "result": "skipped"
+    }
+  ]
+}

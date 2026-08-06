@@ -18,6 +18,8 @@ EFFECTIVE_PATH = "governance/manifests/effective/repository.json"
 CONFIGURATION_PATH = "governance/manifests/generated/configuration.json"
 SERVICES_PATH = "governance/manifests/generated/services.json"
 INTERFACES_PATH = "governance/manifests/generated/interfaces.json"
+DECISION_INDEX_PATH = "governance/history/decisions/index.json"
+SUMMARY_PATH = "governance/Summary.md"
 ENV_VARS_PATH = "ENV_VARS.md"
 
 
@@ -80,17 +82,31 @@ def render_all(ctx: Context) -> dict[str, str]:
     from repo_governance.renderers.env_vars import render_env_vars
 
     components, _ = build_components(ctx)
+    effective = build_effective(ctx)
     outputs[COMPONENTS_PATH] = canonical_json(components)
-    outputs[EFFECTIVE_PATH] = canonical_json(build_effective(ctx))
+    outputs[EFFECTIVE_PATH] = canonical_json(effective)
 
     configuration = extract_configuration(ctx)
     outputs[CONFIGURATION_PATH] = canonical_json(configuration)
     outputs[ENV_VARS_PATH] = render_env_vars(ctx, configuration)
 
-    from repo_governance.builders import build_interfaces, build_services
+    from repo_governance.builders import build_decision_index, build_interfaces, build_services
+    from repo_governance.renderers.summary import render_summary
 
+    interfaces = build_interfaces(ctx)
+    decision_index = build_decision_index(ctx)
     outputs[SERVICES_PATH] = canonical_json(build_services(ctx))
-    outputs[INTERFACES_PATH] = canonical_json(build_interfaces(ctx))
+    outputs[INTERFACES_PATH] = canonical_json(interfaces)
+    outputs[DECISION_INDEX_PATH] = canonical_json(decision_index)
+
+    # Summary summarizes other generated documents. They are handed to it directly rather
+    # than read back from disk, so a first sync of a clean checkout produces the final bytes.
+    outputs[SUMMARY_PATH] = render_summary(
+        ctx,
+        effective=effective,
+        decision_index=decision_index,
+        interfaces=interfaces,
+    )
 
     # The catalog is rendered last because it describes the whole output set, including
     # itself. Everything else is added above this line.

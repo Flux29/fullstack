@@ -322,39 +322,95 @@ def evaluate(scenario: str | None) -> None:
     )
 
 
-def _phase_four(name: str) -> None:
-    click.echo(f"`governance {name}` arrives in Phase 4 (change history and bounded context).")
-    raise SystemExit(DEFERRED_EXIT)
+def _split_paths(values: tuple[str, ...]) -> list[str]:
+    """Accept repeated options and comma- or space-separated lists.
+
+    The Make targets pass a single quoted string, so PATHS="a b" has to work as well as
+    --paths a --paths b.
+    """
+    collected: list[str] = []
+    for value in values:
+        for part in value.replace(",", " ").split():
+            normalized = part.strip().replace("\\", "/")
+            if normalized:
+                collected.append(normalized)
+    return collected
 
 
 @main.command()
-@click.option("--paths", multiple=True)
-@click.option("--task")
-@click.option("--token-budget", type=int, default=6000)
+@click.option("--paths", multiple=True, help="Repo-relative paths the task will touch.")
+@click.option("--task", help="What you are about to do.")
+@click.option("--token-budget", type=int, default=6000, help="Approximate ceiling for the briefing.")
 def context(paths: tuple[str, ...], task: str | None, token_budget: int) -> None:
-    """Return a token-bounded task briefing."""
-    _phase_four("context")
+    """Return a token-bounded task briefing.
+
+    Returns references to the convention files rather than their contents: they already
+    load themselves when you edit a matching file, and restating them here would spend the
+    budget on something you already have.
+    """
+    from repo_governance.renderers.context import render_context
+
+    ctx = _context()
+    selected = _split_paths(paths)
+    if not selected:
+        raise click.ClickException('Give at least one path: --paths "backend/app/..."')
+    click.echo(render_context(ctx, selected, task, token_budget))
 
 
 @main.command()
-@click.option("--paths", multiple=True)
-@click.option("--depth", type=int, default=1)
+@click.option("--paths", multiple=True, help="Repo-relative paths the change touches.")
+@click.option("--depth", type=int, default=1, help="Reverse-dependency closure depth.")
 def impact(paths: tuple[str, ...], depth: int) -> None:
     """Return the blast radius of a change."""
-    _phase_four("impact")
+    from repo_governance.renderers.context import analyse_impact
+
+    ctx = _context()
+    selected = _split_paths(paths)
+    if not selected:
+        raise click.ClickException('Give at least one path: --paths "backend/app/..."')
+
+    result = analyse_impact(ctx, selected, depth)
+
+    click.echo(f"Seed components:  {', '.join(result.seeds) or 'none'}")
+    click.echo(f"Blast radius:     {', '.join(result.components) or 'none'}")
+    if result.unassigned:
+        click.echo(f"Unassigned paths: {', '.join(result.unassigned)}")
+        click.echo("  No component owns these, so the radius may be incomplete.")
+    if result.contracts:
+        click.echo(f"Contracts:        {', '.join(result.contracts)}")
+    if result.configuration:
+        click.echo(f"Configuration:    {', '.join(result.configuration)}")
+    if result.proxy_routes:
+        click.echo("Proxy handlers in the chain:")
+        for route in result.proxy_routes:
+            click.echo(f"  - {route}")
+    if result.decisions:
+        click.echo(f"Decisions:        {', '.join(result.decisions)}")
+    if result.findings:
+        click.echo(f"Open findings:    {', '.join(result.findings)}")
+    for note in result.notes:
+        click.echo(f"Note: {note}")
+    click.echo(f"Validators:       {', '.join(result.validators) or 'none selected'}")
 
 
 @main.command()
 @click.argument("component_id")
 def explain(component_id: str) -> None:
     """Return a compact component briefing."""
-    _phase_four("explain")
+    from repo_governance.renderers.context import render_explain
+
+    click.echo(render_explain(_context(), component_id))
 
 
 @main.command()
 def summary() -> None:
     """Regenerate the bounded Summary.md."""
-    _phase_four("summary")
+    ctx = _context()
+    changed = run_sync(ctx)
+    if "governance/Summary.md" in changed:
+        click.echo("Regenerated governance/Summary.md.")
+    else:
+        click.echo("governance/Summary.md is already current.")
 
 
 @main.group()
@@ -363,18 +419,113 @@ def change() -> None:
 
 
 @change.command("start")
-@click.option("--summary", "summary_text", required=True)
-@click.option("--reason", required=True)
-def change_start(summary_text: str, reason: str) -> None:
+@click.option("--summary", "summary_text", required=True, help="What the change does.")
+@click.option("--reason", required=True, help="Why. A diff can never show this.")
+@click.option("--date", "date_text", help="ISO date; defaults to today.")
+def change_start(summary_text: str, reason: str, date_text: str | None) -> None:
     """Open a change session, capturing the reason before it can be lost."""
-    _phase_four("change start")
+    from datetime import date as date_type
+
+    from repo_governance.session import SessionError, start
+
+    ctx = _context()
+    try:
+        session = start(
+            ctx,
+            summary=summary_text,
+            reason=reason,
+            date=date_text or date_type.today().isoformat(),
+        )
+    except SessionError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(f"Change session open: {session.summary}")
+    click.echo(f"Reason captured:     {session.reason}")
+    click.echo(f"Baseline commit:     {session.start_commit or 'unknown'}")
+    click.echo("")
+    click.echo("Make the smallest coherent change, then `make governance-sync` and finish the record.")
 
 
 @change.command("finish")
-@click.option("--validation", multiple=True)
-def change_finish(validation: tuple[str, ...]) -> None:
-    """Close the session and write a validated permanent record."""
-    _phase_four("change finish")
+@click.option("--validation", multiple=True, help="id=result or id=result:evidence. Repeatable.")
+@click.option("--security-impact", required=False, help="Required. 'None' is acceptable if stated deliberately.")
+@click.option("--compatibility-impact", required=False, help="Required.")
+@click.option("--rollback", required=False, help="Required. Include anything a revert would not restore.")
+@click.option("--effect", "effects", multiple=True, help="Behavioural effect. Repeatable.")
+@click.option("--risk", "risks", multiple=True, help="Repeatable.")
+@click.option("--limitation", "limitations", multiple=True, help="What this did not do. Repeatable.")
+@click.option("--follow-up", "follow_ups", multiple=True, help="Repeatable.")
+@click.option("--contract", "contracts", multiple=True, help="Affected contract. Repeatable.")
+@click.option("--adr", "adrs", multiple=True, help="ADR reference. Repeatable.")
+def change_finish(
+    validation: tuple[str, ...],
+    security_impact: str | None,
+    compatibility_impact: str | None,
+    rollback: str | None,
+    effects: tuple[str, ...],
+    risks: tuple[str, ...],
+    limitations: tuple[str, ...],
+    follow_ups: tuple[str, ...],
+    contracts: tuple[str, ...],
+    adrs: tuple[str, ...],
+) -> None:
+    """Close the session and write a validated permanent record.
+
+    Diff-derived facts are collected automatically. Everything a diff cannot show is
+    required as an option: this refuses to invent a security impact or a rollback
+    procedure, because a fabricated one is worse than an absent one.
+    """
+    from repo_governance.io_atomic import write_json_atomic
+    from repo_governance.session import SessionError, build_record, clear, load, record_path
+
+    ctx = _context()
+    try:
+        session = load(ctx)
+    except SessionError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    validators = []
+    for entry in validation:
+        identifier, _, rest = entry.partition("=")
+        result, _, evidence = rest.partition(":")
+        if result not in {"pass", "fail", "skipped"}:
+            raise click.ClickException(
+                f"Validator result must be pass, fail, or skipped; got {result!r} for {identifier!r}."
+            )
+        record_entry = {"id": identifier.strip(), "result": result.strip()}
+        if evidence:
+            record_entry["evidence_ref"] = evidence.strip()
+        validators.append(record_entry)
+
+    judgement = {
+        "security_impact": security_impact,
+        "compatibility_impact": compatibility_impact,
+        "rollback": rollback,
+        "behavioral_effects": list(effects),
+        "risks": list(risks),
+        "limitations": list(limitations),
+        "follow_up": list(follow_ups),
+        "contracts": list(contracts),
+        "adr_refs": list(adrs),
+    }
+
+    try:
+        record = build_record(ctx, session, judgement=judgement, validators=validators)
+    except SessionError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    target = record_path(ctx, record["id"])
+    if target.exists():
+        raise click.ClickException(f"{target} already exists. Give the change a distinct summary.")
+
+    write_json_atomic(target, record)
+    clear(ctx)
+
+    click.echo(f"Wrote {target.relative_to(ctx.repo_root).as_posix()}")
+    click.echo(f"  components: {', '.join(record['affected_components']) or 'none matched'}")
+    click.echo(f"  files:      {len(record['files_changed'])}")
+    click.echo("")
+    click.echo("Now run `make governance-sync` to fold it into Summary.md, then `make governance-check`.")
 
 
 if __name__ == "__main__":  # pragma: no cover

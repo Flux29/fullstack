@@ -68,6 +68,27 @@ def test_sync_from_a_clean_checkout_converges_immediately(minimal_repo: Path) ->
     assert (minimal_repo / "governance" / "catalog.json").read_bytes() == after_first
 
 
+def test_no_generated_file_reads_another_generated_file_from_disk(minimal_repo: Path) -> None:
+    """A generated document that summarizes another must be handed the value, not read it.
+
+    Reading it back means the first sync of a clean checkout renders against files that do
+    not exist yet, and the next sync fills them in — non-idempotent precisely where a fresh
+    CI checkout notices, and invisible on a developer machine where the files already exist.
+    Both the catalog and the summary have fallen into this; the test exists so a third does
+    not.
+    """
+    ctx = Context.discover(minimal_repo)
+
+    first_pass = render_all(ctx)
+    sync(ctx)
+    second_pass = render_all(ctx)
+
+    assert first_pass == second_pass, (
+        "rendering changed once the generated files existed on disk, which means something "
+        "in the render path is reading its own output"
+    )
+
+
 def test_catalog_lists_itself(minimal_repo: Path) -> None:
     from repo_governance.io_atomic import read_json
 

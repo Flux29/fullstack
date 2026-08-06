@@ -1,0 +1,115 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "governance-contract-v1"
+  ],
+  "behavioral_effects": [
+    "New Make targets expose the governance CLI: governance-install, -preflight, -scan, -sync, -check, -check-fast, -doctor, -selftest, -context, -impact, -explain, -summary, -change-start, -change-finish. No existing target changed behaviour.",
+    "`make governance-sync` now generates governance/catalog.json. Two consecutive syncs from a clean state produce identical bytes, verified in-process and across processes.",
+    "`make governance-check` exits 1 when a kernel rule fails and 0 when only advisory findings remain. Deferred commands exit 2 rather than pretending to succeed.",
+    "AGENTS.md is now the routing entry point for all agents rather than a near-duplicate of CLAUDE.md; CLAUDE.md is reduced to Claude-specific deltas and points at it. The seven .claude/rules files are untouched and remain the path-scoped convention layer.",
+    "No application code, migration, Compose file, or CI workflow changed."
+  ],
+  "compatibility_impact": "Introduces governance contract version 1.0.0 with schema version 1. No prior contract exists, so nothing can break. The tool refuses to interpret a contract whose major version it does not support rather than guessing, and migrate --to reports honestly that no migration is defined from the initial version.",
+  "date": "2026-08-06",
+  "evidence_refs": [],
+  "files_changed": [
+    "AGENTS.md",
+    "CLAUDE.md",
+    "Makefile",
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/history/changes/2026-08-06-governance-kernel.json",
+    "governance/manifests/curated/ownership.json",
+    "governance/policies/self-governance.json",
+    "governance/schemas/ai-runtime.schema.json",
+    "governance/schemas/catalog.schema.json",
+    "governance/schemas/change-record.schema.json",
+    "governance/schemas/component.schema.json",
+    "governance/schemas/configuration.schema.json",
+    "governance/schemas/data-store.schema.json",
+    "governance/schemas/decision-index.schema.json",
+    "governance/schemas/graph-model.schema.json",
+    "governance/schemas/interface.schema.json",
+    "governance/schemas/local-governance.schema.json",
+    "governance/schemas/policy.schema.json",
+    "governance/schemas/service.schema.json",
+    "governance/validators.json",
+    "tools/repo_governance/"
+  ],
+  "findings": [
+    {
+      "detail": "AGENTS.md and CLAUDE.md were near-duplicates that did not reference each other, and both restated conventions already held in .claude/rules/*. AGENTS.md is now the single routing entry point carrying the eight entry rules, the command surface, and the hard boundaries; CLAUDE.md holds only Claude-specific deltas; .claude/rules/* remains the path-scoped detail layer and is referenced rather than restated. Both files are recorded in ownership.json as generator-provided with local divergence, so a template upgrade classifies the conflict instead of clobbering the local version.",
+      "disposition": "resolved-by-this-change",
+      "id": "agents-claude-duplication",
+      "severity": "low",
+      "status": "resolved"
+    },
+    {
+      "detail": "The blueprint fixes the committed schema set at exactly twelve files under governance/schemas/, but five governance documents have no schema in that set: the validator registry, the ownership rules, the exceptions manifest, the tests manifest, and the merged effective manifest. Rather than adding a thirteenth committed schema and diverging from the specified tree, those five are validated against kernel-internal schemas defined in tools/repo_governance/src/repo_governance/documents.py. The arrangement is recorded in ownership.json under internal_schemas and asserted by a test, so it stays visible rather than buried in code. If a future revision of the blueprint adds these schemas, they should move to governance/schemas/ and the internal definitions deleted.",
+      "disposition": "documented-deviation",
+      "id": "internal-schemas-for-unlisted-documents",
+      "severity": "low",
+      "status": "accepted"
+    }
+  ],
+  "id": "2026-08-06-governance-kernel",
+  "initiated_by": {
+    "kind": "user",
+    "ref": "Blueprint Phase 1 — minimal governance kernel."
+  },
+  "limitations": [
+    "Only governance/catalog.json is generated so far. The seven manifests, Summary.md, the decision index, and ENV_VARS.md arrive in Phases 2 to 4, so the generated-file registry currently protects one real file plus directory prefixes that do not exist yet.",
+    "The four policy groups other than self-governance do not exist yet, so the only rules being evaluated are the twelve kernel rules. Every one of them is blocking by design; nothing is advisory yet because nothing else is declared.",
+    "The change-record requirement is evaluated against the working tree, and optionally a --since range. On a clean CI checkout with no --since there is nothing to evaluate, so the pre-commit hook added in Phase 5 is the real enforcement point for that rule.",
+    "`governance context`, `impact`, `explain`, `summary`, and `change start/finish` are registered but exit 2 with a message naming Phase 4. AGENTS.md documents them because they are the workflow; they self-describe their status when invoked.",
+    "`visualize` and `evaluate` exit 2 naming their growth triggers (Phase 7 and Phase 9). Per the blueprint, everything from Phase 6 onward is built in response to a named symptom, not in anticipation of one.",
+    "The idempotence check inside the CLI compares two renders within one process. Cross-process byte identity, which additionally catches hash-seed-dependent iteration order, is covered by the test suite and by the CI clean rebuild added in Phase 5."
+  ],
+  "manifests_changed": [
+    "governance/catalog.json",
+    "governance/manifests/curated/ownership.json"
+  ],
+  "reason": "Blueprint Phase 1 requires a kernel that can detect invalid governance documents and hand edits to generated files before any manifests exist to be wrong about. Building the manifests first would mean authoring a large amount of content with no way to tell whether it conformed to anything. The determinism requirement is deliberately kernel scope rather than a later refinement: drift detection that reports a diff on every run would be noise, and a system whose first week is noise does not get used. The instruction-surface convergence is in this phase because AGENTS.md is what tells an agent the kernel exists at all.",
+  "risks": [
+    "The kernel rules are blocking from day one, so a defect in a check blocks work rather than merely reporting noise. This is the deliberate asymmetry the blueprint calls for — the rules that judge governance cannot themselves be advisory — but it means check defects are high-severity. Mitigated by the self-test suite, which asserts each kernel rule actually fires on the condition it exists to catch.",
+    "Rules whose implementation does not exist yet are reported as not-yet-enforced rather than passing. If a future author reads a green check as 'all policies satisfied' without reading the deferred list, they will overestimate coverage. The check prints the deferred count on every run for this reason."
+  ],
+  "rollback": "`git revert` this commit. The governance CLI holds no state outside .cache/repo-governance/ (gitignored and safe to delete), and the only generated file is governance/catalog.json, which reverts with it. The new Make targets disappear with the Makefile hunk; no existing target was modified, so nothing else regresses. AGENTS.md and CLAUDE.md revert to their generator-provided forms.",
+  "schema_version": 1,
+  "security_impact": "Positive. Four kernel rules are security rules and are blocking immediately: no credential value or credential-bearing URL may appear in a governance artifact; the tool may not import application code in-process (settings loading walks parent directories for .env and main.py configures Logfire at import scope, so an in-process import could load real secrets and emit telemetry); runtime evidence may not enter the committed tree; and validator references must resolve through the reviewed registry rather than carrying executable text. The registry excludes the env-gated live Google suites explicitly, so no impact analysis or agent can select a validator that sends real email. The secret scanner requires enough entropy after each credential prefix that a placeholder or a prose mention cannot match — a scanner that fires on its own documentation gets switched off, which is worse than not having one.",
+  "summary": "Add the minimal governance kernel: the twelve JSON Schemas, the governance contract, the self-governance policy, the validator registry, the ownership rules, a deterministic CLI with preflight/scan/sync/check/doctor, and a converged AGENTS.md entry point.",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "56 passed. Covers the determinism contract (LF, no BOM, sorted keys, atomic replace, no temp files left behind, failed writes not clobbering), idempotence in-process and across processes, the twelve committed schemas being valid Draft 2020-12, the committed tree validating, and each kernel rule firing on the condition it exists to catch.",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "12 checks run, 0 blocking, 0 advisory, 0 not yet enforced.",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff check: All checks passed. ruff format --check: 193 files already formatted. ty check: exit 0. Confirms no backend source drift; nothing under backend/app, backend/tests, or backend/cli was touched.",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "No file under backend/app, backend/tests, backend/cli, or backend/alembic was modified.",
+      "id": "backend-unit",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "No Compose file or profile definition was modified. The Makefile changed, but only by adding governance targets; no existing target or COMPOSE_* variable was altered.",
+      "id": "compose-check",
+      "result": "skipped"
+    }
+  ]
+}

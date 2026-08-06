@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/local-governance/v1",
+  "title": "Directory governance annotation",
+  "description": "A `.governance.json` placed at an architectural boundary — not in every directory. Components with no home directory (image-only services, host runtimes, database-resident surfaces, multi-root frontend features) are declared in governance/manifests/curated/architectural-intent.json instead. Never both.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "kind", "purpose", "owns"],
+  "properties": {
+    "$schema": {
+      "type": "string"
+    },
+    "id": {
+      "$ref": "#/$defs/slug"
+    },
+    "kind": {
+      "enum": [
+        "backend-subsystem",
+        "frontend-feature",
+        "agent-runtime",
+        "mcp-sidecar",
+        "infrastructure",
+        "data",
+        "observability",
+        "governance"
+      ],
+      "description": "Kinds that can have a home directory. `image-only-service`, `host-runtime`, and `db-resident-surface` are curated-only by construction."
+    },
+    "purpose": {
+      "type": "string",
+      "minLength": 1
+    },
+    "owns": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/path"
+      },
+      "description": "Repo-root-relative globs. Not relative to this file's directory, so a component may own paths outside its own subtree."
+    },
+    "entrypoints": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/path"
+      }
+    },
+    "public_interfaces": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "invariants": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Intent that source cannot express. Do not restate facts an extractor can read."
+    },
+    "allowed_dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      }
+    },
+    "forbidden_dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      }
+    },
+    "configuration_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z][A-Z0-9_]*$"
+      }
+    },
+    "decision_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^ADR-\\d{3}$"
+      }
+    },
+    "finding_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      }
+    },
+    "validation": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      },
+      "description": "Trusted validator IDs only. Executable shell text is rejected: an annotation must not be able to introduce a command."
+    },
+    "generator_feature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["flag", "enabled"],
+      "properties": {
+        "flag": {
+          "type": "string"
+        },
+        "enabled": {
+          "type": "boolean"
+        }
+      }
+    },
+    "graph_hints": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "entry_symbols": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exclude": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^[^\\\\]+$"
+    }
+  }
+}

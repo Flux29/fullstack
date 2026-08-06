@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/graph-model/v1",
+  "title": "Graph model",
+  "description": "The typed node and edge vocabulary for the repository graph. Reserved: the graph itself is Phase 6 work, built only in response to a named symptom — kernel impact sets measurably too coarse, or context budgets blown by over-inclusive slices. The vocabulary is committed now so Phase 6 starts from a reviewed contract rather than inventing one under pressure.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "status", "node_types", "edge_types"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "status": {
+      "const": "reserved-phase-6"
+    },
+    "growth_trigger": {
+      "type": "string",
+      "description": "The symptom that must be observed, and recorded as an evaluation, before this is built."
+    },
+    "node_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+          },
+          "description": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "edge_types": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "description", "directed"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z_]*$"
+          },
+          "description": {
+            "type": "string"
+          },
+          "directed": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "provenance_required": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Fields every edge instance must carry, so a runtime-observed edge and a statically inferred edge can coexist without being confused for one another."
+    }
+  }
+}

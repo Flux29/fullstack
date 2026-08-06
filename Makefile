@@ -3,7 +3,11 @@
 	dev dev-frontend dev-mcp dev-db-ui dev-all dev-down dev-logs dev-rebuild stage stage-down \
 	prod prod-down prod-logs quickstart seed bootstrap docker-clean docker-reset \
 	db-migrate db-upgrade db-downgrade db-current db-history taskiq-worker taskiq-scheduler \
-	upgrade upgrade-dry-run upgrade-new-features upgrade-finalize
+	upgrade upgrade-dry-run upgrade-new-features upgrade-finalize \
+	governance-install governance-preflight governance-scan governance-sync governance-check \
+	governance-check-fast governance-doctor governance-selftest governance-context \
+	governance-impact governance-explain governance-summary governance-change-start \
+	governance-change-finish
 
 COMPOSE_BASE := docker compose -f docker-compose.yml
 COMPOSE_DEV := $(COMPOSE_BASE) -f docker-compose.dev.yml
@@ -166,6 +170,54 @@ taskiq-worker:
 taskiq-scheduler:
 	uv run --directory backend taskiq scheduler app.worker.taskiq_app:scheduler
 
+# --- Governance -------------------------------------------------------------
+# The governance CLI is a standalone uv project under tools/ that never imports app.*.
+# These targets keep the Makefile the single operational entry point; nothing else should
+# invoke `uv run --project tools/repo_governance` directly.
+GOVERNANCE := uv run --project tools/repo_governance governance
+
+governance-install:
+	uv sync --project tools/repo_governance
+
+governance-preflight:
+	$(GOVERNANCE) preflight $(ARGS)
+
+governance-scan:
+	$(GOVERNANCE) scan
+
+governance-sync:
+	$(GOVERNANCE) sync
+
+governance-check:
+	$(GOVERNANCE) check --full $(ARGS)
+
+governance-check-fast:
+	$(GOVERNANCE) check --fast $(ARGS)
+
+governance-doctor:
+	$(GOVERNANCE) doctor
+
+governance-selftest:
+	uv run --project tools/repo_governance pytest tools/repo_governance/tests
+
+governance-context:
+	$(GOVERNANCE) context --paths "$(PATHS)" --task "$(TASK)" $(ARGS)
+
+governance-impact:
+	$(GOVERNANCE) impact --paths "$(PATHS)" $(ARGS)
+
+governance-explain:
+	$(GOVERNANCE) explain $(ID)
+
+governance-summary:
+	$(GOVERNANCE) summary
+
+governance-change-start:
+	$(GOVERNANCE) change start --summary "$(SUMMARY)" --reason "$(REASON)"
+
+governance-change-finish:
+	$(GOVERNANCE) change finish $(ARGS)
+
 upgrade:
 	uvx fastapi-fullstack@latest upgrade $(ARGS)
 
@@ -182,6 +234,7 @@ help:
 	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-all"
 	@echo "Lifecycle: dev-down dev-logs stage prod docker-clean (preserves data)"
 	@echo "Validation: lint test frontend-test playwright"
+	@echo "Governance: governance-preflight governance-context governance-sync governance-check (see AGENTS.md)"
 	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"
 	@echo "Local API: make run (port 8100); Taskiq concurrency defaults to 1"
 	@echo "External redis-data and docling-models volumes are never removed by normal targets."

@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/configuration/v1",
+  "title": "Configuration manifest",
+  "description": "Every environment variable across the backend, frontend, and Compose surfaces. Names, types, and classifications only — a secret value must never appear here.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "secret_list_source", "variables"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "secret_list_source": {
+      "const": "curated",
+      "description": "Secret classification is a reviewed list, never inferred from types: secret fields are inconsistently typed in this codebase, so type-based inference would silently miss some."
+    },
+    "variables": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/variable"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "kind", "detail", "status"],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug"
+          },
+          "kind": {
+            "enum": ["duplicate-key", "undeclared", "unconsumed", "malformed-line", "alias-drift"]
+          },
+          "detail": {
+            "type": "string"
+          },
+          "status": {
+            "enum": ["open", "resolved", "accepted"]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    },
+    "variable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "surface", "classification"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "surface": {
+          "enum": ["backend", "frontend", "compose"]
+        },
+        "type": {
+          "type": "string",
+          "description": "The annotated Python type or the frontend usage type, verbatim from source."
+        },
+        "default": {
+          "type": ["string", "null"],
+          "description": "Literal defaults only, rendered as text. Secrets carry no default here regardless of what source says."
+        },
+        "default_class": {
+          "enum": ["literal", "generated", "none"]
+        },
+        "required": {
+          "type": ["boolean", "string"],
+          "description": "true/false, or a condition such as 'when the mcp profile is active'."
+        },
+        "classification": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "runtime",
+              "build-arg",
+              "computed",
+              "secret",
+              "deprecated-alias",
+              "compose-only",
+              "unknown-consumer"
+            ]
+          },
+          "description": "computed: a settings property, not env-settable. build-arg: baked at image build. unknown-consumer: present in a template with no reader found."
+        },
+        "alias_of": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        },
+        "removal_milestone": {
+          "type": "string",
+          "description": "Required for deprecated aliases so the alias cannot live forever unexamined."
+        },
+        "declared_in": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "consumed_by": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profiles": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "contains": {
+                  "const": "deprecated-alias"
+                }
+              }
+            },
+            "required": ["classification"]
+          },
+          "then": {
+            "required": ["alias_of", "removal_milestone"]
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "classification": {
+                "contains": {
+                  "const": "secret"
+                }
+              }
+            },
+            "required": ["classification"]
+          },
+          "then": {
+            "properties": {
+              "default": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

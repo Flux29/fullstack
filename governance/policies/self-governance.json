@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "policy_group": "self-governance",
+  "description": "The protected kernel. These rules are blocking from day one — unlike every other policy group, which starts advisory and is promoted only after demonstrated accuracy. The asymmetry is deliberate: a governance system that can silently rewrite the rules that judge it is not a governance system. No automation may weaken a rule here, broaden an MCP permission, accept a security exception, or approve its own governance change.",
+  "rules": [
+    {
+      "id": "documents-match-schemas",
+      "statement": "Every committed governance document validates against its JSON Schema.",
+      "rationale": "A malformed document is indistinguishable from a document that means something different. Schema validity is the floor everything else stands on.",
+      "maturity": "blocking",
+      "check_impl": "checks.schemas.check_document_schemas",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "generated-files-not-hand-edited",
+      "statement": "Files listed in the generated-file registry reproduce byte-identically from their sources.",
+      "rationale": "A hand edit to a generated file is indistinguishable from staleness, and both mean the same thing: the committed bytes no longer follow from the sources. Regeneration comparison catches either.",
+      "maturity": "blocking",
+      "check_impl": "checks.schemas.check_generated_files",
+      "exceptions_allowed": false,
+      "exception_refs": [],
+      "authoritative_source": "governance/manifests/curated/ownership.json"
+    },
+    {
+      "id": "sync-is-idempotent",
+      "statement": "Two consecutive syncs with no source change produce byte-identical output.",
+      "rationale": "Non-deterministic generation makes drift detection meaningless: every run would report a diff, and real drift would be lost in the noise. This is kernel scope and was never deferred.",
+      "maturity": "blocking",
+      "check_impl": "checks.schemas.check_idempotence",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "no-secret-values-in-governance-output",
+      "statement": "No governance artifact contains a credential value, a connection URL query string, or userinfo.",
+      "rationale": "Governance reads the whole repository, so anything it writes is a potential exfiltration path. Names and classifications are always sufficient; values never are.",
+      "maturity": "blocking",
+      "check_impl": "checks.security.check_no_secret_values",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "curated-content-not-overwritten",
+      "statement": "Sync never writes to a curated document, and the merge never silently discards curated intent.",
+      "rationale": "Generated files may be replaced deterministically; human intent may not. A merge conflict is surfaced as a finding rather than resolved by overwriting one side.",
+      "maturity": "blocking",
+      "check_impl": "checks.schemas.check_curated_not_generated",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "validators-resolve-through-registry",
+      "statement": "Every validator reference resolves to an ID in governance/validators.json, and no annotation or manifest carries executable shell text.",
+      "rationale": "Free-form validation strings let an annotation introduce a command — including a destructive env-gated suite that an agent following 'run the required validation' could be induced to enable. IDs through a reviewed registry make that structurally impossible.",
+      "maturity": "blocking",
+      "check_impl": "checks.references.check_validator_references",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "destructive-validators-excluded",
+      "statement": "Validators that mutate live services or send real messages stay out of the registry and are recorded in its excluded list.",
+      "rationale": "Selection must never be able to reach them. Being absent from the registry is the enforcement; the excluded list exists so the omission is explained rather than looking like an oversight.",
+      "maturity": "blocking",
+      "check_impl": "checks.references.check_excluded_validators",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "governance-changes-are-recorded",
+      "statement": "A change touching governance/ or tools/repo_governance/ has a corresponding change record.",
+      "rationale": "The system that demands change records for the application must demand them of itself first. Everything outside governance/ is advisory until the process is proven.",
+      "maturity": "blocking",
+      "check_impl": "checks.process.check_governance_change_records",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "no-in-process-application-import",
+      "statement": "The governance tool never imports app.* in-process; code that must execute application modules runs in a scrubbed subprocess.",
+      "rationale": "Settings loading walks parent directories for .env and main.py configures Logfire at import scope, so an in-process import can load real secrets and emit telemetry from a tool that is only supposed to read files.",
+      "maturity": "blocking",
+      "check_impl": "checks.security.check_no_application_imports",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "runtime-evidence-never-committed",
+      "statement": "Runtime-derived records stay under .cache/repo-governance/; committed artifacts reference evidence only by ID and summary.",
+      "rationale": "Runtime evidence is environment-specific and can contain tenant data or live credentials. Referencing it by ID keeps the finding auditable without moving the data.",
+      "maturity": "blocking",
+      "check_impl": "checks.security.check_runtime_evidence_not_committed",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "policy-weakening-is-explicit",
+      "statement": "Lowering a rule's maturity, or removing a rule, requires a change record naming the rule and its justification.",
+      "rationale": "Weakening a policy is the one change most likely to be made under deadline pressure and least likely to be noticed. Making it explicit is the whole point of self-governance.",
+      "maturity": "blocking",
+      "check_impl": "checks.process.check_policy_weakening_recorded",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "newer-contract-not-silently-interpreted",
+      "statement": "The tool refuses to interpret a governance contract whose version it does not support.",
+      "rationale": "Interpreting a newer manifest as though it were valid is worse than failing: it produces confident, wrong answers.",
+      "maturity": "blocking",
+      "check_impl": "checks.schemas.check_contract_version",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    }
+  ]
+}

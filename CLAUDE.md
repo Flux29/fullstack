@@ -1,69 +1,30 @@
 # CLAUDE.md
 
-## Project Overview
+**[AGENTS.md](AGENTS.md) is the entry point.** Read it first — it carries the entry rules,
+the command surface, the hard boundaries, and where to look for everything else. This file
+holds only the deltas that are specific to Claude Code.
 
-**fullstack** - FastAPI application generated with [Full-Stack AI Agent Template](https://github.com/vstorm-co/full-stack-ai-agent-template).
+## Claude-specific notes
 
-**Stack:** FastAPI + Pydantic v2, PostgreSQL (async via asyncpg)
-, JWT + API Key auth, Redis, PydanticAI, RAG (pgvector), Taskiq, Next.js 15 (i18n)
+- `.claude/rules/*.md` load automatically when you edit a matching file, so the conventions
+  for the file in front of you arrive without being asked for. Do not restate them in code
+  comments or commit messages.
+- `.claude/skills/` covers recurring tasks: `add-endpoint`, `alembic-migration`,
+  `agent-tool`, `background-task`, `frontend-feature`, `pytest-suite`, `rag-knowledge`.
+  Prefer a skill over improvising when one fits.
+- The Makefile is PowerShell-based and Windows-first. Its preflight and guard targets shell
+  out to `powershell.exe`; a few targets are POSIX-flavoured. When a Make target misbehaves
+  in a non-Windows shell, run the underlying command rather than rewriting the target.
+- Backend commands run through uv from the repository root:
+  `uv run --directory backend <command>`. The governance CLI is a separate project:
+  `uv run --project tools/repo_governance governance <command>`. Both are wrapped by Make
+  targets; use those.
+- Do not add project dependencies to a global Python. Every project here has its own
+  `pyproject.toml`, `uv.lock`, and `.venv`.
 
-## Commands
+## Done means verified
 
-```bash
-# Backend
-cd backend
-uv run uvicorn app.main:app --reload --port 8100
-uv run pytest
-uv run pytest tests/test_file.py::test_name -v
-uv run ruff check . --fix && uv run ruff format .
-uv run ty check
-
-# Database migrations
-uv run alembic upgrade head
-uv run alembic revision --autogenerate -m "Description"
-
-# Frontend
-cd frontend
-bun dev
-bun test
-bun run lint
-
-# Docker
-docker compose up -d
-
-# RAG
-uv run fullstack rag-collections
-uv run fullstack rag-ingest /path/to/file.pdf --collection docs
-uv run fullstack rag-search "query" --collection docs
-uv run fullstack rag-sync-gdrive --collection docs
-uv run fullstack rag-sync-s3 --collection docs
-
-# Sync Sources
-uv run fullstack cmd rag-sources
-uv run fullstack cmd rag-source-add
-uv run fullstack cmd rag-source-sync
-```
-
-## Hard Boundaries
-
-Non-obvious rules that are easy to violate and cross-cutting enough to state up front:
-
-- Repositories use `db.flush()` + `db.refresh()`, **never** `db.commit()` — the session auto-commits via `get_db_session`.
-- Routes call services only — **never** import or call repositories directly.
-- Route handlers return `-> Any`; serialization is handled by `response_model` (avoids double Pydantic validation).
-- `datetime.now(UTC)`, never `datetime.utcnow()`.
-- `secrets.compare_digest()` for API key comparison, never `==`.
-
-## Detailed Conventions
-
-Path-scoped guidance lives in `.claude/rules/*` and loads automatically when you edit matching files — it is intentionally NOT repeated here:
-
-- `architecture.md` — Routes → Services → Repositories, dependency injection, thin vs. thick domains
-- `schemas-models.md` — Pydantic v2 schemas (`*Create`/`*Update`/`*Read`/`*List`), SQLAlchemy models
-- `api-conventions.md` — REST structure, status codes, response format, pagination, auth
-- `exceptions-security.md` — domain exceptions (`NotFoundError`, etc.), JWT, RBAC
-- `code-style.md` — formatting, naming, imports, type hints
-- `testing.md` — test structure, fixtures, async patterns
-- `frontend.md` — Next.js 15 conventions
-
-Longer-form docs: `docs/architecture.md`, `docs/adding_features.md`, `docs/testing.md`, `docs/patterns.md`.
+- Logic has tests. UI has a browser or Playwright check. LLM workflows have pydantic-evals
+  or a structured smoke test.
+- Final answers state what was validated and what remains uncertain — the governance change
+  record has fields for exactly this, and leaving them vague defeats the point.

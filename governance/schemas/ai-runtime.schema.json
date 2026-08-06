@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/ai-runtime/v1",
+  "title": "AI runtime manifest",
+  "description": "Agents, models, tools, and connections modelled along orthogonal dimensions rather than as server types. Per-user connections live in database rows and are never statically assumed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "dimension_model", "user_connections"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "dimension_model": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provisioning",
+        "executor",
+        "transport",
+        "authentication",
+        "allowlist_source",
+        "approval_gating",
+        "encryption_at_rest"
+      ],
+      "properties": {
+        "provisioning": {
+          "type": "array",
+          "items": {
+            "enum": ["deployment", "user"]
+          }
+        },
+        "executor": {
+          "type": "array",
+          "items": {
+            "enum": ["mcp", "google-rest"]
+          }
+        },
+        "transport": {
+          "type": "array",
+          "items": {
+            "enum": ["streamable-http", "sse"]
+          }
+        },
+        "authentication": {
+          "type": "array",
+          "items": {
+            "enum": ["none", "bearer", "oauth2.1-pkce", "github"]
+          }
+        },
+        "allowlist_source": {
+          "type": "array",
+          "items": {
+            "enum": ["settings-validator", "per-connection", "product-registry", "none"]
+          }
+        },
+        "approval_gating": {
+          "type": "array",
+          "items": {
+            "enum": ["deferred-tools", "none"]
+          }
+        },
+        "encryption_at_rest": {
+          "type": "array",
+          "items": {
+            "enum": ["fernet", "none"]
+          }
+        }
+      },
+      "description": "The axes themselves, recorded so a new connection shape is described by its coordinates rather than by inventing a new category."
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "location"],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug"
+          },
+          "location": {
+            "type": "string"
+          },
+          "model_env_ref": {
+            "type": "string"
+          },
+          "toolsets": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "deployment_servers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "declared_by"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "declared_by": {
+            "type": "string"
+          },
+          "compose_service": {
+            "type": "string"
+          },
+          "executor": {
+            "enum": ["mcp", "google-rest"]
+          },
+          "authentication": {
+            "enum": ["none", "bearer", "oauth2.1-pkce", "github"]
+          },
+          "allowlist_source": {
+            "enum": ["settings-validator", "per-connection", "product-registry", "none"]
+          },
+          "approval_gating": {
+            "enum": ["deferred-tools", "none"]
+          },
+          "readonly_enforcement_layers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["layer", "location"],
+              "properties": {
+                "layer": {
+                  "enum": ["container-flags", "settings-validator", "runtime-assert"]
+                },
+                "location": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "Drift between the layers is the finding; governance cross-checks them rather than re-declaring the policy."
+          }
+        }
+      }
+    },
+    "catalog_entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "auth_kind"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string"
+          },
+          "auth_kind": {
+            "enum": ["none", "token", "personal-url", "oauth"]
+          },
+          "token_placement": {
+            "enum": ["header", "url", "none"]
+          },
+          "host": {
+            "type": ["string", "null"],
+            "description": "Scheme and host only. Query strings and userinfo are stripped at extraction because a catalog URL can carry a live credential."
+          },
+          "backend_kind": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
+    "google_products": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "registry"],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "registry": {
+            "type": "string",
+            "description": "Tool nodes here are data, not AST-visible functions: the registry table is the extraction target."
+          },
+          "mutation_tools_gated": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "embedding": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model_env_ref": {
+          "type": "string"
+        },
+        "dimension": {
+          "type": "integer"
+        },
+        "fingerprint_ref": {
+          "type": "string"
+        },
+        "reranker_env_ref": {
+          "type": "string"
+        }
+      }
+    },
+    "user_connections": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["provenance", "committed", "source"],
+      "properties": {
+        "provenance": {
+          "const": "runtime-evidence"
+        },
+        "committed": {
+          "const": false
+        },
+        "source": {
+          "type": "string"
+        },
+        "latest_snapshot_ref": {
+          "type": ["string", "null"],
+          "description": "Evidence ID and summary only. Never the rows themselves, never a URL."
+        }
+      },
+      "description": "Per-user MCP edges exist only in database rows. They are enumerated from runtime evidence under the data-governance rules, never statically assumed."
+    },
+    "standing_findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      },
+      "description": "Open findings that materially change how this runtime should be reasoned about."
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

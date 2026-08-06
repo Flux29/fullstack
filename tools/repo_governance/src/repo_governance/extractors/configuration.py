@@ -90,8 +90,13 @@ def parse_env_template(path: Path) -> TemplateExtraction:
     return result
 
 
-def scan_process_env(root: Path) -> dict[str, list[str]]:
-    """Find `process.env.NAME` references in the frontend source."""
+def scan_process_env(root: Path, repo_root: Path) -> dict[str, list[str]]:
+    """Find `process.env.NAME` references in the frontend source.
+
+    Paths are recorded relative to the repository root. An absolute path would embed the
+    checkout location in a committed manifest, so the file would differ between a developer
+    machine and a CI runner and the drift gate would fail on every run for no reason.
+    """
     found: dict[str, set[str]] = {}
     for path in iter_files(root, suffixes=(".ts", ".tsx", ".mjs", ".js")):
         try:
@@ -99,7 +104,7 @@ def scan_process_env(root: Path) -> dict[str, list[str]]:
         except (UnicodeDecodeError, OSError):
             continue
         for name in PROCESS_ENV.findall(text):
-            found.setdefault(name, set()).add(path.as_posix())
+            found.setdefault(name, set()).add(relative_posix(path, repo_root))
     return {name: sorted(paths) for name, paths in sorted(found.items())}
 
 
@@ -171,7 +176,7 @@ def extract_configuration(ctx: Context) -> dict[str, Any]:
 
     backend_template = parse_env_template(ctx.repo_root / "backend" / ".env.example")
     frontend_template = parse_env_template(ctx.repo_root / "frontend" / ".env.example")
-    process_env = scan_process_env(ctx.repo_root / "frontend" / "src")
+    process_env = scan_process_env(ctx.repo_root / "frontend" / "src", ctx.repo_root)
     curated = _curated_classifications(ctx)
     consumers = _component_config_refs(ctx)
     compose_refs = _compose_refs(ctx)

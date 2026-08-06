@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 9 of 9)
+## Recent changes (latest 10 of 10)
 
 - **2026-08-06** — Resolve finding status by precedence not by ID order
   - Components: none recorded
@@ -73,6 +73,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Local and CI enforcement
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-06-local-and-ci-enforcement.json`
+- **2026-08-06** — Lazy Google Workspace tool exposure: toolkit loader, approval-resume slimming, per-turn relevance router, schema slimming
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-06-lazy-google-workspace-tool-exposure-toolkit-loader-approval-resu.json`
 - **2026-08-06** — Add the minimal governance kernel: the twelve JSON Schemas, the governance contract, the self-governance policy, the validator registry, the ownership rules, a deterministic CLI with preflight/scan/sync/check/doctor, and a converged AGENTS.md entry point.
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-governance-kernel.json`

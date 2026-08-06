@@ -27,6 +27,7 @@
         "backend/app/agents/assistant.py",
         "backend/app/agents/mcp.py",
         "backend/app/agents/google_apis/products.py",
+        "backend/app/agents/google_loadout.py",
         "backend/app/api/routes/v1/agent.py"
       ],
       "finding_refs": [
@@ -42,7 +43,10 @@
           "build_mcp_toolsets",
           "build_product_toolset",
           "build_google_api_toolset",
-          "build_toolsets_for_user"
+          "build_toolsets_for_user",
+          "route_products",
+          "gate_google_toolset",
+          "compact_tool_defs"
         ],
         "exclude": []
       },
@@ -52,7 +56,10 @@
         "Unreachable MCP servers are skipped, not fatal: each server gets a bounded pre-flight probe and a failure removes its tools for that turn rather than failing the turn",
         "Tool names are prefixed per server and deduplicated, so a per-user connection cannot shadow a deployment-managed server's tool",
         "A deployment-managed server must declare an explicit allowed_tools list; startup fails on a malformed or duplicated server name",
-        "Connection URLs are stripped of query strings and userinfo before they reach any log, manifest, or governance artifact, because the catalog supports placing a token in the URL"
+        "Connection URLs are stripped of query strings and userinfo before they reach any log, manifest, or governance artifact, because the catalog supports placing a token in the URL",
+        "Google Workspace tool exposure is per-turn and reversible: a deterministic router picks the products a turn needs and the rest are gated off, but load_google_toolkit re-attaches any connected product mid-run. Gating hides schemas from one request; it never removes a capability, and a router miss must cost a round-trip rather than the ability to finish the turn",
+        "The Google tool catalog serializes in a fixed canonical order — product order first, then connection name — so identical conversation state produces byte-identical tool definitions. Database row order must never reach the provider payload, because a catalog that reshuffles between requests cannot be prompt-cached even when it is small",
+        "The approval-resume request carries a narrowed catalog, never the full one: products holding pending approvals, products already used in the run, and products the conversation named explicitly. Referenced-not-yet-used is deliberately included, because a retention set built from usage alone strands the second half of a multi-product instruction"
       ],
       "kind": "agent-runtime",
       "owns": [
@@ -60,7 +67,8 @@
         "backend/app/services/agent.py",
         "backend/app/services/agent_session.py",
         "backend/app/services/mcp_connection.py",
-        "backend/evals/**"
+        "backend/evals/**",
+        "backend/scripts/**"
       ],
       "public_interfaces": [
         "WS /api/v1/ws/agent",

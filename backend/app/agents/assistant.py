@@ -30,6 +30,14 @@ from pydantic_ai_summarization import ContextManagerCapability
 from pydantic_ai_todo import TodoCapability
 from subagents_pydantic_ai import SubAgentCapability
 
+from app.agents.google_loadout import (
+    GOOGLE_PRODUCT_LABELS,
+    GOOGLE_PRODUCT_ORDER,
+    LOADER_TOOL_NAME,
+    GoogleLoadout,
+    describe_activation,
+    resolve_product,
+)
 from app.agents.prompts import (
     get_research_prompt,
     get_system_prompt_with_rag,
@@ -64,6 +72,10 @@ class Deps:
     metadata: dict[str, Any] = field(default_factory=dict)
     ask_user: AskUserCallback | None = None
     approve_tools: ApproveToolsCallback | None = None
+    # Which Google Workspace products this turn may see. None disables gating
+    # entirely (channel traffic, direct callers, tests) and every connected
+    # integration is attached, which is the pre-loadout behaviour.
+    google_loadout: GoogleLoadout | None = None
     # Required by SubAgentDepsProtocol; kept empty (capabilities carry the agents).
     subagents: dict[str, Any] = field(default_factory=dict)
 
@@ -75,6 +87,7 @@ class Deps:
             metadata=self.metadata,
             ask_user=None,
             approve_tools=None,
+            google_loadout=self.google_loadout,
             subagents={} if max_depth <= 0 else self.subagents,
         )
 
@@ -82,10 +95,33 @@ class Deps:
 async def _handle_deferred_tools(
     ctx: RunContext[Deps], requests: DeferredToolRequests
 ) -> DeferredToolResults | None:
-    """Resolve approval-gated tools inside the same agent run."""
+    """Resolve approval-gated tools inside the same agent run.
+
+    The model request that follows an approval usually exists only to write a
+    closing sentence, yet it would otherwise re-send the entire tool catalog.
+    Narrow the Google catalog first: the run keeps the products holding the
+    pending approvals, whatever it already used, and anything the conversation
+    referenced — and ``load_google_toolkit`` stays available for the rest.
+    """
     if ctx.deps.approve_tools is None:
         return None
+    loadout = ctx.deps.google_loadout
+    if loadout is not None:
+        pending = [call.tool_name for call in (*requests.approvals, *requests.calls)]
+        loadout.restrict_for_resume(pending_tool_names=pending, messages=ctx.messages)
     return await ctx.deps.approve_tools(requests)
+
+
+def _prepare_toolkit_loader(ctx: RunContext[Deps], tool_def: Any) -> Any:
+    """Expose the loader only while a connected Google product is gated off.
+
+    With nothing gated there is nothing to load, and carrying a dead tool would
+    add schema bytes to every request for no capability.
+    """
+    loadout = ctx.deps.google_loadout
+    if loadout is None or not loadout.inactive_products():
+        return None
+    return tool_def
 
 
 class AssistantAgent:
@@ -267,6 +303,43 @@ class AssistantAgent:
             payload = [q.model_dump() for q in questions[:MAX_QUESTIONS]]
             answers = await ctx.deps.ask_user(payload)
             return format_answers(payload, answers)
+
+        @agent.tool(prepare=_prepare_toolkit_loader, name=LOADER_TOOL_NAME)
+        async def load_google_toolkit(ctx: RunContext[Deps], product: str) -> str:
+            """Load the tools for one Google Workspace product into this conversation.
+
+            Only the products relevant to the request are attached up front. If
+            you need one that isn't available yet, call this first — the tools
+            appear immediately afterwards and you can call them on your next
+            step. Do not call it for a product whose tools you can already see.
+
+            Args:
+                product: One of "gmail", "calendar", "drive", "docs", "sheets",
+                    "slides", "chat", "contacts".
+
+            Returns:
+                The tool names that just became available, one per line.
+            """
+            loadout = ctx.deps.google_loadout
+            if loadout is None:
+                return "All connected Google tools are already available."
+            # resolve_product is built from the router's own term tables, so the
+            # loader accepts every spelling the router already understands.
+            requested = resolve_product(product)
+            if requested is None:
+                raise ModelRetry(
+                    f"Unknown product {product!r}. Choose one of: "
+                    f"{', '.join(GOOGLE_PRODUCT_ORDER)}."
+                )
+            available = loadout.available_products()
+            if requested not in available:
+                connected = ", ".join(GOOGLE_PRODUCT_LABELS[p] for p in available) or "none"
+                return (
+                    f"{GOOGLE_PRODUCT_LABELS[requested]} is not connected for this user. "
+                    f"Connected integrations: {connected}. Tell the user they can add it "
+                    "in Settings → Integrations."
+                )
+            return describe_activation(requested, loadout.activate(requested))
 
         @agent.tool
         async def run_python(ctx: RunContext[Deps], code: str) -> str:

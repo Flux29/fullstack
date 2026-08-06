@@ -47,6 +47,21 @@ def google_api_kind(url: str) -> GoogleApiKind | None:
     return None
 
 
+def google_api_url(kind: GoogleApiKind) -> str:
+    """The API root that identifies *kind* — the inverse of :func:`google_api_kind`.
+
+    Evals, tests and the measurement script all need to turn a product name back
+    into the URL a connection would carry; without this they each grow their own
+    copy of the gmail/calendar special case and can silently disagree with what
+    ``google_api_kind`` recognises.
+    """
+    if kind == "gmail":
+        return GMAIL_API_URL
+    if kind == "calendar":
+        return CALENDAR_API_URL
+    return DIRECT_GOOGLE_PRODUCTS[kind].url
+
+
 def google_api_scopes(url: str) -> tuple[str, ...] | None:
     kind = google_api_kind(url)
     if kind == "gmail":
@@ -134,7 +149,7 @@ async def probe_google_api(url: str, access_token: str) -> list[McpToolInfo]:
     if kind == "gmail":
         await _request(access_token, "GET", f"{GMAIL_API_URL}/users/me/profile")
         return [
-            McpToolInfo(name=name, description=description) for name, description in _GMAIL_TOOLS
+            McpToolInfo(name=name, description=description) for name, description in GMAIL_TOOLS
         ]
     if kind == "calendar":
         await _request(
@@ -144,14 +159,14 @@ async def probe_google_api(url: str, access_token: str) -> list[McpToolInfo]:
             params={"maxResults": 1},
         )
         return [
-            McpToolInfo(name=name, description=description) for name, description in _CALENDAR_TOOLS
+            McpToolInfo(name=name, description=description) for name, description in CALENDAR_TOOLS
         ]
     if kind in DIRECT_GOOGLE_PRODUCTS:
         return await probe_product(kind, access_token)
     raise ValueError("Not a supported direct Google API integration URL")
 
 
-_GMAIL_TOOLS = (
+GMAIL_TOOLS = (
     ("get_profile", "Return the email address and mailbox statistics for the connected account."),
     ("search_threads", "Search Gmail using the same query syntax as the Gmail search box."),
     ("get_thread", "Read every message in a Gmail thread."),
@@ -164,7 +179,7 @@ _GMAIL_TOOLS = (
     ("delete_draft", "Delete a Gmail draft."),
 )
 
-_CALENDAR_TOOLS = (
+CALENDAR_TOOLS = (
     ("list_calendars", "List calendars available to the connected account."),
     ("list_events", "List events in a time range."),
     ("search_events", "Search calendar events in a time range."),
@@ -181,20 +196,29 @@ def build_google_api_toolset(
     allowed_tools: list[str] | None,
     user_id: str | None = None,
 ) -> Any:
-    """Build a prefixed PydanticAI FunctionToolset for one Google integration."""
+    """Build a prefixed PydanticAI FunctionToolset for one Google integration.
+
+    Parameter schemas are compacted once here (see
+    :func:`app.agents.tool_schema.compact_toolset_schemas`); tool order is the
+    registration order below, which the wrappers preserve.
+    """
     from pydantic_ai.toolsets import FunctionToolset
+
+    from app.agents.tool_schema import compact_toolset_schemas
 
     kind = google_api_kind(url)
     if kind is None:
         raise ValueError("Not a supported direct Google API integration URL")
     if kind in DIRECT_GOOGLE_PRODUCTS:
-        return build_product_toolset(
+        product = build_product_toolset(
             kind=kind,
             name=name,
             access_token=access_token,
             allowed_tools=allowed_tools,
             user_id=user_id,
         )
+        compact_toolset_schemas(product)
+        return product
     toolset: Any = FunctionToolset(id=f"google-api:{name}")
 
     def add(
@@ -336,7 +360,7 @@ def build_google_api_toolset(
             "send_message": send_message,
             "delete_draft": delete_draft,
         }
-        for tool_name, description in _GMAIL_TOOLS:
+        for tool_name, description in GMAIL_TOOLS:
             add(
                 functions[tool_name],
                 tool_name,
@@ -428,7 +452,8 @@ def build_google_api_toolset(
             "get_event": get_event,
             "suggest_time": suggest_time,
         }
-        for tool_name, description in _CALENDAR_TOOLS:
+        for tool_name, description in CALENDAR_TOOLS:
             add(functions[tool_name], tool_name, description)
 
+    compact_toolset_schemas(toolset)
     return toolset.prefixed(_tool_prefix(name))

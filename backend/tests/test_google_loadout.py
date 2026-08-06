@@ -395,6 +395,8 @@ class TestWhatTheModelIsActuallyOffered:
     """
 
     async def _offered(self, prompt: str, activate: str | None = None) -> list[str]:
+        from unittest.mock import patch
+
         from pydantic_ai.models.test import TestModel
 
         from app.agents.assistant import AssistantAgent
@@ -402,11 +404,14 @@ class TestWhatTheModelIsActuallyOffered:
         loadout = GoogleLoadout()
         loadout.begin_turn(prompt)
         toolsets = [_toolset(product, loadout) for product in ("gmail", "sheets")]
-        agent = AssistantAgent(extra_toolsets=toolsets).agent
-        if activate:
-            loadout.activate(activate)
         model = TestModel(call_tools=[])
-        with agent.override(model=model):
+        # AssistantAgent builds its OpenRouter provider eagerly, which needs a
+        # real OPENROUTER_API_KEY — patch the builder rather than override the
+        # model, because override only applies once the agent already exists.
+        with patch("app.agents.assistant._build_model", return_value=model):
+            agent = AssistantAgent(extra_toolsets=toolsets).agent
+            if activate:
+                loadout.activate(activate)
             await agent.run(prompt, deps=Deps(google_loadout=loadout))
         return sorted(t.name for t in model.last_model_request_parameters.function_tools)
 

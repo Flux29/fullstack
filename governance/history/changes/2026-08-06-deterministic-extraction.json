@@ -1,0 +1,143 @@
+{
+  "adr_refs": ["ADR-001", "ADR-002", "ADR-004", "ADR-005"],
+  "affected_components": [
+    "governance-kernel",
+    "backend-api",
+    "frontend-app",
+    "postgres-pgvector",
+    "redis",
+    "github-mcp",
+    "traefik"
+  ],
+  "affected_contracts": [
+    "configuration-surface",
+    "exposure-posture",
+    "migration-head-expectation",
+    "github-mcp-readonly-layers"
+  ],
+  "behavioral_effects": [
+    "ENV_VARS.md is now generated from the configuration manifest. It documents 161 variables across the backend settings, both environment templates, the Compose files, and the frontend source. The variables it previously documented that do not exist are gone, because a renderer cannot describe anything the extractors did not find.",
+    "`make governance-sync` now writes seven files: the catalog, the components and effective manifests, the configuration, services, and interfaces manifests, and ENV_VARS.md. Sync remains idempotent and byte-identical across processes.",
+    "Seven more policy rules now execute rather than reporting as not-yet-enforced: exposure posture, digest pinning, the GitHub read-only three-layer cross-check, healthcheck coverage, proxy coverage, the migration graph, and Redis allocation exclusivity.",
+    "No application code, migration, Compose file, or CI workflow changed."
+  ],
+  "compatibility_impact": "Within governance: the configuration schema's `type` field accepts null (a widening), and the component schema gained three optional properties — compose_services, websocket_events, and configuration_classifications — all additive. Three manifests changed provenance from reviewed-baseline to extracted, which subjects them to the regeneration comparison for the first time. Nothing outside governance is affected.",
+  "date": "2026-08-06",
+  "evidence_refs": [],
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/.governance.json",
+    "docker/mcp/chrome-devtools/.governance.json",
+    "docker/mcp/docling/.governance.json",
+    "frontend/.governance.json",
+    "governance/history/changes/2026-08-06-deterministic-extraction.json",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/interfaces.json",
+    "governance/manifests/generated/services.json",
+    "governance/policies/architecture.json",
+    "governance/policies/compatibility.json",
+    "governance/policies/security.json",
+    "governance/schemas/component.schema.json",
+    "governance/schemas/configuration.schema.json",
+    "governance/schemas/local-governance.schema.json",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/checks/architecture.py",
+    "tools/repo_governance/src/repo_governance/checks/compatibility.py",
+    "tools/repo_governance/src/repo_governance/checks/security.py",
+    "tools/repo_governance/src/repo_governance/extractors/",
+    "tools/repo_governance/src/repo_governance/renderers/env_vars.py",
+    "tools/repo_governance/tests/test_extractors.py"
+  ],
+  "findings": [
+    {
+      "detail": "The Phase 2 hand-authored services manifest attributed the taskiq-healthchecks-disabled exception to six services it does not cover: browserless, chrome-devtools-mcp, docling-mcp, github-mcp, pgweb, and traefik. The Compose extractor disagreed with the review, and the extractor was right. Reviewing the actual pattern showed a coherent rule the baseline had not articulated: healthchecks exist so that depends_on service_healthy means something, and nothing waits on readiness for any of those six. Recorded as the profile-gated-services-without-healthchecks exception with that reasoning, rather than by widening the Taskiq exception to cover services it has nothing to do with.",
+      "disposition": "resolved-by-this-change",
+      "id": "phase-2-baseline-misattributed-healthcheck-exception",
+      "severity": "low",
+      "status": "resolved"
+    },
+    {
+      "detail": "The OpenAPI exporter failed on its first run with ModuleNotFoundError for repo_governance, which was misleading: the real cause is that Python puts a script's own directory at the front of sys.path, and this package contains an extractors/mcp.py that shadowed the real mcp package the backend imports. Fixed by copying the exporter into the isolated working directory before running it, so the directory on sys.path contains nothing but the script. Worth recording because the failure mode is silent for any package name that happens to collide, and the extractor module names come from the blueprint's specified tree.",
+      "disposition": "resolved-by-this-change",
+      "id": "openapi-exporter-module-shadowing",
+      "severity": "medium",
+      "status": "resolved"
+    },
+    {
+      "detail": "Two OpenTelemetry variables in the frontend template, OTEL_EXPORTER_OTLP_ENDPOINT and OTEL_EXPORTER_OTLP_HEADERS, are read by the SDK from the environment by convention rather than through an explicit process.env reference, so no extractor can find a consumer for them. Initially reported as unknown-consumer, which was a false positive. Classified as runtime in the curated list, with the headers variable marked secret because it typically carries an authorization header.",
+      "disposition": "resolved-by-this-change",
+      "id": "otel-convention-variables-false-positive",
+      "severity": "low",
+      "status": "resolved"
+    },
+    {
+      "detail": "Three variables remain genuinely unread: OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS all appear in backend/.env.example with no Settings field and no Compose consumer. Setting any of them has no effect and produces no warning, because Settings uses extra=\"ignore\". Now surfaced automatically by the configuration extractor rather than depending on someone noticing.",
+      "disposition": "app-fix-required",
+      "id": "env-example-unknown-consumers",
+      "severity": "low",
+      "status": "open"
+    }
+  ],
+  "id": "2026-08-06-deterministic-extraction",
+  "initiated_by": {
+    "kind": "user",
+    "ref": "Blueprint Phase 3 — deterministic extraction."
+  },
+  "limitations": [
+    "Three manifests are still reviewed-baseline: data-stores, ai-runtime, and tests. Each mixes extracted facts with curated judgment, and separating those cleanly means moving the curated halves into the curated manifests first — the same refactor already done for the configuration classifications and the WebSocket event inventory. The extracted parts that matter are already enforced as checks: the migration graph is compared against the recorded head expectation, and the Redis allocations are checked for exclusivity.",
+    "Ten rules still report as not-yet-enforced. Four need the import graph (Phase 6) and are gated on a named symptom. Four are manual by nature, including the two that describe MCP behaviour the system does not yet have. Two — the five-point dimension agreement and Docling path agreement — need cross-source comparison that was not reached in this phase.",
+    "The TypeScript extraction is targeted regex rather than a parser. The safeguard is that a non-match is recorded as `mechanism: \"unknown\"` rather than skipped, so a route handler the regex cannot read is visible instead of silently absent. All 67 proxy handlers currently resolve. Phase 6 replaces this when a real import graph becomes necessary.",
+    "Compose extraction implements Compose's merge semantics itself, and only the subset this repository uses. `make compose-check` remains the authority for whether the matrix actually resolves; governance wraps that rather than competing with it.",
+    "The OpenAPI export needs the backend virtual environment to exist. Where it cannot run, the manifest records status unknown with the reason rather than an empty path list."
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/interfaces.json",
+    "governance/manifests/generated/services.json",
+    "governance/manifests/effective/repository.json"
+  ],
+  "reason": "Blueprint Phase 3 makes the manifests follow from their sources rather than from a reading of them. The configuration surface came first because the blueprint names it the quick win, and it earned that: ENV_VARS.md had drifted into documenting five variables that do not exist and listing a computed property as a required input, and making it generated fixed live drift on day one while exercising the whole extract-sync-check loop on the least risky surface. The rest followed because the checks that matter most — the exposure posture, the GitHub read-only cross-check, the migration head — cannot exist without extraction behind them.",
+  "risks": [
+    "Three manifests now regenerate on every sync, so an extractor bug rewrites them silently and the diff is the only defence. The mitigation is that the diff is reviewed rather than accepted, which sync prints a reminder about, and that each extractor has tests over both well-formed and malformed input.",
+    "The Compose merge implementation is a reimplementation of someone else's semantics, which is the classic place for a subtle divergence. It is confined to the subset in use, `doctor` can cross-check against a real `docker compose config` when a daemon is present, and `make compose-check` remains the authority.",
+    "Seven newly-executing rules all run against the current tree cleanly, which is reassuring but also means none of them has yet caught anything. Their promotion criteria require them to survive real changes before they are trusted to block."
+  ],
+  "rollback": "`git revert` this commit. ENV_VARS.md returns to its hand-written and drifted state; the three manifests return to their reviewed-baseline forms; the seven newly-wired rules revert to phase markers and report as not-yet-enforced again. No application behaviour, data, or infrastructure is touched.",
+  "schema_version": 1,
+  "security_impact": "Positive, in three specific ways. The GitHub MCP read-only allowlist is now cross-checked across all three enforcement layers, so widening one layer alone is detected rather than silently reducing defence. The per-stack exposure posture is checked, so a dev port moved off loopback or a host port appearing in the base stack is a finding rather than a discovery. Digest pinning is checked against regression. The OpenAPI exporter — the only governance code that executes application code — runs in a subprocess with a working directory outside the repository, so find_env_file's cwd-and-parent walk cannot reach backend/.env, and with LOGFIRE_TOKEN dropped from an allowlisted environment so no telemetry is emitted. Both precautions were verified by running it: 107 routes extracted, no credentials loaded.",
+  "summary": "Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "75 passed. Adds extractor coverage: duplicate keys parse last-wins with a finding, a concatenated line is reported rather than skipped, a section banner does not become a description, a syntax error is an unknown rather than an empty result, a non-literal allowlist reads as unknown rather than empty, and the Alembic graph handles linear chains, filename gaps, branches, merge revisions, and dangling parents.",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "31 checks run, 0 blocking, 0 advisory, 18 not yet enforced. During authoring this run surfaced six unresolved proxy handlers (a regex that only looked inside the call expression, since fixed), six services wrongly excused by the Taskiq healthcheck exception (a genuine baseline error, since corrected), and two false-positive digest-pinning findings for locally built images (the check now excludes them).",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "The exporter ran successfully in its scrubbed subprocess and returned 107 routes. The SSE path it derives, /api/v1/rag/status/stream, matches an entry in the extracted OpenAPI inventory — an independent cross-check that the router-prefix resolution is correct.",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "No file under backend/app, backend/tests, backend/cli, or backend/alembic was modified.",
+      "id": "backend-lint",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "No Compose file, Makefile target, or profile definition was modified. The extractors read them.",
+      "id": "compose-check",
+      "result": "skipped"
+    }
+  ]
+}

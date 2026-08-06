@@ -22,6 +22,10 @@
     "postgres-pgvector",
     "minio"
   ],
+  "compose_services": [
+    "chrome-devtools-mcp",
+    "browserless"
+  ],
   "configuration_refs": [
     "BROWSERLESS_TOKEN"
   ],

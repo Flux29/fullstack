@@ -160,3 +160,137 @@ def check_runtime_evidence_not_committed(scope: CheckScope) -> list[Issue]:
             )
 
     return issues
+
+
+def check_exposure_posture(scope: CheckScope) -> list[Issue]:
+    """Per-stack exposure is the real security posture, and it differs by stack.
+
+    Base publishes nothing, dev binds to loopback only, production publishes only the edge.
+    A generic port-collision check is near-vacuous against a base file that publishes
+    nothing, while a dev port moved from loopback to 0.0.0.0 would sail past it.
+    """
+    from repo_governance.builders import build_services
+
+    manifest = build_services(scope.ctx)
+    issues: list[Issue] = []
+
+    for service in manifest["services"]:
+        for port in service.get("ports", []):
+            stack, host_ip = port["stack"], port.get("host_ip")
+            published = f"{port.get('host_port')}:{port['container_port']}"
+
+            if stack == "base":
+                issues.append(
+                    Issue(
+                        message=f"The base stack publishes a host port for {service['name']}.",
+                        path="docker-compose.yml",
+                        evidence=f"{published}. The base stack is expected to publish none.",
+                        repair="Move the port mapping into an override file.",
+                    )
+                )
+            elif stack in {"dev", "frontend"} and host_ip != "127.0.0.1":
+                issues.append(
+                    Issue(
+                        message=f"The dev stack publishes {service['name']} on a non-loopback address.",
+                        path="docker-compose.dev.yml",
+                        evidence=f"{published} bound to {host_ip or 'all interfaces'}.",
+                        repair="Bind to 127.0.0.1 so the service is not reachable from the network.",
+                    )
+                )
+            elif stack == "prod" and service["name"] != "traefik" and host_ip != "127.0.0.1":
+                issues.append(
+                    Issue(
+                        message=f"The production stack publishes {service['name']} directly.",
+                        path="docker-compose.prod.yml",
+                        evidence=f"{published}. Only Traefik should be publicly reachable.",
+                        repair="Route it through Traefik instead of publishing it.",
+                    )
+                )
+
+    for network in manifest["networks"]:
+        if network["name"] == "data-internal" and not network["internal"]:
+            issues.append(
+                Issue(
+                    message="data-internal is no longer an internal network.",
+                    path="docker-compose.yml",
+                    evidence="Making it routable silently gives the database and object storage egress.",
+                    repair="Restore internal: true.",
+                )
+            )
+
+    return issues
+
+
+def check_images_pinned(scope: CheckScope) -> list[Issue]:
+    """Third-party images stay pinned by digest."""
+    from repo_governance.builders import build_services
+
+    manifest = build_services(scope.ctx)
+    issues: list[Issue] = []
+
+    # Images built in this repository are referenced by tag from several services — the
+    # worker and scheduler reuse the image the app service builds — and have no digest to
+    # pin. Only third-party images are in scope.
+    locally_built = {
+        service["image"]["ref"]
+        for service in manifest["services"]
+        if service.get("build") and service.get("image", {}).get("ref")
+    }
+
+    for service in manifest["services"]:
+        image = service.get("image")
+        if not image or service.get("build"):
+            continue
+        if image.get("ref") in locally_built:
+            continue
+        if not image.get("digest"):
+            issues.append(
+                Issue(
+                    message=f"Image for {service['name']} is not pinned by digest.",
+                    path="docker-compose.yml",
+                    evidence=f"ref {image.get('ref')!r} carries no @sha256 digest.",
+                    repair="Pin it. Every other third-party image here already is.",
+                )
+            )
+    return issues
+
+
+def check_github_readonly_layers(scope: CheckScope) -> list[Issue]:
+    """The three GitHub MCP read-only enforcement layers agree."""
+    from repo_governance.extractors.mcp import extract_mcp
+
+    extraction = extract_mcp(scope.ctx)
+    issues: list[Issue] = []
+
+    for layer in extraction.layers:
+        if not layer.present:
+            issues.append(
+                Issue(
+                    message=f"GitHub MCP read-only enforcement layer {layer.layer!r} is missing.",
+                    path=layer.location,
+                    evidence="Three independent layers are expected; losing one removes defence without any visible failure.",
+                    repair="Restore the layer, or record its removal as a reviewed governance change.",
+                )
+            )
+
+    for problem in extraction.disagreements():
+        issues.append(
+            Issue(
+                message="GitHub MCP read-only allowlists disagree between enforcement layers.",
+                path="docker-compose.yml",
+                evidence=problem,
+                repair="Make the layers identical. Widening one layer only is exactly what this cross-check exists to catch.",
+            )
+        )
+
+    for unknown in extraction.unknowns:
+        issues.append(
+            Issue(
+                message="A GitHub MCP enforcement layer could not be read.",
+                path="backend/app/core/config.py",
+                evidence=unknown,
+                repair="An unreadable allowlist is reported as unknown, never assumed empty. Restore a literal collection.",
+            )
+        )
+
+    return issues

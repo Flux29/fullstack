@@ -8,7 +8,7 @@
       "statement": "The base stack publishes zero host ports; the dev stack binds only to 127.0.0.1; production publishes only the Traefik entrypoints plus a loopback dashboard; data-internal stays internal.",
       "rationale": "This is the real security posture, and it is per-stack. A generic host-port-conflict check is near-vacuous against a base file that publishes nothing, while a dev port moved from loopback to 0.0.0.0 exposes a developer's database to their network and would pass such a check.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.security.check_exposure_posture",
       "promotion_criteria": "The Compose extractor lands and the assertion runs clean across all four stacks. This is a strong promotion candidate: the condition is objective and the current tree already satisfies it.",
       "exceptions_allowed": true,
       "exception_refs": [],
@@ -19,7 +19,7 @@
       "statement": "Every third-party image is pinned by SHA256 digest.",
       "rationale": "Already true of every image in all four Compose files. The rule prevents regression rather than requesting a change.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.security.check_images_pinned",
       "promotion_criteria": "The Compose extractor lands. Promote quickly: the current tree is fully compliant, so a violation is unambiguously new.",
       "exceptions_allowed": true,
       "exception_refs": []
@@ -48,7 +48,7 @@
       "statement": "The GitHub MCP tool allowlist is identical across the container flags, the settings-validator frozenset, and the runtime post-probe assert.",
       "rationale": "Three independent enforcement layers is good defence and a good drift surface. Widening one layer only is the exact failure this catches; governance cross-checks the three rather than adding a fourth declaration.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.security.check_github_readonly_layers",
       "promotion_criteria": "The MCP extractor lands and the three-layer comparison runs clean.",
       "exceptions_allowed": false,
       "exception_refs": []
@@ -71,7 +71,9 @@
       "check_impl": "checks.security.check_no_secret_values",
       "exceptions_allowed": false,
       "exception_refs": [],
-      "finding_refs": ["mcp-url-embedded-credentials-unencrypted"]
+      "finding_refs": [
+        "mcp-url-embedded-credentials-unencrypted"
+      ]
     },
     {
       "id": "mcp-approval-parity",
@@ -82,7 +84,9 @@
       "promotion_criteria": "Blocked on a product-security decision — approval parity, default allowlists, or a documented restriction. An accepted-risk ADR is explicitly not sufficient. Until then this rule must not be promoted, because promoting it would either fail every run or be quietly weakened to match current behaviour.",
       "exceptions_allowed": false,
       "exception_refs": [],
-      "finding_refs": ["mcp-approval-gating-asymmetry"]
+      "finding_refs": [
+        "mcp-approval-gating-asymmetry"
+      ]
     },
     {
       "id": "connection-time-url-revalidation",
@@ -93,7 +97,9 @@
       "promotion_criteria": "Blocked on the connection path being fixed. Remediation is revalidation at connect time, preferably with network-level egress controls.",
       "exceptions_allowed": false,
       "exception_refs": [],
-      "finding_refs": ["mcp-no-connection-time-ssrf-revalidation"]
+      "finding_refs": [
+        "mcp-no-connection-time-ssrf-revalidation"
+      ]
     },
     {
       "id": "catalog-maps-to-a-backend-kind",

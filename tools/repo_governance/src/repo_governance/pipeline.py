@@ -15,6 +15,10 @@ from repo_governance.io_atomic import canonical_json, render_bytes, write_text_a
 CATALOG_PATH = "governance/catalog.json"
 COMPONENTS_PATH = "governance/manifests/generated/components.json"
 EFFECTIVE_PATH = "governance/manifests/effective/repository.json"
+CONFIGURATION_PATH = "governance/manifests/generated/configuration.json"
+SERVICES_PATH = "governance/manifests/generated/services.json"
+INTERFACES_PATH = "governance/manifests/generated/interfaces.json"
+ENV_VARS_PATH = "ENV_VARS.md"
 
 
 def build_catalog(ctx: Context, generated_paths: frozenset[str]) -> dict:
@@ -71,11 +75,22 @@ def render_all(ctx: Context) -> dict[str, str]:
     """
     outputs: dict[str, str] = {}
 
+    from repo_governance.extractors.configuration import extract_configuration
     from repo_governance.merge import build_components, build_effective
+    from repo_governance.renderers.env_vars import render_env_vars
 
     components, _ = build_components(ctx)
     outputs[COMPONENTS_PATH] = canonical_json(components)
     outputs[EFFECTIVE_PATH] = canonical_json(build_effective(ctx))
+
+    configuration = extract_configuration(ctx)
+    outputs[CONFIGURATION_PATH] = canonical_json(configuration)
+    outputs[ENV_VARS_PATH] = render_env_vars(ctx, configuration)
+
+    from repo_governance.builders import build_interfaces, build_services
+
+    outputs[SERVICES_PATH] = canonical_json(build_services(ctx))
+    outputs[INTERFACES_PATH] = canonical_json(build_interfaces(ctx))
 
     # The catalog is rendered last because it describes the whole output set, including
     # itself. Everything else is added above this line.

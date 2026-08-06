@@ -1,0 +1,37 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Summary.md no longer lists env-vars-md-drift as open."
+  ],
+  "compatibility_impact": "None.",
+  "date": "2026-08-06",
+  "files_changed": [],
+  "findings": [
+    {
+      "detail": "ENV_VARS.md is generated from governance/manifests/generated/configuration.json as of the Phase 3 commit, so it can no longer describe a variable the extractors did not find. The Phase 3 change record omitted this closure, which left the finding showing as open in Summary.md. Recurrence is prevented structurally rather than by vigilance: the document is in the generated-file registry, so a hand edit or a stale copy fails the check.",
+      "disposition": "resolved-by-generation",
+      "id": "env-vars-md-drift",
+      "severity": "medium",
+      "status": "resolved"
+    }
+  ],
+  "follow_up": [],
+  "id": "2026-08-06-close-the-env-vars-drift-finding",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The finding is closed by asserting it here rather than by any automated confirmation. What actually resolved it is that ENV_VARS.md is now generated from the configuration manifest and the generated-file check would fail if it drifted again."
+  ],
+  "manifests_changed": [],
+  "reason": "Phase 3 made ENV_VARS.md generated output, which resolved the drift finding, but the Phase 3 change record did not carry a findings entry closing it. Summary.md therefore still lists it as open. A governance system that leaves a resolved finding open in the document people read for orientation is producing exactly the staleness it exists to catch.",
+  "risks": [],
+  "rollback": "git revert this commit; the finding returns to being listed as open.",
+  "schema_version": 1,
+  "security_impact": "None. This corrects the recorded status of a documentation finding.",
+  "summary": "Close the ENV_VARS drift finding",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

@@ -28,11 +28,25 @@ def _load_records(ctx: Context) -> list[dict[str, Any]]:
     return sorted(records, key=lambda item: (item.get("date", ""), item.get("id", "")), reverse=True)
 
 
+#: Ordering within a single date. Change records carry a date but no clock time, so several
+#: records from one day have no chronology to read — sorting them by ID is alphabetical, not
+#: temporal. Resolving by status instead: a closure is necessarily a later statement than the
+#: registration that made it necessary, because you cannot close a finding that was never
+#: opened. Re-opening therefore requires a later date or a distinct finding ID, which is a
+#: reasonable thing to ask of a re-opening.
+_STATUS_PRECEDENCE = {"open": 0, "accepted": 1, "resolved": 2}
+
+
 def _open_findings(records: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Latest disposition wins: a finding resolved by a later change is not still open."""
     latest: dict[str, dict[str, Any]] = {}
     for record in reversed(records):  # oldest first, so later records overwrite
         for finding in record.get("findings", []):
+            existing = latest.get(finding["id"])
+            if existing is not None and _STATUS_PRECEDENCE.get(
+                existing.get("status", "open"), 0
+            ) > _STATUS_PRECEDENCE.get(finding.get("status", "open"), 0):
+                continue
             latest[finding["id"]] = finding
     order = {"high": 0, "medium": 1, "low": 2}
     return sorted(

@@ -14,6 +14,26 @@
       "exception_refs": []
     },
     {
+      "id": "unsanctioned-untracked-files",
+      "statement": "Untracked files live only where a new file legitimately appears: governance/history/, backend/alembic/versions/, backend/tests/, tools/repo_governance/tests/, frontend/e2e/, a frontend test beside its source, or docs/.",
+      "rationale": "Verification scripts, one-off runners, and debug harnesses are written to answer a single question and then never deleted. They survive the change that motivated them and reach history through a wide `git add`. Listing them while they are still untracked is the only cheap moment to catch them; by the time they are committed the argument is about removal rather than creation.",
+      "maturity": "advisory",
+      "check_impl": "checks.process.check_untracked_files_are_sanctioned",
+      "promotion_criteria": "Promote to warning once the sanctioned list has absorbed a full cycle of real work without a false positive. Do not promote to blocking: a check that fails on the presence of a scratch file would make the obvious repair `git add`, which is the opposite of the intent.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
+      "id": "simplification-pass-is-noted",
+      "statement": "A material change record carries a `limitations` entry beginning `Simplification pass:` saying whether the /simplify skill or the code-simplifier agent ran over the change, and what it found.",
+      "rationale": "Code that is merely correct accretes. Recording whether anyone looked for redundancy turns a silent omission into a stated one, which is the same reason the record demands a security impact rather than inferring it. `limitations` already means 'what this change did not do', so the convention needs no new field — and adding one would be a change to the change-record schema, which is protected kernel and not worth spending on a line of free text.",
+      "maturity": "advisory",
+      "check_impl": "manual",
+      "promotion_criteria": "Implement a check that reads the change records in the change set for the prefix, then promote to warning. Do not promote past advisory while the rule is enforced only by memory.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
       "id": "exceptions-are-reviewable",
       "statement": "Every exception states what it departs from, why, and what would make it worth revisiting.",
       "rationale": "An exception with no review trigger is a permanent hole. If it is genuinely permanent it should be a policy change instead.",

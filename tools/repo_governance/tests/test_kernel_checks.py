@@ -9,7 +9,10 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from repo_governance.checks import CheckScope, iter_rules, resolvable_check_impls
+import pytest
+
+from repo_governance import gitutil
+from repo_governance.checks import CheckScope, iter_rules, process, resolvable_check_impls
 from repo_governance.checks.references import check_excluded_validators, check_validator_references
 from repo_governance.checks.schemas import check_generated_files, check_idempotence
 from repo_governance.checks.security import (
@@ -228,3 +231,44 @@ def test_evidence_inside_the_governance_tree_is_detected(minimal_repo: Path) -> 
 
 def test_rendering_is_deterministic_in_the_real_repository(real_context: Context) -> None:
     assert check_idempotence(CheckScope(ctx=real_context)) == []
+
+
+def test_the_porcelain_status_column_is_read_by_width(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every status shape keeps its path, and only `??` counts as untracked.
+
+    Splitting on the first space instead of slicing the fixed-width column silently loses
+    the path of every unstaged modification, whose index column is blank.
+    """
+    porcelain = " M AGENTS.md\0A  backend/app/new.py\0R  after.py\0before.py\0?? debug_run.py\0"
+    monkeypatch.setattr(gitutil, "_run", lambda args, cwd: porcelain)
+
+    assert gitutil.working_tree_changes(Path(".")) == [
+        "AGENTS.md",
+        "after.py",
+        "backend/app/new.py",
+        "before.py",
+        "debug_run.py",
+    ]
+    assert gitutil.untracked_files(Path(".")) == ["debug_run.py"]
+
+
+def test_a_scratch_script_is_reported_and_sanctioned_locations_are_not(
+    real_context: Context, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(
+        process,
+        "untracked_files",
+        lambda root: [
+            "backend/alembic/versions/9f2c_add_column.py",
+            "backend/tests/test_thing.py",
+            "docs/notes.md",
+            "frontend/e2e/login.spec.ts",
+            "frontend/src/lib/thing.test.ts",
+            "governance/history/changes/2026-08-06-x.json",
+            "verify_fix.py",
+        ],
+    )
+
+    issues = process.check_untracked_files_are_sanctioned(CheckScope(ctx=real_context))
+    assert len(issues) == 1
+    assert issues[0].path == "verify_fix.py"

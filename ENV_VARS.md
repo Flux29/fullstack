@@ -248,11 +248,7 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `GITHUB_READ_ONLY` | no | — | `compose-only` | — |
 | `GOOGLE_CLIENT_ID` | no | `` | `runtime` | — |
 | `GOOGLE_CLIENT_SECRET` | no | *(secret — never recorded)* | `runtime`, `secret` | — |
-| `GOOGLE_DRIVE_CLIENT_ID` | no | `` | `deprecated-alias`, `runtime` | Alias of `GOOGLE_API_CLIENT_ID`. Removal: Remove once no deployment sets it. |
-| `GOOGLE_DRIVE_CLIENT_SECRET` | no | *(secret — never recorded)* | `deprecated-alias`, `runtime`, `secret` | Alias of `GOOGLE_API_CLIENT_SECRET`. Removal: Remove alongside GOOGLE_DRIVE_CLIENT_ID. |
 | `GOOGLE_REDIRECT_URI` | no | `http://localhost:8100/api/v1/oauth/google/callback` | `runtime` | — |
-| `GOOGLE_WORKSPACE_MCP_CLIENT_ID` | no | `` | `deprecated-alias`, `runtime` | Alias of `GOOGLE_API_CLIENT_ID`. Removal: Remove once no deployment sets it and the direct Google REST executor is the only path. |
-| `GOOGLE_WORKSPACE_MCP_CLIENT_SECRET` | no | *(secret — never recorded)* | `deprecated-alias`, `runtime`, `secret` | Alias of `GOOGLE_API_CLIENT_SECRET`. Removal: Remove alongside GOOGLE_WORKSPACE_MCP_CLIENT_ID. |
 | `HF_TOKEN` | no | `` | `runtime` | — |
 | `LLM_PROVIDER` | no | `openrouter` | `runtime` | — |
 | `LOG_PROVIDER_WRITE_TO_DISK` | no | `false` | `runtime` | — |

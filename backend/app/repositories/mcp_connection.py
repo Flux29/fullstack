@@ -68,6 +68,22 @@ async def list_for_user(
     return items, total
 
 
+async def list_enabled(db: AsyncSession) -> list[McpConnection]:
+    """Every enabled connection, across all users — maintenance sweeps only.
+
+    Not user-scoped, so nothing in the request path may call this. ``lazyload``
+    drops the model's eager join on ``users``: a sweep reads ``url`` and writes
+    ``is_enabled``, and has no use for the owner rows.
+    """
+    result = await db.execute(
+        select(McpConnection)
+        .where(McpConnection.is_enabled.is_(True))
+        .options(lazyload(McpConnection.user))
+        .order_by(McpConnection.created_at.asc())
+    )
+    return list(result.scalars())
+
+
 async def create(
     db: AsyncSession,
     *,

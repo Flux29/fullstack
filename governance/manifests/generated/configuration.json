@@ -1335,43 +1335,6 @@
       "type": "str"
     },
     {
-      "alias_of": "GOOGLE_API_CLIENT_ID",
-      "classification": [
-        "deprecated-alias",
-        "runtime"
-      ],
-      "consumed_by": [],
-      "declared_in": [
-        "backend/app/core/config.py"
-      ],
-      "default": "",
-      "default_class": "literal",
-      "name": "GOOGLE_DRIVE_CLIENT_ID",
-      "removal_milestone": "Remove once no deployment sets it",
-      "required": false,
-      "surface": "backend",
-      "type": "str"
-    },
-    {
-      "alias_of": "GOOGLE_API_CLIENT_SECRET",
-      "classification": [
-        "deprecated-alias",
-        "runtime",
-        "secret"
-      ],
-      "consumed_by": [],
-      "declared_in": [
-        "backend/app/core/config.py"
-      ],
-      "default": null,
-      "default_class": "none",
-      "name": "GOOGLE_DRIVE_CLIENT_SECRET",
-      "removal_milestone": "Remove alongside GOOGLE_DRIVE_CLIENT_ID",
-      "required": false,
-      "surface": "backend",
-      "type": "SecretStr"
-    },
-    {
       "classification": [
         "runtime"
       ],
@@ -1402,43 +1365,6 @@
       "required": false,
       "surface": "backend",
       "type": "str"
-    },
-    {
-      "alias_of": "GOOGLE_API_CLIENT_ID",
-      "classification": [
-        "deprecated-alias",
-        "runtime"
-      ],
-      "consumed_by": [],
-      "declared_in": [
-        "backend/app/core/config.py"
-      ],
-      "default": "",
-      "default_class": "literal",
-      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_ID",
-      "removal_milestone": "Remove once no deployment sets it and the direct Google REST executor is the only path",
-      "required": false,
-      "surface": "backend",
-      "type": "str"
-    },
-    {
-      "alias_of": "GOOGLE_API_CLIENT_SECRET",
-      "classification": [
-        "deprecated-alias",
-        "runtime",
-        "secret"
-      ],
-      "consumed_by": [],
-      "declared_in": [
-        "backend/app/core/config.py"
-      ],
-      "default": null,
-      "default_class": "none",
-      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET",
-      "removal_milestone": "Remove alongside GOOGLE_WORKSPACE_MCP_CLIENT_ID",
-      "required": false,
-      "surface": "backend",
-      "type": "SecretStr"
     },
     {
       "classification": [

@@ -1,0 +1,76 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "C:/Program Files/Git/api/v1/me/mcp-connections"
+  ],
+  "behavioral_effects": [
+    "OAuth against any path on the seven dedicated retired Workspace MCP hosts, and any non-REST path on people.googleapis.com, raises OAuthError naming the built-in integrations as the replacement.",
+    "Rejection is evaluated after google_api detection, so https://people.googleapis.com/v1 keeps classifying as google_api and Contacts keeps connecting.",
+    "New maintenance command 'fullstack cmd disable-retired-google-mcp' (--dry-run supported) disables matching rows, records last_error, and is idempotent.",
+    "oauth_start no longer branches on google_workspace; generic servers discover then dynamically register in one branch."
+  ],
+  "compatibility_impact": "Breaking for OAuth against the seven retired Workspace MCP hosts and people.googleapis.com paths other than the REST root: these now raise a clear OAuthError instead of falling through to generic OAuth. Contacts (https://people.googleapis.com/v1) and every other built-in Google integration are unaffected, as are generic MCP OAuth servers. Stored payloads carrying provider='google_workspace' still deserialize: the Literal member is retained for one release and covered by a test marked for deletion with it. Four deprecated env aliases are removed; deployments setting only those must move to GOOGLE_API_CLIENT_ID/SECRET. GOOGLE_DRIVE_CREDENTIALS_FILE (RAG service-account connector) is a different mechanism and is untouched.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/app/agents/mcp_oauth.py",
+    "backend/app/commands/cleanup.py",
+    "backend/app/core/config.py",
+    "backend/app/repositories/mcp_connection.py",
+    "backend/app/services/mcp_connection.py",
+    "backend/tests/test_commands.py",
+    "backend/tests/test_core.py",
+    "backend/tests/test_mcp_connections.py",
+    "governance/Summary.md",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "follow_up": [
+    "Next release: delete the marked compatibility block in mcp_oauth.py, the 'google_workspace' member of McpOAuthPayload.provider, and its deletable deserialization test together."
+  ],
+  "id": "2026-08-06-remove-the-retired-google-workspace-mcp-architecture",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "backend/.env.example needed no edit — it never listed the four deprecated aliases (verified by repo-wide search); only GOOGLE_DRIVE_CREDENTIALS_FILE appears there and it survives.",
+    "The sweep is operator-invoked, never a startup or request-time side effect, so legacy rows keep failing their probe until it is run.",
+    "make governance-preflight reported an unrelated failure in preflight-ports (a PowerShell quoting bug in the Makefile target under this shell); not addressed here."
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "reason": "Google Workspace is served by the direct REST toolsets; the preview MCP path was replaced after persistent connection failures. Retired dedicated MCP hosts must be rejected rather than silently falling through to generic OAuth, while people.googleapis.com/v1 stays the live Contacts integration.",
+  "risks": [
+    "A bearer-auth connection can still be created against a retired host: service.create() does not consult oauth_provider(), so such a row would need another sweep. The requested rejection point was oauth_provider() only."
+  ],
+  "rollback": "git revert restores the code, the four config fields and the curated manifest entries. It does NOT re-enable mcp_connections rows disabled by 'fullstack cmd disable-retired-google-mcp' — that is deliberate. Re-enabling is a user action: the stored credentials may be revoked and the endpoints are gone, so a blanket re-enable would restore exactly the per-turn failing probes the sweep removes. Users re-connect via the catalog's existing 'Upgrade to standard API' button, which authorizes against the standard REST URL.",
+  "schema_version": 1,
+  "security_impact": "Net reduction. google_client_credentials() no longer falls back to GOOGLE_WORKSPACE_MCP_* / GOOGLE_DRIVE_* aliases, so the deployment's static Google client can be sourced only from GOOGLE_API_CLIENT_ID/SECRET. validate_google_discovery() is removed with the only path that used it: retired hosts are now refused before any discovery, so no discovered lookalike endpoint can be reached with Google credentials at all. Google client credentials continue to be sent only to URLs claimed by exact-match google_api detection. The cleanup command reads the plaintext url column and never decrypts or logs OAuth payloads or tokens.",
+  "summary": "Remove the retired Google Workspace MCP architecture",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "513 passed, 13 skipped; tests/test_mcp_connections.py 138 passed. One pre-existing environmental error (tests/test_rag_docker_integration.py, PermissionError on the pytest temp dir) reproduces identically on the stashed baseline and is unrelated.",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "tests/test_google_workspace_evals.py 4 passed (routing, loadout, negative, determinism).",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff check + ruff format clean.",
+      "id": "backend-lint",
+      "result": "pass"
+    }
+  ]
+}

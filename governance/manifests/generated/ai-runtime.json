@@ -97,7 +97,7 @@
     "provenance": "runtime-evidence",
     "committed": false,
     "source": "mcp_connections table",
-    "latest_snapshot_ref": null
+    "latest_snapshot_ref": "mcp-connections-2026-08-06: 11 connections across one user in the local development environment; all 11 declare an explicit allowed_tools list, so none exposes every tool its server advertises; hosts are Google Workspace APIs, GitHub Copilot, Hugging Face, and Context7; two bearer connections carry no encrypted token, which is consistent with the credential living in the URL. Aggregates only; the evidence itself stays under .cache/repo-governance/evidence/ and is never committed."
   },
   "standing_findings": [
     "mcp-approval-gating-asymmetry",

@@ -87,7 +87,7 @@ make dev-db-ui     # start pgweb on loopback
 If you prefer running the backend on the host (not in Docker) — useful for breakpoints / IDE debugging:
 
 ```bash
-make install       # uv sync + pre-commit install
+make install       # uv sync (backend + governance) + root pre-commit install
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d db redis minio docling-serve
 make db-upgrade    # apply migrations
 make run           # run uvicorn locally with --reload

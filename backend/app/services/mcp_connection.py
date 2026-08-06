@@ -318,16 +318,13 @@ class McpConnectionService:
         """
         url = await validate_mcp_url(url)
         redirect_uri = _oauth_redirect_uri()
+        # Raises OAuthError for a retired Google Workspace MCP endpoint.
         provider = mcp_oauth.oauth_provider(url)
         if provider == "google_api":
             server = mcp_oauth.google_api_server(url)
             client_id, client_secret = mcp_oauth.google_client_credentials()
         else:
             server = await mcp_oauth.discover(url)  # raises OAuthError if unsupported
-        if provider == "google_workspace":
-            mcp_oauth.validate_google_discovery(server)
-            client_id, client_secret = mcp_oauth.google_client_credentials()
-        elif provider == "generic":
             client_id, client_secret = await mcp_oauth.register_client(server, redirect_uri)
         pkce = mcp_oauth.new_pkce()
         state = secrets.token_urlsafe(32)
@@ -429,6 +426,45 @@ class McpConnectionService:
                 "last_checked_at": datetime.now(UTC),
             },
         )
+
+    async def list_retired_google_workspace_mcp(self) -> list[McpConnection]:
+        """The enabled connections a retirement sweep would disable (--dry-run)."""
+        return [
+            connection
+            for connection in await mcp_connection_repo.list_enabled(self.db)
+            if mcp_oauth.is_retired_google_workspace_mcp_url(connection.url)
+        ]
+
+    async def disable_retired_google_workspace_mcp(self) -> list[McpConnection]:
+        """Disable every enabled connection pointing at a retired MCP endpoint.
+
+        Deliberately a maintenance sweep and not a startup or request-time side
+        effect: it rewrites rows for every user, so it runs when an operator
+        asks for it (``fullstack cmd disable-retired-google-mcp``).
+
+        Left enabled, these rows are probed on every chat turn and spend the
+        whole ``MCP_CONNECT_TIMEOUT_SECS`` budget failing against a host that no
+        longer answers — latency on each turn plus a steady trickle of Logfire
+        noise. Disabling records ``last_error`` too, so the user sees why the
+        integration went quiet instead of finding a toggle silently off.
+
+        Idempotent: only enabled rows are selected, so a second run is a no-op.
+        Nothing here decrypts an OAuth payload — the match is on the row's
+        plaintext ``url``.
+        """
+        retired = await self.list_retired_google_workspace_mcp()
+        for connection in retired:
+            await mcp_connection_repo.update(
+                self.db,
+                db_connection=connection,
+                update_data={
+                    "is_enabled": False,
+                    "last_status": "error",
+                    "last_error": mcp_oauth.RETIRED_GOOGLE_WORKSPACE_MCP_MESSAGE,
+                    "last_checked_at": datetime.now(UTC),
+                },
+            )
+        return retired
 
     async def _get_owned(self, *, user_id: UUID, connection_id: UUID) -> McpConnection:
         db_connection = await mcp_connection_repo.get_by_id(self.db, connection_id)

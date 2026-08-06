@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "policy_group": "compatibility",
+  "description": "Contracts that something outside their own file depends on. Each of these can break silently — the system keeps running and gives wrong answers — which is why they are worth checking at all.",
+  "rules": [
+    {
+      "id": "embedding-dimension-contract",
+      "statement": "All five points of the embedding dimension contract agree: settings, the vectorstore guard and DDL, the migration CHECK constraint, the per-collection fingerprint, and the cache key version.",
+      "rationale": "Drift between any two is the finding. Comparing each point against settings alone would miss a fingerprint that matches neither. See ADR-002.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The settings and migration extractors land and the five-point comparison runs clean. Strong promotion candidate: the failure mode is silent quality degradation, which is exactly what a human review will not catch.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "migration-graph-is-connected",
+      "statement": "The Alembic revision graph is acyclic and connected, and its head set matches the recorded expectation.",
+      "rationale": "Contiguity means graph connectivity, never filename numbering. Branches and merge revisions stay legal; single-head is a rule only because it is recorded as one. A filename-based rule would fire on day one against this repository's numbering gaps.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The Alembic extractor lands and reproduces the recorded head.",
+      "exceptions_allowed": true,
+      "exception_refs": ["alembic-numbering-gaps-accepted"]
+    },
+    {
+      "id": "orm-changes-have-migrations",
+      "statement": "A change to a SQLAlchemy model is accompanied by an Alembic revision.",
+      "rationale": "A model change without a migration works locally and fails on every other environment.",
+      "maturity": "advisory",
+      "check_impl": "phase-6",
+      "promotion_criteria": "The symbol graph exists so model changes can be detected precisely rather than by file path.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
+      "id": "redis-databases-are-exclusive",
+      "statement": "Each Redis logical database has one declared purpose, and a new consumer may not reuse an allocated one.",
+      "rationale": "Two consumers sharing a logical database work fine until one of them flushes it.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The configuration extractor lands and the allocations reproduce.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "buckets-stay-distinct",
+      "statement": "The general and RAG object-storage buckets keep separate names, endpoints, and credentials.",
+      "rationale": "Merging them would put user media into the retrieval corpus, which is a data-boundary failure that looks like a retrieval-quality problem.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The configuration extractor lands.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "docling-paths-agree",
+      "statement": "The ingestion client and the docling-mcp sidecar resolve to the same Docling Serve instance with compatible timeout and retry budgets.",
+      "rationale": "Divergence gives the agent and the ingestion pipeline different answers about the same document. See ADR-004.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The Compose and configuration extractors land.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "websocket-events-have-producers-and-consumers",
+      "statement": "Every WebSocket event in the inventory has both a producer and a consumer.",
+      "rationale": "The events are untyped dicts with no schema, so the set difference between what the backend emits and what the frontend handles is the only compatibility signal available. An event with no consumer is dead; one with no producer is a frontend waiting for something that never arrives.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The event inventory is generated from both sides rather than hand-authored.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
+      "id": "api-changes-reach-the-proxy",
+      "statement": "A change to an API route identifies the affected proxy route handlers and frontend clients.",
+      "rationale": "The proxy hop is part of every REST impact chain; a backend route renamed without its proxy handler produces a 404 that looks like a frontend bug.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The proxy mapping extractor lands and impact analysis includes the hop.",
+      "exceptions_allowed": true,
+      "exception_refs": ["ws-chat-bypasses-proxy"]
+    },
+    {
+      "id": "deprecated-aliases-have-a-removal-milestone",
+      "statement": "Every deprecated configuration alias records what it aliases and when it can be removed.",
+      "rationale": "An alias with no removal milestone lives forever, and the migration it was meant to smooth never completes.",
+      "maturity": "advisory",
+      "check_impl": "checks.compatibility.check_alias_milestones",
+      "promotion_criteria": "No false positive across ten governed changes. Cheap to promote: the condition is structural.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "build-args-versus-runtime-are-distinguished",
+      "statement": "Frontend NEXT_PUBLIC_* values are classified as build arguments, not runtime configuration.",
+      "rationale": "They are baked into the image at build time. Treating one as runtime configuration produces a change that appears applied, survives a restart, and does nothing.",
+      "maturity": "advisory",
+      "check_impl": "checks.compatibility.check_build_arg_classification",
+      "promotion_criteria": "No false positive across ten governed changes.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    }
+  ]
+}

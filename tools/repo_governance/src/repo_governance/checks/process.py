@@ -152,3 +152,110 @@ def check_policy_weakening_recorded(scope: CheckScope) -> list[Issue]:
         )
 
     return issues
+
+
+def check_exception_hygiene(scope: CheckScope) -> list[Issue]:
+    """Every exception explains itself and says what would make it worth revisiting."""
+    path = scope.ctx.paths.curated_manifests / "exceptions.json"
+    if not path.is_file():
+        return []
+    try:
+        document = read_json(path)
+    except ValueError:
+        return []
+
+    rel = relative(scope.ctx, path)
+    known_rules = {rule.id for rule in _all_rule_ids(scope)}
+
+    issues: list[Issue] = []
+    for entry in document.get("exceptions", []):
+        exception_id = entry.get("id", "(unnamed)")
+        if entry.get("status") != "active":
+            continue
+        if not entry.get("review_trigger"):
+            issues.append(
+                Issue(
+                    message=f"Exception {exception_id!r} has no review trigger.",
+                    path=rel,
+                    evidence="An exception with no condition for revisiting it is a permanent hole.",
+                    repair="State what would make this worth reconsidering, or make it a policy change instead.",
+                )
+            )
+        for policy_ref in entry.get("policy_refs", []):
+            if policy_ref not in known_rules:
+                issues.append(
+                    Issue(
+                        message=f"Exception {exception_id!r} departs from rule {policy_ref!r}, which is not declared.",
+                        path=rel,
+                        evidence="An exception to a nonexistent rule protects nothing.",
+                        repair="Declare the rule, or correct the reference.",
+                    )
+                )
+
+    return issues
+
+
+def check_suite_validator_coverage(scope: CheckScope) -> list[Issue]:
+    """Every declared test suite is reachable through a validator, or excluded with a reason."""
+    from repo_governance.documents import load_validators
+
+    manifest = scope.ctx.paths.generated_manifests / "tests.json"
+    if not manifest.is_file():
+        return []
+    try:
+        suites = read_json(manifest).get("suites", [])
+    except ValueError:
+        return []
+
+    registry = load_validators(scope.ctx)
+    known = {entry["id"] for entry in registry.get("validators", [])}
+    excluded_reasons = {entry["id"]: entry.get("reason") for entry in registry.get("excluded", [])}
+
+    issues: list[Issue] = []
+    for suite in suites:
+        validator = suite.get("validator")
+        if validator is None:
+            if not suite.get("gated_by") and not excluded_reasons:
+                issues.append(
+                    Issue(
+                        message=f"Suite {suite['id']!r} has no validator and no gate explaining why.",
+                        path="governance/manifests/generated/tests.json",
+                        evidence="A suite nobody can select either never runs or runs by accident.",
+                        repair="Register a validator, or record it in the registry's excluded list with a reason.",
+                    )
+                )
+            continue
+        if validator not in known:
+            issues.append(
+                Issue(
+                    message=f"Suite {suite['id']!r} names validator {validator!r}, which is not registered.",
+                    path="governance/manifests/generated/tests.json",
+                    repair="Add it to governance/validators.json, or correct the reference.",
+                )
+            )
+
+    return issues
+
+
+def check_validator_ci_jobs(scope: CheckScope) -> list[Issue]:
+    """Each validator declares the CI job that runs it, or explicitly declares none."""
+    from repo_governance.documents import load_validators
+
+    issues: list[Issue] = []
+    for entry in load_validators(scope.ctx).get("validators", []):
+        if "ci_job" not in entry:
+            issues.append(
+                Issue(
+                    message=f"Validator {entry['id']!r} does not say whether CI runs it.",
+                    path="governance/validators.json",
+                    evidence="Without this it is impossible to tell which validators gate a merge and which are local only.",
+                    repair="Set ci_job to the job name, or to null if it deliberately does not run in CI.",
+                )
+            )
+    return issues
+
+
+def _all_rule_ids(scope: CheckScope):
+    from repo_governance.checks import iter_rules
+
+    return iter_rules(scope.ctx)

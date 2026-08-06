@@ -42,10 +42,122 @@
     },
     {
       "authority": "curated",
+      "description": "Components with no home directory: image-only services, host runtimes, database-resident surfaces, and multi-root frontend features.",
+      "kind": "manifest-curated",
+      "path": "governance/manifests/curated/architectural-intent.json",
+      "read_when": "Declaring a component that cannot hold a .governance.json, or changing architectural intent.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Deliberate, reviewed departures from policy, each with its reason and scope.",
+      "kind": "manifest-curated",
+      "path": "governance/manifests/curated/exceptions.json",
+      "read_when": "A check fires on something that looks intentional, or you need to record a new deliberate departure.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
       "description": "Generated-versus-curated ownership rules, the generated-file registry, and generator-divergence records.",
       "kind": "manifest-curated",
       "path": "governance/manifests/curated/ownership.json",
       "read_when": "Asking whether a file may be hand-edited, or what a generator upgrade will conflict with.",
+      "update": "manual"
+    },
+    {
+      "authority": "mixed",
+      "description": "The merged repository model: generated facts joined with curated intent, with merge conflicts surfaced explicitly.",
+      "kind": "manifest-effective",
+      "path": "governance/manifests/effective/repository.json",
+      "read_when": "You need one view of a component including both what it is and what it is meant to be.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "Agents, tools, and MCP connections along orthogonal dimensions, with the standing security findings that constrain them.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/ai-runtime.json",
+      "read_when": "Changing agents, toolsets, MCP configuration, or anything touching tool authorization.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "Every component, compiled from directory annotations and curated declarations.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/components.json",
+      "read_when": "Asking what owns a path or behavior.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "Environment variables across backend, frontend, and Compose surfaces, with classification and consumers. Names only, never values.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/configuration.json",
+      "read_when": "Adding, renaming, or removing configuration, or tracing who consumes a variable.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "PostgreSQL and pgvector objects, the migration graph, Redis logical databases, the two-level embedding cache, and S3 buckets.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/data-stores.json",
+      "read_when": "Touching migrations, the embedding dimension contract, Redis allocations, or bucket layout.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "HTTP contracts, the mandatory Next.js proxy hop, the WebSocket chat exception, SSE, and the WebSocket event inventory.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/interfaces.json",
+      "read_when": "Changing an API route, a proxy handler, a frontend client, or a WebSocket event.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "Compose services resolved across the file-stack x profile matrix, plus host runtimes and volume classification.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/services.json",
+      "read_when": "Changing Compose files, ports, profiles, volumes, or anything about how services are exposed.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "Test frameworks, gating environment variables, ratcheted coverage floors, and which declared invariants have a dedicated test.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/tests.json",
+      "read_when": "Deciding what proves a change, or asking whether an invariant is actually covered.",
+      "update": "sync"
+    },
+    {
+      "authority": "curated",
+      "description": "Layering, component boundaries, and dependency direction rules.",
+      "kind": "policy",
+      "path": "governance/policies/architecture.json",
+      "read_when": "Adding a dependency between components, or moving code across a boundary.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Contracts that must not break silently: the embedding dimension agreement, migration heads, WebSocket events, and catalog-to-backend mapping.",
+      "kind": "policy",
+      "path": "governance/policies/compatibility.json",
+      "read_when": "Changing a contract that something outside its own file depends on.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Change-record requirements, CI job references, and the policy-maturity promotion ladder.",
+      "kind": "policy",
+      "path": "governance/policies/process.json",
+      "read_when": "Asking whether a change needs a record, or promoting a policy to a stricter maturity.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Exposure invariants, secret handling, MCP authorization, and the standing security findings.",
+      "kind": "policy",
+      "path": "governance/policies/security.json",
+      "read_when": "Changing exposure, credentials, tool authorization, or anything touching the MCP surface.",
       "update": "manual"
     },
     {

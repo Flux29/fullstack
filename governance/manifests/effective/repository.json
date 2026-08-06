@@ -1,0 +1,698 @@
+{
+  "components": [
+    {
+      "allowed_dependencies": [
+        "github-mcp",
+        "docling-mcp",
+        "chrome-devtools-mcp",
+        "mcp-user-connections",
+        "postgres-pgvector",
+        "redis",
+        "rag"
+      ],
+      "annotation_path": "backend/app/agents/.governance.json",
+      "configuration_refs": [
+        "MCP_SERVERS",
+        "MCP_CONNECT_TIMEOUT_SECS",
+        "GITHUB_MCP_TOKEN",
+        "BROWSERLESS_TOKEN",
+        "GOOGLE_API_CLIENT_ID",
+        "GOOGLE_API_CLIENT_SECRET",
+        "AI_MODEL",
+        "OPENROUTER_API_KEY",
+        "TAVILY_API_KEY"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "backend/app/agents/assistant.py",
+        "backend/app/agents/mcp.py",
+        "backend/app/agents/google_apis/products.py",
+        "backend/app/api/routes/v1/agent.py"
+      ],
+      "exceptions": [
+        "google-live-suites-excluded-from-registry"
+      ],
+      "finding_refs": [
+        "mcp-approval-gating-asymmetry",
+        "mcp-no-connection-time-ssrf-revalidation",
+        "mcp-url-embedded-credentials-unencrypted"
+      ],
+      "forbidden_dependencies": [
+        "frontend-app"
+      ],
+      "graph_hints": {
+        "entry_symbols": [
+          "build_mcp_toolsets",
+          "build_product_toolset",
+          "build_google_api_toolset",
+          "build_toolsets_for_user"
+        ],
+        "exclude": []
+      },
+      "id": "agents",
+      "invariants": [
+        "GitHub MCP read-only is enforced at three independent layers: container flags in Compose, the settings-validator allowlist frozenset, and the runtime post-probe assert. Governance cross-checks the three rather than re-declaring the policy; drift between any two is the finding",
+        "Unreachable MCP servers are skipped, not fatal: each server gets a bounded pre-flight probe and a failure removes its tools for that turn rather than failing the turn",
+        "Tool names are prefixed per server and deduplicated, so a per-user connection cannot shadow a deployment-managed server's tool",
+        "A deployment-managed server must declare an explicit allowed_tools list; startup fails on a malformed or duplicated server name",
+        "Connection URLs are stripped of query strings and userinfo before they reach any log, manifest, or governance artifact, because the catalog supports placing a token in the URL"
+      ],
+      "kind": "agent-runtime",
+      "owns": [
+        "backend/app/agents/**",
+        "backend/app/services/agent.py",
+        "backend/app/services/agent_session.py",
+        "backend/app/services/mcp_connection.py",
+        "backend/evals/**"
+      ],
+      "public_interfaces": [
+        "WS /api/v1/ws/agent",
+        "GET /api/v1/agent/models",
+        "/api/v1/me/mcp-connections"
+      ],
+      "purpose": "Build the assistant agent and its toolsets: local tools, deployment-managed and per-user MCP servers, and the direct Google REST executor",
+      "validation": [
+        "backend-unit",
+        "agent-evals"
+      ]
+    },
+    {
+      "allowed_dependencies": [
+        "postgres-pgvector",
+        "redis",
+        "minio",
+        "docling-serve",
+        "model-runner-host"
+      ],
+      "annotation_path": "backend/.governance.json",
+      "configuration_refs": [
+        "POSTGRES_HOST",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_DB",
+        "SECRET_KEY",
+        "API_KEY",
+        "CORS_ORIGINS",
+        "ENVIRONMENT",
+        "TIMEZONE"
+      ],
+      "decision_refs": [
+        "ADR-001"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "backend/app/main.py",
+        "backend/app/api/routes/v1/__init__.py",
+        "backend/app/worker/taskiq_app.py",
+        "backend/cli/commands.py"
+      ],
+      "exceptions": [
+        "coverage-floors-are-ratchets",
+        "taskiq-healthchecks-disabled"
+      ],
+      "forbidden_dependencies": [
+        "frontend-app",
+        "chat-frontend"
+      ],
+      "graph_hints": {
+        "exclude": [
+          "backend/.venv/**",
+          "backend/alembic/versions/**"
+        ]
+      },
+      "id": "backend-api",
+      "invariants": [
+        "Routes call services; they never import or call repositories directly",
+        "Repositories flush and refresh; the session auto-commits in get_db_session, so a repository that commits breaks transaction boundaries its caller owns",
+        "Every ORM schema change has an Alembic revision; the revision graph stays acyclic and connected with the recorded head",
+        "Route handlers return Any and let response_model serialize, so a response is validated once rather than twice",
+        "Settings are never imported by tooling in-process: find_env_file walks parent directories for .env and main.py configures Logfire at import scope"
+      ],
+      "kind": "backend-subsystem",
+      "owns": [
+        "backend/**"
+      ],
+      "public_interfaces": [
+        "OpenAPI under /api/v1",
+        "WS /api/v1/ws/agent",
+        "GET /api/v1/rag/status/stream"
+      ],
+      "purpose": "The FastAPI application: HTTP and WebSocket endpoints, services, repositories, data models, migrations, background tasks, and the CLI",
+      "validation": [
+        "backend-lint",
+        "backend-unit"
+      ]
+    },
+    {
+      "allowed_dependencies": [
+        "backend-api",
+        "agents"
+      ],
+      "configuration_refs": [
+        "NEXT_PUBLIC_WS_URL",
+        "NEXT_PUBLIC_API_URL"
+      ],
+      "declared_in": "curated",
+      "exceptions": [
+        "ws-chat-bypasses-proxy"
+      ],
+      "forbidden_dependencies": [],
+      "id": "chat-frontend",
+      "invariants": [
+        "Ownership spans four roots — a route, a component directory, hooks, and stores — which is why it is declared here rather than as a directory annotation: no single directory contains it",
+        "This is the one browser surface that talks to the backend directly, over a WebSocket, with the access token passed as a subprotocol so it stays out of query strings and access logs",
+        "WebSocket events are untyped dicts with no schema. The compatibility check is the set difference between what the backend produces and what this component consumes",
+        "A dropped connection refreshes the access token before reconnecting; a token expiring mid-conversation must not end it"
+      ],
+      "kind": "frontend-feature",
+      "owns": [
+        "frontend/src/app/[locale]/(dashboard)/chat/**",
+        "frontend/src/components/chat/**",
+        "frontend/src/hooks/use-chat.ts",
+        "frontend/src/hooks/use-websocket.ts",
+        "frontend/src/stores/chat-store.ts",
+        "frontend/src/stores/chat-mode-store.ts",
+        "frontend/src/stores/chat-sidebar-store.ts"
+      ],
+      "public_interfaces": [
+        "/[locale]/chat"
+      ],
+      "purpose": "The chat experience: page, components, streaming hook, and client state",
+      "validation": [
+        "frontend-test"
+      ]
+    },
+    {
+      "allowed_dependencies": [],
+      "annotation_path": "docker/mcp/chrome-devtools/.governance.json",
+      "configuration_refs": [
+        "BROWSERLESS_TOKEN"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "docker/mcp/chrome-devtools/Dockerfile"
+      ],
+      "forbidden_dependencies": [
+        "postgres-pgvector",
+        "minio"
+      ],
+      "id": "chrome-devtools-mcp",
+      "invariants": [
+        "The browser itself runs in a separate service; this sidecar holds no browser. Their shared token must match, and the placeholder value must never reach a running stack — make preflight-mcp refuses to start the profile until it is replaced",
+        "Reachable only on the service-egress network and only under the mcp Compose profile",
+        "This is the widest-reaching tool source in the system: it can fetch arbitrary URLs. It is deliberately not enabled by default"
+      ],
+      "kind": "mcp-sidecar",
+      "owns": [
+        "docker/mcp/chrome-devtools/**"
+      ],
+      "public_interfaces": [
+        "MCP over HTTP on container port 8000"
+      ],
+      "purpose": "Expose browser automation to the agent as MCP tools, driving a separate headless Chromium service",
+      "validation": [
+        "compose-check"
+      ]
+    },
+    {
+      "allowed_dependencies": [
+        "docling-serve"
+      ],
+      "annotation_path": "docker/mcp/docling/.governance.json",
+      "configuration_refs": [
+        "DOCLING_SERVE_URL"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "docker/mcp/docling/Dockerfile"
+      ],
+      "forbidden_dependencies": [
+        "postgres-pgvector",
+        "minio"
+      ],
+      "id": "docling-mcp",
+      "invariants": [
+        "Runs in remote conversion mode against the same Docling Serve instance the ingestion path uses, with a compatible timeout and retry budget. Two Docling paths that disagree about the endpoint would give the agent and the ingestion pipeline different answers about the same document",
+        "Local fallback conversion stays disabled: a silent fallback would move GPU work into a sidecar sized for none",
+        "Reachable only on the service-egress network and only under the mcp Compose profile"
+      ],
+      "kind": "mcp-sidecar",
+      "owns": [
+        "docker/mcp/docling/**"
+      ],
+      "public_interfaces": [
+        "MCP over HTTP on container port 8000"
+      ],
+      "purpose": "Expose Docling document conversion to the agent as MCP tools, in remote mode against the shared Docling Serve instance",
+      "validation": [
+        "compose-check"
+      ]
+    },
+    {
+      "configuration_refs": [
+        "DOCLING_SERVE_URL",
+        "DOCLING_SERVE_TIMEOUT_SECONDS",
+        "DOCLING_SERVE_MAX_RETRIES"
+      ],
+      "decision_refs": [
+        "ADR-004"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "docling-serve",
+      "invariants": [
+        "One instance serves both Docling paths. The ingestion and chat-upload client and the MCP sidecar must resolve to the same URL with compatible timeouts; see ADR-004",
+        "Its model cache is an external preserved volume mounted read-only, so a container restart never re-downloads models and no service can corrupt the cache",
+        "Models load lazily rather than at boot, so a cold start is fast and the first conversion is slow"
+      ],
+      "kind": "infrastructure",
+      "owns": [],
+      "public_interfaces": [
+        "HTTP on container port 5001"
+      ],
+      "purpose": "GPU-backed document conversion service shared by the ingestion path and the docling-mcp sidecar",
+      "validation": []
+    },
+    {
+      "allowed_dependencies": [],
+      "annotation_path": "backend/app/services/email/.governance.json",
+      "configuration_refs": [
+        "EMAIL_FROM",
+        "EMAIL_FROM_NAME",
+        "EMAIL_PROVIDER"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "backend/app/services/email/service.py"
+      ],
+      "forbidden_dependencies": [
+        "frontend-app",
+        "chat-frontend"
+      ],
+      "id": "email",
+      "invariants": [
+        "Provider selection is configuration, not code: adding a provider means adding a module under providers/ that satisfies the base interface, never branching in the service",
+        "The default provider writes to stdout, so a development environment cannot send real mail by accident",
+        "Templates live with the domain rather than in a shared template directory, because their content is part of this component's contract"
+      ],
+      "kind": "backend-subsystem",
+      "owns": [
+        "backend/app/services/email/**",
+        "emails/**"
+      ],
+      "public_interfaces": [],
+      "purpose": "Render and deliver transactional email through a pluggable provider",
+      "validation": [
+        "backend-unit"
+      ]
+    },
+    {
+      "allowed_dependencies": [
+        "backend-api"
+      ],
+      "annotation_path": "frontend/.governance.json",
+      "configuration_refs": [
+        "BACKEND_URL",
+        "BACKEND_WS_URL",
+        "NEXT_PUBLIC_API_URL",
+        "NEXT_PUBLIC_WS_URL",
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_RAG_ENABLED",
+        "NEXT_PUBLIC_AUTH_ENABLED",
+        "NEXT_PUBLIC_OAUTH_PROVIDERS",
+        "NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "frontend/src/app/[locale]/layout.tsx",
+        "frontend/src/app/api",
+        "frontend/src/lib/api-client.ts",
+        "frontend/src/lib/server-api.ts"
+      ],
+      "exceptions": [
+        "coverage-floors-are-ratchets",
+        "playwright-not-in-ci",
+        "ws-chat-bypasses-proxy"
+      ],
+      "forbidden_dependencies": [
+        "postgres-pgvector",
+        "redis",
+        "minio"
+      ],
+      "graph_hints": {
+        "exclude": [
+          "frontend/node_modules/**",
+          "frontend/.next/**",
+          "frontend/playwright-report/**",
+          "frontend/test-results/**"
+        ]
+      },
+      "id": "frontend-app",
+      "invariants": [
+        "The browser never calls the backend origin directly for REST. Every call goes page to client to proxy route handler to FastAPI route, and an API change is incomplete until the proxy handler is updated too. Impact analysis that skips the proxy hop reports the wrong blast radius",
+        "The chat WebSocket is the single documented exception: it connects to the backend directly with the access token as a subprotocol, deliberately keeping the token out of query strings and access logs",
+        "Route extraction normalizes the [locale] segment, so the English and Polish routes are one route with two translations rather than two routes",
+        "NEXT_PUBLIC_* values are build arguments baked into the image, not runtime configuration. Changing one requires a rebuild, so they can never be corrected by restarting a container",
+        "Generated frontend assets are regenerated from their source, never hand-edited"
+      ],
+      "kind": "frontend-feature",
+      "owns": [
+        "frontend/**"
+      ],
+      "public_interfaces": [
+        "Pages under /[locale]",
+        "Proxy routes under /api"
+      ],
+      "purpose": "The Next.js application: localized pages, UI components, client state, and the proxy layer that fronts every REST call to the backend",
+      "validation": [
+        "frontend-test"
+      ]
+    },
+    {
+      "configuration_refs": [
+        "GITHUB_MCP_TOKEN",
+        "MCP_SERVERS"
+      ],
+      "decision_refs": [
+        "ADR-003"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "github-mcp",
+      "invariants": [
+        "Read-only is enforced at three independent layers: the container command flags, the settings-validator allowlist frozenset, and a runtime post-probe assert. Governance cross-checks the three; drift between any two is the finding",
+        "The tool allowlist is identical at every layer. Widening it at one layer only is the exact failure this cross-check exists to catch",
+        "Image-only: there is no directory anywhere in the repository that could hold an annotation for this component, which is why it is declared here"
+      ],
+      "kind": "image-only-service",
+      "owns": [],
+      "public_interfaces": [
+        "MCP over HTTP on container port 8082"
+      ],
+      "purpose": "Read-only GitHub MCP server available to the agent under the mcp Compose profile",
+      "validation": [
+        "compose-check"
+      ]
+    },
+    {
+      "decision_refs": [
+        "ADR-001"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "governance-kernel",
+      "invariants": [
+        "Spans two roots, which is why it is declared here rather than annotated in either one",
+        "The CLI never imports application code in-process; anything that must execute it runs in a scrubbed subprocess",
+        "Generated output is byte-reproducible: LF, UTF-8 without BOM, sorted keys, no timestamps. Two syncs with no source change produce no diff",
+        "Automation may regenerate derived files and propose changes, but may not weaken a policy, broaden a permission, accept a security exception, or approve its own governance change"
+      ],
+      "kind": "governance",
+      "owns": [
+        "governance/**",
+        "tools/repo_governance/**"
+      ],
+      "public_interfaces": [
+        "make governance-*"
+      ],
+      "purpose": "The governance control plane: contract, schemas, policies, manifests, history, and the CLI that maintains them",
+      "validation": [
+        "governance-selftest",
+        "governance-check"
+      ]
+    },
+    {
+      "configuration_refs": [],
+      "decision_refs": [
+        "ADR-003"
+      ],
+      "declared_in": "curated",
+      "finding_refs": [
+        "mcp-approval-gating-asymmetry",
+        "mcp-no-connection-time-ssrf-revalidation",
+        "mcp-url-embedded-credentials-unencrypted"
+      ],
+      "forbidden_dependencies": [],
+      "id": "mcp-user-connections",
+      "invariants": [
+        "These edges live in database rows, not in any file. Static extraction cannot enumerate them, so they are recorded only from runtime evidence with provenance database, under the runtime-evidence rules, and never statically assumed",
+        "Bearer tokens are encrypted at rest; the URL column is not, and the catalog supports placing a token in the URL. Every governance surface strips query strings and userinfo before storing or logging a connection URL",
+        "A connection with allowed_tools unset exposes every tool its server advertises, and MCP-sourced tools bypass the deferred-tool approval gate entirely. Together these mean a write-capable arbitrary server has full exposure and no gate",
+        "URL validation runs at write time only. The per-turn probe and toolset attach open the stored URL without revalidating, leaving a validation-to-connection window"
+      ],
+      "kind": "db-resident-surface",
+      "owns": [],
+      "public_interfaces": [
+        "/api/v1/me/mcp-connections"
+      ],
+      "purpose": "Per-user MCP connections: the privileged tool surface that exists only as database rows",
+      "validation": [
+        "backend-unit"
+      ]
+    },
+    {
+      "configuration_refs": [
+        "S3_ENDPOINT",
+        "S3_BUCKET",
+        "S3_ACCESS_KEY",
+        "S3_SECRET_KEY",
+        "S3_RAG_ENDPOINT",
+        "S3_RAG_BUCKET",
+        "S3_RAG_ACCESS_KEY",
+        "S3_RAG_SECRET_KEY"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "minio",
+      "invariants": [
+        "The general and RAG buckets stay distinct and are addressed with separate endpoint and credential settings, so a misconfiguration cannot silently merge user media with the RAG corpus",
+        "Addressed S3-compatibly through boto3; there is no MinIO-specific client and no MINIO_* application setting"
+      ],
+      "kind": "data",
+      "owns": [],
+      "public_interfaces": [
+        "S3 API on the data-internal network"
+      ],
+      "purpose": "S3-compatible object storage for uploaded media and RAG source documents",
+      "validation": []
+    },
+    {
+      "configuration_refs": [
+        "EMBEDDING_BASE_URL",
+        "EMBEDDING_MODEL",
+        "EMBEDDING_DIMENSION",
+        "RERANKER_BASE_URL",
+        "CROSS_ENCODER_MODEL"
+      ],
+      "decision_refs": [
+        "ADR-002"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "model-runner-host",
+      "invariants": [
+        "No Compose file declares this. It runs on the host and containers reach it through the Docker-internal host alias, so without modelling it as a component the embedding and reranker dependency edges simply vanish from the graph",
+        "It must serve the contracted embedding model at 1024 dimensions; make preflight-model probes exactly that and additionally checks the reranker returns a finite score",
+        "It is a single point of failure for both ingestion and retrieval, and it is not restarted or health-managed by any Compose lifecycle target"
+      ],
+      "kind": "host-runtime",
+      "owns": [],
+      "public_interfaces": [
+        "OpenAI-compatible embeddings API",
+        "Rerank API"
+      ],
+      "purpose": "Docker Model Runner on the host, serving embeddings and the reranker",
+      "validation": [
+        "preflight-model"
+      ]
+    },
+    {
+      "configuration_refs": [
+        "POSTGRES_HOST",
+        "POSTGRES_PORT",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB"
+      ],
+      "decision_refs": [
+        "ADR-002"
+      ],
+      "declared_in": "curated",
+      "exceptions": [
+        "alembic-numbering-gaps-accepted",
+        "billing-generator-feature-disabled"
+      ],
+      "forbidden_dependencies": [],
+      "id": "postgres-pgvector",
+      "invariants": [
+        "Reachable only on data-internal, which is an internal network with no egress. The database is never published to a host port outside the dev stack",
+        "Vector columns are 1024-dimensional and a CHECK constraint enforces it; see ADR-002",
+        "The image is pinned by digest and must remain a pgvector build. A plain postgres image satisfies every migration up to 0026 and then fails, which is how it was caught in CI"
+      ],
+      "kind": "data",
+      "owns": [],
+      "public_interfaces": [
+        "PostgreSQL wire protocol on the data-internal network"
+      ],
+      "purpose": "PostgreSQL with the pgvector extension: application tables, the vector store, and the durable embedding cache",
+      "validation": [
+        "migrations"
+      ]
+    },
+    {
+      "allowed_dependencies": [
+        "docling-serve",
+        "minio",
+        "model-runner-host",
+        "postgres-pgvector",
+        "redis"
+      ],
+      "annotation_path": "backend/app/services/rag/.governance.json",
+      "configuration_refs": [
+        "S3_RAG_ENDPOINT",
+        "S3_RAG_BUCKET",
+        "S3_RAG_ACCESS_KEY",
+        "S3_RAG_SECRET_KEY",
+        "EMBEDDING_MODEL",
+        "EMBEDDING_DIMENSION",
+        "EMBEDDING_BASE_URL",
+        "EMBEDDING_CACHE_URL",
+        "RERANKER_BASE_URL",
+        "CROSS_ENCODER_MODEL",
+        "DOCLING_SERVE_URL",
+        "RAG_CHUNK_SIZE",
+        "RAG_CHUNK_OVERLAP",
+        "RAG_TOP_K",
+        "RAG_DEFAULT_COLLECTION"
+      ],
+      "decision_refs": [
+        "ADR-002"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "backend/app/api/routes/v1/rag.py",
+        "backend/app/services/rag/ingestion.py",
+        "backend/app/services/rag/retrieval.py"
+      ],
+      "forbidden_dependencies": [
+        "frontend-app",
+        "chat-frontend"
+      ],
+      "graph_hints": {
+        "entry_symbols": [
+          "ingest_document_task",
+          "sync_single_source_task"
+        ],
+        "exclude": []
+      },
+      "id": "rag",
+      "invariants": [
+        "Embedding dimension is 1024 end to end: settings EMBEDDING_DIMENSION, the vectorstore guard and DDL, the migration CHECK constraint, the persisted per-collection embedding_fingerprint, and the embedding cache key version. Drift between any two of the five is the finding, not just a mismatch against settings",
+        "Re-ingestion preserves stable document identity, so re-running a sync updates a document rather than duplicating it",
+        "The embedding cache is two-level: Redis L1 backed by a durable PostgreSQL pgvector L2 with versioned keys. Changing what the key hashes invalidates both levels and is part of the dimension contract",
+        "Ingestion and chat uploads reach Docling Serve over the direct HTTP client; the docling-mcp sidecar is an agent tool source, not this path. Both must resolve to the same DOCLING_SERVE_URL with compatible timeout and retry budgets",
+        "The general and RAG object-storage buckets stay distinct, with separate credentials and endpoints"
+      ],
+      "kind": "backend-subsystem",
+      "owns": [
+        "backend/app/services/rag/**",
+        "backend/app/services/rag_sync.py",
+        "backend/app/services/rag_document.py",
+        "backend/app/services/rag_status.py"
+      ],
+      "public_interfaces": [
+        "GET /api/v1/rag/search",
+        "GET /api/v1/rag/status/stream",
+        "POST /api/v1/rag/sync/sources/{source_id}/trigger"
+      ],
+      "purpose": "Convert, chunk, embed, persist, retrieve, and rerank documents",
+      "validation": [
+        "backend-unit",
+        "rag-docker-integration"
+      ]
+    },
+    {
+      "configuration_refs": [
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_DB",
+        "REDIS_PASSWORD",
+        "TASKIQ_BROKER_URL",
+        "TASKIQ_RESULT_BACKEND",
+        "EMBEDDING_CACHE_URL"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "redis",
+      "invariants": [
+        "Logical database allocations are explicit and exclusive: 0 general cache, 1 Taskiq broker, 2 Taskiq results, 3 embedding cache level one. A new consumer may not quietly reuse an allocated database",
+        "Persistence is on (appendonly with everysec fsync), and its volume is external preserved state this repository did not create",
+        "Production requires a password; the base and dev stacks deliberately run without one on an internal network"
+      ],
+      "kind": "data",
+      "owns": [],
+      "public_interfaces": [
+        "Redis protocol on the data-internal network"
+      ],
+      "purpose": "Cache, Taskiq broker and result backend, and the level-one embedding cache",
+      "validation": [
+        "preflight-volumes"
+      ]
+    },
+    {
+      "configuration_refs": [
+        "DOMAIN",
+        "ACME_EMAIL",
+        "TRAEFIK_HTTP_PORT",
+        "TRAEFIK_HTTPS_PORT",
+        "TRAEFIK_DASHBOARD_PORT",
+        "TRAEFIK_DASHBOARD_AUTH"
+      ],
+      "decision_refs": [
+        "ADR-005"
+      ],
+      "declared_in": "curated",
+      "forbidden_dependencies": [],
+      "id": "traefik",
+      "invariants": [
+        "The only service in any stack that publishes a non-loopback host port. Its dashboard is bound to loopback",
+        "The HTTP port is configurable because this host already runs IIS on port 80; a hard-coded 80 would collide",
+        "Present only under the edge profile of the production stack"
+      ],
+      "kind": "infrastructure",
+      "owns": [],
+      "public_interfaces": [
+        "HTTP and HTTPS on the host"
+      ],
+      "purpose": "Production edge: TLS termination, Let's Encrypt, and host-based routing to the API and frontend",
+      "validation": [
+        "compose-check-prod",
+        "preflight-edge-ports"
+      ]
+    }
+  ],
+  "conflicts": [],
+  "exceptions_applied": [
+    "alembic-numbering-gaps-accepted",
+    "billing-generator-feature-disabled",
+    "coverage-floors-are-ratchets",
+    "google-live-suites-excluded-from-registry",
+    "playwright-not-in-ci",
+    "taskiq-healthchecks-disabled",
+    "trivy-advisory-deliberate",
+    "ws-chat-bypasses-proxy"
+  ],
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "merged",
+    "sources": [
+      "governance/manifests/generated/components.json",
+      "governance/manifests/curated/architectural-intent.json",
+      "governance/manifests/curated/exceptions.json"
+    ]
+  },
+  "schema_version": 1
+}

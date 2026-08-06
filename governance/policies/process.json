@@ -1,0 +1,86 @@
+{
+  "schema_version": 1,
+  "policy_group": "process",
+  "description": "How changes are recorded and proven, and how a policy earns strictness. The maturity ladder is itself a policy: experimental, advisory, warning, blocking, deprecated, retired. Nothing skips steps.",
+  "rules": [
+    {
+      "id": "material-changes-are-recorded",
+      "statement": "A material change to application behaviour, contracts, or configuration has a change record stating its reason.",
+      "rationale": "A diff shows what changed and never why. The reason has to be captured by whoever made the change, at the time.",
+      "maturity": "advisory",
+      "check_impl": "checks.process.check_governance_change_records",
+      "promotion_criteria": "Promote to blocking once the change-session workflow has been used for twenty changes without friction. Governance's own changes are already blocking; extending that to the application before the workflow is comfortable would train people to route around it.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
+      "id": "exceptions-are-reviewable",
+      "statement": "Every exception states what it departs from, why, and what would make it worth revisiting.",
+      "rationale": "An exception with no review trigger is a permanent hole. If it is genuinely permanent it should be a policy change instead.",
+      "maturity": "advisory",
+      "check_impl": "checks.process.check_exception_hygiene",
+      "promotion_criteria": "No false positive across ten governed changes. Cheap to promote: the condition is structural.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "every-suite-has-a-validator",
+      "statement": "Every test suite is reachable through a registered validator ID, or is recorded in the registry's excluded list with a reason.",
+      "rationale": "A suite nobody can select through the registry either never runs or runs by accident. Being excluded is a legitimate answer; being absent silently is not.",
+      "maturity": "advisory",
+      "check_impl": "checks.process.check_suite_validator_coverage",
+      "promotion_criteria": "No false positive across ten governed changes.",
+      "exceptions_allowed": true,
+      "exception_refs": ["google-live-suites-excluded-from-registry"]
+    },
+    {
+      "id": "validators-declare-their-ci-job",
+      "statement": "Each registered validator names the CI job that runs it, or records null with a reason it does not run in CI.",
+      "rationale": "Otherwise it is impossible to tell which validators actually gate a merge and which only exist locally.",
+      "maturity": "advisory",
+      "check_impl": "checks.process.check_validator_ci_jobs",
+      "promotion_criteria": "No false positive across ten governed changes.",
+      "exceptions_allowed": true,
+      "exception_refs": ["playwright-not-in-ci"]
+    },
+    {
+      "id": "coverage-floor-does-not-regress",
+      "statement": "Coverage floors are ratchets: they may rise with real tests and must never be lowered to make a failing build pass.",
+      "rationale": "The generator shipped 100 percent thresholds against roughly 55 and 4 percent actuals, so the gate had never once passed. A floor at the measured level catches regressions, which is what a gate is for.",
+      "maturity": "advisory",
+      "check_impl": "phase-5",
+      "promotion_criteria": "The CI job compares the floor against the previous commit's value.",
+      "exceptions_allowed": true,
+      "exception_refs": ["coverage-floors-are-ratchets"]
+    },
+    {
+      "id": "trivy-image-scan",
+      "statement": "The container image vulnerability scan reports CRITICAL and HIGH findings.",
+      "rationale": "The pilot for the advisory-to-blocking promotion ladder. It runs today with exit-code 0 and cannot fail the build, which is a reasonable starting point for a scan whose finding volume is unknown.",
+      "maturity": "advisory",
+      "check_impl": "manual",
+      "promotion_criteria": "Promote to warning after four consecutive weeks in which every CRITICAL finding was either fixed or recorded as an accepted exception. Promote to blocking after four further weeks at warning with no unreviewed finding. Each promotion is a governed change that flips exit-code in ci.yml; do not promote by editing this file alone.",
+      "exceptions_allowed": true,
+      "exception_refs": ["trivy-advisory-deliberate"]
+    },
+    {
+      "id": "generated-documentation-is-not-hand-edited",
+      "statement": "ENV_VARS.md and the generated manifests are rebuilt by sync; hand edits are drift.",
+      "rationale": "ENV_VARS.md had already drifted into documenting variables that do not exist. Making it generated output is the fix; the rule keeps it fixed.",
+      "maturity": "blocking",
+      "check_impl": "checks.schemas.check_generated_files",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "scheduled-automation-does-not-change-code",
+      "statement": "Scheduled analysis reports; it never modifies application code or activates a blocking policy on its own.",
+      "rationale": "Automation may regenerate derived files, propose changes, and produce reports. It may not weaken a policy, broaden a permission, accept a security exception, or approve its own governance change.",
+      "maturity": "advisory",
+      "check_impl": "manual",
+      "promotion_criteria": "Enforceable only as a review requirement; there is no scheduled automation yet to check.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    }
+  ]
+}

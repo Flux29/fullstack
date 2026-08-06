@@ -1,0 +1,107 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "method": "reviewed-baseline",
+    "sources": [
+      "backend/app/agents/",
+      "backend/app/core/config.py",
+      "backend/app/services/mcp_connection.py",
+      "frontend/src/lib/mcp-catalog.ts",
+      "docker-compose.yml"
+    ],
+    "extractor_version": "1.0.0"
+  },
+  "dimension_model": {
+    "provisioning": ["deployment", "user"],
+    "executor": ["mcp", "google-rest"],
+    "transport": ["streamable-http", "sse"],
+    "authentication": ["none", "bearer", "oauth2.1-pkce", "github"],
+    "allowlist_source": ["settings-validator", "per-connection", "product-registry", "none"],
+    "approval_gating": ["deferred-tools", "none"],
+    "encryption_at_rest": ["fernet", "none"]
+  },
+  "agents": [
+    {
+      "id": "assistant",
+      "location": "backend/app/agents/assistant.py",
+      "model_env_ref": "AI_MODEL",
+      "toolsets": [
+        "local tools (rag_tool, web_search, research, chart_tool, code_execution, ask_user_tool)",
+        "skills toolset",
+        "deployment-managed MCP toolsets",
+        "per-user MCP toolsets",
+        "direct Google REST toolsets"
+      ]
+    }
+  ],
+  "deployment_servers": [
+    {
+      "name": "github-internal",
+      "declared_by": "MCP_SERVERS setting; the target container is the github-mcp Compose service under the mcp profile",
+      "compose_service": "github-mcp",
+      "executor": "mcp",
+      "authentication": "github",
+      "allowlist_source": "settings-validator",
+      "approval_gating": "none",
+      "readonly_enforcement_layers": [
+        {
+          "layer": "container-flags",
+          "location": "docker-compose.yml github-mcp command: --read-only and --tools, plus GITHUB_READ_ONLY"
+        },
+        {
+          "layer": "settings-validator",
+          "location": "backend/app/core/config.py GITHUB_MCP_READ_ONLY_TOOLS frozenset, enforced by the MCP_SERVERS validator"
+        },
+        {
+          "layer": "runtime-assert",
+          "location": "backend/app/agents/mcp.py post-probe assert over the advertised tool list"
+        }
+      ]
+    },
+    {
+      "name": "docling-internal",
+      "declared_by": "MCP_SERVERS setting; the target container is the docling-mcp Compose service under the mcp profile",
+      "compose_service": "docling-mcp",
+      "executor": "mcp",
+      "authentication": "none",
+      "allowlist_source": "per-connection",
+      "approval_gating": "none"
+    },
+    {
+      "name": "chrome-internal",
+      "declared_by": "MCP_SERVERS setting; the target container is the chrome-devtools-mcp Compose service under the mcp profile",
+      "compose_service": "chrome-devtools-mcp",
+      "executor": "mcp",
+      "authentication": "none",
+      "allowlist_source": "per-connection",
+      "approval_gating": "none"
+    }
+  ],
+  "google_products": [
+    {"id": "drive", "registry": "DIRECT_GOOGLE_PRODUCTS", "mutation_tools_gated": true},
+    {"id": "docs", "registry": "DIRECT_GOOGLE_PRODUCTS", "mutation_tools_gated": true},
+    {"id": "sheets", "registry": "DIRECT_GOOGLE_PRODUCTS", "mutation_tools_gated": true},
+    {"id": "slides", "registry": "DIRECT_GOOGLE_PRODUCTS", "mutation_tools_gated": true},
+    {"id": "chat", "registry": "DIRECT_GOOGLE_PRODUCTS", "mutation_tools_gated": true},
+    {"id": "contacts", "registry": "DIRECT_GOOGLE_PRODUCTS", "mutation_tools_gated": true},
+    {"id": "gmail", "registry": "google_workspace_api.py GMAIL_API_URL", "mutation_tools_gated": true},
+    {"id": "calendar", "registry": "google_workspace_api.py CALENDAR_API_URL", "mutation_tools_gated": true}
+  ],
+  "embedding": {
+    "model_env_ref": "EMBEDDING_MODEL",
+    "dimension": 1024,
+    "fingerprint_ref": "per-collection embedding_fingerprint; see ADR-002",
+    "reranker_env_ref": "CROSS_ENCODER_MODEL"
+  },
+  "user_connections": {
+    "provenance": "runtime-evidence",
+    "committed": false,
+    "source": "mcp_connections table",
+    "latest_snapshot_ref": null
+  },
+  "standing_findings": [
+    "mcp-approval-gating-asymmetry",
+    "mcp-no-connection-time-ssrf-revalidation",
+    "mcp-url-embedded-credentials-unencrypted"
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "$schema": "../../../governance/schemas/local-governance.schema.json",
+  "id": "agents",
+  "kind": "agent-runtime",
+  "purpose": "Build the assistant agent and its toolsets: local tools, deployment-managed and per-user MCP servers, and the direct Google REST executor",
+  "entrypoints": [
+    "backend/app/agents/assistant.py",
+    "backend/app/agents/mcp.py",
+    "backend/app/agents/google_apis/products.py",
+    "backend/app/api/routes/v1/agent.py"
+  ],
+  "owns": [
+    "backend/app/agents/**",
+    "backend/app/services/agent.py",
+    "backend/app/services/agent_session.py",
+    "backend/app/services/mcp_connection.py",
+    "backend/evals/**"
+  ],
+  "public_interfaces": [
+    "WS /api/v1/ws/agent",
+    "GET /api/v1/agent/models",
+    "/api/v1/me/mcp-connections"
+  ],
+  "invariants": [
+    "GitHub MCP read-only is enforced at three independent layers: container flags in Compose, the settings-validator allowlist frozenset, and the runtime post-probe assert. Governance cross-checks the three rather than re-declaring the policy; drift between any two is the finding",
+    "Unreachable MCP servers are skipped, not fatal: each server gets a bounded pre-flight probe and a failure removes its tools for that turn rather than failing the turn",
+    "Tool names are prefixed per server and deduplicated, so a per-user connection cannot shadow a deployment-managed server's tool",
+    "A deployment-managed server must declare an explicit allowed_tools list; startup fails on a malformed or duplicated server name",
+    "Connection URLs are stripped of query strings and userinfo before they reach any log, manifest, or governance artifact, because the catalog supports placing a token in the URL"
+  ],
+  "allowed_dependencies": [
+    "github-mcp",
+    "docling-mcp",
+    "chrome-devtools-mcp",
+    "mcp-user-connections",
+    "postgres-pgvector",
+    "redis",
+    "rag"
+  ],
+  "forbidden_dependencies": [
+    "frontend-app"
+  ],
+  "configuration_refs": [
+    "MCP_SERVERS",
+    "MCP_CONNECT_TIMEOUT_SECS",
+    "GITHUB_MCP_TOKEN",
+    "BROWSERLESS_TOKEN",
+    "GOOGLE_API_CLIENT_ID",
+    "GOOGLE_API_CLIENT_SECRET",
+    "AI_MODEL",
+    "OPENROUTER_API_KEY",
+    "TAVILY_API_KEY"
+  ],
+  "finding_refs": [
+    "mcp-approval-gating-asymmetry",
+    "mcp-no-connection-time-ssrf-revalidation",
+    "mcp-url-embedded-credentials-unencrypted"
+  ],
+  "validation": [
+    "backend-unit",
+    "agent-evals"
+  ],
+  "graph_hints": {
+    "entry_symbols": [
+      "build_mcp_toolsets",
+      "build_product_toolset",
+      "build_google_api_toolset",
+      "build_toolsets_for_user"
+    ],
+    "exclude": []
+  }
+}

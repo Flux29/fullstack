@@ -1,0 +1,32 @@
+{
+  "$schema": "../../../../governance/schemas/local-governance.schema.json",
+  "id": "email",
+  "kind": "backend-subsystem",
+  "purpose": "Render and deliver transactional email through a pluggable provider",
+  "entrypoints": [
+    "backend/app/services/email/service.py"
+  ],
+  "owns": [
+    "backend/app/services/email/**",
+    "emails/**"
+  ],
+  "public_interfaces": [],
+  "invariants": [
+    "Provider selection is configuration, not code: adding a provider means adding a module under providers/ that satisfies the base interface, never branching in the service",
+    "The default provider writes to stdout, so a development environment cannot send real mail by accident",
+    "Templates live with the domain rather than in a shared template directory, because their content is part of this component's contract"
+  ],
+  "allowed_dependencies": [],
+  "forbidden_dependencies": [
+    "frontend-app",
+    "chat-frontend"
+  ],
+  "configuration_refs": [
+    "EMAIL_FROM",
+    "EMAIL_FROM_NAME",
+    "EMAIL_PROVIDER"
+  ],
+  "validation": [
+    "backend-unit"
+  ]
+}

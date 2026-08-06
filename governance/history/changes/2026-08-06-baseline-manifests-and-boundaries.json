@@ -1,0 +1,150 @@
+{
+  "adr_refs": ["ADR-002", "ADR-003", "ADR-004", "ADR-005"],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "rag",
+    "email",
+    "agents",
+    "docling-mcp",
+    "chrome-devtools-mcp",
+    "github-mcp",
+    "mcp-user-connections",
+    "chat-frontend",
+    "model-runner-host",
+    "postgres-pgvector",
+    "redis",
+    "minio",
+    "docling-serve",
+    "traefik",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "embedding-dimension-contract",
+    "migration-head-expectation",
+    "exposure-posture",
+    "github-mcp-readonly-layers"
+  ],
+  "behavioral_effects": [
+    "Seven .governance.json annotations and ten curated declarations now describe seventeen components. `make governance-sync` compiles them into components.json and the merged effective manifest.",
+    "Four policy groups are declared. Twenty-five rules report as not-yet-enforced with an explicit phase marker rather than silently passing; the rest run.",
+    "No application code, migration, Compose file, or CI workflow changed. The only schema change was widening the configuration manifest's `type` field to allow null, which the checks caught during authoring."
+  ],
+  "compatibility_impact": "None to any application contract. Within governance, the configuration schema's `type` field now accepts null so that a variable with no declaring type — a compose-only variable, or one present in a template with no reader — can be recorded as such instead of being given a fictional type. That is a widening, so no existing document becomes invalid.",
+  "date": "2026-08-06",
+  "evidence_refs": [],
+  "files_changed": [
+    "backend/.governance.json",
+    "backend/app/agents/.governance.json",
+    "backend/app/services/email/.governance.json",
+    "backend/app/services/rag/.governance.json",
+    "docker/mcp/chrome-devtools/.governance.json",
+    "docker/mcp/docling/.governance.json",
+    "frontend/.governance.json",
+    "governance/history/changes/2026-08-06-baseline-manifests-and-boundaries.json",
+    "governance/history/decisions/ADR-002-embedding-dimension-contract.md",
+    "governance/history/decisions/ADR-003-mcp-connection-model.md",
+    "governance/history/decisions/ADR-004-docling-two-paths.md",
+    "governance/history/decisions/ADR-005-service-exposure-strategy.md",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/generated/ai-runtime.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/data-stores.json",
+    "governance/manifests/generated/interfaces.json",
+    "governance/manifests/generated/services.json",
+    "governance/manifests/generated/tests.json",
+    "governance/policies/architecture.json",
+    "governance/policies/compatibility.json",
+    "governance/policies/process.json",
+    "governance/policies/security.json",
+    "governance/schemas/component.schema.json",
+    "governance/schemas/configuration.schema.json",
+    "tools/repo_governance/src/repo_governance/checks/architecture.py",
+    "tools/repo_governance/src/repo_governance/checks/compatibility.py",
+    "tools/repo_governance/src/repo_governance/checks/process.py",
+    "tools/repo_governance/src/repo_governance/merge.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py"
+  ],
+  "findings": [
+    {
+      "detail": "The proxy layer defaults BACKEND_URL to port 8000 in frontend/src/lib/server-api.ts, while frontend/src/lib/constants.ts defaults to 8100. Both are fallbacks that apply only when the variable is unset, so a deployment that forgets to set it fails in two different ways depending on which module is asked. Recorded during the configuration baseline review; the fix is an application change.",
+      "disposition": "app-fix-required",
+      "id": "backend-url-default-port-mismatch",
+      "severity": "low",
+      "status": "open"
+    },
+    {
+      "detail": "Three variables appear in backend/.env.example with no reader in Settings: OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS. Because Settings uses extra=\"ignore\", setting them has no effect and produces no warning. CODE_EXECUTION_MAX_ALLOCATIONS looks like a rename that left the template behind, since Settings has CODE_EXECUTION_MAX_MEMORY_MB. Classified as unknown-consumer rather than guessed at or deleted.",
+      "disposition": "app-fix-required",
+      "id": "env-example-unknown-consumers",
+      "severity": "low",
+      "status": "open"
+    },
+    {
+      "detail": "The blueprint names five directory annotation locations. Two more were added — backend/.governance.json and frontend/.governance.json — because without them the two applications themselves are unowned, and roughly ninety percent of the repository would match no component. That would fail the blueprint's own first Milestone 1 acceptance question, 'what owns this behaviour?'. Both have home directories, so annotation is the mechanism the declaration rule requires; declaring them in the curated manifest would have violated it. The blueprint's list is a statement of the boundaries that existed when it was written, not a cap.",
+      "disposition": "documented-deviation",
+      "id": "two-additional-root-annotations",
+      "severity": "low",
+      "status": "accepted"
+    }
+  ],
+  "id": "2026-08-06-baseline-manifests-and-boundaries",
+  "initiated_by": {
+    "kind": "user",
+    "ref": "Blueprint Phase 2 — reviewed baseline manifests."
+  },
+  "limitations": [
+    "Five of the seven generated manifests are marked provenance reviewed-baseline: they are hand-authored from a reading of the sources, and no extractor has confirmed them. Phase 3 flips each one to extracted as its extractor lands, and the regeneration comparison only applies to sections marked extracted. Until then a stale hand-authored fact would not be caught by any check.",
+    "components.json and the effective manifest are genuinely generated, because their source is the annotations and curated declarations rather than application code.",
+    "The interfaces manifest records the OpenAPI section as status unknown with a reason, rather than as an empty path list. The proxy route and frontend page inventories are empty for the same reason — they arrive with the extractor in Phase 3. An empty list would have claimed there are none.",
+    "Twenty-five of the thirty-seven declared rules cannot run yet and report as not-yet-enforced with a phase marker. Reading a green check as 'all policies satisfied' would overestimate coverage by roughly two thirds, which is why the deferred count is printed on every run.",
+    "Every non-kernel rule is advisory. Nothing outside the governance kernel blocks anything yet, deliberately: a rule that fires wrongly in its first week gets the whole system routed around.",
+    "The dependency declarations describe intended boundaries, not observed ones. Whether code respects them needs the import graph, which is Phase 6 and gated on a named symptom."
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/ai-runtime.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/data-stores.json",
+    "governance/manifests/generated/interfaces.json",
+    "governance/manifests/generated/services.json",
+    "governance/manifests/generated/tests.json"
+  ],
+  "reason": "Blueprint Phase 2 requires a human-reviewed description of the current system before any extractor is written, so that Phase 3 has something to be checked against rather than being trusted on its own output. Writing the baseline by hand is the point: an extractor that agrees with a hand review is evidence, while an extractor that agrees with itself is not. The boundary annotations come first because everything downstream — impact analysis, validator selection, context slicing — is keyed to component ownership, and a repository where most paths match no component cannot answer the question governance exists to answer. The four ADRs were written now rather than later because each records a decision that is already implemented and would otherwise be re-derived from code by whoever next tries to change it.",
+  "risks": [
+    "A hand-authored baseline can be confidently wrong. Where it is, Phase 3's extractor will disagree with it, and the temptation will be to change the baseline to match the extractor without checking which one is right. The change record for Phase 3 states explicitly which baseline assertions were confirmed and which were corrected, so that resolution stays visible.",
+    "Seventeen components with intent, invariants, and dependency lists is a large amount of curated content, and curated content rots. The invariants were written to describe things that are true and load-bearing rather than aspirational, which is the main defence, but nothing checks them yet.",
+    "Two components — mcp-approval-parity and connection-time-url-revalidation — are declared as experimental rules describing behaviour the system does not have. That is deliberate: stating the intended rule makes the gap visible as a gap. The risk is that a reader mistakes the statement for current behaviour, which is why each rule's rationale says plainly that it is currently false."
+  ],
+  "rollback": "`git revert` this commit. Everything added is declarative: annotations, curated manifests, policies, ADRs, and three check modules. Reverting removes the component model and returns `make governance-check` to evaluating only the twelve kernel rules. No application behaviour, data, or infrastructure is touched, so there is nothing to undo outside version control.",
+  "schema_version": 1,
+  "security_impact": "Documentation and classification only; no enforcement changed. Three pre-existing high-severity MCP findings are now attached to the components they constrain, so they surface whenever those components appear in a query rather than only when someone reads the history. ADR-003 records the connection model and explicitly declines to accept the approval-gating asymmetry as a risk: MCP policies stay advisory until a product-security decision is made, because promoting them now would encode the current posture as the intended one. The secret classification list is curated rather than type-inferred, which matters concretely here — GOOGLE_CLIENT_SECRET is a plain string while its API counterpart is a SecretStr, so type-based inference would have missed it.",
+  "summary": "Declare the component boundaries and establish the reviewed baseline manifests: seven directory annotations, ten curated declarations, the exception register, four ADRs, six baseline manifests, four policy groups, and the merge engine that compiles them into the effective repository model.",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "24 checks run, 0 blocking, 0 advisory, 25 not yet enforced. The run during authoring caught six real schema violations in the configuration manifest, which is what produced the schema widening described above.",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "56 passed, including the twelve committed schemas remaining valid after the two schema edits.",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "No file under backend/app, backend/tests, backend/cli, or backend/alembic was modified. The only backend file added is backend/.governance.json, which is a governance annotation and is not Python.",
+      "id": "backend-lint",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "No Compose file, Makefile target, or profile definition was modified. The services manifest reads them; it does not change them.",
+      "id": "compose-check",
+      "result": "skipped"
+    }
+  ]
+}

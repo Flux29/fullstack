@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "description": "Deliberate, reviewed departures from policy. An exception is not a suppression: each one states what is being departed from, why it is correct here, and what would make it worth revisiting. An exception with no review trigger is a permanent hole and should be a policy change instead.",
+  "exceptions": [
+    {
+      "id": "taskiq-healthchecks-disabled",
+      "statement": "The Taskiq worker and scheduler services have healthchecks explicitly disabled, while every other long-running service has one.",
+      "reason": "Neither process serves a port or exposes a readiness surface, so any healthcheck would either be a process-liveness tautology or a false signal. Disabling it explicitly is more honest than an inherited check that always passes. Their failure mode is a queue that stops draining, which is observable from Redis rather than from the container.",
+      "scope": [
+        "docker-compose.yml services taskiq-worker and taskiq-scheduler"
+      ],
+      "status": "active",
+      "review_trigger": "A queue stall goes unnoticed in an environment where nobody is watching Redis.",
+      "policy_refs": ["services-declare-healthchecks"],
+      "component_refs": ["backend-api"]
+    },
+    {
+      "id": "trivy-advisory-deliberate",
+      "statement": "The Trivy image scan in CI runs with exit-code 0 and can never fail the build.",
+      "reason": "The scan reports CRITICAL and HIGH findings in base images that are pinned by digest and cannot always be fixed on the repository's schedule. Blocking on it before the finding volume is known would train people to bypass CI. Recorded as deliberate rather than left looking like an oversight, and used as the pilot for the advisory-to-blocking promotion ladder.",
+      "scope": [
+        ".github/workflows/ci.yml job docker"
+      ],
+      "status": "active",
+      "review_trigger": "Promotion criteria in the trivy-image-scan rule are met, or a vulnerability ships that the scan reported and nobody read.",
+      "policy_refs": ["trivy-image-scan"]
+    },
+    {
+      "id": "alembic-numbering-gaps-accepted",
+      "statement": "Migration filenames are not contiguously numbered: 0017 and 0019 through 0021 do not exist, and 0004_5 is interleaved.",
+      "reason": "Filename numbering is not the contiguity signal — the revision graph is. The chain is linear and unbroken from 0000_users to 0027_embedding_cache; the gaps are history, from revisions that were written and dropped before release. A policy keyed to filenames would fire on day one and be disabled by day two.",
+      "scope": [
+        "backend/alembic/versions/"
+      ],
+      "status": "active",
+      "review_trigger": "The revision graph itself becomes disconnected or grows an unexpected head.",
+      "policy_refs": ["migration-graph-is-connected"],
+      "component_refs": ["postgres-pgvector"]
+    },
+    {
+      "id": "billing-generator-feature-disabled",
+      "statement": "Migrations create organization, plan, subscription, seat, Stripe event, and credits-usage tables that no ORM model, service, or route uses.",
+      "reason": "The project was generated with billing disabled. The schema shipped anyway, so these tables are expected-present-unused rather than orphans. Classifying them from the generator context means orphan detection can tell 'never wired up' apart from 'wired up and then abandoned', which are very different problems.",
+      "scope": [
+        "backend/alembic/versions/",
+        "database tables: organizations, plans, plan_prices, subscriptions, billing_seats, stripe_events, credits_usage, mv_usage_daily"
+      ],
+      "status": "active",
+      "review_trigger": "Billing is enabled, or the generator drops the schema for disabled features.",
+      "policy_refs": ["no-orphaned-surfaces"],
+      "component_refs": ["postgres-pgvector"]
+    },
+    {
+      "id": "ws-chat-bypasses-proxy",
+      "statement": "The chat WebSocket connects from the browser to the backend origin directly, bypassing the Next.js proxy layer that every REST call goes through.",
+      "reason": "Proxying a long-lived streaming socket through the Next.js server would add a hop that buys nothing and costs connection stability and backpressure fidelity. The access token travels as a WebSocket subprotocol rather than a query parameter, so it stays out of access logs and Referer headers. This is the single exception, and it is modelled explicitly so impact analysis knows the proxy hop is absent here rather than missing.",
+      "scope": [
+        "frontend/src/hooks/use-chat.ts",
+        "frontend/src/hooks/use-websocket.ts",
+        "backend/app/api/routes/v1/agent.py"
+      ],
+      "status": "active",
+      "review_trigger": "A second direct browser-to-backend edge is proposed, at which point this stops being an exception and becomes a pattern needing a policy.",
+      "policy_refs": ["rest-goes-through-the-proxy"],
+      "component_refs": ["chat-frontend", "frontend-app"]
+    },
+    {
+      "id": "google-live-suites-excluded-from-registry",
+      "statement": "The live Google Workspace test suite is absent from the validator registry rather than present and marked destructive.",
+      "reason": "It sends real email and mutates a live account. Being absent is the enforcement: impact analysis, agents, and CI select validators by ID from the registry, so a suite that is not in it cannot be selected by any path. Marking it present-but-destructive would leave a name that some future selection logic could still resolve. It is recorded in the registry's excluded list so the omission reads as deliberate.",
+      "scope": [
+        "backend/tests/live/test_google_workspace_live.py"
+      ],
+      "status": "active",
+      "review_trigger": "A caller needs to run it programmatically, which would mean designing a safe harness first.",
+      "policy_refs": ["every-suite-has-a-validator"],
+      "component_refs": ["agents"]
+    },
+    {
+      "id": "playwright-not-in-ci",
+      "statement": "The Playwright end-to-end suite runs locally only and is not part of any CI job.",
+      "reason": "Its webServer is disabled under CI and the tests need a running backend, so as shipped the CI step could only ever fail or vacuously pass. Removing it was more honest than leaving a step that never proved anything. E2E remains available as make playwright against a local stack.",
+      "scope": [
+        ".github/workflows/ci.yml",
+        "frontend/playwright.config.ts"
+      ],
+      "status": "active",
+      "review_trigger": "A composed CI stack exists that can bring up the backend, at which point the suite should return to CI.",
+      "policy_refs": ["validators-declare-their-ci-job"],
+      "component_refs": ["frontend-app"]
+    },
+    {
+      "id": "coverage-floors-are-ratchets",
+      "statement": "Coverage thresholds are set at measured levels — 54 percent on the backend and single digits to seventeen percent on the frontend — rather than at an aspirational target.",
+      "reason": "The generator shipped 100 percent thresholds against roughly 55 percent and 4 percent actuals, so the gate had never passed and every CI run failed on it. A floor at the measured level catches regressions immediately, which is what a gate is for. It is a ratchet: raise it when real tests are added, never lower it to make a red build green.",
+      "scope": [
+        "backend/pyproject.toml",
+        "frontend/vitest.config.ts"
+      ],
+      "status": "active",
+      "review_trigger": "A meaningful body of tests lands without the floor moving, which means the ratchet is not being maintained.",
+      "policy_refs": ["coverage-floor-does-not-regress"],
+      "component_refs": ["backend-api", "frontend-app"]
+    }
+  ]
+}

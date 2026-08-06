@@ -1,0 +1,56 @@
+{
+  "$schema": "../governance/schemas/local-governance.schema.json",
+  "id": "frontend-app",
+  "kind": "frontend-feature",
+  "purpose": "The Next.js application: localized pages, UI components, client state, and the proxy layer that fronts every REST call to the backend",
+  "entrypoints": [
+    "frontend/src/app/[locale]/layout.tsx",
+    "frontend/src/app/api",
+    "frontend/src/lib/api-client.ts",
+    "frontend/src/lib/server-api.ts"
+  ],
+  "owns": [
+    "frontend/**"
+  ],
+  "public_interfaces": [
+    "Pages under /[locale]",
+    "Proxy routes under /api"
+  ],
+  "invariants": [
+    "The browser never calls the backend origin directly for REST. Every call goes page to client to proxy route handler to FastAPI route, and an API change is incomplete until the proxy handler is updated too. Impact analysis that skips the proxy hop reports the wrong blast radius",
+    "The chat WebSocket is the single documented exception: it connects to the backend directly with the access token as a subprotocol, deliberately keeping the token out of query strings and access logs",
+    "Route extraction normalizes the [locale] segment, so the English and Polish routes are one route with two translations rather than two routes",
+    "NEXT_PUBLIC_* values are build arguments baked into the image, not runtime configuration. Changing one requires a rebuild, so they can never be corrected by restarting a container",
+    "Generated frontend assets are regenerated from their source, never hand-edited"
+  ],
+  "allowed_dependencies": [
+    "backend-api"
+  ],
+  "forbidden_dependencies": [
+    "postgres-pgvector",
+    "redis",
+    "minio"
+  ],
+  "configuration_refs": [
+    "BACKEND_URL",
+    "BACKEND_WS_URL",
+    "NEXT_PUBLIC_API_URL",
+    "NEXT_PUBLIC_WS_URL",
+    "NEXT_PUBLIC_SITE_URL",
+    "NEXT_PUBLIC_RAG_ENABLED",
+    "NEXT_PUBLIC_AUTH_ENABLED",
+    "NEXT_PUBLIC_OAUTH_PROVIDERS",
+    "NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB"
+  ],
+  "validation": [
+    "frontend-test"
+  ],
+  "graph_hints": {
+    "exclude": [
+      "frontend/node_modules/**",
+      "frontend/.next/**",
+      "frontend/playwright-report/**",
+      "frontend/test-results/**"
+    ]
+  }
+}

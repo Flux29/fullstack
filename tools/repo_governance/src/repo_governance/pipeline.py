@@ -13,6 +13,8 @@ from repo_governance.config import Context
 from repo_governance.io_atomic import canonical_json, render_bytes, write_text_atomic
 
 CATALOG_PATH = "governance/catalog.json"
+COMPONENTS_PATH = "governance/manifests/generated/components.json"
+EFFECTIVE_PATH = "governance/manifests/effective/repository.json"
 
 
 def build_catalog(ctx: Context, generated_paths: frozenset[str]) -> dict:
@@ -68,6 +70,12 @@ def render_all(ctx: Context) -> dict[str, str]:
     file that varies between machines makes drift detection meaningless.
     """
     outputs: dict[str, str] = {}
+
+    from repo_governance.merge import build_components, build_effective
+
+    components, _ = build_components(ctx)
+    outputs[COMPONENTS_PATH] = canonical_json(components)
+    outputs[EFFECTIVE_PATH] = canonical_json(build_effective(ctx))
 
     # The catalog is rendered last because it describes the whole output set, including
     # itself. Everything else is added above this line.

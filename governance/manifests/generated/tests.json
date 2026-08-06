@@ -1,0 +1,185 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "method": "reviewed-baseline",
+    "sources": [
+      "backend/pyproject.toml",
+      "backend/tests/",
+      "backend/evals/",
+      "frontend/vitest.config.ts",
+      "frontend/playwright.config.ts",
+      ".github/workflows/ci.yml"
+    ],
+    "extractor_version": "1.0.0"
+  },
+  "coverage_floors": [
+    {
+      "surface": "backend",
+      "kind": "line",
+      "value": 54,
+      "basis": "Ratchet against roughly 55 percent measured in the first CI run. The generator shipped 100, which had never passed. Raise it when real tests land; never lower it to make a red build green.",
+      "location": "backend/pyproject.toml [tool.coverage.report] fail_under"
+    },
+    {
+      "surface": "frontend",
+      "kind": "statements",
+      "value": 3,
+      "basis": "Ratchet against 3.7 percent measured.",
+      "location": "frontend/vitest.config.ts"
+    },
+    {
+      "surface": "frontend",
+      "kind": "branches",
+      "value": 17,
+      "basis": "Ratchet against 17.4 percent measured.",
+      "location": "frontend/vitest.config.ts"
+    },
+    {
+      "surface": "frontend",
+      "kind": "functions",
+      "value": 6,
+      "basis": "Ratchet against 6.3 percent measured.",
+      "location": "frontend/vitest.config.ts"
+    },
+    {
+      "surface": "frontend",
+      "kind": "lines",
+      "value": 3,
+      "basis": "Ratchet against 3.7 percent measured.",
+      "location": "frontend/vitest.config.ts"
+    }
+  ],
+  "suites": [
+    {
+      "id": "backend-pytest",
+      "framework": "pytest with anyio; no pytest-asyncio. Database work runs against a mocked async session and httpx AsyncClient over ASGITransport, so the suite needs no live services.",
+      "location": "backend/tests/",
+      "validator": "backend-unit",
+      "gated_by": [],
+      "requires": [],
+      "notes": "Coverage is a ratcheted floor, so line coverage carries little signal. Invariant coverage below is the risk metric that matters here."
+    },
+    {
+      "id": "migration-tests",
+      "framework": "pytest driving alembic through subprocesses",
+      "location": "backend/tests/test_migrations.py",
+      "validator": "migrations",
+      "gated_by": [],
+      "requires": ["postgres-pgvector"],
+      "notes": "Self-skips when no database is reachable, by probing `alembic current`. CI runs it against the compose-pinned pgvector image; a plain postgres image passes everything up to revision 0026 and then fails."
+    },
+    {
+      "id": "rag-integration",
+      "framework": "pytest with in-memory fakes rather than live services",
+      "location": "backend/tests/test_rag_docker_integration.py",
+      "validator": "rag-docker-integration",
+      "gated_by": [],
+      "requires": [],
+      "notes": "Despite the name this needs no Docker. It is the dedicated test for the embedding dimension guard and the cache-key fingerprint."
+    },
+    {
+      "id": "agent-evals",
+      "framework": "pydantic-evals datasets executed by pytest; deterministic, no live LLM",
+      "location": "backend/evals/google_workspace_tools.py, run by backend/tests/test_google_workspace_evals.py",
+      "validator": "agent-evals",
+      "gated_by": [],
+      "requires": [],
+      "notes": "Covers tool routing and approval policy. Cheap enough to run on every change touching the agent surface."
+    },
+    {
+      "id": "google-live",
+      "framework": "pytest against live Google Workspace",
+      "location": "backend/tests/live/test_google_workspace_live.py",
+      "validator": null,
+      "gated_by": ["GOOGLE_LIVE_E2E", "GOOGLE_LIVE_SEND_E2E"],
+      "requires": ["live-google-account"],
+      "notes": "Deliberately absent from the validator registry so no selection path can reach it. Env-var gates, not pytest markers; no custom markers are registered anywhere in this repository."
+    },
+    {
+      "id": "frontend-vitest",
+      "framework": "vitest with jsdom and Testing Library",
+      "location": "frontend/src/**/*.test.{ts,tsx}",
+      "validator": "frontend-test",
+      "gated_by": [],
+      "requires": ["bun"],
+      "notes": "Five test files at present."
+    },
+    {
+      "id": "playwright-e2e",
+      "framework": "Playwright across Chromium, Firefox, WebKit, and two mobile emulations",
+      "location": "frontend/e2e/",
+      "validator": "playwright",
+      "gated_by": [],
+      "requires": ["bun", "running-stack"],
+      "notes": "Local only. Its webServer is disabled under CI and it needs a running backend, so the CI step could only fail or vacuously pass; see the playwright-not-in-ci exception."
+    },
+    {
+      "id": "governance-selftest",
+      "framework": "pytest",
+      "location": "tools/repo_governance/tests/",
+      "validator": "governance-selftest",
+      "gated_by": [],
+      "requires": [],
+      "notes": "Determinism, idempotence including across processes, schema validity, and one test per kernel rule asserting it fires on the condition it exists to catch."
+    }
+  ],
+  "invariant_coverage": [
+    {
+      "invariant": "Embedding dimension agrees across all five contract points",
+      "component": "rag",
+      "covered_by": ["rag-docker-integration"],
+      "gap": "The test covers the guard and the cache-key fingerprint. Agreement with the migration CHECK constraint is exercised only when the migration suite runs against a real database."
+    },
+    {
+      "invariant": "Re-ingestion preserves stable document identity",
+      "component": "rag",
+      "covered_by": ["backend-pytest"]
+    },
+    {
+      "invariant": "The migration graph is acyclic and connected with the recorded head",
+      "component": "postgres-pgvector",
+      "covered_by": ["migrations"],
+      "gap": "Database-gated, so a local run without Postgres silently skips it."
+    },
+    {
+      "invariant": "Google mutation tools are approval-gated",
+      "component": "agents",
+      "covered_by": ["agent-evals"]
+    },
+    {
+      "invariant": "GitHub MCP read-only agrees across its three enforcement layers",
+      "component": "github-mcp",
+      "covered_by": ["backend-pytest"],
+      "gap": "The settings validator is tested. The container flags and the runtime post-probe assert are not cross-checked by any test; Phase 3 adds that as a governance check."
+    },
+    {
+      "invariant": "MCP-sourced tools bypass approval gating",
+      "component": "mcp-user-connections",
+      "covered_by": [],
+      "gap": "No test asserts the current behaviour either way, because the intended behaviour is undecided. This is the open product-security question in ADR-003, not a missing test."
+    },
+    {
+      "invariant": "Stored connection URLs are revalidated before use",
+      "component": "mcp-user-connections",
+      "covered_by": [],
+      "gap": "Not implemented, so not testable. backend/tests/test_ssrf.py covers write-time validation only."
+    },
+    {
+      "invariant": "Every REST call from the browser goes through a proxy route handler",
+      "component": "frontend-app",
+      "covered_by": [],
+      "gap": "No test enforces this. Phase 3 extracts the proxy mapping so the check becomes possible."
+    },
+    {
+      "invariant": "Base stack publishes zero host ports; dev binds only to loopback",
+      "component": "traefik",
+      "covered_by": ["compose-check"],
+      "gap": "compose-check validates that the matrix resolves, not the exposure posture. Phase 3 adds the posture assertion."
+    },
+    {
+      "invariant": "Governance sync is deterministic and idempotent",
+      "component": "governance-kernel",
+      "covered_by": ["governance-selftest"]
+    }
+  ]
+}

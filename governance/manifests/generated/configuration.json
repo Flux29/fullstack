@@ -237,9 +237,9 @@
       "consumed_by": [
         "compose:frontend",
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/demo/[id]/page.tsx",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/demo/page.tsx",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/shared/[token]/page.tsx"
+        "frontend:frontend/src/app/[locale]/demo/[id]/page.tsx",
+        "frontend:frontend/src/app/[locale]/demo/page.tsx",
+        "frontend:frontend/src/app/[locale]/shared/[token]/page.tsx"
       ],
       "declared_in": [
         "frontend/.env.example",
@@ -1697,7 +1697,7 @@
       "consumed_by": [
         "chat-frontend",
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/constants.ts"
+        "frontend:frontend/src/lib/constants.ts"
       ],
       "declared_in": [
         "frontend/.env.example",
@@ -1735,7 +1735,7 @@
       ],
       "consumed_by": [
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/utils.ts"
+        "frontend:frontend/src/lib/utils.ts"
       ],
       "declared_in": [
         "docker-compose.yml"
@@ -1753,7 +1753,7 @@
       ],
       "consumed_by": [
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/components/auth/oauth-buttons.tsx"
+        "frontend:frontend/src/components/auth/oauth-buttons.tsx"
       ],
       "declared_in": [
         "docker-compose.yml"
@@ -1773,7 +1773,7 @@
       "consumed_by": [
         "compose:frontend",
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/rag-api.ts"
+        "frontend:frontend/src/lib/rag-api.ts"
       ],
       "declared_in": [
         "frontend/.env.example",
@@ -1795,8 +1795,8 @@
       "consumed_by": [
         "compose:frontend",
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/api/me/mcp-connections/oauth/callback/route.ts",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/seo.ts"
+        "frontend:frontend/src/app/api/me/mcp-connections/oauth/callback/route.ts",
+        "frontend:frontend/src/lib/seo.ts"
       ],
       "declared_in": [
         "docker-compose.yml"
@@ -1815,7 +1815,7 @@
       "consumed_by": [
         "chat-frontend",
         "frontend-app",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/constants.ts"
+        "frontend:frontend/src/lib/constants.ts"
       ],
       "declared_in": [
         "docker-compose.yml"
@@ -1833,9 +1833,9 @@
       ],
       "consumed_by": [
         "compose:frontend",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/api/auth/login/route.ts",
-        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/api/auth/logout/route.ts"
+        "frontend:frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
+        "frontend:frontend/src/app/api/auth/login/route.ts",
+        "frontend:frontend/src/app/api/auth/logout/route.ts"
       ],
       "declared_in": [
         "docker-compose.yml"

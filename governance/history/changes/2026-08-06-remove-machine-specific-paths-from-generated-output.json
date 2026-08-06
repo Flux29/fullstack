@@ -1,0 +1,46 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance/manifests/generated/configuration.json now records repository-relative paths for process.env references, so a rebuild on any machine produces identical bytes.",
+    "The governance CI job passes on Linux; it previously failed the clean-rebuild diff gate."
+  ],
+  "compatibility_impact": "The consumed_by entries for frontend variables change from absolute paths to repository-relative ones. Nothing consumes that field programmatically yet.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "M governance/manifests/generated/configuration.json",
+    "M tools/repo_governance/src/repo_governance/extractors/configuration.py",
+    "M tools/repo_governance/tests/test_determinism.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-06-remove-machine-specific-paths-from-generated-output",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The guard checks generated output for absolute paths and for the repository root string. It cannot catch every machine-specific value — a hostname, a username in some other form, or a locale-dependent rendering would still get through."
+  ],
+  "manifests_changed": [],
+  "reason": "The first CI run of the governance job failed the drift gate on a Linux runner while every local run on Windows passed. The configuration extractor recorded absolute filesystem paths for process.env references, so the committed manifest embedded the checkout location and could never match a rebuild anywhere else. This is the determinism failure the kernel exists to prevent, and it was invisible from a single platform.",
+  "risks": [
+    "The new guard uses a regex to recognise absolute paths. Its first form matched the p:/ inside http://, so a pattern that is too eager reports false positives on ordinary URLs. It is now anchored, but any future path shape it does not know about would pass unnoticed."
+  ],
+  "rollback": "git revert this commit. The drift gate would then fail on every CI run again, so reverting is only sensible together with removing the governance CI job.",
+  "schema_version": 1,
+  "security_impact": "None. The change removes an absolute filesystem path from a generated manifest, which is a determinism fix rather than a disclosure one, though embedding a developer's home directory in a committed file was not desirable either.",
+  "summary": "Remove machine-specific paths from generated output",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "77 passed, including a new guard asserting no generated file contains an absolute path or the repository root.",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "31 checks run, 0 blocking.",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -85,6 +85,36 @@ def test_read_json_tolerates_a_bom(tmp_path: Path) -> None:
     assert read_json(target) == {"a": 1}
 
 
+def test_no_generated_file_contains_a_machine_specific_path(real_context) -> None:
+    """Generated output must not embed the checkout location.
+
+    An absolute path makes a committed manifest differ between a developer machine and a CI
+    runner, so the drift gate fails on every run for a reason that has nothing to do with
+    drift. This is invisible when you only ever run on one platform: the configuration
+    manifest carried absolute `process.env` reference paths that were identical on every
+    Windows run and different the moment CI rebuilt it on Linux.
+    """
+    import re
+
+    from repo_governance.pipeline import render_all
+
+    root = str(real_context.repo_root).replace("\\", "/")
+    # The drive-letter alternative requires a single letter not preceded by another, so it
+    # matches `C:/Users` but not the `p:/` inside `http://`.
+    absolute = re.compile(r"(?:(?<![A-Za-z])[A-Za-z]:[\\/]|/home/[a-z]|/Users/[A-Za-z]|/root/)")
+
+    offenders: list[str] = []
+    for path, content in render_all(real_context).items():
+        if root in content.replace("\\", "/"):
+            offenders.append(f"{path}: contains the repository root path")
+        elif absolute.search(content):
+            match = absolute.search(content)
+            start = max(0, match.start() - 40)
+            offenders.append(f"{path}: absolute path near {content[start : match.end() + 40]!r}")
+
+    assert offenders == [], "\n".join(offenders)
+
+
 def test_render_bytes_matches_what_write_produces(tmp_path: Path) -> None:
     text = "line one\r\nline two\n"
     target = tmp_path / "out.txt"

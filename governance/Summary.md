@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 6 of 6)
+## Recent changes (latest 7 of 7)
 
+- **2026-08-06** — Remove machine-specific paths from generated output
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-06-remove-machine-specific-paths-from-generated-output.json`
 - **2026-08-06** — Local and CI enforcement
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-06-local-and-ci-enforcement.json`

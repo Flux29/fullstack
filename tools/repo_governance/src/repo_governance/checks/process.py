@@ -6,12 +6,28 @@ import json
 
 from repo_governance.checks import CheckScope, relative
 from repo_governance.config import iter_files
-from repo_governance.gitutil import changed_since, file_at_ref, working_tree_changes
+from repo_governance.gitutil import changed_since, file_at_ref, untracked_files, working_tree_changes
 from repo_governance.io_atomic import read_json
 from repo_governance.models import Issue
 
 GOVERNED_PREFIXES = ("governance/", "tools/repo_governance/")
 CHANGE_RECORD_PREFIX = "governance/history/changes/"
+
+#: Where a new untracked file legitimately appears. Anything outside these is scratch.
+SANCTIONED_UNTRACKED_PREFIXES = (
+    "governance/history/",
+    "backend/alembic/versions/",
+    "backend/tests/",
+    "tools/repo_governance/tests/",
+    "frontend/e2e/",
+    "docs/",
+)
+
+#: Frontend unit tests sit beside their source, so they are recognised by name, not location.
+SANCTIONED_UNTRACKED_SUFFIXES = (".test.ts", ".test.tsx", ".spec.ts", ".spec.tsx")
+
+#: How many paths an issue names before it summarises the rest.
+PREVIEW_LIMIT = 5
 
 #: Strictness ordering. Moving down this ladder is a weakening and must be explicit.
 MATURITY_RANK = {
@@ -22,6 +38,12 @@ MATURITY_RANK = {
     "warning": 2,
     "blocking": 3,
 }
+
+
+def _preview(paths: list[str]) -> str:
+    """The first few paths, with a count of whatever was elided."""
+    head = ", ".join(paths[:PREVIEW_LIMIT])
+    return head if len(paths) <= PREVIEW_LIMIT else f"{head}, and {len(paths) - PREVIEW_LIMIT} more"
 
 
 def _change_set(scope: CheckScope) -> tuple[list[str], bool]:
@@ -79,16 +101,43 @@ def check_governance_change_records(scope: CheckScope) -> list[Issue]:
     if records:
         return []
 
-    preview = ", ".join(governed[:5])
-    if len(governed) > 5:
-        preview += f", and {len(governed) - 5} more"
-
     return [
         Issue(
             message="Governance changed without a change record.",
             path=governed[0],
-            evidence=f"Changed without a record: {preview}.",
+            evidence=f"Changed without a record: {_preview(governed)}.",
             repair="make governance-change-start SUMMARY=... REASON=...   then   make governance-change-finish",
+        )
+    ]
+
+
+def check_untracked_files_are_sanctioned(scope: CheckScope) -> list[Issue]:
+    """Untracked files sitting outside the places a new file legitimately appears.
+
+    Scratch accumulates silently. A script written to prove one thing works stays untracked,
+    outlives the change that motivated it, and eventually arrives in history on the back of a
+    wide `git add`. While it is still untracked is the only cheap moment to name it.
+    """
+    untracked = untracked_files(scope.ctx.repo_root)
+    if untracked is None:
+        return []  # check_governance_change_records already reports git being unavailable.
+
+    unsanctioned = [
+        path
+        for path in untracked
+        if scope.selects(path)
+        and not path.startswith(SANCTIONED_UNTRACKED_PREFIXES)
+        and not path.endswith(SANCTIONED_UNTRACKED_SUFFIXES)
+    ]
+    if not unsanctioned:
+        return []
+
+    return [
+        Issue(
+            message=f"{len(unsanctioned)} untracked path(s) sit outside the sanctioned locations.",
+            path=unsanctioned[0],
+            evidence=f"Untracked and unsanctioned: {_preview(unsanctioned)}.",
+            repair="Move scratch to the session scratchpad, commit what belongs here, or ignore generated output.",
         )
     ]
 

@@ -1,0 +1,59 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance check --fast lists untracked paths outside governance/history/, backend/alembic/versions/, backend/tests/, tools/repo_governance/tests/, frontend/e2e/, colocated frontend tests, and docs/ as an advisory finding.",
+    "The change-record check now detects unstaged modifications; it previously saw paths like `M governance/policies/process.json` and matched no prefix.",
+    "AGENTS.md hard boundaries gain a new-file last-resort rule and a net-zero-diff default."
+  ],
+  "compatibility_impact": "None to application behaviour. Both new policy rules enter at advisory, so neither can fail a build. `working_tree_changes` now returns correct paths where it previously returned status-prefixed garbage for unstaged edits, which makes the existing change-record check start firing where it silently passed before.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "AGENTS.md",
+    "governance/policies/process.json",
+    "tools/repo_governance/src/repo_governance/checks/__init__.py",
+    "tools/repo_governance/src/repo_governance/checks/process.py",
+    "tools/repo_governance/src/repo_governance/gitutil.py",
+    "tools/repo_governance/tests/test_kernel_checks.py"
+  ],
+  "follow_up": [
+    "Implement a check for simplification-pass-is-noted, then promote it to warning.",
+    "Fix the two pre-existing E501 violations in checks/__init__.py and checks/process.py; left untouched to keep this diff scoped."
+  ],
+  "id": "2026-08-06-add-three-sprawl-guardrails-new-file-boundary-untracked-file-che",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: ran manually, not via the /simplify skill or code-simplifier agent. It extracted _preview from truncation logic duplicated in check_governance_change_records, removed quote-stripping dead under -z, and collapsed four new tests to two.",
+    "simplification-pass-is-noted is check_impl manual, so nothing enforces it; it is a stated convention until a check reads the records in the change set.",
+    "The untracked check reports directories collapsed as git does, so a scratch directory is one finding rather than one per file inside it.",
+    "make governance-preflight could not complete: preflight-ports fails because dev ports 3000/5001/8100/8201-8203 are in use. Drift baseline was taken from governance doctor instead (0 files).",
+    "This change only adds to AGENTS.md and policies/process.json: prose boundaries and policy rules have nothing to consolidate with, and no existing rule covered file creation, untracked scratch, or simplification. Net-negative was achieved only in the Python, by removing duplication rather than adding a second copy."
+  ],
+  "manifests_changed": [],
+  "reason": "New files, scratch scripts, and un-simplified code accumulate silently because nothing in the repository names them at the moment they appear. A diff shows a new file but never whether an existing module should have carried it. These three guardrails place the question at the point of creation (AGENTS.md boundary plus the existing PreToolUse hook), at the point of review (an advisory check listing untracked files outside sanctioned locations), and at the point of record (a change record states whether a simplification pass ran).",
+  "risks": [
+    "The sanctioned list is a guess at where new files legitimately land. A location it misses produces a recurring advisory finding until the list is corrected."
+  ],
+  "rollback": "Revert the commit. Nothing outside the repository is touched and no state is written. Reverting also restores the porcelain parsing bug, so the change-record check would again miss unstaged modifications; change records written before this fix keep the corrupted `files_changed` entries a revert would not repair.",
+  "schema_version": 1,
+  "security_impact": "None. The new check is read-only and calls only `git status --porcelain -z`, which governance already ran; it reports paths, never contents, so an untracked file holding a secret is named but not read.",
+  "summary": "Add three sprawl guardrails: new-file boundary, untracked-file check, simplification-pass rule",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "79 passed; adds coverage for porcelain width-parsing and the untracked-file filter",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "32 checks run, 0 blocking, 0 advisory after this record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

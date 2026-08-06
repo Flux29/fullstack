@@ -9,10 +9,11 @@ import pytest
 from app.agents import google_workspace_api as google_api
 from app.agents.google_apis import products
 from app.agents.google_apis.products import DIRECT_GOOGLE_PRODUCTS
+from app.agents.tool_schema import function_tools, synthetic_run_context
 
 
 def _function(toolset, name):
-    return toolset.wrapped.tools[name].function
+    return function_tools(toolset)[name].function
 
 
 class TestGoogleApiRecognition:
@@ -39,15 +40,20 @@ class TestGoogleApiRecognition:
 
 
 class TestGmailToolset:
-    def test_allowlist_and_prefix_are_applied(self):
+    @pytest.mark.anyio
+    async def test_allowlist_and_prefix_are_applied(self):
         toolset = google_api.build_google_api_toolset(
             name="gmail",
             url=google_api.GMAIL_API_URL,
             access_token="AT",
             allowed_tools=["get_profile", "search_threads"],
         )
-        assert toolset.prefix == "gmail"
-        assert set(toolset.wrapped.tools) == {"get_profile", "search_threads"}
+        assert set(function_tools(toolset)) == {"get_profile", "search_threads"}
+        # Assert on the names the model is actually offered, not on a wrapper
+        # attribute — the chain gains wrappers (compaction, loadout gating) and
+        # only the resolved tool definitions are the contract.
+        exposed = await toolset.get_tools(synthetic_run_context())
+        assert set(exposed) == {"gmail_get_profile", "gmail_search_threads"}
 
     @pytest.mark.anyio
     async def test_profile_uses_connected_users_token(self, monkeypatch):
@@ -151,8 +157,8 @@ class TestGmailToolset:
             name="gmail", url=google_api.GMAIL_API_URL, access_token="AT", allowed_tools=None
         )
         for name in ("create_draft", "send_draft", "send_message", "delete_draft"):
-            assert toolset.wrapped.tools[name].requires_approval is True
-        assert toolset.wrapped.tools["get_profile"].requires_approval is False
+            assert function_tools(toolset)[name].requires_approval is True
+        assert function_tools(toolset)["get_profile"].requires_approval is False
 
 
 class TestCalendarToolset:
@@ -187,7 +193,7 @@ class TestStandardProductToolsets:
             allowed_tools=None,
             user_id="00000000-0000-0000-0000-000000000001",
         )
-        tools = toolset.wrapped.tools
+        tools = function_tools(toolset)
         assert set(tools) == {name for name, _ in product.tools}
         assert any(tool.requires_approval for tool in tools.values())
         for name, tool in tools.items():
@@ -260,5 +266,5 @@ class TestStandardProductToolsets:
             access_token="AT",
             allowed_tools=["update_contact"],
         )
-        required = toolset.wrapped.tools["update_contact"].function_schema.json_schema["required"]
+        required = function_tools(toolset)["update_contact"].function_schema.json_schema["required"]
         assert "etag" in required

@@ -17,7 +17,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **infrastructure** — docling-serve, traefik
 - **mcp-sidecar** — chrome-devtools-mcp, docling-mcp
 
-## Open findings (8)
+## Open findings (7)
 
 - **mcp-approval-gating-asymmetry** (high) — Human-in-the-loop tool approval uses pydantic-ai deferred tools and currently covers Google mutation tools only; MCP-sourced tools bypass approval entirely. A per-user connection with `allowed_tools` unset (NULL) exposes every tool the server advertises, so a write-capable arbitrary server combines full tool exposure with no approval gate. This requires an explicit product-security decision (approval parity, default allowlists, or a documented restriction) before MCP policies are promoted past advisory; an accepted-risk ADR alone is not sufficient.
   - Disposition: product-security-decision-required
@@ -27,8 +27,6 @@ Current state, what is unresolved, and recent material history. This is not the 
   - Disposition: remediation-required
 - **secrets-pushed-to-remote** (high) — `backend/.env.example` contained live credentials — a Logfire write token (`LOGFIRE_TOKEN`, `pylf_v2_us_...`) and an OpenRouter API key (`OPENROUTER_API_KEY`, `sk-or-v1-...`) — plus a real personal email address in `EMAIL_FROM` and `ACME_EMAIL`. The file is tracked and was pushed to the public-capable remote https://github.com/Flux29/fullstack.git. This commit scrubs the working copy, but scrubbing does not rewrite history: both credentials remain retrievable from earlier commits on the remote and must be treated as compromised. REQUIRED OWNER ACTION: rotate the Logfire write token at https://logfire.pydantic.dev and the OpenRouter key at https://openrouter.ai/keys. This finding stays open until the owner confirms rotation; it cannot be closed by tooling.
   - Disposition: rotate-at-provider
-- **env-vars-md-drift** (medium) — `ENV_VARS.md` has drifted from the actual configuration surface: it documents variables that do not exist (`GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, `S3_ENDPOINT_URL`, `DB_POOL_SIZE`, `REFRESH_TOKEN_EXPIRE_MINUTES`), lists the computed property `DATABASE_URL` as a required input variable, documents `DEBUG` default `true` against a code default of `False`, and contains a placeholder description cell reading `jw`.
-  - Disposition: resolved-in-phase-3
 - **timezone-not-iana** (medium) — `TIMEZONE` defaults to `"EDT"` in `backend/app/core/config.py`, but the field's own comment requires an IANA zone name and `EDT` is not one (`America/New_York` is the intended value). This is an application fix with test impact, deliberately out of governance scope; it is tracked here until landed.
   - Disposition: app-fix-required
 - **backend-url-default-port-mismatch** (low) — The proxy layer defaults BACKEND_URL to port 8000 in frontend/src/lib/server-api.ts, while frontend/src/lib/constants.ts defaults to 8100. Both are fallbacks that apply only when the variable is unset, so a deployment that forgets to set it fails in two different ways depending on which module is asked. Recorded during the configuration baseline review; the fix is an application change.
@@ -64,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 8 of 8)
+## Recent changes (latest 9 of 9)
 
+- **2026-08-06** — Resolve finding status by precedence not by ID order
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-06-resolve-finding-status-by-precedence-not-by-id-order.json`
 - **2026-08-06** — Remove machine-specific paths from generated output
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-06-remove-machine-specific-paths-from-generated-output.json`

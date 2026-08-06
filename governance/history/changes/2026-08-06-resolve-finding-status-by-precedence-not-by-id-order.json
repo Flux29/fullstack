@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Summary.md reports 7 open findings rather than 8; the resolved ENV_VARS drift finding no longer appears."
+  ],
+  "compatibility_impact": "None. Summary.md is regenerated; no schema or contract changed.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "M governance/Summary.md",
+    "M tools/repo_governance/src/repo_governance/renderers/summary.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-06-resolve-finding-status-by-precedence-not-by-id-order",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Re-opening a finding now requires a later date or a distinct finding ID, because a closure on the same date always wins. That is a deliberate trade: same-day re-opening is rarer than same-day closing, and requiring a new ID for it is reasonable.",
+    "The underlying cause is that change records have date granularity only. A monotonic sequence would order them properly, but adding one is a change-record schema change and therefore a kernel change."
+  ],
+  "manifests_changed": [],
+  "reason": "Closing the ENV_VARS drift finding did not remove it from Summary.md. Change records carry a date but no clock time, so several records from one day have no chronology to read, and the summary was falling back to alphabetical ID order — under which the adoption baseline sorted after the closure and its open status won. The bug is that ordering was inferred from something that carries no ordering information.",
+  "risks": [],
+  "rollback": "git revert this commit. Summary.md then reports resolved findings as open again whenever the closing record's ID sorts before the registering record's on the same date.",
+  "schema_version": 1,
+  "security_impact": "Positive in effect rather than in mechanism: three high-severity MCP findings and the credential-rotation finding are reported from the same code path, so an ordering bug that hid a closure could equally have hidden one of those.",
+  "summary": "Resolve finding status by precedence not by ID order",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "77 passed.",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "31 checks run, 0 blocking.",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

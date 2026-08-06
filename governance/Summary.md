@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 7 of 7)
+## Recent changes (latest 8 of 8)
 
 - **2026-08-06** — Remove machine-specific paths from generated output
   - Components: none recorded
@@ -81,6 +81,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.
   - Components: governance-kernel, backend-api, frontend-app, postgres-pgvector, redis, github-mcp, traefik
   - Record: `governance/history/changes/2026-08-06-deterministic-extraction.json`
+- **2026-08-06** — Close the ENV_VARS drift finding
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-06-close-the-env-vars-drift-finding.json`
 - **2026-08-06** — Change history and bounded context
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-change-history-and-bounded-context.json`

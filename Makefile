@@ -120,7 +120,8 @@ docker-reset:
 
 install:
 	uv sync --directory backend --dev
-	uv run --directory backend pre-commit install
+	uv sync --project tools/repo_governance
+	uv run --directory backend pre-commit install --config .pre-commit-config.yaml
 
 format:
 	uv run --directory backend ruff format app tests cli

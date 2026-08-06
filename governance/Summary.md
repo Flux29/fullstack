@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 5 of 5)
+## Recent changes (latest 6 of 6)
 
+- **2026-08-06** — Local and CI enforcement
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-06-local-and-ci-enforcement.json`
 - **2026-08-06** — Add the minimal governance kernel: the twelve JSON Schemas, the governance contract, the self-governance policy, the validator registry, the ownership rules, a deterministic CLI with preflight/scan/sync/check/doctor, and a converged AGENTS.md entry point.
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-governance-kernel.json`

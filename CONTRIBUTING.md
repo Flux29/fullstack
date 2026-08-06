@@ -55,13 +55,17 @@ See `docs/architecture.md` for the full layered architecture rules.
 
 ## Pre-commit
 
-Configured via `.pre-commit-config.yaml`. Install once:
+Configured via `.pre-commit-config.yaml` at the repository root. Install once:
 
 ```bash
-uv run pre-commit install
+make install
 ```
 
-Will run ruff + (frontend lint if present) on every commit. Bypass with `--no-verify` only when fixing a hook bug.
+Runs ruff and ty over `backend/`, hygiene checks over the non-frontend tree, a private-key
+scan everywhere, and the fast governance checks on the files governance reads. The frontend
+keeps its own husky and lint-staged layer, so nothing here reformats frontend files.
+
+Bypass with `--no-verify` only when fixing a hook bug.
 
 ## Pull-request checklist
 

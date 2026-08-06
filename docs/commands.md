@@ -12,7 +12,7 @@ Run these from the project root directory.
 | Command | Description |
 |---------|-------------|
 | `make quickstart` | Install deps, start Docker, run migrations, create admin user |
-| `make install` | Install backend dependencies with uv + pre-commit hooks |
+| `make install` | Install backend and governance dependencies with uv + the root pre-commit hooks |
 
 ### Development
 

@@ -1,0 +1,65 @@
+# Repository-root pre-commit configuration.
+#
+# Promoted here from backend/ so governance checks — which are repo-wide — have a hook layer
+# to attach to. The blueprint is explicit that this repository gets ONE hook framework, not a
+# third: the frontend keeps husky and lint-staged, and nothing here touches frontend files.
+#
+# Every hook is scoped with `files:`. A repo-wide hygiene hook would reformat the frontend on
+# the first commit that touched it, which is exactly the kind of surprise that gets a hook
+# layer disabled.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+        files: ^(backend/|governance/|tools/|docker/|docs/|\.github/|Makefile|.*\.md$)
+        exclude: ^frontend/
+      - id: end-of-file-fixer
+        files: ^(backend/|governance/|tools/|docker/|docs/|\.github/|Makefile|.*\.md$)
+        exclude: ^frontend/
+      - id: check-yaml
+        files: ^(backend/|docker/|\.github/|docker-compose.*\.yml$|\.pre-commit-config\.yaml$)
+      - id: check-toml
+        files: ^(backend/|tools/|governance/.*\.toml$)
+      - id: check-added-large-files
+        args: ["--maxkb=1000"]
+      - id: check-merge-conflict
+      # Repo-wide and check-only: a private key committed anywhere is a problem everywhere.
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.0
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^backend/
+      - id: ruff-format
+        files: ^backend/
+
+  - repo: local
+    hooks:
+      # `--directory`, not `--project`: ty resolves both its configuration and its search
+      # paths from the working directory. Run from the repository root it would scan
+      # tools/repo_governance against the backend's environment and report every governance
+      # import as unresolved. This matches what `make lint` does.
+      - id: ty
+        name: ty (backend type check)
+        entry: uv run --directory backend ty check
+        language: system
+        pass_filenames: false
+        files: ^backend/.*\.py$
+
+      # One hook, not two. The fast check already covers both concerns — document validity
+      # and generated-file drift — so splitting them would run the same command twice per
+      # commit for identical output.
+      #
+      # Scoped to what governance actually reads, including every generated document. A
+      # full check on each commit would be too slow to keep, and a hook developers bypass
+      # protects nothing.
+      - id: governance-fast-check
+        name: governance check --fast
+        entry: uv run --project tools/repo_governance governance check --fast
+        language: system
+        files: >-
+          ^(governance/|.*\.governance\.json$|backend/\.env\.example$|frontend/\.env\.example$|ENV_VARS\.md$|docker-compose.*\.yml$|Makefile$|\.github/workflows/|tools/repo_governance/)

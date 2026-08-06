@@ -8,6 +8,49 @@ on:
     branches: [main, master]
 
 jobs:
+  governance:
+    name: Governance
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The change-record and policy-weakening checks compare against the previous
+          # commit, which a shallow clone does not have.
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install governance tool
+        run: uv sync --project tools/repo_governance
+
+      # The OpenAPI export runs application code in a scrubbed subprocess, so the backend
+      # environment has to exist. Without it the interfaces manifest records status unknown
+      # and the regeneration comparison fails — correctly, but unhelpfully.
+      - name: Install backend (for the sanitized OpenAPI export)
+        run: uv sync --directory backend --dev
+
+      # Rebuild every generated document from the sources in a clean checkout and fail if
+      # the result differs from what is committed. This is the real drift gate: a stale
+      # manifest and a hand-edited one are the same condition here.
+      - name: Full governance check
+        run: uv run --project tools/repo_governance governance check --full --verbose
+
+      - name: Governance self-test
+        run: uv run --project tools/repo_governance pytest tools/repo_governance/tests
+
+      # Belt and braces: the check above compares rendered output against the committed
+      # bytes, and this proves a real sync writes nothing new.
+      - name: Confirm sync is a no-op
+        run: |
+          uv run --project tools/repo_governance governance sync
+          git diff --exit-code
+
   lint:
     runs-on: ubuntu-latest
     steps:

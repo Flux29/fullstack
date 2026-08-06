@@ -78,6 +78,22 @@ def _run_make(target: str, repo_root: Path, extra: list[str] | None = None) -> t
     return completed.returncode == 0, output
 
 
+def _split_paths(values: tuple[str, ...]) -> list[str]:
+    """Accept repeated options and comma- or space-separated lists.
+
+    The Make targets pass a single quoted string, so PATHS="a b" has to work as well as
+    --paths a --paths b.
+    """
+    collected: list[str] = []
+    for value in values:
+        for part in value.replace(",", " ").split():
+            normalized = part.strip().replace("\\", "/")
+            if normalized:
+                collected.append(normalized)
+    return collected
+
+
+
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(__version__, prog_name="governance")
 def main() -> None:
@@ -216,6 +232,7 @@ def sync() -> None:
 
 
 @main.command()
+@click.argument("file_arguments", nargs=-1, type=click.UNPROCESSED)
 @click.option("--fast", "mode", flag_value="fast", help="Cheap checks only, for pre-commit.")
 @click.option("--full", "mode", flag_value="full", default=True, help="Everything (default).")
 @click.option(
@@ -226,12 +243,24 @@ def sync() -> None:
 )
 @click.option("--since", help="Also consider the commit range since this git ref (for CI against a base).")
 @click.option("--verbose", is_flag=True, help="List rules that are not yet enforced.")
-def check(mode: str, files: tuple[str, ...], since: str | None, verbose: bool) -> None:
-    """Read-only validation. Nonzero exit when a blocking rule fails."""
+def check(
+    file_arguments: tuple[str, ...],
+    mode: str,
+    files: tuple[str, ...],
+    since: str | None,
+    verbose: bool,
+) -> None:
+    """Read-only validation. Nonzero exit when a blocking rule fails.
+
+    Paths may be given positionally as well as with --files, because pre-commit passes the
+    staged filenames as positional arguments and a hook that cannot accept them is a hook
+    that does not run.
+    """
     ctx = _context()
+    selected = _split_paths(files) + _split_paths(file_arguments)
     scope = CheckScope(
         ctx=ctx,
-        files=tuple(sorted(files)) if files else None,
+        files=tuple(sorted(set(selected))) if selected else None,
         fast=(mode == "fast"),
         since=since,
     )
@@ -299,6 +328,50 @@ def _deferred(name: str, phase: str, trigger: str) -> None:
     raise SystemExit(DEFERRED_EXIT)
 
 
+@main.command("snapshot-mcp-connections")
+@click.option("--dsn", help="Read-only PostgreSQL DSN. Never read from .env.")
+@click.option("--via-docker", "container", help="Container to run psql in, when the database publishes no host port.")
+@click.option("--db-user", default="postgres", show_default=True)
+@click.option("--db-name", default="fullstack", show_default=True)
+@click.option("--date", "date_text", help="ISO date for the evidence ID; defaults to today.")
+def snapshot_mcp_connections(
+    dsn: str | None,
+    container: str | None,
+    db_user: str,
+    db_name: str,
+    date_text: str | None,
+) -> None:
+    """Take a sanitized aggregate snapshot of the per-user MCP connections.
+
+    Human-invoked only. The per-user tool surface exists solely as database rows, so a
+    static analysis of it is confidently incomplete — but the rows themselves contain live
+    credentials, so the snapshot is aggregate, URL-stripped, and written only to the
+    gitignored cache.
+    """
+    from datetime import date as date_type
+
+    from repo_governance.evidence import EvidenceError, snapshot_mcp_connections as collect
+
+    ctx = _context()
+    try:
+        result = collect(
+            ctx,
+            dsn,
+            date=date_text or date_type.today().isoformat(),
+            container=container,
+            user=db_user,
+            database=db_name,
+        )
+    except EvidenceError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    click.echo(f"Evidence ID: {result.evidence_id}")
+    click.echo(f"Written to:  {result.path}")
+    click.echo(f"Summary:     {result.summary}")
+    click.echo("")
+    click.echo("Not committed. Reference it from a change record by ID and summary only.")
+
+
 @main.command()
 @click.argument("view")
 @click.option("--focus", help="Node or component to centre the view on.")
@@ -320,21 +393,6 @@ def evaluate(scenario: str | None) -> None:
         "Phase 9",
         "enough evaluation records exist that policy changes need shadow-mode replay to be trusted.",
     )
-
-
-def _split_paths(values: tuple[str, ...]) -> list[str]:
-    """Accept repeated options and comma- or space-separated lists.
-
-    The Make targets pass a single quoted string, so PATHS="a b" has to work as well as
-    --paths a --paths b.
-    """
-    collected: list[str] = []
-    for value in values:
-        for part in value.replace(",", " ").split():
-            normalized = part.strip().replace("\\", "/")
-            if normalized:
-                collected.append(normalized)
-    return collected
 
 
 @main.command()

@@ -1,0 +1,21 @@
+# Governance determinism contract.
+#
+# Generated governance output must be byte-identical across machines, so every
+# file the governance CLI writes (and every file it reads as a fixture) is
+# pinned to LF regardless of core.autocrlf. This repository is developed on
+# Windows; without these pins the "two syncs produce identical bytes"
+# idempotence check flaps between checkouts.
+
+governance/**/*.json   text eol=lf
+governance/**/*.md     text eol=lf
+governance/*.toml      text eol=lf
+tools/repo_governance/** text eol=lf
+**/.governance.json    text eol=lf
+
+# Governance-generated documents living outside governance/.
+ENV_VARS.md            text eol=lf
+
+# Instruction surfaces routed by AGENTS.md — kept LF so generator-upgrade
+# diffs stay line-accurate.
+AGENTS.md              text eol=lf
+CLAUDE.md              text eol=lf

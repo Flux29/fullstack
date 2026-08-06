@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "policy_group": "security",
+  "description": "Exposure, credentials, and tool authorization. MCP rules stay advisory deliberately: promoting them while the approval-gating asymmetry is unresolved would encode the current posture as the intended one. See ADR-003.",
+  "rules": [
+    {
+      "id": "exposure-posture",
+      "statement": "The base stack publishes zero host ports; the dev stack binds only to 127.0.0.1; production publishes only the Traefik entrypoints plus a loopback dashboard; data-internal stays internal.",
+      "rationale": "This is the real security posture, and it is per-stack. A generic host-port-conflict check is near-vacuous against a base file that publishes nothing, while a dev port moved from loopback to 0.0.0.0 exposes a developer's database to their network and would pass such a check.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The Compose extractor lands and the assertion runs clean across all four stacks. This is a strong promotion candidate: the condition is objective and the current tree already satisfies it.",
+      "exceptions_allowed": true,
+      "exception_refs": [],
+      "authoritative_source": "docker-compose.yml and its overrides"
+    },
+    {
+      "id": "images-pinned-by-digest",
+      "statement": "Every third-party image is pinned by SHA256 digest.",
+      "rationale": "Already true of every image in all four Compose files. The rule prevents regression rather than requesting a change.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The Compose extractor lands. Promote quickly: the current tree is fully compliant, so a violation is unambiguously new.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
+      "id": "secrets-are-named-never-valued",
+      "statement": "Secret variables are declared and classified, and no governance artifact ever contains a secret value.",
+      "rationale": "Governance reads the whole repository, so anything it writes is a potential exfiltration path.",
+      "maturity": "blocking",
+      "check_impl": "checks.security.check_no_secret_values",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "secret-classification-is-curated",
+      "statement": "Secret status comes from the curated classification list, never inferred from a field's type.",
+      "rationale": "Secret fields are inconsistently typed here: GOOGLE_API_CLIENT_SECRET is a SecretStr while GOOGLE_CLIENT_SECRET is a plain string. Any type-based rule would miss the second one and report confidently.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The configuration extractor lands and every secret in the tree is classified.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "github-mcp-readonly-layers-agree",
+      "statement": "The GitHub MCP tool allowlist is identical across the container flags, the settings-validator frozenset, and the runtime post-probe assert.",
+      "rationale": "Three independent enforcement layers is good defence and a good drift surface. Widening one layer only is the exact failure this catches; governance cross-checks the three rather than adding a fourth declaration.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The MCP extractor lands and the three-layer comparison runs clean.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "privilege-expansion-requires-approval",
+      "statement": "Widening an MCP tool allowlist, or adding a write-capable tool source, requires explicit human approval recorded in a change record.",
+      "rationale": "Automation may propose this and may not decide it.",
+      "maturity": "advisory",
+      "check_impl": "manual",
+      "promotion_criteria": "Cannot be promoted to an automated check: the judgement is the point. It becomes enforceable only as a review requirement.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "connection-urls-are-stripped",
+      "statement": "Every governance surface strips query strings and userinfo from a connection URL before storing, logging, or emitting it.",
+      "rationale": "The catalog supports placing a token in the URL, and the url column is unencrypted while auth_token is not. A URL is credential-bearing until proven otherwise.",
+      "maturity": "blocking",
+      "check_impl": "checks.security.check_no_secret_values",
+      "exceptions_allowed": false,
+      "exception_refs": [],
+      "finding_refs": ["mcp-url-embedded-credentials-unencrypted"]
+    },
+    {
+      "id": "mcp-approval-parity",
+      "statement": "A write-capable tool is approval-gated regardless of whether it is sourced from the Google REST executor or from an MCP server.",
+      "rationale": "Currently false. Deferred-tool approval covers Google mutation tools only; MCP-sourced tools bypass it, and a connection with allowed_tools unset exposes everything its server advertises. Stated as the intended rule so the gap is visible as a gap rather than as an absence.",
+      "maturity": "experimental",
+      "check_impl": "manual",
+      "promotion_criteria": "Blocked on a product-security decision — approval parity, default allowlists, or a documented restriction. An accepted-risk ADR is explicitly not sufficient. Until then this rule must not be promoted, because promoting it would either fail every run or be quietly weakened to match current behaviour.",
+      "exceptions_allowed": false,
+      "exception_refs": [],
+      "finding_refs": ["mcp-approval-gating-asymmetry"]
+    },
+    {
+      "id": "connection-time-url-revalidation",
+      "statement": "A stored connection URL is revalidated at probe and attach time, not only when it is written.",
+      "rationale": "Currently false. Validation runs on create, update, and OAuth flows; the per-turn probe opens the stored URL directly, leaving a DNS-rebinding window. Recorded as an open finding rather than described as a protected invariant.",
+      "maturity": "experimental",
+      "check_impl": "manual",
+      "promotion_criteria": "Blocked on the connection path being fixed. Remediation is revalidation at connect time, preferably with network-level egress controls.",
+      "exceptions_allowed": false,
+      "exception_refs": [],
+      "finding_refs": ["mcp-no-connection-time-ssrf-revalidation"]
+    },
+    {
+      "id": "catalog-maps-to-a-backend-kind",
+      "statement": "Every frontend MCP catalog entry maps to a backend kind or to documented generic handling.",
+      "rationale": "A catalog entry with no backend mapping is a connection the interface offers and the executor does not recognize.",
+      "maturity": "advisory",
+      "check_impl": "phase-3",
+      "promotion_criteria": "The catalog extractor lands and the mapping is complete.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
+      "id": "extraction-never-imports-the-application",
+      "statement": "Governance tooling never imports app.* in-process.",
+      "rationale": "Settings loading walks parent directories for .env and main.py configures Logfire at import scope, so an in-process import can load real secrets and emit telemetry from a tool that only means to read files.",
+      "maturity": "blocking",
+      "check_impl": "checks.security.check_no_application_imports",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    }
+  ]
+}

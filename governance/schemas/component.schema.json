@@ -43,6 +43,64 @@
       "items": {
         "$ref": "#/$defs/component"
       }
+    },
+    "configuration_classifications": {
+      "type": "array",
+      "description": "Curated judgments about the configuration surface that extraction cannot make: which variables are secrets, which are deprecated aliases, which are computed properties rather than settable inputs, and which appear in a template with no reader. The configuration extractor enumerates variables and merges these in; it never infers them. Secret status in particular cannot be derived from types here, because secret fields are inconsistently typed.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "classification", "reason"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "classification": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "enum": [
+                "runtime",
+                "build-arg",
+                "computed",
+                "secret",
+                "deprecated-alias",
+                "compose-only",
+                "unknown-consumer"
+              ]
+            }
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "alias_of": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          },
+          "removal_milestone": {
+            "type": "string"
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "classification": {
+                  "contains": {
+                    "const": "deprecated-alias"
+                  }
+                }
+              },
+              "required": ["classification"]
+            },
+            "then": {
+              "required": ["alias_of", "removal_milestone"]
+            }
+          }
+        ]
+      }
     }
   },
   "$defs": {

@@ -1,0 +1,65 @@
+{
+  "$schema": "../governance/schemas/local-governance.schema.json",
+  "id": "backend-api",
+  "kind": "backend-subsystem",
+  "purpose": "The FastAPI application: HTTP and WebSocket endpoints, services, repositories, data models, migrations, background tasks, and the CLI",
+  "entrypoints": [
+    "backend/app/main.py",
+    "backend/app/api/routes/v1/__init__.py",
+    "backend/app/worker/taskiq_app.py",
+    "backend/cli/commands.py"
+  ],
+  "owns": [
+    "backend/**"
+  ],
+  "public_interfaces": [
+    "OpenAPI under /api/v1",
+    "WS /api/v1/ws/agent",
+    "GET /api/v1/rag/status/stream"
+  ],
+  "invariants": [
+    "Routes call services; they never import or call repositories directly",
+    "Repositories flush and refresh; the session auto-commits in get_db_session, so a repository that commits breaks transaction boundaries its caller owns",
+    "Every ORM schema change has an Alembic revision; the revision graph stays acyclic and connected with the recorded head",
+    "Route handlers return Any and let response_model serialize, so a response is validated once rather than twice",
+    "Settings are never imported by tooling in-process: find_env_file walks parent directories for .env and main.py configures Logfire at import scope"
+  ],
+  "allowed_dependencies": [
+    "postgres-pgvector",
+    "redis",
+    "minio",
+    "docling-serve",
+    "model-runner-host"
+  ],
+  "forbidden_dependencies": [
+    "frontend-app",
+    "chat-frontend"
+  ],
+  "configuration_refs": [
+    "POSTGRES_HOST",
+    "POSTGRES_USER",
+    "POSTGRES_PASSWORD",
+    "POSTGRES_DB",
+    "REDIS_HOST",
+    "REDIS_PORT",
+    "REDIS_DB",
+    "SECRET_KEY",
+    "API_KEY",
+    "CORS_ORIGINS",
+    "ENVIRONMENT",
+    "TIMEZONE"
+  ],
+  "decision_refs": [
+    "ADR-001"
+  ],
+  "validation": [
+    "backend-lint",
+    "backend-unit"
+  ],
+  "graph_hints": {
+    "exclude": [
+      "backend/.venv/**",
+      "backend/alembic/versions/**"
+    ]
+  }
+}

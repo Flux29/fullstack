@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "method": "reviewed-baseline",
+    "sources": [
+      "docker-compose.yml",
+      "docker-compose.dev.yml",
+      "docker-compose.frontend.yml",
+      "docker-compose.prod.yml",
+      "Makefile"
+    ],
+    "extractor_version": "1.0.0"
+  },
+  "stacks": [
+    {
+      "id": "base",
+      "make_variable": "COMPOSE_BASE",
+      "compose_files": ["docker-compose.yml"],
+      "profiles_available": ["frontend", "mcp", "db-ui"],
+      "profiles_always_on": []
+    },
+    {
+      "id": "dev",
+      "make_variable": "COMPOSE_DEV",
+      "compose_files": ["docker-compose.yml", "docker-compose.dev.yml"],
+      "profiles_available": ["frontend", "mcp", "db-ui"],
+      "profiles_always_on": []
+    },
+    {
+      "id": "frontend",
+      "make_variable": "COMPOSE_FRONTEND",
+      "compose_files": [
+        "docker-compose.yml",
+        "docker-compose.dev.yml",
+        "docker-compose.frontend.yml"
+      ],
+      "profiles_available": ["frontend", "mcp", "db-ui"],
+      "profiles_always_on": ["frontend"]
+    },
+    {
+      "id": "prod",
+      "make_variable": "COMPOSE_PROD",
+      "compose_files": ["docker-compose.yml", "docker-compose.prod.yml"],
+      "profiles_available": ["frontend", "mcp", "db-ui", "edge"],
+      "profiles_always_on": []
+    }
+  ],
+  "services": [
+    {
+      "name": "app",
+      "component": "backend-api",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {"ref": "fullstack-backend:local"},
+      "build": {"context": "backend", "dockerfile": "Dockerfile", "args": []},
+      "expose": ["8100"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "8100", "container_port": "8100"}
+      ],
+      "networks": ["data-internal", "service-egress"],
+      "volumes": [
+        {"name": "media_data", "target": "/app/media", "class": "named"},
+        {"name": "models_cache", "target": "/app/models_cache", "class": "named"},
+        {"name": "./emails", "target": "/app/emails", "class": "bind"}
+      ],
+      "healthcheck": {"present": true},
+      "depends_on": ["db", "redis", "minio", "docling-serve"],
+      "env_refs": [
+        "POSTGRES_HOST", "POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB",
+        "REDIS_HOST", "REDIS_PASSWORD", "TASKIQ_BROKER_URL", "TASKIQ_RESULT_BACKEND",
+        "TASKIQ_MAX_ASYNC_TASKS", "S3_ENDPOINT", "S3_ACCESS_KEY", "S3_SECRET_KEY",
+        "S3_RAG_ENDPOINT", "S3_RAG_ACCESS_KEY", "S3_RAG_SECRET_KEY",
+        "EMBEDDING_BASE_URL", "RERANKER_BASE_URL", "EMBEDDING_CACHE_URL",
+        "DOCLING_SERVE_URL", "DEBUG", "ENVIRONMENT", "DOMAIN"
+      ],
+      "gpu": false
+    },
+    {
+      "name": "db",
+      "component": "postgres-pgvector",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {
+        "ref": "pgvector/pgvector",
+        "digest": "sha256:7ae6051efd0e60444282c27c7e141af07f322ce033300e727a49c3dd11075e38"
+      },
+      "expose": [],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "5432", "container_port": "5432"}
+      ],
+      "networks": ["data-internal"],
+      "volumes": [{"name": "postgres_data", "target": "/var/lib/postgresql/data", "class": "named"}],
+      "healthcheck": {"present": true},
+      "depends_on": [],
+      "env_refs": ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"],
+      "gpu": false
+    },
+    {
+      "name": "redis",
+      "component": "redis",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {
+        "ref": "redis",
+        "digest": "sha256:c29e49ab2f85760a3827b53882e6dd9f5c6c3f0bb7d724e07bb31cbf275a5236"
+      },
+      "expose": [],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "6379", "container_port": "6379"}
+      ],
+      "networks": ["data-internal"],
+      "volumes": [{"name": "redis-data", "target": "/data", "class": "external-preserve"}],
+      "healthcheck": {"present": true},
+      "depends_on": [],
+      "env_refs": ["REDIS_PASSWORD"],
+      "gpu": false
+    },
+    {
+      "name": "minio",
+      "component": "minio",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {
+        "ref": "minio-local",
+        "digest": "sha256:978f75e6d6240261fd3a2f6a760729f45f30ea11fd1cf8b51391694c6fb279d0"
+      },
+      "expose": ["9000", "9001"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "9000", "container_port": "9000"},
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "9001", "container_port": "9001"}
+      ],
+      "networks": ["data-internal"],
+      "volumes": [{"name": "minio_data", "target": "/data", "class": "named"}],
+      "healthcheck": {"present": true},
+      "depends_on": [],
+      "env_refs": ["MINIO_ROOT_USER", "MINIO_ROOT_PASSWORD"],
+      "gpu": false
+    },
+    {
+      "name": "docling-serve",
+      "component": "docling-serve",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {
+        "ref": "ghcr.io/docling-project/docling-serve-cu128",
+        "digest": "sha256:6b27338eea4981a8c51c3cdccda83441a62053ce5cf708f4fdf70aad5f3c10e8"
+      },
+      "expose": ["5001"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "5001", "container_port": "5001"}
+      ],
+      "networks": ["service-egress"],
+      "volumes": [{"name": "docling-models", "target": "/modelcache", "class": "external-preserve"}],
+      "healthcheck": {"present": true},
+      "depends_on": [],
+      "env_refs": [],
+      "gpu": true
+    },
+    {
+      "name": "taskiq-worker",
+      "component": "backend-api",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {"ref": "fullstack-backend:local"},
+      "expose": [],
+      "ports": [],
+      "networks": ["data-internal", "service-egress"],
+      "volumes": [
+        {"name": "media_data", "target": "/app/media", "class": "named"},
+        {"name": "models_cache", "target": "/app/models_cache", "class": "named"},
+        {"name": "./emails", "target": "/app/emails", "class": "bind"}
+      ],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": ["db", "redis", "minio", "docling-serve"],
+      "env_refs": ["TASKIQ_BROKER_URL", "TASKIQ_RESULT_BACKEND", "TASKIQ_MAX_ASYNC_TASKS", "REDIS_PASSWORD"],
+      "gpu": false
+    },
+    {
+      "name": "taskiq-scheduler",
+      "component": "backend-api",
+      "presence": [
+        {"stack": "base", "profiles": [], "active_without_profile": true},
+        {"stack": "dev", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": [], "active_without_profile": true}
+      ],
+      "image": {"ref": "fullstack-backend:local"},
+      "expose": [],
+      "ports": [],
+      "networks": ["data-internal", "service-egress"],
+      "volumes": [{"name": "media_data", "target": "/app/media", "class": "named"}],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": ["db", "redis"],
+      "env_refs": ["TASKIQ_BROKER_URL", "TASKIQ_RESULT_BACKEND", "REDIS_PASSWORD"],
+      "gpu": false
+    },
+    {
+      "name": "frontend",
+      "component": "frontend-app",
+      "presence": [
+        {"stack": "base", "profiles": ["frontend"], "active_without_profile": false},
+        {"stack": "dev", "profiles": ["frontend"], "active_without_profile": false},
+        {"stack": "frontend", "profiles": [], "active_without_profile": true},
+        {"stack": "prod", "profiles": ["frontend"], "active_without_profile": false}
+      ],
+      "image": {"ref": "fullstack-frontend:local"},
+      "build": {
+        "context": "frontend",
+        "dockerfile": "Dockerfile",
+        "args": [
+          "NEXT_PUBLIC_API_URL",
+          "NEXT_PUBLIC_WS_URL",
+          "NEXT_PUBLIC_SITE_URL",
+          "NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB",
+          "NEXT_PUBLIC_OAUTH_PROVIDERS",
+          "NEXT_PUBLIC_RAG_ENABLED"
+        ]
+      },
+      "expose": ["3000"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "3000", "container_port": "3000"},
+        {"stack": "frontend", "host_ip": "127.0.0.1", "host_port": "3000", "container_port": "3000"}
+      ],
+      "networks": ["service-egress"],
+      "volumes": [],
+      "healthcheck": {"present": true},
+      "depends_on": ["app"],
+      "env_refs": ["NODE_ENV", "BACKEND_URL", "BACKEND_WS_URL", "NEXT_PUBLIC_SITE_URL", "NEXT_PUBLIC_RAG_ENABLED"],
+      "gpu": false
+    },
+    {
+      "name": "docling-mcp",
+      "component": "docling-mcp",
+      "presence": [
+        {"stack": "base", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "dev", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "prod", "profiles": ["mcp"], "active_without_profile": false}
+      ],
+      "build": {"context": "docker/mcp/docling", "args": []},
+      "expose": ["8000"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "8201", "container_port": "8000"}
+      ],
+      "networks": ["service-egress"],
+      "volumes": [{"name": "docling_mcp_cache", "target": "/cache", "class": "named"}],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": ["docling-serve"],
+      "env_refs": [],
+      "gpu": false
+    },
+    {
+      "name": "browserless",
+      "presence": [
+        {"stack": "base", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "dev", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "prod", "profiles": ["mcp"], "active_without_profile": false}
+      ],
+      "image": {
+        "ref": "ghcr.io/browserless/chromium",
+        "digest": "sha256:07f6561d607b80312cc9b2500e98e40cf1eb0276fb647984fa074c96b9dd41dc"
+      },
+      "expose": ["3000"],
+      "ports": [],
+      "networks": ["service-egress"],
+      "volumes": [],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": [],
+      "env_refs": ["BROWSERLESS_TOKEN"],
+      "gpu": false
+    },
+    {
+      "name": "chrome-devtools-mcp",
+      "component": "chrome-devtools-mcp",
+      "presence": [
+        {"stack": "base", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "dev", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "prod", "profiles": ["mcp"], "active_without_profile": false}
+      ],
+      "build": {"context": "docker/mcp/chrome-devtools", "args": []},
+      "expose": ["8000"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "8202", "container_port": "8000"}
+      ],
+      "networks": ["service-egress"],
+      "volumes": [],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": ["browserless"],
+      "env_refs": ["BROWSERLESS_TOKEN"],
+      "gpu": false
+    },
+    {
+      "name": "github-mcp",
+      "component": "github-mcp",
+      "presence": [
+        {"stack": "base", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "dev", "profiles": ["mcp"], "active_without_profile": false},
+        {"stack": "prod", "profiles": ["mcp"], "active_without_profile": false}
+      ],
+      "image": {
+        "ref": "ghcr.io/github/github-mcp-server",
+        "digest": "sha256:d5a18c04b92714c309eb46a2305087e91a4dbd80420f6e462656699f95093520"
+      },
+      "expose": ["8082"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "8203", "container_port": "8082"}
+      ],
+      "networks": ["service-egress"],
+      "volumes": [],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": [],
+      "env_refs": ["GITHUB_READ_ONLY"],
+      "gpu": false
+    },
+    {
+      "name": "pgweb",
+      "presence": [
+        {"stack": "base", "profiles": ["db-ui"], "active_without_profile": false},
+        {"stack": "dev", "profiles": ["db-ui"], "active_without_profile": false},
+        {"stack": "prod", "profiles": ["db-ui"], "active_without_profile": false}
+      ],
+      "image": {
+        "ref": "sosedoff/pgweb",
+        "digest": "sha256:a5256d416e2e8b92d69a4459058e3eca33a9f075d8325491644411d0bc3bd70b"
+      },
+      "expose": ["8081"],
+      "ports": [
+        {"stack": "dev", "host_ip": "127.0.0.1", "host_port": "8081", "container_port": "8081"}
+      ],
+      "networks": ["data-internal"],
+      "volumes": [],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": ["db"],
+      "env_refs": ["POSTGRES_USER", "POSTGRES_PASSWORD", "POSTGRES_DB"],
+      "gpu": false
+    },
+    {
+      "name": "traefik",
+      "component": "traefik",
+      "presence": [
+        {"stack": "prod", "profiles": ["edge"], "active_without_profile": false}
+      ],
+      "image": {
+        "ref": "traefik",
+        "digest": "sha256:617c253c5d960e257ec153d582cc62f191461baba6863bd6b498ae062d3d5c19"
+      },
+      "expose": [],
+      "ports": [
+        {"stack": "prod", "host_ip": null, "host_port": "TRAEFIK_HTTP_PORT", "container_port": "80"},
+        {"stack": "prod", "host_ip": null, "host_port": "TRAEFIK_HTTPS_PORT", "container_port": "443"},
+        {"stack": "prod", "host_ip": "127.0.0.1", "host_port": "TRAEFIK_DASHBOARD_PORT", "container_port": "8080"}
+      ],
+      "networks": ["service-egress"],
+      "volumes": [
+        {"name": "/var/run/docker.sock", "target": "/var/run/docker.sock", "class": "bind"},
+        {"name": "traefik_letsencrypt", "target": "/letsencrypt", "class": "named"}
+      ],
+      "healthcheck": {"present": false, "deliberate_exception_ref": "taskiq-healthchecks-disabled"},
+      "depends_on": [],
+      "env_refs": ["ACME_EMAIL", "DOMAIN", "TRAEFIK_HTTP_PORT", "TRAEFIK_HTTPS_PORT", "TRAEFIK_DASHBOARD_PORT"],
+      "gpu": false
+    }
+  ],
+  "host_runtimes": [
+    {
+      "id": "model-runner-host",
+      "purpose": "Docker Model Runner on the host, serving embeddings and the reranker. No Compose file declares it; without this node the embedding and reranker dependency edges are invisible.",
+      "endpoints": [
+        "http://model-runner.docker.internal/engines/v1 (from containers)",
+        "http://localhost:12434 (from the host)"
+      ],
+      "healthcheck_validator": "preflight-model"
+    }
+  ],
+  "networks": [
+    {"name": "data-internal", "internal": true},
+    {"name": "service-egress", "internal": false}
+  ],
+  "volumes": [
+    {"name": "postgres_data", "class": "named", "purpose": "PostgreSQL data directory"},
+    {"name": "minio_data", "class": "named", "purpose": "Object storage data"},
+    {"name": "media_data", "class": "named", "purpose": "Uploaded media shared by the API and the worker"},
+    {"name": "models_cache", "class": "named", "purpose": "Backend model cache"},
+    {"name": "docling_mcp_cache", "class": "named", "purpose": "Docling MCP sidecar cache"},
+    {"name": "traefik_letsencrypt", "class": "named", "purpose": "ACME certificate storage"},
+    {"name": "redis-data", "class": "external-preserve", "purpose": "Redis append-only persistence. Pre-existing external state; never recreated or normalized by governance."},
+    {"name": "docling-models", "class": "external-preserve", "purpose": "Docling model cache, mounted read-only. Pre-existing external state; re-downloading it is expensive."}
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "../../../governance/schemas/local-governance.schema.json",
+  "id": "docling-mcp",
+  "kind": "mcp-sidecar",
+  "purpose": "Expose Docling document conversion to the agent as MCP tools, in remote mode against the shared Docling Serve instance",
+  "entrypoints": [
+    "docker/mcp/docling/Dockerfile"
+  ],
+  "owns": [
+    "docker/mcp/docling/**"
+  ],
+  "public_interfaces": [
+    "MCP over HTTP on container port 8000"
+  ],
+  "invariants": [
+    "Runs in remote conversion mode against the same Docling Serve instance the ingestion path uses, with a compatible timeout and retry budget. Two Docling paths that disagree about the endpoint would give the agent and the ingestion pipeline different answers about the same document",
+    "Local fallback conversion stays disabled: a silent fallback would move GPU work into a sidecar sized for none",
+    "Reachable only on the service-egress network and only under the mcp Compose profile"
+  ],
+  "allowed_dependencies": [
+    "docling-serve"
+  ],
+  "forbidden_dependencies": [
+    "postgres-pgvector",
+    "minio"
+  ],
+  "configuration_refs": [
+    "DOCLING_SERVE_URL"
+  ],
+  "validation": [
+    "compose-check"
+  ]
+}

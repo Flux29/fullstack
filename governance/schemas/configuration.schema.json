@@ -83,8 +83,8 @@
           "enum": ["backend", "frontend", "compose"]
         },
         "type": {
-          "type": "string",
-          "description": "The annotated Python type or the frontend usage type, verbatim from source."
+          "type": ["string", "null"],
+          "description": "The annotated Python type or the frontend usage type, verbatim from source. Null when the variable has no declaring type at all — a compose-only variable, or one present in a template with no reader. That is a real state and is recorded rather than guessed at."
         },
         "default": {
           "type": ["string", "null"],

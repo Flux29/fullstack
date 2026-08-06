@@ -1,0 +1,31 @@
+{
+  "$schema": "../../../governance/schemas/local-governance.schema.json",
+  "id": "chrome-devtools-mcp",
+  "kind": "mcp-sidecar",
+  "purpose": "Expose browser automation to the agent as MCP tools, driving a separate headless Chromium service",
+  "entrypoints": [
+    "docker/mcp/chrome-devtools/Dockerfile"
+  ],
+  "owns": [
+    "docker/mcp/chrome-devtools/**"
+  ],
+  "public_interfaces": [
+    "MCP over HTTP on container port 8000"
+  ],
+  "invariants": [
+    "The browser itself runs in a separate service; this sidecar holds no browser. Their shared token must match, and the placeholder value must never reach a running stack — make preflight-mcp refuses to start the profile until it is replaced",
+    "Reachable only on the service-egress network and only under the mcp Compose profile",
+    "This is the widest-reaching tool source in the system: it can fetch arbitrary URLs. It is deliberately not enabled by default"
+  ],
+  "allowed_dependencies": [],
+  "forbidden_dependencies": [
+    "postgres-pgvector",
+    "minio"
+  ],
+  "configuration_refs": [
+    "BROWSERLESS_TOKEN"
+  ],
+  "validation": [
+    "compose-check"
+  ]
+}

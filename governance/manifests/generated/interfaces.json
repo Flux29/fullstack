@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "provenance": {
+    "method": "reviewed-baseline",
+    "sources": [
+      "backend/app/api/routes/v1/",
+      "frontend/src/app/api/",
+      "frontend/src/hooks/use-chat.ts",
+      "frontend/src/i18n.ts"
+    ],
+    "extractor_version": "1.0.0"
+  },
+  "openapi": {
+    "provenance": {
+      "method": "reviewed-baseline",
+      "sources": ["backend/app/api/routes/v1/"],
+      "extractor_version": "1.0.0"
+    },
+    "status": "unknown",
+    "unknown_reason": "The sanitized subprocess exporter lands in Phase 3. Recorded as unknown rather than omitted, because an absent OpenAPI section and an empty one mean different things.",
+    "paths": []
+  },
+  "websocket": {
+    "provenance": {
+      "method": "reviewed-baseline",
+      "sources": [
+        "backend/app/api/routes/v1/agent.py",
+        "backend/app/services/agent_session.py",
+        "frontend/src/hooks/use-chat.ts"
+      ],
+      "extractor_version": "1.0.0"
+    },
+    "endpoint": "/api/v1/ws/agent",
+    "auth": "token-subprotocol",
+    "proxy_exception_ref": "ws-chat-bypasses-proxy",
+    "events": [
+      {
+        "type": "tool_approval_required",
+        "direction": "server-to-client",
+        "producer_ref": "backend/app/services/agent_session.py",
+        "consumer_ref": "frontend/src/components/chat/tool-approval-dialog.tsx",
+        "provenance": "reviewed-baseline"
+      }
+    ]
+  },
+  "sse": [
+    {
+      "path": "/api/v1/rag/status/stream",
+      "purpose": "RAG ingestion status. The only server-sent-events endpoint; chat streaming is a WebSocket instead.",
+      "location": "backend/app/api/routes/v1/rag.py"
+    }
+  ],
+  "proxy_routes": [],
+  "frontend_pages": [],
+  "locales": ["en", "pl"]
+}

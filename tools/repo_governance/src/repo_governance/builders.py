@@ -224,3 +224,65 @@ def build_interfaces(ctx: Context) -> dict[str, Any]:
         "frontend_pages": frontend.pages,
         "locales": locales,
     }
+
+
+def build_decision_index(ctx: Context) -> dict[str, Any]:
+    """Index the ADRs from their front matter.
+
+    Deliberately a small hand-rolled parser rather than a YAML dependency for the whole
+    document: the front matter here is a fixed set of scalars and one string list, and an
+    ADR whose front matter cannot be read is reported rather than skipped.
+    """
+    import re
+
+    from repo_governance.config import iter_files
+    from repo_governance.io_atomic import relative_posix
+
+    decisions = []
+    for path in iter_files(ctx.paths.decisions, suffixes=(".md",)):
+        if not path.name.startswith("ADR-"):
+            continue
+        text = path.read_text(encoding="utf-8")
+        match = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
+        if not match:
+            continue
+
+        fields: dict[str, Any] = {}
+        current_list: str | None = None
+        for line in match.group(1).splitlines():
+            if line.startswith("  - ") and current_list:
+                fields.setdefault(current_list, []).append(line[4:].strip())
+                continue
+            key, _, value = line.partition(":")
+            key, value = key.strip(), value.strip()
+            if not key:
+                continue
+            if value:
+                fields[key] = value
+                current_list = None
+            else:
+                current_list = key
+                fields.setdefault(key, [])
+
+        entry = {
+            "id": str(fields.get("id", path.name.split("-title")[0][:7])),
+            "title": str(fields.get("title", path.stem)),
+            "status": str(fields.get("status", "proposed")),
+            "date": str(fields.get("date", "1970-01-01")),
+            "file": relative_posix(path, ctx.repo_root),
+        }
+        if fields.get("components"):
+            entry["components"] = sorted(fields["components"])
+        if fields.get("supersedes"):
+            entry["supersedes"] = sorted(fields["supersedes"])
+        decisions.append(entry)
+
+    return {
+        "schema_version": ctx.config.schema_version,
+        "provenance": {
+            "method": "extracted",
+            "sources": ["governance/history/decisions/ADR-*.md"],
+            "extractor_version": ctx.config.version,
+        },
+        "decisions": sorted(decisions, key=lambda item: item["id"]),
+    }

@@ -10,6 +10,14 @@
     },
     {
       "authority": "generated",
+      "description": "Current architectural state, open findings, accepted exceptions, active contracts, and the most recent material changes.",
+      "kind": "summary",
+      "path": "governance/Summary.md",
+      "read_when": "Orienting on a repository you have not touched recently, or checking what is currently unresolved.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
       "description": "This index. The first thing to read before selecting any deeper governance material.",
       "kind": "config",
       "path": "governance/catalog.json",

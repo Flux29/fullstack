@@ -1,0 +1,70 @@
+{
+  "decisions": [
+    {
+      "components": [
+        "governance-kernel"
+      ],
+      "date": "2026-08-06",
+      "file": "governance/history/decisions/ADR-001-governance-adoption-baseline.md",
+      "id": "ADR-001",
+      "status": "accepted",
+      "title": "Governance adoption baseline"
+    },
+    {
+      "components": [
+        "model-runner-host",
+        "postgres-pgvector",
+        "rag"
+      ],
+      "date": "2026-08-06",
+      "file": "governance/history/decisions/ADR-002-embedding-dimension-contract.md",
+      "id": "ADR-002",
+      "status": "accepted",
+      "title": "The embedding dimension is a five-point contract"
+    },
+    {
+      "components": [
+        "agents",
+        "github-mcp",
+        "mcp-user-connections"
+      ],
+      "date": "2026-08-06",
+      "file": "governance/history/decisions/ADR-003-mcp-connection-model.md",
+      "id": "ADR-003",
+      "status": "accepted",
+      "title": "MCP connections are one abstraction with orthogonal dimensions"
+    },
+    {
+      "components": [
+        "docling-mcp",
+        "docling-serve",
+        "rag"
+      ],
+      "date": "2026-08-06",
+      "file": "governance/history/decisions/ADR-004-docling-two-paths.md",
+      "id": "ADR-004",
+      "status": "accepted",
+      "title": "Docling has two execution paths against one service"
+    },
+    {
+      "components": [
+        "backend-api",
+        "postgres-pgvector",
+        "traefik"
+      ],
+      "date": "2026-08-06",
+      "file": "governance/history/decisions/ADR-005-service-exposure-strategy.md",
+      "id": "ADR-005",
+      "status": "accepted",
+      "title": "Exposure posture is per-stack, and the edge is the only public surface"
+    }
+  ],
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      "governance/history/decisions/ADR-*.md"
+    ]
+  },
+  "schema_version": 1
+}

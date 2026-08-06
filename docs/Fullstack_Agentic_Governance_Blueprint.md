@@ -366,7 +366,7 @@ References to OpenAPI (produced by the sanitized exporter), the **generated WebS
 
 ### Tests
 
-Mappings among tests, components, symbols, contracts, policies, and scenario coverage. Because line coverage is pinned at 100% on both sides (backend `fail_under = 100`, frontend vitest thresholds), the risk metric is **invariant/scenario coverage** — which declared invariants have a dedicated test (dimension guard → `test_rag_docker_integration.py`; tool routing/approval → `evals/google_workspace_tools.py`; migrations → `test_migrations.py`, DB-gated) — not line-coverage weakness. Record frameworks precisely (anyio async tests with mocked sessions, DB-gated migration tests, env-gated destructive live suites, vitest, Playwright) and the gating env vars as metadata so impact analysis never selects a destructive suite.
+Mappings among tests, components, symbols, contracts, policies, and scenario coverage. Line-coverage thresholds are **ratcheted floors** (the generator's 100% defaults were never met in practice — the first CI run measured ~55% backend, ~4% frontend, and the floors were reset to actuals), so the risk metric is **invariant/scenario coverage** — which declared invariants have a dedicated test (dimension guard → `test_rag_docker_integration.py`; tool routing/approval → `evals/google_workspace_tools.py`; migrations → `test_migrations.py`, DB-gated) — not line-coverage weakness. Record frameworks precisely (anyio async tests with mocked sessions, DB-gated migration tests, env-gated destructive live suites, vitest, Playwright) and the gating env vars as metadata so impact analysis never selects a destructive suite.
 
 ## Repository graph and visualizers
 
@@ -734,6 +734,7 @@ Register these as findings on day one so checks start honest instead of discover
 8. MCP approval-gating asymmetry (see MCP policies) — requires a product-security decision.
 9. No connection-time SSRF revalidation (see MCP policies) — open security finding.
 10. URL-embedded connection credentials stored unencrypted and echoed by the API (see MCP policies) — open security finding.
+11. The generator's CI contract was never exercised before the first push (2026-08-05): coverage thresholds were aspirational 100% against ~55%/~4% actuals (ratcheted to measured floors), the pip-audit job could not run as shipped (fixed to audit the exported lockfile via `uvx`), the CI Postgres image lacked pgvector after migration 0027 (switched to the compose-pinned `pgvector/pgvector` digest), and the Playwright E2E step cannot run on CI (its webServer is CI-disabled and it needs a running backend) — E2E is local-only until a composed CI stack exists.
 
 ## Context management rules
 

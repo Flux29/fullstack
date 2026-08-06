@@ -1,0 +1,74 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "WS /api/v1/ws/agent"
+  ],
+  "behavioral_effects": [
+    "Google Workspace tool schemas are attached per turn by a deterministic keyword router over the 8 products instead of unconditionally. Measured over 9 representative turns with all products connected: mean serialized catalog 6488 bytes vs 32249 for the full catalog, a 79.9% reduction. Turns with no Google intent attach zero Google tools.",
+    "load_google_toolkit(product) re-attaches any connected product mid-run. Its return value enumerates the tool names that became available, because a bare acknowledgement leaves the model nothing to call and it re-invokes the loader. It is hidden whenever no connected product is gated off.",
+    "The model request following a tool approval carries a narrowed catalog: products holding pending approvals, products used during the run, and products the conversation named with an unambiguous term. Ambiguous terms are deliberately excluded there, so a Gmail send does not drag Google Chat along.",
+    "Google toolsets serialize in a fixed canonical order (product order, then connection name) rather than database row order, and parameter schemas are compacted (nullable anyOf unions folded to type arrays, redundant default:null dropped) for a further 5.5% off the full catalog."
+  ],
+  "compatibility_impact": "No API, schema, or wire-format change. build_toolsets_for_user gained an optional loadout parameter and is backwards compatible: callers that omit it (channel traffic, direct callers, tests) attach every connected integration exactly as before. Gmail/Calendar tool tables were renamed from _GMAIL_TOOLS/_CALENDAR_TOOLS to GMAIL_TOOLS/CALENDAR_TOOLS (module-private, no external consumers). Google toolsets gained a ProductGatedToolset wrapper, so tests reaching through .wrapped.tools now use app.agents.tool_schema.function_tools, which walks the chain via pydantic-ai's own AbstractToolset.apply visitor.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "M backend/app/agents/.governance.json",
+    "M backend/app/agents/assistant.py",
+    "M backend/app/agents/google_workspace_api.py",
+    "M backend/app/services/agent_session.py",
+    "M backend/app/services/mcp_connection.py",
+    "M backend/evals/google_workspace_tools.py",
+    "M backend/tests/test_google_workspace_api.py",
+    "M backend/tests/test_google_workspace_evals.py",
+    "M backend/tests/test_mcp_connections.py",
+    "M governance/manifests/effective/repository.json",
+    "M governance/manifests/generated/components.json",
+    "backend/app/agents/google_loadout.py",
+    "backend/app/agents/tool_schema.py",
+    "backend/scripts/measure_google_tool_schemas.py",
+    "backend/tests/test_google_loadout.py"
+  ],
+  "follow_up": [
+    "Consider enabling openrouter_cache_tool_definitions and openrouter_cache_instructions in AssistantAgent model settings. The canonical ordering added here is the precondition that makes tool-definition caching viable; weigh it against Anthropic cache-write pricing and the fact that a per-turn loadout changes the tool block more often than a static one.",
+    "Capture live billed vs cached input tokens per turn from Logfire genai spans once a stack is running, and record latency to first tool call plus router misses that required a load_google_toolkit call, to confirm the byte-level reduction translates into cost and latency.",
+    "drive_get_file_permissions duplicates drive_list_permissions and is documented as a legacy tool name. Removing it would save a schema, but \"delete nothing\" governed this change, so it was left in place."
+  ],
+  "id": "2026-08-06-lazy-google-workspace-tool-exposure-toolkit-loader-approval-resu",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Provider prompt caching was verified as INACTIVE on this path rather than measured live. The configured model is anthropic/claude-opus-4-7, and Anthropic caching requires explicit cache_control breakpoints; assistant.py builds ModelSettings with only temperature and openai_reasoning_summary, so openrouter_cache_tool_definitions and openrouter_cache_instructions are never sent. Tool definitions are therefore re-billed in full on every request, which is why raw reduction is what pays here. scripts/measure_google_tool_schemas.py reports this status on every run.",
+    "Token, cost, latency-to-first-tool-call and model round-trip figures were not captured from live traffic. Doing so needs a running stack and billed OpenRouter calls. Measurement is in serialized provider-payload bytes, which is what the provider bills against, plus schema and tool counts.",
+    "Schema slimming was driven by measurement and returned far less than the structural work: parameter schemas were 20814 of 34119 bytes and descriptions only 3576, so descriptions were left untouched. Compaction alone yielded 5.5%; the per-turn loadout yielded the remaining bulk of the 79.9%.",
+    "AgentSession._approve_tools was not modified. The retention set needs RunContext, which only _handle_deferred_tools has; _approve_tools remains the browser pause mechanism and receives an already-narrowed catalog."
+  ],
+  "manifests_changed": [],
+  "reason": "With Google integrations enabled every chat turn ships ~103 tool schemas to the model unconditionally, including approval-resume turns that only need to write a closing sentence. Attack eager exposure without removing capability: route a per-turn loadout, keep a loader as the escape hatch, and hold a canonical serialization order so provider prompt caching can hit.",
+  "risks": [
+    "A router miss makes the model spend one extra round-trip on load_google_toolkit before it can act. Mitigated by conservative selection (ambiguous terms expand to every product they could mean, generic Google mentions widen to everything) and by sticky inheritance from recently used products.",
+    "Parameter schemas now use JSON Schema type unions (\"type\": [\"string\", \"null\"]) in place of two-branch anyOf. This is standard and equivalent, but it is a different serialization than models previously saw; a provider with a non-standard schema parser could behave differently. Only the two-branch nullable case is folded, and any branch carrying its own composition keywords is left untouched.",
+    "The sticky loadout is keyed by conversation and held in the WebSocket session, so it does not survive a reconnect. A follow-up turn after a dropped connection routes from the prompt alone and may need the loader."
+  ],
+  "rollback": "A plain git revert fully restores previous behaviour; there is no migration, no persisted state, and no stored data. Loadout state is in-memory per WebSocket session and disappears on revert with no cleanup. If only a partial rollback is wanted, passing loadout=None to build_toolsets_for_user disables gating repository-wide while leaving schema compaction in place.",
+  "schema_version": 1,
+  "security_impact": "None. No change to authentication, OAuth token handling, SSRF validation, tool approval policy, or scopes. Every mutating Google tool keeps requires_approval exactly as before, asserted by the unchanged approval-policy eval and by test_google_workspace_api. Gating only decides which already-authorized tools are described to the model on a given request; it never widens what a tool may do.",
+  "summary": "Lazy Google Workspace tool exposure: toolkit loader, approval-resume slimming, per-turn relevance router, schema slimming",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "425 passed, 13 skipped. The one error (tests/test_rag_docker_integration.py) is a pre-existing PermissionError on the pytest tmp_path directory, reproduced on the unmodified baseline via git stash.",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 eval tests, 4 datasets. Routing/approval policy (10 cases), per-turn loadout superset+exclusion (15 cases), negative no-load (5 cases), byte-identical serialization determinism (3 cases).",
+      "id": "agent-evals",
+      "result": "pass"
+    }
+  ]
+}

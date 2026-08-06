@@ -22,6 +22,11 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents import mcp_oauth
+from app.agents.google_loadout import (
+    GOOGLE_PRODUCT_ORDER,
+    GoogleLoadout,
+    gate_google_toolset,
+)
 from app.agents.google_workspace_api import (
     build_google_api_toolset,
     google_api_kind,
@@ -435,16 +440,29 @@ class McpConnectionService:
         return db_connection
 
 
-async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
+async def build_toolsets_for_user(
+    user_id: UUID | None, loadout: GoogleLoadout | None = None
+) -> list[Any]:
     """Agent toolsets for one chat turn: static MCP_SERVERS + the user's
     enabled connections. Unreachable servers are skipped, never fatal.
 
     ``user_id`` is None for channel traffic that isn't mapped to an account;
     the deployment-managed servers still apply, there are just no per-user
     connections to add.
+
+    When *loadout* is given, each Google integration is registered with it and
+    wrapped in a gate, so only the products this turn routed to are visible to
+    the model. Without one, every connection is attached as before — the gate is
+    opt-in so channel traffic and direct callers keep the old behaviour.
+
+    Google toolsets are returned in a fixed order (canonical product order, then
+    connection name) rather than the order rows come back from the database.
+    Provider prompt caching keys on a stable prefix, so a catalog that reorders
+    between turns cannot be cached even when it is small.
     """
     specs = static_server_specs()
-    direct_toolsets: list[Any] = []
+    # (canonical product index, connection name, toolset) — sorted before return.
+    google_toolsets: list[tuple[int, str, Any]] = []
     used_prefixes = {_tool_prefix(spec.name) for spec in specs}
     if user_id is not None:
         async with get_db_context() as db:
@@ -460,7 +478,8 @@ async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
                         "Skipping MCP connection %r: no usable credentials", connection.name
                     )
                     continue
-                if google_api_kind(connection.url):
+                kind = google_api_kind(connection.url)
+                if kind:
                     prefix = _tool_prefix(connection.name)
                     if prefix in used_prefixes:
                         logger.warning(
@@ -470,14 +489,21 @@ async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
                         )
                         continue
                     used_prefixes.add(prefix)
-                    direct_toolsets.append(
-                        build_google_api_toolset(
-                            name=connection.name,
-                            url=connection.url,
-                            access_token=headers["Authorization"].removeprefix("Bearer "),
-                            allowed_tools=connection.allowed_tools,
-                            user_id=str(user_id),
-                        )
+                    toolset = build_google_api_toolset(
+                        name=connection.name,
+                        url=connection.url,
+                        access_token=headers["Authorization"].removeprefix("Bearer "),
+                        allowed_tools=connection.allowed_tools,
+                        user_id=str(user_id),
+                    )
+                    if loadout is not None:
+                        loadout.register(prefix=prefix, product=kind)
+                        toolset = gate_google_toolset(toolset, product=kind)
+                    # A KeyError here would mean GOOGLE_PRODUCT_ORDER and
+                    # GoogleApiKind have drifted; failing is right, because a
+                    # silent fallback position would break the ordering guarantee.
+                    google_toolsets.append(
+                        (GOOGLE_PRODUCT_ORDER.index(kind), connection.name, toolset)
                     )
                     continue
                 specs.append(
@@ -488,4 +514,5 @@ async def build_toolsets_for_user(user_id: UUID | None) -> list[Any]:
                         allowed_tools=connection.allowed_tools,
                     )
                 )
-    return [*(await build_mcp_toolsets(specs)), *direct_toolsets]
+    google_toolsets.sort(key=lambda entry: entry[:2])
+    return [*(await build_mcp_toolsets(specs)), *(toolset for _, _, toolset in google_toolsets)]

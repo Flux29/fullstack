@@ -75,7 +75,9 @@ class DockerModelRunnerReranker(BaseReranker):
                 response.raise_for_status()
                 break
             except (httpx.ConnectError, httpx.TimeoutException, httpx.HTTPStatusError) as exc:
-                status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+                status = (
+                    exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+                )
                 transient = status in {404, 408, 409, 425, 429} or (
                     status is not None and status >= 500
                 )

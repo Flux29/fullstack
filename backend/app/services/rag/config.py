@@ -134,10 +134,7 @@ class RerankerConfig(BaseModel):
     """Reranker configuration."""
 
     provider: str = "docker_model_runner"
-    model: str = (
-        "huggingface.co/keisuke-miyako/"
-        "gte-reranker-modernbert-base-gguf-q8_0:Q8_0"
-    )
+    model: str = "huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0"
     base_url: str = "http://localhost:12434"
     timeout_seconds: float = 120.0
     max_retries: int = 3

@@ -461,48 +461,6 @@
       "reason": "Per-user Google Workspace OAuth credential."
     },
     {
-      "alias_of": "GOOGLE_API_CLIENT_ID",
-      "classification": [
-        "deprecated-alias",
-        "runtime"
-      ],
-      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_ID",
-      "reason": "Compatibility with preview-MCP variable names, retained while the MCP-to-direct-REST migration completes.",
-      "removal_milestone": "Remove once no deployment sets it and the direct Google REST executor is the only path"
-    },
-    {
-      "alias_of": "GOOGLE_API_CLIENT_SECRET",
-      "classification": [
-        "deprecated-alias",
-        "secret",
-        "runtime"
-      ],
-      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET",
-      "reason": "Compatibility with preview-MCP variable names.",
-      "removal_milestone": "Remove alongside GOOGLE_WORKSPACE_MCP_CLIENT_ID"
-    },
-    {
-      "alias_of": "GOOGLE_API_CLIENT_ID",
-      "classification": [
-        "deprecated-alias",
-        "runtime"
-      ],
-      "name": "GOOGLE_DRIVE_CLIENT_ID",
-      "reason": "Compatibility with names shipped in earlier environment examples.",
-      "removal_milestone": "Remove once no deployment sets it"
-    },
-    {
-      "alias_of": "GOOGLE_API_CLIENT_SECRET",
-      "classification": [
-        "deprecated-alias",
-        "secret",
-        "runtime"
-      ],
-      "name": "GOOGLE_DRIVE_CLIENT_SECRET",
-      "reason": "Compatibility with names shipped in earlier environment examples. Distinct from GOOGLE_DRIVE_CREDENTIALS_FILE, which is the service-account connector and is not deprecated.",
-      "removal_milestone": "Remove alongside GOOGLE_DRIVE_CLIENT_ID"
-    },
-    {
       "classification": [
         "compose-only"
       ],

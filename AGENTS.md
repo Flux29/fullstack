@@ -72,6 +72,15 @@ Non-obvious rules that are easy to violate:
   `frontend/src/app/api/**`. An API change is not complete until the proxy handler and its
   frontend caller are updated too. Chat WebSocket (`/api/v1/ws/agent`) is the one
   documented exception that talks to the backend directly.
+- Creating a **new file** is a last resort; extend an existing module first. Ad-hoc
+  verification scripts, one-off runners, and debug harnesses go in the session scratchpad,
+  never in the repository. Durable tests go in `backend/tests/`, `frontend/e2e/`, or beside
+  the frontend source they cover. A `PreToolUse` hook in `.claude/settings.json` prompts for
+  confirmation on a new-file Write; `governance check` lists untracked files outside these
+  locations.
+- Default to a **net-zero or net-negative diff**. Reuse, consolidate, or delete before you
+  add. A change that only adds has to say, in its change record, why nothing could be
+  removed or reused instead.
 - Never commit a secret value. `.env.example` files are placeholder-only templates.
 - Never edit a generated file by hand. `governance/manifests/generated/**`,
   `governance/catalog.json`, `governance/Summary.md`, and `ENV_VARS.md` are rebuilt by

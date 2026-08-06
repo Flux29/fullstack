@@ -34,28 +34,52 @@ def is_repository(root: Path) -> bool:
     return _run(["rev-parse", "--git-dir"], root) is not None
 
 
-def working_tree_changes(root: Path) -> list[str] | None:
-    """Repo-relative POSIX paths changed in the working tree or index, or None if unknown."""
+def _porcelain_entries(root: Path) -> list[tuple[str, str]] | None:
+    """`(status, path)` pairs from `git status --porcelain -z`, or None if unknown.
+
+    The status field is fixed-width — two characters, then a space, then the path — so it is
+    sliced rather than split on the first space. Splitting loses the path of every entry
+    whose index column is blank, which is every unstaged modification.
+    """
     output = _run(["status", "--porcelain", "-z"], root)
     if output is None:
         return None
 
-    paths: list[str] = []
+    entries: list[tuple[str, str]] = []
     fields = [field for field in output.split("\0") if field]
     index = 0
     while index < len(fields):
         entry = fields[index]
-        status, _, path = entry.partition(" ")
-        path = path.strip()
+        status, path = entry[:2], entry[3:]  # `-z` emits paths verbatim, never quoted.
         # Renames emit the source path as a following field.
-        if status and status[0] == "R" and index + 1 < len(fields):
+        if status[0] == "R" and index + 1 < len(fields):
             index += 1
-            paths.append(fields[index].strip())
+            entries.append((status, fields[index]))
         if path:
-            paths.append(path)
+            entries.append((status, path))
         index += 1
 
-    return sorted({item.strip('"') for item in paths if item})
+    return entries
+
+
+def working_tree_changes(root: Path) -> list[str] | None:
+    """Repo-relative POSIX paths changed in the working tree or index, or None if unknown."""
+    entries = _porcelain_entries(root)
+    if entries is None:
+        return None
+    return sorted({path for _, path in entries})
+
+
+def untracked_files(root: Path) -> list[str] | None:
+    """Repo-relative POSIX paths git reports as untracked, or None if unknown.
+
+    Ignored paths never appear: porcelain marks `??` only for what no ignore rule covers.
+    Untracked directories stay collapsed, so a scratch directory is one path, not everything in it.
+    """
+    entries = _porcelain_entries(root)
+    if entries is None:
+        return None
+    return sorted({path for status, path in entries if status == "??"})
 
 
 def changed_since(root: Path, ref: str) -> list[str] | None:

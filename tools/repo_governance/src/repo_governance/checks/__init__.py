@@ -111,6 +111,7 @@ def _registry() -> dict[str, tuple[CheckFunction, bool]]:
         ),
         "checks.process.check_governance_change_records": (process.check_governance_change_records, True),
         "checks.process.check_policy_weakening_recorded": (process.check_policy_weakening_recorded, False),
+        "checks.process.check_untracked_files_are_sanctioned": (process.check_untracked_files_are_sanctioned, True),
     }
 
 

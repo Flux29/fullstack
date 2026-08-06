@@ -1,0 +1,201 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/change-record/v1",
+  "title": "Change record",
+  "description": "The permanent record of one material governed change. Part of the protected governance kernel: this schema may not be weakened without an explicit reviewed governance change. Automation can populate changed files, manifests, and validator results; it cannot infer the reason, which must be supplied by a human or agent at the start or completion of the change.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "date",
+    "summary",
+    "reason",
+    "initiated_by",
+    "affected_components",
+    "files_changed",
+    "behavioral_effects",
+    "validators_run",
+    "security_impact",
+    "compatibility_impact",
+    "risks",
+    "rollback",
+    "schema_version",
+    "tool_version"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}-[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "date": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Why the change was made. Never inferred from a diff — a diff shows what changed, never why."
+    },
+    "initiated_by": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["user", "agent", "automation"]
+        },
+        "ref": {
+          "type": "string"
+        }
+      }
+    },
+    "request_ref": {
+      "type": "string"
+    },
+    "affected_components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/slug"
+      }
+    },
+    "affected_contracts": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "files_changed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\\\]+$"
+      }
+    },
+    "manifests_changed": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\\\]+$"
+      }
+    },
+    "behavioral_effects": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What observably changes for a user or operator. An empty list is a claim that nothing does."
+    },
+    "validators_run": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "result"],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug",
+            "description": "Must resolve through governance/validators.json."
+          },
+          "result": {
+            "enum": ["pass", "fail", "skipped"]
+          },
+          "evidence_ref": {
+            "type": "string",
+            "description": "Enough output to verify the claim without rerunning it."
+          }
+        }
+      }
+    },
+    "security_impact": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Required. 'None' is an acceptable answer but must be stated deliberately."
+    },
+    "compatibility_impact": {
+      "type": "string",
+      "minLength": 1
+    },
+    "risks": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "What this change did not do, and what remains unverified. Reporting remaining uncertainty is required rather than inventing missing facts."
+    },
+    "follow_up": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "rollback": {
+      "type": "string",
+      "minLength": 1,
+      "description": "How to undo this, including anything a revert would not restore."
+    },
+    "adr_refs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": "^ADR-\\d{3}$"
+      }
+    },
+    "evidence_refs": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Runtime-evidence IDs and one-line summaries only. Runtime-derived records never enter a committed artifact."
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "severity", "status", "disposition", "detail"],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug"
+          },
+          "severity": {
+            "enum": ["low", "medium", "high"]
+          },
+          "status": {
+            "enum": ["open", "resolved", "accepted"]
+          },
+          "disposition": {
+            "type": "string",
+            "description": "What happens to this finding: who acts, or why it is accepted."
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "description": "Findings registered, resolved, or accepted by this change. Summary.md renders the open ones."
+    },
+    "schema_version": {
+      "const": 1
+    },
+    "tool_version": {
+      "type": "string"
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    }
+  }
+}

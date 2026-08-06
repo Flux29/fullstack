@@ -1,0 +1,300 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/service/v1",
+  "title": "Services manifest",
+  "description": "Compose services resolved across the file-stack x profile matrix, with the canonical stacks taken from the Makefile. Includes host runtimes, which no Compose file declares.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "stacks", "services"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "stacks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "compose_files", "profiles_available"],
+        "properties": {
+          "id": {
+            "enum": ["base", "dev", "frontend", "prod"]
+          },
+          "make_variable": {
+            "type": "string",
+            "description": "The Makefile variable that defines this stack, e.g. COMPOSE_DEV."
+          },
+          "compose_files": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/$defs/path"
+            }
+          },
+          "profiles_available": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "profiles_always_on": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Profiles the Makefile hard-codes into this stack's invocation."
+          }
+        }
+      }
+    },
+    "services": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/service"
+      }
+    },
+    "host_runtimes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "purpose", "endpoints"],
+        "properties": {
+          "id": {
+            "$ref": "#/$defs/slug"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "healthcheck_validator": {
+            "$ref": "#/$defs/slug"
+          }
+        }
+      },
+      "description": "Runtimes the application depends on that live outside Compose entirely — without these the embedding and reranker dependency edges simply vanish."
+    },
+    "networks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "internal"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "internal": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "class"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "class": {
+            "enum": ["named", "external-preserve", "bind"]
+          },
+          "purpose": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "path": {
+      "type": "string",
+      "pattern": "^[^\\\\]+$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    },
+    "service": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "presence"],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "component": {
+          "$ref": "#/$defs/slug"
+        },
+        "presence": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["stack", "profiles", "active_without_profile"],
+            "properties": {
+              "stack": {
+                "enum": ["base", "dev", "frontend", "prod"]
+              },
+              "profiles": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "active_without_profile": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "image": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "ref": {
+              "type": "string"
+            },
+            "digest": {
+              "type": "string",
+              "pattern": "^sha256:[a-f0-9]{64}$"
+            }
+          }
+        },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "context": {
+              "$ref": "#/$defs/path"
+            },
+            "dockerfile": {
+              "$ref": "#/$defs/path"
+            },
+            "args": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Build-arg names only. Values are never recorded."
+            }
+          }
+        },
+        "ports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["stack", "container_port"],
+            "properties": {
+              "stack": {
+                "enum": ["base", "dev", "frontend", "prod"]
+              },
+              "host_ip": {
+                "type": ["string", "null"]
+              },
+              "host_port": {
+                "type": ["string", "null"]
+              },
+              "container_port": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "expose": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "networks": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "volumes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "target", "class"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "class": {
+                "enum": ["named", "external-preserve", "bind"]
+              }
+            }
+          }
+        },
+        "healthcheck": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["present"],
+          "properties": {
+            "present": {
+              "type": "boolean"
+            },
+            "deliberate_exception_ref": {
+              "$ref": "#/$defs/slug",
+              "description": "Required when a service that would normally need one has no healthcheck."
+            }
+          }
+        },
+        "depends_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "env_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Environment variable names only. Never values."
+        },
+        "gpu": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

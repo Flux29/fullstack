@@ -1,0 +1,231 @@
+# Governance contract.
+#
+# Versioned independently from the application. Part of the protected kernel: changes to
+# this file, the change-record schema, the ownership rules, the validator registry, or the
+# self-governance policy require a governance change record and an available rollback.
+
+[governance]
+version = "1.0.0"
+schema_version = 1
+# Tool versions that can safely interpret this contract. A newer manifest must never be
+# interpreted by an older tool as though it were valid.
+requires_tool = ">=1.0.0,<2.0.0"
+
+[kernel]
+# The minimal protected kernel. Everything else may evolve through the governed process;
+# these cannot be weakened without an explicit, reviewed governance change.
+protected_paths = [
+  "governance/governance.toml",
+  "governance/schemas/change-record.schema.json",
+  "governance/policies/self-governance.json",
+  "governance/validators.json",
+  "governance/manifests/curated/ownership.json",
+]
+
+# ---------------------------------------------------------------------------------------
+# Catalog specification.
+#
+# `governance sync` emits catalog.json from these entries, skipping any whose path does not
+# exist yet. History is declared by class rather than one entry per record, so the catalog
+# stays small enough for an agent to read routinely no matter how much history accumulates.
+# ---------------------------------------------------------------------------------------
+
+[[catalog]]
+path = "governance/governance.toml"
+kind = "config"
+description = "The governance contract: version, protected kernel, and the catalog specification."
+authority = "curated"
+update = "manual"
+read_when = "Changing governance versioning, the protected kernel, or what appears in the catalog."
+
+[[catalog]]
+path = "governance/catalog.json"
+kind = "config"
+description = "This index. The first thing to read before selecting any deeper governance material."
+authority = "generated"
+update = "sync"
+read_when = "Always, before opening anything else under governance/."
+
+[[catalog]]
+path = "governance/Summary.md"
+kind = "summary"
+description = "Current architectural state, open findings, accepted exceptions, active contracts, and the most recent material changes."
+authority = "generated"
+update = "sync"
+read_when = "Orienting on a repository you have not touched recently, or checking what is currently unresolved."
+
+[[catalog]]
+path = "governance/validators.json"
+kind = "validators"
+description = "Trusted validator IDs mapped to Make targets and fixed commands. The only way a validator may be invoked."
+authority = "curated"
+update = "manual"
+read_when = "Selecting what to run to prove a change works, or adding a new validator."
+
+[[catalog]]
+path = "governance/schemas/"
+kind = "schema"
+description = "JSON Schemas defining every governance document. Executed by the checks, not read into context."
+authority = "curated"
+update = "manual"
+read_when = "Authoring a new governance document by hand, or changing a document's shape."
+
+[[catalog]]
+path = "governance/manifests/generated/components.json"
+kind = "manifest-generated"
+description = "Every component, compiled from directory annotations and curated declarations."
+authority = "generated"
+update = "sync"
+read_when = "Asking what owns a path or behavior."
+
+[[catalog]]
+path = "governance/manifests/generated/services.json"
+kind = "manifest-generated"
+description = "Compose services resolved across the file-stack x profile matrix, plus host runtimes and volume classification."
+authority = "generated"
+update = "sync"
+read_when = "Changing Compose files, ports, profiles, volumes, or anything about how services are exposed."
+
+[[catalog]]
+path = "governance/manifests/generated/configuration.json"
+kind = "manifest-generated"
+description = "Environment variables across backend, frontend, and Compose surfaces, with classification and consumers. Names only, never values."
+authority = "generated"
+update = "sync"
+read_when = "Adding, renaming, or removing configuration, or tracing who consumes a variable."
+
+[[catalog]]
+path = "governance/manifests/generated/data-stores.json"
+kind = "manifest-generated"
+description = "PostgreSQL and pgvector objects, the migration graph, Redis logical databases, the two-level embedding cache, and S3 buckets."
+authority = "generated"
+update = "sync"
+read_when = "Touching migrations, the embedding dimension contract, Redis allocations, or bucket layout."
+
+[[catalog]]
+path = "governance/manifests/generated/ai-runtime.json"
+kind = "manifest-generated"
+description = "Agents, tools, and MCP connections along orthogonal dimensions, with the standing security findings that constrain them."
+authority = "generated"
+update = "sync"
+read_when = "Changing agents, toolsets, MCP configuration, or anything touching tool authorization."
+
+[[catalog]]
+path = "governance/manifests/generated/interfaces.json"
+kind = "manifest-generated"
+description = "HTTP contracts, the mandatory Next.js proxy hop, the WebSocket chat exception, SSE, and the WebSocket event inventory."
+authority = "generated"
+update = "sync"
+read_when = "Changing an API route, a proxy handler, a frontend client, or a WebSocket event."
+
+[[catalog]]
+path = "governance/manifests/generated/tests.json"
+kind = "manifest-generated"
+description = "Test frameworks, gating environment variables, ratcheted coverage floors, and which declared invariants have a dedicated test."
+authority = "generated"
+update = "sync"
+read_when = "Deciding what proves a change, or asking whether an invariant is actually covered."
+
+[[catalog]]
+path = "governance/manifests/curated/architectural-intent.json"
+kind = "manifest-curated"
+description = "Components with no home directory: image-only services, host runtimes, database-resident surfaces, and multi-root frontend features."
+authority = "curated"
+update = "manual"
+read_when = "Declaring a component that cannot hold a .governance.json, or changing architectural intent."
+
+[[catalog]]
+path = "governance/manifests/curated/ownership.json"
+kind = "manifest-curated"
+description = "Generated-versus-curated ownership rules, the generated-file registry, and generator-divergence records."
+authority = "curated"
+update = "manual"
+read_when = "Asking whether a file may be hand-edited, or what a generator upgrade will conflict with."
+
+[[catalog]]
+path = "governance/manifests/curated/exceptions.json"
+kind = "manifest-curated"
+description = "Deliberate, reviewed departures from policy, each with its reason and scope."
+authority = "curated"
+update = "manual"
+read_when = "A check fires on something that looks intentional, or you need to record a new deliberate departure."
+
+[[catalog]]
+path = "governance/manifests/effective/repository.json"
+kind = "manifest-effective"
+description = "The merged repository model: generated facts joined with curated intent, with merge conflicts surfaced explicitly."
+authority = "mixed"
+update = "sync"
+read_when = "You need one view of a component including both what it is and what it is meant to be."
+
+[[catalog]]
+path = "governance/policies/architecture.json"
+kind = "policy"
+description = "Layering, component boundaries, and dependency direction rules."
+authority = "curated"
+update = "manual"
+read_when = "Adding a dependency between components, or moving code across a boundary."
+
+[[catalog]]
+path = "governance/policies/security.json"
+kind = "policy"
+description = "Exposure invariants, secret handling, MCP authorization, and the standing security findings."
+authority = "curated"
+update = "manual"
+read_when = "Changing exposure, credentials, tool authorization, or anything touching the MCP surface."
+
+[[catalog]]
+path = "governance/policies/compatibility.json"
+kind = "policy"
+description = "Contracts that must not break silently: the embedding dimension agreement, migration heads, WebSocket events, and catalog-to-backend mapping."
+authority = "curated"
+update = "manual"
+read_when = "Changing a contract that something outside its own file depends on."
+
+[[catalog]]
+path = "governance/policies/process.json"
+kind = "policy"
+description = "Change-record requirements, CI job references, and the policy-maturity promotion ladder."
+authority = "curated"
+update = "manual"
+read_when = "Asking whether a change needs a record, or promoting a policy to a stricter maturity."
+
+[[catalog]]
+path = "governance/policies/self-governance.json"
+kind = "policy"
+description = "The protected kernel rules. Blocking from day one; no automation may weaken them."
+authority = "curated"
+update = "manual"
+read_when = "Changing governance itself."
+
+[[catalog]]
+path = "governance/history/changes/"
+kind = "history-change"
+description = "Structured change records, one per material governed change. Query by component, path, or date rather than reading the directory."
+authority = "mixed"
+update = "cli-change"
+read_when = "Asking why something is the way it is, or what a recent change to this area did."
+
+[[catalog]]
+path = "governance/history/decisions/"
+kind = "history-decision"
+description = "Architecture decision records for durable choices. Indexed in index.json."
+authority = "curated"
+update = "manual"
+read_when = "A component references an ADR, or you are about to revisit a durable decision."
+
+[[catalog]]
+path = "governance/history/evaluations/"
+kind = "history-evaluation"
+description = "Evidence about governance behavior itself: misses, false positives, and context quality."
+authority = "curated"
+update = "manual"
+read_when = "Proposing a change to governance extraction, policy, or ranking."
+
+[[catalog]]
+path = "ENV_VARS.md"
+kind = "doc"
+description = "Human-readable environment variable reference, rendered from the configuration manifest. Hand edits are drift."
+authority = "generated"
+update = "sync"
+read_when = "You want the configuration surface in prose rather than JSON."

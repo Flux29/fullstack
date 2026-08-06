@@ -1,0 +1,232 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/component/v1",
+  "title": "Components manifest",
+  "description": "Compiled from directory annotations and curated declarations. A component is declared in exactly one of the two, never both.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "components"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Values a declaration inherits when it does not set them itself. Only documented fields may be inherited; nothing here can weaken security or compatibility policy.",
+      "properties": {
+        "allowed_dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "forbidden_dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "validation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        }
+      }
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "path": {
+      "type": "string",
+      "description": "Repo-root-relative, forward-slash. Multi-root ownership is expressible because paths are never relative to an annotation's own directory.",
+      "pattern": "^[^\\\\]+$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "kind", "purpose", "declared_in", "owns"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug",
+          "description": "Stable and independent of directory names, so a file move is an identity update rather than a new component."
+        },
+        "kind": {
+          "enum": [
+            "backend-subsystem",
+            "frontend-feature",
+            "agent-runtime",
+            "mcp-sidecar",
+            "image-only-service",
+            "host-runtime",
+            "db-resident-surface",
+            "infrastructure",
+            "data",
+            "observability",
+            "governance"
+          ]
+        },
+        "purpose": {
+          "type": "string",
+          "minLength": 1
+        },
+        "declared_in": {
+          "enum": ["annotation", "curated"]
+        },
+        "annotation_path": {
+          "$ref": "#/$defs/path",
+          "description": "Present only when declared_in is `annotation`."
+        },
+        "owns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          },
+          "description": "Glob patterns. May span multiple roots; may be empty for components with no files at all (a host runtime, a database-resident surface)."
+        },
+        "entrypoints": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/path"
+          }
+        },
+        "public_interfaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "invariants": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allowed_dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "forbidden_dependencies": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "configuration_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z0-9_]*$"
+          }
+        },
+        "decision_refs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^ADR-\\d{3}$"
+          }
+        },
+        "finding_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Open findings that constrain this component, so `explain` can surface them without a history scan."
+        },
+        "validation": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          },
+          "description": "Trusted validator IDs resolved through governance/validators.json. Never executable shell text."
+        },
+        "generator_feature": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["flag", "enabled"],
+          "properties": {
+            "flag": {
+              "type": "string"
+            },
+            "enabled": {
+              "type": "boolean"
+            }
+          },
+          "description": "Sourced from .fastapi-fullstack.json. A disabled feature's surfaces are expected-present-unused, not orphans."
+        },
+        "graph_hints": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "entry_symbols": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "exclude": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/path"
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "declared_in": {
+                "const": "annotation"
+              }
+            },
+            "required": ["declared_in"]
+          },
+          "then": {
+            "required": ["annotation_path"]
+          },
+          "else": {
+            "not": {
+              "required": ["annotation_path"]
+            }
+          }
+        }
+      ]
+    }
+  }
+}

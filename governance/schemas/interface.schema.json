@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/interface/v1",
+  "title": "Interfaces manifest",
+  "description": "HTTP contracts, the mandatory Next.js proxy hop, the WebSocket chat exception, SSE, and the generated WebSocket event inventory.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "websocket"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "openapi": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "status": {
+          "enum": ["extracted", "unknown"],
+          "description": "`unknown` when the sanitized subprocess exporter could not run. A parser failure is reported as unknown, never interpreted as an absence of routes."
+        },
+        "unknown_reason": {
+          "type": "string"
+        },
+        "route_count": {
+          "type": "integer"
+        },
+        "paths": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["method", "path"],
+            "properties": {
+              "method": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "websocket": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["endpoint", "auth", "proxy_exception_ref"],
+      "properties": {
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "endpoint": {
+          "type": "string"
+        },
+        "auth": {
+          "const": "token-subprotocol"
+        },
+        "proxy_exception_ref": {
+          "$ref": "#/$defs/slug",
+          "description": "The chat WebSocket is the one browser-to-backend edge that bypasses the proxy layer; it must point at the exception record that documents this."
+        },
+        "events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "direction"],
+            "properties": {
+              "type": {
+                "type": "string"
+              },
+              "direction": {
+                "enum": ["server-to-client", "client-to-server"]
+              },
+              "producer_ref": {
+                "type": ["string", "null"]
+              },
+              "consumer_ref": {
+                "type": ["string", "null"]
+              },
+              "provenance": {
+                "enum": ["extracted", "reviewed-baseline"]
+              }
+            }
+          },
+          "description": "WebSocket events are ad-hoc dicts with no formal schema, so this inventory is a governance deliverable rather than a reference. The producer/consumer set difference is the compatibility check."
+        }
+      }
+    },
+    "sse": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path"],
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "location": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "proxy_routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["frontend_path", "file", "mechanism"],
+        "properties": {
+          "frontend_path": {
+            "type": "string"
+          },
+          "file": {
+            "type": "string"
+          },
+          "mechanism": {
+            "enum": ["backendFetch", "fetch", "unknown"],
+            "description": "`unknown` when no backend target could be resolved from the handler. Recorded explicitly so a silent parse failure cannot masquerade as a route with no backend."
+          },
+          "methods": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "backend_targets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["path_template"],
+              "properties": {
+                "path_template": {
+                  "type": "string"
+                },
+                "methods": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "Every REST call from the browser goes through this layer. Impact analysis that skips the proxy hop reports wrong blast radii."
+    },
+    "frontend_pages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["route", "file"],
+        "properties": {
+          "route": {
+            "type": "string",
+            "description": "Locale-normalized: the [locale] segment is removed so en and pl pages are one route."
+          },
+          "file": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "locales": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

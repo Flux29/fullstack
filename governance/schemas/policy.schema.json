@@ -1,0 +1,100 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/policy/v1",
+  "title": "Policy group",
+  "description": "A group of governance rules with explicit maturity. Policies distinguish uncertainty from violations: a rule whose check is not yet implemented reports as not-yet-enforced rather than silently passing.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "policy_group", "rules"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "policy_group": {
+      "enum": ["architecture", "security", "compatibility", "process", "self-governance"]
+    },
+    "description": {
+      "type": "string"
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/rule"
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "statement", "maturity", "check_impl", "exceptions_allowed"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/slug"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "description": "What must be true, in terms a reviewer can check by hand."
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "maturity": {
+          "enum": ["experimental", "advisory", "warning", "blocking", "deprecated", "retired"],
+          "description": "Only `blocking` fails a governed check. Promotion past advisory requires demonstrated accuracy."
+        },
+        "check_impl": {
+          "type": "string",
+          "description": "The check function that implements this rule, or a phase marker such as `phase-3` for a rule whose extractor does not exist yet, or `manual` for a rule only a human can evaluate."
+        },
+        "promotion_criteria": {
+          "type": "string",
+          "description": "Required to move this rule to a stricter maturity. Absent means the rule is not a promotion candidate."
+        },
+        "exceptions_allowed": {
+          "type": "boolean"
+        },
+        "exception_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "finding_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/slug"
+          }
+        },
+        "authoritative_source": {
+          "type": "string",
+          "description": "The file that owns this fact. If governance and that source disagree, the source wins and governance is stale."
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "exceptions_allowed": {
+                "const": false
+              }
+            },
+            "required": ["exceptions_allowed"]
+          },
+          "then": {
+            "properties": {
+              "exception_refs": {
+                "maxItems": 0
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

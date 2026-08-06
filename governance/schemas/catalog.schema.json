@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/catalog/v1",
+  "title": "Governance catalog",
+  "description": "The compact navigation index agents read before selecting deeper material. History is represented by class, not one entry per record, so this file stays small enough to read routinely.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "entries"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/entry"
+      }
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    },
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "kind", "description", "authority", "update", "read_when"],
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "Repo-root-relative, forward-slash. A trailing slash denotes a class of documents rather than a single file.",
+          "pattern": "^[^\\\\]+$"
+        },
+        "kind": {
+          "enum": [
+            "config",
+            "schema",
+            "manifest-generated",
+            "manifest-curated",
+            "manifest-effective",
+            "policy",
+            "validators",
+            "history-change",
+            "history-decision",
+            "history-evaluation",
+            "summary",
+            "doc"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority": {
+          "enum": ["generated", "curated", "mixed"],
+          "description": "generated: the CLI owns every byte. curated: humans own it. mixed: generated facts merged with curated intent."
+        },
+        "update": {
+          "enum": ["sync", "manual", "cli-change"],
+          "description": "sync: `make governance-sync`. manual: reviewed hand edit. cli-change: written by `governance change finish`."
+        },
+        "read_when": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The condition under which an agent should open this document, so context selection can skip the rest."
+        }
+      }
+    }
+  }
+}

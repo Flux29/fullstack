@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/decision-index/v1",
+  "title": "Decision index",
+  "description": "Generated index of architecture decision records, built from each ADR's front matter. Lets context and impact queries find relevant decisions without reading every ADR.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance", "decisions"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "title", "status", "date", "file"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^ADR-\\d{3}$"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": ["proposed", "accepted", "superseded", "rejected"]
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "components": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            }
+          },
+          "supersedes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^ADR-\\d{3}$"
+            }
+          },
+          "file": {
+            "type": "string",
+            "pattern": "^[^\\\\]+$"
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

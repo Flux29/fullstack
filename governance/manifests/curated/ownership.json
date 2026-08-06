@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "description": "Who owns which bytes. Generated files may be replaced deterministically; curated intent must never be silently overwritten. This file is part of the protected governance kernel.",
+  "merge_rules": [
+    {
+      "id": "generated-wins-on-facts",
+      "statement": "Where a generated manifest and a curated declaration describe the same observable fact, the generated value wins.",
+      "rationale": "Facts have an authoritative source outside governance. A curated file that disagrees with the source is stale by definition."
+    },
+    {
+      "id": "curated-wins-on-intent",
+      "statement": "Purpose, invariants, allowed and forbidden dependencies, and decision references come from curated declarations and annotations. Sync never overwrites them.",
+      "rationale": "Intent is exactly the thing code cannot express. If extraction could overwrite it, the system would lose the only information it uniquely holds."
+    },
+    {
+      "id": "conflicts-are-findings",
+      "statement": "When generated and curated content disagree in a way neither rule above resolves, the merge emits a finding and keeps both values in the effective manifest.",
+      "rationale": "Silently picking a winner turns a disagreement worth a human's attention into an invisible decision."
+    },
+    {
+      "id": "one-declaration-per-component",
+      "statement": "A component is declared in a directory annotation or in architectural-intent.json, never both.",
+      "rationale": "Two declarations of one component are two sources of truth for its intent, which is the failure mode this whole system exists to prevent."
+    }
+  ],
+  "generated_files": [
+    {
+      "path": "governance/catalog.json",
+      "regenerable": true,
+      "source": "governance/governance.toml plus the presence of the declared paths",
+      "repair": "make governance-sync"
+    },
+    {
+      "path": "governance/Summary.md",
+      "regenerable": true,
+      "source": "governance/history/changes/, governance/manifests/effective/repository.json",
+      "repair": "make governance-sync"
+    },
+    {
+      "path": "governance/manifests/generated/",
+      "regenerable": true,
+      "source": "Extractors over the authoritative sources; sections marked reviewed-baseline are hand-authored and exempt from comparison until their extractor lands.",
+      "repair": "make governance-sync"
+    },
+    {
+      "path": "governance/manifests/effective/repository.json",
+      "regenerable": true,
+      "source": "Merge of generated manifests with curated declarations and exceptions",
+      "repair": "make governance-sync"
+    },
+    {
+      "path": "governance/history/decisions/index.json",
+      "regenerable": true,
+      "source": "Front matter of governance/history/decisions/ADR-*.md",
+      "repair": "make governance-sync"
+    },
+    {
+      "path": "ENV_VARS.md",
+      "regenerable": true,
+      "source": "governance/manifests/generated/configuration.json",
+      "repair": "make governance-sync"
+    },
+    {
+      "path": "frontend/src/lib/mcp-logos.generated.ts",
+      "regenerable": false,
+      "source": "frontend/scripts/gen-mcp-logos.ts, driven from frontend/src/lib/mcp-catalog.ts",
+      "repair": "cd frontend && bun run gen:mcp-logos",
+      "note": "Not regenerable by governance — it predates this system and is the repository's own generated/curated precedent. Governance only warns when it is staged without its source having changed."
+    },
+    {
+      "path": "backend/uv.lock",
+      "regenerable": false,
+      "source": "backend/pyproject.toml",
+      "repair": "uv lock --directory backend"
+    },
+    {
+      "path": "frontend/bun.lock",
+      "regenerable": false,
+      "source": "frontend/package.json",
+      "repair": "cd frontend && bun install"
+    },
+    {
+      "path": "tools/repo_governance/uv.lock",
+      "regenerable": false,
+      "source": "tools/repo_governance/pyproject.toml",
+      "repair": "uv lock --project tools/repo_governance"
+    }
+  ],
+  "curated_files": [
+    "governance/governance.toml",
+    "governance/validators.json",
+    "governance/schemas/",
+    "governance/policies/",
+    "governance/manifests/curated/",
+    "governance/history/decisions/ADR-*.md",
+    "governance/history/evaluations/",
+    "**/.governance.json"
+  ],
+  "generator_provenance": [
+    {
+      "path": "AGENTS.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Rewritten as the governance routing entry point. The generator ships a near-duplicate of CLAUDE.md; a template upgrade will conflict here and the conflict must be resolved in favour of the local version, not clobbered."
+    },
+    {
+      "path": "CLAUDE.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Slimmed to Claude-specific deltas plus a pointer to AGENTS.md. Same upgrade-conflict handling."
+    },
+    {
+      "path": "ENV_VARS.md",
+      "origin": "generator",
+      "status": "governance-generated",
+      "on_upgrade": "regenerate",
+      "reason": "Was generator-provided prose that drifted from the real configuration surface. It is now rendered from the configuration manifest, so an upgrade conflict is resolved by regenerating rather than merging."
+    },
+    {
+      "path": "backend/.env.example",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Scrubbed of live credentials and de-duplicated during governance adoption. An upgrade must not reintroduce either."
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "The shipped CI contract was never exercised before the first push; coverage floors, the pip-audit job, the Postgres image, and the Playwright step were all corrected locally."
+    },
+    {
+      "path": "backend/pyproject.toml",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Coverage fail_under ratcheted from the aspirational 100 to a measured floor."
+    }
+  ],
+  "internal_schemas": [
+    {
+      "path": "governance/validators.json",
+      "reason": "The blueprint's schema set is exactly twelve files and does not include one for the validator registry. Validating it against a kernel-internal schema keeps the committed set at twelve while still refusing a malformed registry."
+    },
+    {
+      "path": "governance/manifests/curated/ownership.json",
+      "reason": "Same: no blueprint schema exists for the ownership rules themselves."
+    },
+    {
+      "path": "governance/manifests/curated/exceptions.json",
+      "reason": "Same: exceptions are not policies and have no blueprint schema."
+    },
+    {
+      "path": "governance/manifests/generated/tests.json",
+      "reason": "Same: the blueprint lists a tests manifest but no tests schema."
+    },
+    {
+      "path": "governance/manifests/effective/repository.json",
+      "reason": "Same: the blueprint lists the effective manifest but no schema for the merged shape."
+    }
+  ]
+}

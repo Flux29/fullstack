@@ -1,0 +1,84 @@
+{
+  "entries": [
+    {
+      "authority": "generated",
+      "description": "Human-readable environment variable reference, rendered from the configuration manifest. Hand edits are drift.",
+      "kind": "doc",
+      "path": "ENV_VARS.md",
+      "read_when": "You want the configuration surface in prose rather than JSON.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "This index. The first thing to read before selecting any deeper governance material.",
+      "kind": "config",
+      "path": "governance/catalog.json",
+      "read_when": "Always, before opening anything else under governance/.",
+      "update": "sync"
+    },
+    {
+      "authority": "curated",
+      "description": "The governance contract: version, protected kernel, and the catalog specification.",
+      "kind": "config",
+      "path": "governance/governance.toml",
+      "read_when": "Changing governance versioning, the protected kernel, or what appears in the catalog.",
+      "update": "manual"
+    },
+    {
+      "authority": "mixed",
+      "description": "Structured change records, one per material governed change. Query by component, path, or date rather than reading the directory.",
+      "kind": "history-change",
+      "path": "governance/history/changes/",
+      "read_when": "Asking why something is the way it is, or what a recent change to this area did.",
+      "update": "cli-change"
+    },
+    {
+      "authority": "curated",
+      "description": "Architecture decision records for durable choices. Indexed in index.json.",
+      "kind": "history-decision",
+      "path": "governance/history/decisions/",
+      "read_when": "A component references an ADR, or you are about to revisit a durable decision.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Generated-versus-curated ownership rules, the generated-file registry, and generator-divergence records.",
+      "kind": "manifest-curated",
+      "path": "governance/manifests/curated/ownership.json",
+      "read_when": "Asking whether a file may be hand-edited, or what a generator upgrade will conflict with.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "The protected kernel rules. Blocking from day one; no automation may weaken them.",
+      "kind": "policy",
+      "path": "governance/policies/self-governance.json",
+      "read_when": "Changing governance itself.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "JSON Schemas defining every governance document. Executed by the checks, not read into context.",
+      "kind": "schema",
+      "path": "governance/schemas/",
+      "read_when": "Authoring a new governance document by hand, or changing a document's shape.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Trusted validator IDs mapped to Make targets and fixed commands. The only way a validator may be invoked.",
+      "kind": "validators",
+      "path": "governance/validators.json",
+      "read_when": "Selecting what to run to prove a change works, or adding a new validator.",
+      "update": "manual"
+    }
+  ],
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      "governance/governance.toml"
+    ]
+  },
+  "schema_version": 1
+}

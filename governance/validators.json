@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "description": "The reviewed registry mapping trusted validator IDs to commands. Annotations, manifests, and impact analysis reference IDs only and never carry executable shell text — an annotation must not be able to introduce a command. Adding an entry here is a governance change requiring review.",
+  "excluded": [
+    {
+      "id": "google-live-e2e",
+      "location": "backend/tests/live/test_google_workspace_live.py",
+      "reason": "Sends real email and mutates a live Google Workspace account. Gated by GOOGLE_LIVE_E2E and GOOGLE_LIVE_SEND_E2E. Deliberately absent from the registry so no impact analysis, agent, or automated run can select it; invoke it by hand, knowingly.",
+      "gates": ["GOOGLE_LIVE_E2E", "GOOGLE_LIVE_SEND_E2E"]
+    }
+  ],
+  "validators": [
+    {
+      "id": "backend-lint",
+      "command": "make lint",
+      "description": "ruff check, ruff format --check, and ty check over backend app, tests, and cli.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "lint"
+    },
+    {
+      "id": "backend-unit",
+      "command": "make test",
+      "description": "The backend pytest suite. Async via anyio with a mocked database session, so it needs no live services.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "test"
+    },
+    {
+      "id": "backend-coverage",
+      "command": "make test-cov",
+      "description": "Backend pytest with coverage. The fail_under floor is a ratchet against measured coverage, not an achievement claim.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "test"
+    },
+    {
+      "id": "frontend-test",
+      "command": "make frontend-test",
+      "description": "Frontend lint, type-check, and vitest run.",
+      "destructive": false,
+      "requires": ["bun"],
+      "ci_job": "test-frontend"
+    },
+    {
+      "id": "playwright",
+      "command": "make playwright",
+      "description": "Playwright end-to-end suite. Local only: its webServer is disabled under CI and it needs a running backend, so it is not part of any CI job until a composed CI stack exists.",
+      "destructive": false,
+      "requires": ["bun", "running-stack"],
+      "ci_job": null
+    },
+    {
+      "id": "compose-check",
+      "command": "make compose-check",
+      "description": "Validates every canonical Compose file-stack and profile combination, then re-invokes the production stack check with dummy values.",
+      "destructive": false,
+      "requires": ["docker-cli"],
+      "ci_job": null
+    },
+    {
+      "id": "compose-check-prod",
+      "command": "make compose-check-prod",
+      "description": "Validates the production stack with the frontend, edge, and mcp profiles.",
+      "destructive": false,
+      "requires": ["docker-cli"],
+      "ci_job": null
+    },
+    {
+      "id": "preflight-volumes",
+      "command": "make preflight-volumes",
+      "description": "Confirms the external preservation volumes redis-data and docling-models exist. Read-only: it never creates or normalizes them.",
+      "destructive": false,
+      "requires": ["docker-engine"],
+      "ci_job": null
+    },
+    {
+      "id": "preflight-model",
+      "command": "make preflight-model",
+      "description": "Probes Docker Model Runner for the embedding model at the contracted dimension and for the reranker. The health check for the model-runner-host component.",
+      "destructive": false,
+      "requires": ["docker-model-runner"],
+      "ci_job": null
+    },
+    {
+      "id": "preflight-ports",
+      "command": "make preflight-ports",
+      "description": "Fails when a service port is already in use on the host.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": null
+    },
+    {
+      "id": "preflight-edge-ports",
+      "command": "make preflight-edge-ports",
+      "description": "Fails when an edge port (80, 443, 8080) is already in use. Relevant to the existing IIS environment.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": null
+    },
+    {
+      "id": "preflight-mcp",
+      "command": "make preflight-mcp MCP=1",
+      "description": "Confirms the MCP sidecar tokens are set and not left at their placeholder values.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": null
+    },
+    {
+      "id": "migrations",
+      "command": "uv run --directory backend pytest tests/test_migrations.py -v",
+      "description": "Alembic upgrade, downgrade, and round-trip tests. Self-skipping without a reachable database; CI runs it against the pgvector image.",
+      "destructive": false,
+      "requires": ["postgres-pgvector"],
+      "ci_job": "test"
+    },
+    {
+      "id": "rag-docker-integration",
+      "command": "uv run --directory backend pytest tests/test_rag_docker_integration.py -v",
+      "description": "Covers the Docling parser, embedding service, reranker, retrieval, and the embedding cache-key fingerprint. The dedicated test for the embedding dimension guard.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "test"
+    },
+    {
+      "id": "agent-evals",
+      "command": "uv run --directory backend pytest tests/test_google_workspace_evals.py -v",
+      "description": "Deterministic pydantic-evals tool-routing and approval-policy cases. No live LLM, cheap enough to run on every change touching the agent surface.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "test"
+    },
+    {
+      "id": "governance-selftest",
+      "command": "uv run --project tools/repo_governance pytest tools/repo_governance/tests",
+      "description": "The governance tool's own suite: determinism, idempotence, golden fixtures, and malformed-input handling.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "governance"
+    },
+    {
+      "id": "governance-check",
+      "command": "make governance-check",
+      "description": "Full read-only governance check: regeneration comparison, schemas, references, policies, and idempotence.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "governance"
+    }
+  ]
+}

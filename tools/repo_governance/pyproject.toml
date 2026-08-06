@@ -1,0 +1,45 @@
+[project]
+name = "repo-governance"
+version = "1.0.0"
+description = "Repository governance control plane for the fullstack repository"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1",
+    "jsonschema>=4.23",
+    "pydantic>=2.9",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+# Runtime-evidence collection. Deliberately optional: the default install must
+# not be able to reach a database. See governance/policies/security.json.
+evidence = [
+    "psycopg[binary]>=3.2",
+]
+
+[project.scripts]
+governance = "repo_governance.cli:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/repo_governance"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]

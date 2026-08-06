@@ -1,0 +1,282 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "fullstack-governance:schemas/data-store/v1",
+  "title": "Data stores manifest",
+  "description": "PostgreSQL/pgvector objects and the migration graph, Redis logical database allocations, the two-level embedding cache, S3 buckets, and persistence classification.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "provenance"],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "postgres": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "migrations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["head_expected", "revisions"],
+          "properties": {
+            "provenance": {
+              "$ref": "#/$defs/provenance"
+            },
+            "head_expected": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string"
+              },
+              "description": "The explicitly recorded expected head set. Branches and merge revisions are legal; single-head is a rule only because it is recorded here as one."
+            },
+            "heads_observed": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "revisions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "down_revision", "file"],
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "down_revision": {
+                    "type": ["string", "array", "null"],
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "file": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "accepted_history_ref": {
+              "$ref": "#/$defs/slug",
+              "description": "Exception record covering known filename-numbering gaps. Contiguity means revision-graph connectivity, never filename numbering."
+            }
+          }
+        },
+        "dimension_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expected", "points"],
+          "properties": {
+            "expected": {
+              "type": "integer"
+            },
+            "points": {
+              "type": "array",
+              "minItems": 5,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["id", "location"],
+                "properties": {
+                  "id": {
+                    "enum": [
+                      "settings",
+                      "vectorstore-guard",
+                      "migration-check",
+                      "collection-fingerprint",
+                      "cache-key-version"
+                    ]
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "observed": {
+                    "type": ["integer", "string", "null"]
+                  }
+                }
+              },
+              "description": "All five points must agree. Drift between any two is the finding."
+            }
+          }
+        },
+        "tables": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "purpose"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "classification": {
+                "enum": ["application", "vector", "cache", "generator-provided-unused"]
+              },
+              "generator_feature": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "redis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["databases"],
+      "properties": {
+        "databases": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["db", "purpose"],
+            "properties": {
+              "db": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 15
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "declared_by": {
+                "type": "string"
+              },
+              "consumers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "description": "Allocations are explicit; a new consumer may not silently reuse an allocated logical database."
+        }
+      }
+    },
+    "embedding_cache": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "l1": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["redis_db"],
+          "properties": {
+            "redis_db": {
+              "type": "integer"
+            },
+            "ttl_env_ref": {
+              "type": "string"
+            }
+          }
+        },
+        "l2": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["table", "key_fields"],
+          "properties": {
+            "table": {
+              "type": "string"
+            },
+            "key_fields": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "The versioned cache-key fingerprint. Part of the dimension contract."
+            },
+            "location": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "s3": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["buckets"],
+      "properties": {
+        "buckets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "purpose"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              },
+              "endpoint_ref": {
+                "type": "string"
+              },
+              "credentials_ref": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "volumes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "class"],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "class": {
+            "enum": ["named", "external-preserve", "bind"]
+          },
+          "backup": {
+            "enum": ["required", "recommended", "not-required"]
+          }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "slug": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "extractor_version"],
+      "properties": {
+        "method": {
+          "enum": ["extracted", "reviewed-baseline", "curated", "merged"]
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "extractor_version": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

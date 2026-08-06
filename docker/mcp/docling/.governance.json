@@ -24,6 +24,9 @@
     "postgres-pgvector",
     "minio"
   ],
+  "compose_services": [
+    "docling-mcp"
+  ],
   "configuration_refs": [
     "DOCLING_SERVE_URL"
   ],

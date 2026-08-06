@@ -76,6 +76,13 @@
         "pattern": "^[A-Z][A-Z0-9_]*$"
       }
     },
+    "compose_services": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Compose service names this component is realized by."
+    },
     "decision_refs": {
       "type": "array",
       "items": {

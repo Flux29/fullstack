@@ -35,6 +35,11 @@
     "frontend-app",
     "chat-frontend"
   ],
+  "compose_services": [
+    "app",
+    "taskiq-worker",
+    "taskiq-scheduler"
+  ],
   "configuration_refs": [
     "POSTGRES_HOST",
     "POSTGRES_USER",

@@ -39,6 +39,7 @@ COMPONENT_FIELDS = (
     "allowed_dependencies",
     "forbidden_dependencies",
     "configuration_refs",
+    "compose_services",
     "decision_refs",
     "finding_refs",
     "validation",

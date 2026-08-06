@@ -85,6 +85,11 @@
         "model-runner-host"
       ],
       "annotation_path": "backend/.governance.json",
+      "compose_services": [
+        "app",
+        "taskiq-worker",
+        "taskiq-scheduler"
+      ],
       "configuration_refs": [
         "POSTGRES_HOST",
         "POSTGRES_USER",
@@ -188,12 +193,19 @@
     {
       "allowed_dependencies": [],
       "annotation_path": "docker/mcp/chrome-devtools/.governance.json",
+      "compose_services": [
+        "chrome-devtools-mcp",
+        "browserless"
+      ],
       "configuration_refs": [
         "BROWSERLESS_TOKEN"
       ],
       "declared_in": "annotation",
       "entrypoints": [
         "docker/mcp/chrome-devtools/Dockerfile"
+      ],
+      "exceptions": [
+        "profile-gated-services-without-healthchecks"
       ],
       "forbidden_dependencies": [
         "postgres-pgvector",
@@ -222,12 +234,18 @@
         "docling-serve"
       ],
       "annotation_path": "docker/mcp/docling/.governance.json",
+      "compose_services": [
+        "docling-mcp"
+      ],
       "configuration_refs": [
         "DOCLING_SERVE_URL"
       ],
       "declared_in": "annotation",
       "entrypoints": [
         "docker/mcp/docling/Dockerfile"
+      ],
+      "exceptions": [
+        "profile-gated-services-without-healthchecks"
       ],
       "forbidden_dependencies": [
         "postgres-pgvector",
@@ -252,6 +270,9 @@
       ]
     },
     {
+      "compose_services": [
+        "docling-serve"
+      ],
       "configuration_refs": [
         "DOCLING_SERVE_URL",
         "DOCLING_SERVE_TIMEOUT_SECONDS",
@@ -314,6 +335,9 @@
         "backend-api"
       ],
       "annotation_path": "frontend/.governance.json",
+      "compose_services": [
+        "frontend"
+      ],
       "configuration_refs": [
         "BACKEND_URL",
         "BACKEND_WS_URL",
@@ -372,6 +396,9 @@
       ]
     },
     {
+      "compose_services": [
+        "github-mcp"
+      ],
       "configuration_refs": [
         "GITHUB_MCP_TOKEN",
         "MCP_SERVERS"
@@ -380,6 +407,9 @@
         "ADR-003"
       ],
       "declared_in": "curated",
+      "exceptions": [
+        "profile-gated-services-without-healthchecks"
+      ],
       "forbidden_dependencies": [],
       "id": "github-mcp",
       "invariants": [
@@ -454,6 +484,9 @@
       ]
     },
     {
+      "compose_services": [
+        "minio"
+      ],
       "configuration_refs": [
         "S3_ENDPOINT",
         "S3_BUCKET",
@@ -510,6 +543,9 @@
       ]
     },
     {
+      "compose_services": [
+        "db"
+      ],
       "configuration_refs": [
         "POSTGRES_HOST",
         "POSTGRES_PORT",
@@ -615,6 +651,9 @@
       ]
     },
     {
+      "compose_services": [
+        "redis"
+      ],
       "configuration_refs": [
         "REDIS_HOST",
         "REDIS_PORT",
@@ -643,6 +682,9 @@
       ]
     },
     {
+      "compose_services": [
+        "traefik"
+      ],
       "configuration_refs": [
         "DOMAIN",
         "ACME_EMAIL",
@@ -655,6 +697,9 @@
         "ADR-005"
       ],
       "declared_in": "curated",
+      "exceptions": [
+        "profile-gated-services-without-healthchecks"
+      ],
       "forbidden_dependencies": [],
       "id": "traefik",
       "invariants": [
@@ -681,6 +726,7 @@
     "coverage-floors-are-ratchets",
     "google-live-suites-excluded-from-registry",
     "playwright-not-in-ci",
+    "profile-gated-services-without-healthchecks",
     "taskiq-healthchecks-disabled",
     "trivy-advisory-deliberate",
     "ws-chat-bypasses-proxy"

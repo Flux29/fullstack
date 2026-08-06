@@ -18,10 +18,12 @@
       "statement": "The Alembic revision graph is acyclic and connected, and its head set matches the recorded expectation.",
       "rationale": "Contiguity means graph connectivity, never filename numbering. Branches and merge revisions stay legal; single-head is a rule only because it is recorded as one. A filename-based rule would fire on day one against this repository's numbering gaps.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.compatibility.check_migration_graph",
       "promotion_criteria": "The Alembic extractor lands and reproduces the recorded head.",
       "exceptions_allowed": true,
-      "exception_refs": ["alembic-numbering-gaps-accepted"]
+      "exception_refs": [
+        "alembic-numbering-gaps-accepted"
+      ]
     },
     {
       "id": "orm-changes-have-migrations",
@@ -38,7 +40,7 @@
       "statement": "Each Redis logical database has one declared purpose, and a new consumer may not reuse an allocated one.",
       "rationale": "Two consumers sharing a logical database work fine until one of them flushes it.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.compatibility.check_redis_allocations",
       "promotion_criteria": "The configuration extractor lands and the allocations reproduce.",
       "exceptions_allowed": false,
       "exception_refs": []
@@ -81,7 +83,9 @@
       "check_impl": "phase-3",
       "promotion_criteria": "The proxy mapping extractor lands and impact analysis includes the hop.",
       "exceptions_allowed": true,
-      "exception_refs": ["ws-chat-bypasses-proxy"]
+      "exception_refs": [
+        "ws-chat-bypasses-proxy"
+      ]
     },
     {
       "id": "deprecated-aliases-have-a-removal-milestone",

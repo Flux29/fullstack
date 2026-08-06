@@ -1,56 +1,1549 @@
 {
-  "schema_version": 1,
-  "provenance": {
-    "method": "reviewed-baseline",
-    "sources": [
-      "backend/app/api/routes/v1/",
-      "frontend/src/app/api/",
-      "frontend/src/hooks/use-chat.ts",
-      "frontend/src/i18n.ts"
-    ],
-    "extractor_version": "1.0.0"
-  },
-  "openapi": {
-    "provenance": {
-      "method": "reviewed-baseline",
-      "sources": ["backend/app/api/routes/v1/"],
-      "extractor_version": "1.0.0"
-    },
-    "status": "unknown",
-    "unknown_reason": "The sanitized subprocess exporter lands in Phase 3. Recorded as unknown rather than omitted, because an absent OpenAPI section and an empty one mean different things.",
-    "paths": []
-  },
-  "websocket": {
-    "provenance": {
-      "method": "reviewed-baseline",
-      "sources": [
-        "backend/app/api/routes/v1/agent.py",
-        "backend/app/services/agent_session.py",
-        "frontend/src/hooks/use-chat.ts"
-      ],
-      "extractor_version": "1.0.0"
-    },
-    "endpoint": "/api/v1/ws/agent",
-    "auth": "token-subprotocol",
-    "proxy_exception_ref": "ws-chat-bypasses-proxy",
-    "events": [
-      {
-        "type": "tool_approval_required",
-        "direction": "server-to-client",
-        "producer_ref": "backend/app/services/agent_session.py",
-        "consumer_ref": "frontend/src/components/chat/tool-approval-dialog.tsx",
-        "provenance": "reviewed-baseline"
-      }
-    ]
-  },
-  "sse": [
+  "frontend_pages": [
     {
-      "path": "/api/v1/rag/status/stream",
-      "purpose": "RAG ingestion status. The only server-sent-events endpoint; chat streaming is a WebSocket instead.",
-      "location": "backend/app/api/routes/v1/rag.py"
+      "file": "frontend/src/app/[locale]/(auth)/forgot-password/page.tsx",
+      "route": "/forgot-password"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(auth)/login/page.tsx",
+      "route": "/login"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(auth)/magic-link-sent/page.tsx",
+      "route": "/magic-link-sent"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(auth)/register/page.tsx",
+      "route": "/register"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(auth)/reset-password/page.tsx",
+      "route": "/reset-password"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/conversations/page.tsx",
+      "route": "/admin/conversations"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/page.tsx",
+      "route": "/admin"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/ratings/page.tsx",
+      "route": "/admin/ratings"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/system/page.tsx",
+      "route": "/admin/system"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/users/page.tsx",
+      "route": "/admin/users"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/chat/page.tsx",
+      "route": "/chat"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/dashboard/page.tsx",
+      "route": "/dashboard"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
+      "route": "/dev/components"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/profile/page.tsx",
+      "route": "/profile"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/rag/page.tsx",
+      "route": "/rag"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/account/page.tsx",
+      "route": "/settings/account"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/appearance/page.tsx",
+      "route": "/settings/appearance"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/integrations/page.tsx",
+      "route": "/settings/integrations"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/notifications/page.tsx",
+      "route": "/settings/notifications"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/page.tsx",
+      "route": "/settings"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/profile/page.tsx",
+      "route": "/settings/profile"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/slash-commands/page.tsx",
+      "route": "/settings/slash-commands"
+    },
+    {
+      "file": "frontend/src/app/[locale]/about/page.tsx",
+      "route": "/about"
+    },
+    {
+      "file": "frontend/src/app/[locale]/auth/callback/page.tsx",
+      "route": "/auth/callback"
+    },
+    {
+      "file": "frontend/src/app/[locale]/auth/magic-link/page.tsx",
+      "route": "/auth/magic-link"
+    },
+    {
+      "file": "frontend/src/app/[locale]/blog/[slug]/page.tsx",
+      "route": "/blog/{slug}"
+    },
+    {
+      "file": "frontend/src/app/[locale]/blog/page.tsx",
+      "route": "/blog"
+    },
+    {
+      "file": "frontend/src/app/[locale]/changelog/page.tsx",
+      "route": "/changelog"
+    },
+    {
+      "file": "frontend/src/app/[locale]/community/page.tsx",
+      "route": "/community"
+    },
+    {
+      "file": "frontend/src/app/[locale]/contact/page.tsx",
+      "route": "/contact"
+    },
+    {
+      "file": "frontend/src/app/[locale]/demo/[id]/page.tsx",
+      "route": "/demo/{id}"
+    },
+    {
+      "file": "frontend/src/app/[locale]/demo/page.tsx",
+      "route": "/demo"
+    },
+    {
+      "file": "frontend/src/app/[locale]/help/page.tsx",
+      "route": "/help"
+    },
+    {
+      "file": "frontend/src/app/[locale]/legal/cookies/page.tsx",
+      "route": "/legal/cookies"
+    },
+    {
+      "file": "frontend/src/app/[locale]/legal/privacy/page.tsx",
+      "route": "/legal/privacy"
+    },
+    {
+      "file": "frontend/src/app/[locale]/legal/terms/page.tsx",
+      "route": "/legal/terms"
+    },
+    {
+      "file": "frontend/src/app/[locale]/onboarding/[step]/page.tsx",
+      "route": "/onboarding/{step}"
+    },
+    {
+      "file": "frontend/src/app/[locale]/onboarding/page.tsx",
+      "route": "/onboarding"
+    },
+    {
+      "file": "frontend/src/app/[locale]/page.tsx",
+      "route": "/"
+    },
+    {
+      "file": "frontend/src/app/[locale]/pricing/page.tsx",
+      "route": "/pricing"
+    },
+    {
+      "file": "frontend/src/app/[locale]/security/page.tsx",
+      "route": "/security"
+    },
+    {
+      "file": "frontend/src/app/[locale]/shared/[token]/page.tsx",
+      "route": "/shared/{token}"
     }
   ],
-  "proxy_routes": [],
-  "frontend_pages": [],
-  "locales": ["en", "pl"]
+  "locales": [
+    "en",
+    "pl"
+  ],
+  "openapi": {
+    "paths": [
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/conversations"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/conversations/{conversation_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/admin/conversations/{conversation_id}/demo"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/ratings"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/ratings/export"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/ratings/summary"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/stats"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/stripe-events"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/users"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/admin/users/{user_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/admin/users/{user_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/admin/users/{user_id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/admin/users/{user_id}/impersonate"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/agent/models"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/login"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/logout"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/magic-link/request"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/magic-link/verify"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/auth/me"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/password-reset/confirm"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/password-reset/request"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/refresh"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/auth/register"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/contact"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/conversations"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/admin-list"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/export"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/shared-with-me"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/shared/{token}"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/conversations/{conversation_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/{conversation_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/conversations/{conversation_id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/conversations/{conversation_id}/archive"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/{conversation_id}/messages"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/conversations/{conversation_id}/messages"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/conversations/{conversation_id}/messages/{message_id}/rate"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/conversations/{conversation_id}/messages/{message_id}/rate"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/conversations/{conversation_id}/shares"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/conversations/{conversation_id}/shares"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/conversations/{conversation_id}/shares/{share_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/demos"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/demos/{conversation_id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/files/upload"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/files/{file_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/files/{file_id}/info"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/health"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/health/live"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/health/ready"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/mcp-connections"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/me/mcp-connections"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/me/mcp-connections/oauth/callback"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/me/mcp-connections/oauth/start"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/mcp-connections/workspace"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/me/mcp-connections/{connection_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/me/mcp-connections/{connection_id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/me/mcp-connections/{connection_id}/test"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/me/slash-commands"
+      },
+      {
+        "method": "PUT",
+        "path": "/api/v1/me/slash-commands/builtin"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/me/slash-commands/custom"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/me/slash-commands/{command_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/me/slash-commands/{command_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/oauth/google/callback"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/oauth/google/login"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/collections"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rag/collections/{name}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/collections/{name}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/collections/{name}/documents"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rag/collections/{name}/documents/{document_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/collections/{name}/info"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/collections/{name}/ingest"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/documents"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rag/documents/{doc_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/documents/{doc_id}/download"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/documents/{doc_id}/retry"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/search"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/status/stream"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/supported-formats"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/sync/connectors"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/sync/local"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/sync/logs"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/rag/sync/sources"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/sync/sources"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rag/sync/sources/{source_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/rag/sync/sources/{source_id}"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/rag/sync/sources/{source_id}/trigger"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/rag/sync/{sync_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/ready"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/sessions"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/sessions"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/sessions/{session_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users/avatar/{user_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/users/me"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/users/me/avatar"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/users/{user_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/users/{user_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/users/{user_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/webhooks"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/webhooks"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/webhooks/{webhook_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/webhooks/{webhook_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/webhooks/{webhook_id}"
+      },
+      {
+        "method": "GET",
+        "path": "/api/v1/webhooks/{webhook_id}/deliveries"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/webhooks/{webhook_id}/regenerate-secret"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/webhooks/{webhook_id}/test"
+      }
+    ],
+    "route_count": 107,
+    "status": "extracted"
+  },
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      "backend/app/api/routes/",
+      "frontend/src/app/[locale]/",
+      "frontend/src/app/api/",
+      "frontend/src/i18n.ts",
+      "governance/manifests/curated/architectural-intent.json"
+    ]
+  },
+  "proxy_routes": [
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/conversations/{param}/demo"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/conversations/[id]/demo/route.ts",
+      "frontend_path": "/api/admin/conversations/{id}/demo",
+      "mechanism": "backendFetch",
+      "methods": [
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/conversations/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/conversations/[id]/route.ts",
+      "frontend_path": "/api/admin/conversations/{id}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/conversations${qs"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/conversations/route.ts",
+      "frontend_path": "/api/admin/conversations",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/conversations/users${qs"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/conversations/users/route.ts",
+      "frontend_path": "/api/admin/conversations/users",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/ratings/export"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/ratings/export/route.ts",
+      "frontend_path": "/api/admin/ratings/export",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/ratings"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/ratings/route.ts",
+      "frontend_path": "/api/admin/ratings",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/ratings/summary"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/ratings/summary/route.ts",
+      "frontend_path": "/api/admin/ratings/summary",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/stats"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/stats/route.ts",
+      "frontend_path": "/api/admin/stats",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/users/{param}/impersonate"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+      "frontend_path": "/api/admin/users/{userId}/impersonate",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/users/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/users/[userId]/route.ts",
+      "frontend_path": "/api/admin/users/{userId}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/admin/users${qs"
+        }
+      ],
+      "file": "frontend/src/app/api/admin/users/route.ts",
+      "frontend_path": "/api/admin/users",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/login"
+        },
+        {
+          "path_template": "/api/v1/auth/me"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/login/route.ts",
+      "frontend_path": "/api/auth/login",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/logout"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/logout/route.ts",
+      "frontend_path": "/api/auth/logout",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/magic-link/request"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/magic-link/request/route.ts",
+      "frontend_path": "/api/auth/magic-link/request",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/magic-link/verify"
+        },
+        {
+          "path_template": "/api/v1/auth/me"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/magic-link/verify/route.ts",
+      "frontend_path": "/api/auth/magic-link/verify",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/me"
+        },
+        {
+          "path_template": "/api/v1/auth/refresh"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/me/route.ts",
+      "frontend_path": "/api/auth/me",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/me"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/oauth-callback/route.ts",
+      "frontend_path": "/api/auth/oauth-callback",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/password-reset/confirm"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/password-reset/confirm/route.ts",
+      "frontend_path": "/api/auth/password-reset/confirm",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/password-reset/request"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/password-reset/request/route.ts",
+      "frontend_path": "/api/auth/password-reset/request",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/refresh"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/refresh/route.ts",
+      "frontend_path": "/api/auth/refresh",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/auth/register"
+        }
+      ],
+      "file": "frontend/src/app/api/auth/register/route.ts",
+      "frontend_path": "/api/auth/register",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/contact"
+        }
+      ],
+      "file": "frontend/src/app/api/contact/route.ts",
+      "frontend_path": "/api/contact",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/{param}/messages/{param}/rate"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/[id]/messages/[messageId]/rate/route.ts",
+      "frontend_path": "/api/conversations/{id}/messages/{messageId}/rate",
+      "mechanism": "fetch",
+      "methods": [
+        "DELETE",
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/{param}/messages"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/[id]/messages/route.ts",
+      "frontend_path": "/api/conversations/{id}/messages",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/[id]/route.ts",
+      "frontend_path": "/api/conversations/{id}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/{param}/shares/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+      "frontend_path": "/api/conversations/{id}/shares/{shareId}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/{param}/shares"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/[id]/shares/route.ts",
+      "frontend_path": "/api/conversations/{id}/shares",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/export"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/export/route.ts",
+      "frontend_path": "/api/conversations/export",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations"
+        },
+        {
+          "path_template": "/api/v1/conversations${qs"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/route.ts",
+      "frontend_path": "/api/conversations",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/shared-with-me"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/shared-with-me/route.ts",
+      "frontend_path": "/api/conversations/shared-with-me",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/conversations/tool-stats${qs"
+        }
+      ],
+      "file": "frontend/src/app/api/conversations/tool-stats/route.ts",
+      "frontend_path": "/api/conversations/tool-stats",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/files/{param}${qs"
+        }
+      ],
+      "file": "frontend/src/app/api/files/[id]/route.ts",
+      "frontend_path": "/api/files/{id}",
+      "mechanism": "fetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/files/upload"
+        }
+      ],
+      "file": "frontend/src/app/api/files/upload/route.ts",
+      "frontend_path": "/api/files/upload",
+      "mechanism": "fetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/health"
+        }
+      ],
+      "file": "frontend/src/app/api/health/route.ts",
+      "frontend_path": "/api/health",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/mcp-connections/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/me/mcp-connections/[id]/route.ts",
+      "frontend_path": "/api/me/mcp-connections/{id}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/mcp-connections/{param}/test"
+        }
+      ],
+      "file": "frontend/src/app/api/me/mcp-connections/[id]/test/route.ts",
+      "frontend_path": "/api/me/mcp-connections/{id}/test",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/mcp-connections/oauth/callback"
+        }
+      ],
+      "file": "frontend/src/app/api/me/mcp-connections/oauth/callback/route.ts",
+      "frontend_path": "/api/me/mcp-connections/oauth/callback",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/mcp-connections/oauth/start"
+        }
+      ],
+      "file": "frontend/src/app/api/me/mcp-connections/oauth/start/route.ts",
+      "frontend_path": "/api/me/mcp-connections/oauth/start",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/mcp-connections"
+        }
+      ],
+      "file": "frontend/src/app/api/me/mcp-connections/route.ts",
+      "frontend_path": "/api/me/mcp-connections",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/mcp-connections/workspace"
+        }
+      ],
+      "file": "frontend/src/app/api/me/mcp-connections/workspace/route.ts",
+      "frontend_path": "/api/me/mcp-connections/workspace",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/slash-commands/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/me/slash-commands/[id]/route.ts",
+      "frontend_path": "/api/me/slash-commands/{id}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/slash-commands/builtin"
+        }
+      ],
+      "file": "frontend/src/app/api/me/slash-commands/builtin/route.ts",
+      "frontend_path": "/api/me/slash-commands/builtin",
+      "mechanism": "backendFetch",
+      "methods": [
+        "PUT"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/slash-commands/custom"
+        }
+      ],
+      "file": "frontend/src/app/api/me/slash-commands/custom/route.ts",
+      "frontend_path": "/api/me/slash-commands/custom",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/slash-commands"
+        }
+      ],
+      "file": "frontend/src/app/api/me/slash-commands/route.ts",
+      "frontend_path": "/api/me/slash-commands",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/sessions/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/sessions/[id]/route.ts",
+      "frontend_path": "/api/sessions/{id}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/sessions"
+        }
+      ],
+      "file": "frontend/src/app/api/sessions/route.ts",
+      "frontend_path": "/api/sessions",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/users/avatar/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/users/avatar/[userId]/route.ts",
+      "frontend_path": "/api/users/avatar/{userId}",
+      "mechanism": "fetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/users/me/avatar"
+        }
+      ],
+      "file": "frontend/src/app/api/users/me/avatar/route.ts",
+      "frontend_path": "/api/users/me/avatar",
+      "mechanism": "fetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/users/me"
+        }
+      ],
+      "file": "frontend/src/app/api/users/me/route.ts",
+      "frontend_path": "/api/users/me",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/agent/models"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/agent/models/route.ts",
+      "frontend_path": "/api/v1/agent/models",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/collections/{param}/documents/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/collections/[name]/documents/[documentId]/route.ts",
+      "frontend_path": "/api/v1/rag/collections/{name}/documents/{documentId}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/collections/{param}/documents"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/collections/[name]/documents/route.ts",
+      "frontend_path": "/api/v1/rag/collections/{name}/documents",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/collections/{param}"
+        },
+        {
+          "path_template": "/api/v1/rag/collections/{param}/info"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/collections/[name]/info/route.ts",
+      "frontend_path": "/api/v1/rag/collections/{name}/info",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/collections/{param}/ingest${replace"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/collections/[name]/ingest/route.ts",
+      "frontend_path": "/api/v1/rag/collections/{name}/ingest",
+      "mechanism": "fetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/collections/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/collections/[name]/route.ts",
+      "frontend_path": "/api/v1/rag/collections/{name}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/collections"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/collections/route.ts",
+      "frontend_path": "/api/v1/rag/collections",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/documents/{param}/download"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/documents/[docId]/download/route.ts",
+      "frontend_path": "/api/v1/rag/documents/{docId}/download",
+      "mechanism": "fetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/documents/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/documents/[docId]/route.ts",
+      "frontend_path": "/api/v1/rag/documents/{docId}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/documents"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/documents/route.ts",
+      "frontend_path": "/api/v1/rag/documents",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/search"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/search/route.ts",
+      "frontend_path": "/api/v1/rag/search",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/supported-formats"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/supported-formats/route.ts",
+      "frontend_path": "/api/v1/rag/supported-formats",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
+      "frontend_path": "/api/v1/rag/sync/{syncId}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/connectors"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
+      "frontend_path": "/api/v1/rag/sync/connectors",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/local"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/local/route.ts",
+      "frontend_path": "/api/v1/rag/sync/local",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/sources/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/route.ts",
+      "frontend_path": "/api/v1/rag/sync/sources/{sourceId}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "GET",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/sources/{param}/trigger"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/trigger/route.ts",
+      "frontend_path": "/api/v1/rag/sync/sources/{sourceId}/trigger",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/sources"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/sources/route.ts",
+      "frontend_path": "/api/v1/rag/sync/sources",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "POST"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "sse": [
+    {
+      "location": "backend/app/api/routes/v1/rag.py",
+      "path": "/api/v1/rag/status/stream",
+      "purpose": "Server-sent events stream"
+    }
+  ],
+  "websocket": {
+    "auth": "token-subprotocol",
+    "endpoint": "/api/v1/ws/agent",
+    "events": [
+      {
+        "consumer_ref": "frontend/src/components/chat/tool-approval-dialog.tsx",
+        "direction": "server-to-client",
+        "producer_ref": "backend/app/services/agent_session.py",
+        "provenance": "reviewed-baseline",
+        "type": "tool_approval_required"
+      }
+    ],
+    "proxy_exception_ref": "ws-chat-bypasses-proxy"
+  }
 }

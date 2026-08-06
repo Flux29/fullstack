@@ -49,20 +49,24 @@
       "statement": "Every REST call from the browser goes through a Next.js proxy route handler; the chat WebSocket is the only direct browser-to-backend edge.",
       "rationale": "The proxy hop is part of every REST impact chain. Impact analysis that skips it reports the wrong blast radius, and a change that adds a second direct edge changes the security surface without looking like it does.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.architecture.check_proxy_coverage",
       "promotion_criteria": "The proxy mapping extractor lands and reproduces the reviewed baseline.",
       "exceptions_allowed": true,
-      "exception_refs": ["ws-chat-bypasses-proxy"]
+      "exception_refs": [
+        "ws-chat-bypasses-proxy"
+      ]
     },
     {
       "id": "services-declare-healthchecks",
       "statement": "Long-running services declare a healthcheck, or reference an exception explaining why they do not.",
       "rationale": "Compose dependency ordering is only meaningful when readiness is observable. A missing healthcheck turns depends_on into a guess.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
+      "check_impl": "checks.architecture.check_healthchecks",
       "promotion_criteria": "The Compose extractor lands and every current omission is either fixed or has an exception.",
       "exceptions_allowed": true,
-      "exception_refs": ["taskiq-healthchecks-disabled"]
+      "exception_refs": [
+        "taskiq-healthchecks-disabled"
+      ]
     },
     {
       "id": "no-orphaned-surfaces",
@@ -72,7 +76,9 @@
       "check_impl": "phase-3",
       "promotion_criteria": "Orphan detection runs with the generator-feature whitelist and produces no false positive on the current tree.",
       "exceptions_allowed": true,
-      "exception_refs": ["billing-generator-feature-disabled"]
+      "exception_refs": [
+        "billing-generator-feature-disabled"
+      ]
     },
     {
       "id": "thick-domains-expose-a-facade",

@@ -15,6 +15,19 @@
       "component_refs": ["backend-api"]
     },
     {
+      "id": "profile-gated-services-without-healthchecks",
+      "statement": "The MCP sidecars, the browser service, pgweb, and Traefik declare no healthcheck.",
+      "reason": "Healthchecks exist here to make `depends_on: service_healthy` meaningful. Nothing waits on readiness for any of these: the MCP sidecars are probed by the application at connection time and skipped when unreachable, chrome-devtools-mcp waits on browserless only for service_started, and pgweb and Traefik are entered by a human rather than by another service. Adding a healthcheck to each would be ceremony that proves a process is running, which is what the container runtime already reports.",
+      "scope": [
+        "docker-compose.yml services browserless, chrome-devtools-mcp, docling-mcp, github-mcp, pgweb",
+        "docker-compose.prod.yml service traefik"
+      ],
+      "status": "active",
+      "review_trigger": "Any service starts depending on one of these being healthy, or an MCP sidecar failure stops being invisible to the application's probe-and-skip path.",
+      "policy_refs": ["services-declare-healthchecks"],
+      "component_refs": ["docling-mcp", "chrome-devtools-mcp", "github-mcp", "traefik"]
+    },
+    {
       "id": "trivy-advisory-deliberate",
       "statement": "The Trivy image scan in CI runs with exit-code 0 and can never fail the build.",
       "reason": "The scan reports CRITICAL and HIGH findings in base images that are pinned by digest and cannot always be fixed on the repository's schedule. Blocking on it before the finding volume is known would train people to bypass CI. Recorded as deliberate rather than left looking like an oversight, and used as the pilot for the advisory-to-blocking promotion ladder.",

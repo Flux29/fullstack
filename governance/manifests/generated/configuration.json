@@ -1,329 +1,2903 @@
 {
-  "schema_version": 1,
+  "findings": [
+    {
+      "detail": "CODE_EXECUTION_MAX_ALLOCATIONS appears in an environment template but has no field in Settings and no Compose consumer. Because Settings uses extra=\"ignore\", setting it has no effect and produces no warning.",
+      "id": "unconsumed-code-execution-max-allocations",
+      "kind": "unconsumed",
+      "status": "open"
+    },
+    {
+      "detail": "ENABLE_CODE_EXECUTION appears in an environment template but has no field in Settings and no Compose consumer. Because Settings uses extra=\"ignore\", setting it has no effect and produces no warning.",
+      "id": "unconsumed-enable-code-execution",
+      "kind": "unconsumed",
+      "status": "open"
+    },
+    {
+      "detail": "OPENAI_API_KEY appears in an environment template but has no field in Settings and no Compose consumer. Because Settings uses extra=\"ignore\", setting it has no effect and produces no warning.",
+      "id": "unconsumed-openai-api-key",
+      "kind": "unconsumed",
+      "status": "open"
+    }
+  ],
   "provenance": {
-    "method": "reviewed-baseline",
+    "extractor_version": "1.0.0",
+    "method": "extracted",
     "sources": [
-      "backend/app/core/config.py",
       "backend/.env.example",
-      "frontend/.env.example",
+      "backend/app/core/config.py",
       "docker-compose.yml",
+      "frontend/.env.example",
+      "frontend/src/**",
       "governance/manifests/curated/architectural-intent.json"
-    ],
-    "extractor_version": "1.0.0"
+    ]
   },
+  "schema_version": 1,
   "secret_list_source": "curated",
   "variables": [
     {
-      "name": "DATABASE_URL",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "generated",
-      "required": false,
-      "classification": ["computed"],
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["backend-api"],
-      "description": "Async connection string assembled from the POSTGRES_* inputs. Not settable from the environment; ENV_VARS.md documented it as a required input, which was drift."
-    },
-    {
-      "name": "DATABASE_URL_SYNC",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "generated",
-      "required": false,
-      "classification": ["computed"],
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["backend-api"],
-      "description": "Synchronous counterpart used by Alembic."
-    },
-    {
-      "name": "REDIS_URL",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "generated",
-      "required": false,
-      "classification": ["computed"],
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["backend-api"],
-      "description": "Assembled from REDIS_HOST, REDIS_PORT, REDIS_DB, and REDIS_PASSWORD."
-    },
-    {
-      "name": "EMBEDDING_DIMENSION",
-      "surface": "backend",
-      "type": "int",
-      "default": "1024",
-      "default_class": "literal",
-      "required": true,
-      "classification": ["runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example"],
-      "consumed_by": ["rag"],
-      "description": "One of the five points of the embedding dimension contract; see ADR-002."
-    },
-    {
-      "name": "TIMEZONE",
-      "surface": "backend",
-      "type": "str",
-      "default": "EDT",
-      "default_class": "literal",
-      "required": false,
-      "classification": ["runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example"],
-      "consumed_by": ["backend-api"],
-      "description": "The field's own comment requires an IANA zone name, and EDT is not one. Tracked as the timezone-not-iana finding; the fix is an application change."
-    },
-    {
-      "name": "SECRET_KEY",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": true,
-      "classification": ["secret", "runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example"],
-      "consumed_by": ["backend-api"]
-    },
-    {
-      "name": "API_KEY",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": true,
-      "classification": ["secret", "runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example"],
-      "consumed_by": ["backend-api"]
-    },
-    {
-      "name": "POSTGRES_PASSWORD",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": true,
-      "classification": ["secret", "runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example", "docker-compose.yml"],
-      "consumed_by": ["backend-api", "postgres-pgvector"]
-    },
-    {
-      "name": "REDIS_PASSWORD",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": "in the production stack; deliberately empty on the internal network in base and dev",
-      "classification": ["secret", "runtime"],
-      "declared_in": ["backend/app/core/config.py", "docker-compose.prod.yml"],
-      "consumed_by": ["backend-api", "redis"]
-    },
-    {
-      "name": "OPENROUTER_API_KEY",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": true,
-      "classification": ["secret", "runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example"],
-      "consumed_by": ["agents"],
-      "description": "A live value was committed and pushed before governance adoption; rotation is required. See the secrets-pushed-to-remote finding."
-    },
-    {
-      "name": "LOGFIRE_TOKEN",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": false,
-      "classification": ["secret", "runtime"],
-      "declared_in": ["backend/app/core/config.py", "backend/.env.example"],
-      "consumed_by": ["backend-api"],
-      "description": "Telemetry is sent only when this is present, which is what makes the scrubbed-subprocess extraction safe. A live value was committed and pushed; rotation is required."
-    },
-    {
-      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_ID",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": false,
-      "classification": ["deprecated-alias", "runtime"],
-      "alias_of": "GOOGLE_API_CLIENT_ID",
-      "removal_milestone": "Remove once no deployment sets it and the direct Google REST executor is the only path",
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["agents"]
-    },
-    {
-      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET",
-      "surface": "backend",
-      "type": "SecretStr",
-      "default": null,
-      "default_class": "none",
-      "required": false,
-      "classification": ["deprecated-alias", "secret", "runtime"],
-      "alias_of": "GOOGLE_API_CLIENT_SECRET",
-      "removal_milestone": "Remove alongside GOOGLE_WORKSPACE_MCP_CLIENT_ID",
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["agents"]
-    },
-    {
-      "name": "GOOGLE_DRIVE_CLIENT_ID",
-      "surface": "backend",
-      "type": "str",
-      "default": null,
-      "default_class": "none",
-      "required": false,
-      "classification": ["deprecated-alias", "runtime"],
-      "alias_of": "GOOGLE_API_CLIENT_ID",
-      "removal_milestone": "Remove once no deployment sets it",
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["agents"]
-    },
-    {
-      "name": "GOOGLE_DRIVE_CLIENT_SECRET",
-      "surface": "backend",
-      "type": "SecretStr",
-      "default": null,
-      "default_class": "none",
-      "required": false,
-      "classification": ["deprecated-alias", "secret", "runtime"],
-      "alias_of": "GOOGLE_API_CLIENT_SECRET",
-      "removal_milestone": "Remove alongside GOOGLE_DRIVE_CLIENT_ID",
-      "declared_in": ["backend/app/core/config.py"],
-      "consumed_by": ["agents"]
-    },
-    {
-      "name": "OPENAI_API_KEY",
-      "surface": "backend",
-      "type": null,
-      "default": null,
-      "default_class": "none",
-      "required": false,
-      "classification": ["unknown-consumer", "secret"],
-      "declared_in": ["backend/.env.example"],
+      "classification": [
+        "runtime"
+      ],
       "consumed_by": [],
-      "description": "Present in the template under the embeddings section but absent from Settings, so extra=\"ignore\" drops it silently. Either the embeddings client should read it or it should be removed."
-    },
-    {
-      "name": "ENABLE_CODE_EXECUTION",
-      "surface": "backend",
-      "type": null,
-      "default": "true",
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "30",
       "default_class": "literal",
+      "name": "ACCESS_TOKEN_EXPIRE_MINUTES",
       "required": false,
-      "classification": ["unknown-consumer"],
-      "declared_in": ["backend/.env.example"],
-      "consumed_by": [],
-      "description": "Present in the template but absent from Settings. Code execution is gated by the generator context flag, not by this variable."
-    },
-    {
-      "name": "CODE_EXECUTION_MAX_ALLOCATIONS",
       "surface": "backend",
-      "type": null,
-      "default": "50000000",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "traefik"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "admin@example.com",
       "default_class": "literal",
-      "required": false,
-      "classification": ["unknown-consumer"],
-      "declared_in": ["backend/.env.example"],
-      "consumed_by": [],
-      "description": "Settings has CODE_EXECUTION_MAX_MEMORY_MB instead; this looks like a rename that left the template behind."
-    },
-    {
-      "name": "DOMAIN",
-      "surface": "compose",
-      "type": null,
-      "default": null,
-      "default_class": "none",
-      "required": "in the production stack, where Compose fails fast without it",
-      "classification": ["compose-only"],
-      "declared_in": ["backend/.env.example", "docker-compose.prod.yml"],
-      "consumed_by": ["traefik", "backend-api"]
-    },
-    {
+      "description": "Let's Encrypt email for SSL certificates",
       "name": "ACME_EMAIL",
-      "surface": "compose",
-      "type": null,
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
       "default": null,
       "default_class": "none",
-      "required": "in the production stack",
-      "classification": ["compose-only"],
-      "declared_in": ["backend/.env.example", "docker-compose.prod.yml"],
-      "consumed_by": ["traefik"]
-    },
-    {
-      "name": "TRAEFIK_HTTP_PORT",
-      "surface": "compose",
-      "type": null,
-      "default": "80",
-      "default_class": "literal",
+      "name": "AI_AVAILABLE_MODELS",
       "required": false,
-      "classification": ["compose-only"],
-      "declared_in": ["docker-compose.prod.yml"],
-      "consumed_by": ["traefik"],
-      "description": "Configurable because this host already runs IIS on port 80."
+      "surface": "backend",
+      "type": "list[str]"
     },
     {
-      "name": "NEXT_PUBLIC_API_URL",
-      "surface": "frontend",
-      "type": "string",
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "pydantic_ai",
+      "default_class": "literal",
+      "name": "AI_FRAMEWORK",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "agents"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "anthropic/claude-opus-4-7",
+      "default_class": "literal",
+      "name": "AI_MODEL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "0.7",
+      "default_class": "literal",
+      "name": "AI_TEMPERATURE",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "medium",
+      "default_class": "literal",
+      "name": "AI_THINKING_EFFORT",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "AI_THINKING_ENABLED",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "HS256",
+      "default_class": "literal",
+      "name": "ALGORITHM",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "backend-api"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "X-API-Key",
+      "default_class": "literal",
+      "name": "API_KEY_HEADER",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "/api/v1",
+      "default_class": "literal",
+      "name": "API_V1_STR",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:frontend",
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/demo/[id]/page.tsx",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/demo/page.tsx",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/shared/[token]/page.tsx"
+      ],
+      "declared_in": [
+        "frontend/.env.example",
+        "docker-compose.yml"
+      ],
       "default": "http://localhost:8100",
       "default_class": "literal",
+      "description": "Backend API URL (server-side only - not exposed to browser)",
+      "name": "BACKEND_URL",
       "required": false,
-      "classification": ["build-arg"],
-      "declared_in": ["frontend/.env.example", "docker-compose.yml"],
-      "consumed_by": ["frontend-app"],
-      "description": "Baked into the image at build time. Restarting the container will not pick up a new value."
+      "surface": "frontend",
+      "type": null
     },
     {
-      "name": "NEXT_PUBLIC_WS_URL",
-      "surface": "frontend",
-      "type": "string",
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:frontend",
+        "frontend-app"
+      ],
+      "declared_in": [
+        "frontend/.env.example",
+        "docker-compose.yml"
+      ],
       "default": "ws://localhost:8100",
       "default_class": "literal",
+      "description": "WebSocket URL for real-time features",
+      "name": "BACKEND_WS_URL",
       "required": false,
-      "classification": ["build-arg"],
-      "declared_in": ["docker-compose.yml"],
-      "consumed_by": ["chat-frontend"],
-      "description": "Used by the chat WebSocket, the one direct browser-to-backend edge."
-    },
-    {
-      "name": "BACKEND_URL",
       "surface": "frontend",
-      "type": "string",
-      "default": "http://localhost:8000",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "agents",
+        "chrome-devtools-mcp",
+        "compose:chrome-devtools-mcp"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "BROWSERLESS_TOKEN",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CACHE_DIR",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "docling",
       "default_class": "literal",
-      "required": true,
-      "classification": ["runtime"],
-      "declared_in": ["frontend/.env.example", "docker-compose.yml"],
-      "consumed_by": ["frontend-app"],
-      "description": "Server-side only: the proxy route handlers use it. Never exposed to the browser, which is the point of the proxy layer. Note the default port differs from the constants module's 8100 default."
-    }
-  ],
-  "findings": [
-    {
-      "id": "env-example-duplicate-keys",
-      "kind": "duplicate-key",
-      "detail": "Seven keys appeared twice in backend/.env.example with identical values. Removed during Phase 0; the duplicate-key parse rule added in Phase 3 raises a finding rather than silently last-wins parsing.",
-      "status": "resolved"
+      "description": "Chat PDF parser: docling with PyMuPDF fallback, or pymupdf/llamaparse",
+      "name": "CHAT_PDF_PARSER",
+      "required": false,
+      "surface": "backend",
+      "type": "Literal['pymupdf', 'llamaparse', 'docling']"
     },
     {
-      "id": "env-vars-md-drift",
-      "kind": "undeclared",
-      "detail": "ENV_VARS.md documents GOOGLE_OAUTH_CLIENT_ID, GOOGLE_OAUTH_CLIENT_SECRET, S3_ENDPOINT_URL, DB_POOL_SIZE, and REFRESH_TOKEN_EXPIRE_MINUTES, none of which exist, and lists the computed DATABASE_URL as a required input.",
-      "status": "open"
+      "classification": [
+        "unknown-consumer"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/.env.example"
+      ],
+      "default": "50000000",
+      "default_class": "literal",
+      "name": "CODE_EXECUTION_MAX_ALLOCATIONS",
+      "required": false,
+      "surface": "backend",
+      "type": null
     },
     {
-      "id": "env-example-unknown-consumers",
-      "kind": "unconsumed",
-      "detail": "OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS appear in backend/.env.example but have no reader in Settings, so extra=\"ignore\" drops them silently.",
-      "status": "open"
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "256",
+      "default_class": "literal",
+      "name": "CODE_EXECUTION_MAX_MEMORY_MB",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
     },
     {
-      "id": "backend-url-default-port-mismatch",
-      "kind": "alias-drift",
-      "detail": "The proxy layer defaults BACKEND_URL to port 8000 while the frontend constants module defaults to 8100. Both are fallbacks that only apply when the variable is unset, so a misconfigured deployment fails in two different ways depending on which module is asked.",
-      "status": "open"
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "10.0",
+      "default_class": "literal",
+      "name": "CODE_EXECUTION_TIMEOUT_SECS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:browserless"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CONCURRENT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "name": "CORS_ALLOW_CREDENTIALS",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CORS_ALLOW_HEADERS",
+      "required": false,
+      "surface": "backend",
+      "type": "list[str]"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CORS_ALLOW_METHODS",
+      "required": false,
+      "surface": "backend",
+      "type": "list[str]"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "[\"http://localhost:3000\",\"http://localhost:8080\"]",
+      "default_class": "literal",
+      "description": "JSON list of allowed origins (default: localhost:3000, localhost:8080) Note: \"*\" is blocked in production - specify explicit origins",
+      "name": "CORS_ORIGINS",
+      "required": false,
+      "surface": "backend",
+      "type": "list[str]"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "model-runner-host",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0",
+      "default_class": "literal",
+      "name": "CROSS_ENCODER_MODEL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "computed"
+      ],
+      "consumed_by": [],
+      "declared_in": [],
+      "default": null,
+      "default_class": "generated",
+      "name": "DATABASE_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "computed"
+      ],
+      "consumed_by": [],
+      "declared_in": [],
+      "default": null,
+      "default_class": "generated",
+      "name": "DATABASE_URL_SYNC",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "DB_ECHO",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "10",
+      "default_class": "literal",
+      "name": "DB_MAX_OVERFLOW",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "5",
+      "default_class": "literal",
+      "name": "DB_POOL_SIZE",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "30",
+      "default_class": "literal",
+      "name": "DB_POOL_TIMEOUT",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "DEBUG",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "0.8",
+      "default_class": "literal",
+      "name": "DEEP_RESEARCH_COMPRESS_THRESHOLD",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "120000",
+      "default_class": "literal",
+      "name": "DEEP_RESEARCH_MAX_TOKENS",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_CONVERSION_MODE",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_DEVICE",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_FALLBACK_TO_LOCAL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVE_ARTIFACTS_PATH",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVE_ENABLE_UI",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVE_ENG_LOC_NUM_WORKERS",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVE_ENG_LOC_SHARE_MODELS",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVE_LOAD_MODELS_AT_BOOT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "docling-serve"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "2",
+      "default_class": "literal",
+      "name": "DOCLING_SERVE_MAX_RETRIES",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "docling-serve"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "600.0",
+      "default_class": "literal",
+      "name": "DOCLING_SERVE_TIMEOUT_SECONDS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "docling-mcp",
+        "docling-serve",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "http://localhost:5001",
+      "default_class": "literal",
+      "name": "DOCLING_SERVE_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVICE_MAX_RETRIES",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVICE_TIMEOUT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "DOCLING_SERVICE_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "traefik"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "example.com",
+      "default_class": "literal",
+      "description": "Domain for production deployment",
+      "name": "DOMAIN",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "email"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "noreply@fullstack.com",
+      "default_class": "literal",
+      "name": "EMAIL_FROM",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "email"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "fullstack",
+      "default_class": "literal",
+      "name": "EMAIL_FROM_NAME",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "email"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "log",
+      "default_class": "literal",
+      "name": "EMAIL_PROVIDER",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "EMAIL_REPLY_TO",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "local-docker-model-runner",
+      "default_class": "literal",
+      "name": "EMBEDDING_API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "model-runner-host",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "http://localhost:12434/engines/v1",
+      "default_class": "literal",
+      "name": "EMBEDDING_BASE_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "64",
+      "default_class": "literal",
+      "name": "EMBEDDING_BATCH_SIZE",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "60",
+      "default_class": "literal",
+      "name": "EMBEDDING_CACHE_LOCK_SECONDS",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "604800",
+      "default_class": "literal",
+      "name": "EMBEDDING_CACHE_TTL_SECONDS",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "rag",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "redis://localhost:6379/3",
+      "default_class": "literal",
+      "name": "EMBEDDING_CACHE_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "model-runner-host",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "1024",
+      "default_class": "literal",
+      "name": "EMBEDDING_DIMENSION",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "EMBEDDING_DOCUMENT_INSTRUCTION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "model-runner-host",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "docker.io/ai/qwen3-embedding:latest",
+      "default_class": "literal",
+      "name": "EMBEDDING_MODEL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "731f733db2ef",
+      "default_class": "literal",
+      "name": "EMBEDDING_MODEL_REVISION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "4B-Q4_K_M",
+      "default_class": "literal",
+      "name": "EMBEDDING_MODEL_VERSION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "Given a user query, retrieve relevant passages, documentation, or code that answer the query.",
+      "default_class": "literal",
+      "name": "EMBEDDING_QUERY_INSTRUCTION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "unknown-consumer"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/.env.example"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "name": "ENABLE_CODE_EXECUTION",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "ENABLE_DEEP_RESEARCH",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "compose:app"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "local",
+      "default_class": "literal",
+      "name": "ENVIRONMENT",
+      "required": false,
+      "surface": "backend",
+      "type": "Literal['development', 'local', 'staging', 'production']"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "http://localhost:3000",
+      "default_class": "literal",
+      "name": "FRONTEND_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "agents",
+        "github-mcp"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Deployment-managed MCP servers, always attached on top of each user's own connections. JSON list; leave empty to rely purely on per-user connections. \"name\" is a slug (lowercase letters, digits, hyphens) and becomes the prefix of that server's tool names, so it must not clash with a name your users can pick in the marketplace — a clash means their connection is dropped in favour of this one. Startup fails on a malformed or duplicated name. Secrets stay outside MCP_SERVERS and are injected only into runtime specs.",
+      "name": "GITHUB_MCP_TOKEN",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:github-mcp"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GITHUB_READ_ONLY",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "agents"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "description": "Direct Google Workspace APIs (optional; use the \"Full Stack\" Web OAuth client). Per-user refresh tokens are obtained in Settings -> Integrations and encrypted.",
+      "name": "GOOGLE_API_CLIENT_ID",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "agents"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GOOGLE_API_CLIENT_SECRET",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "GOOGLE_CLIENT_ID",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GOOGLE_CLIENT_SECRET",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "alias_of": "GOOGLE_API_CLIENT_ID",
+      "classification": [
+        "deprecated-alias",
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "GOOGLE_DRIVE_CLIENT_ID",
+      "removal_milestone": "Remove once no deployment sets it",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "alias_of": "GOOGLE_API_CLIENT_SECRET",
+      "classification": [
+        "deprecated-alias",
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GOOGLE_DRIVE_CLIENT_SECRET",
+      "removal_milestone": "Remove alongside GOOGLE_DRIVE_CLIENT_ID",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "credentials/google-drive-sa.json",
+      "default_class": "literal",
+      "description": "Google Drive (service account)",
+      "name": "GOOGLE_DRIVE_CREDENTIALS_FILE",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "http://localhost:8100/api/v1/oauth/google/callback",
+      "default_class": "literal",
+      "name": "GOOGLE_REDIRECT_URI",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "alias_of": "GOOGLE_API_CLIENT_ID",
+      "classification": [
+        "deprecated-alias",
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_ID",
+      "removal_milestone": "Remove once no deployment sets it and the direct Google REST executor is the only path",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "alias_of": "GOOGLE_API_CLIENT_SECRET",
+      "classification": [
+        "deprecated-alias",
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET",
+      "removal_milestone": "Remove alongside GOOGLE_WORKSPACE_MCP_CLIENT_ID",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "HF_TOKEN",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "LLAMAPARSE_API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "agentic",
+      "default_class": "literal",
+      "name": "LLAMAPARSE_TIER",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "openrouter",
+      "default_class": "literal",
+      "name": "LLM_PROVIDER",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "development",
+      "default_class": "literal",
+      "name": "LOGFIRE_ENVIRONMENT",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "fullstack",
+      "default_class": "literal",
+      "name": "LOGFIRE_SERVICE_NAME",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Get your token at https://logfire.pydantic.dev",
+      "name": "LOGFIRE_TOKEN",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "LOG_PROVIDER_WRITE_TO_DISK",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "docker-compose.yml"
+      ],
+      "default": "50",
+      "default_class": "literal",
+      "name": "MAX_UPLOAD_SIZE_MB",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "agents"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "3.0",
+      "default_class": "literal",
+      "description": "Per-server budget for the pre-flight ping; unreachable servers are skipped.",
+      "name": "MCP_CONNECT_TIMEOUT_SECS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "agents",
+        "github-mcp"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "[]",
+      "default_class": "literal",
+      "description": "Development sidecars (requires the Compose `mcp` profile): MCP_SERVERS=[{\"name\":\"docling-internal\",\"url\":\"http://docling-mcp:8000/mcp\",\"headers\":{\"Host\":\"localhost:8000\"}},{\"name\":\"chrome-internal\",\"url\":\"http://chrome-devtools-mcp:8000/mcp\"},{\"name\":\"github-internal\",\"url\":\"http://github-mcp:8082/\",\"auth\":\"github\",\"allowed_tools\":[\"get_file_contents\",\"search_code\",\"search_issues\",\"issue_read\",\"pull_request_read\",\"list_commits\"]}]",
+      "name": "MCP_SERVERS",
+      "required": false,
+      "surface": "backend",
+      "type": "list[McpServerConfig]"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "./media",
+      "default_class": "literal",
+      "name": "MEDIA_DIR",
+      "required": false,
+      "surface": "backend",
+      "type": "Path"
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:minio"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "MINIO_ROOT_PASSWORD",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:minio"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "MINIO_ROOT_USER",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "./models_cache",
+      "default_class": "literal",
+      "name": "MODELS_CACHE_DIR",
+      "required": false,
+      "surface": "backend",
+      "type": "Path"
+    },
+    {
+      "classification": [
+        "build-arg"
+      ],
+      "consumed_by": [
+        "chat-frontend",
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/constants.ts"
+      ],
+      "declared_in": [
+        "frontend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "http://localhost:8100",
+      "default_class": "literal",
+      "description": "Public API URL for OAuth redirects (exposed to browser)",
+      "name": "NEXT_PUBLIC_API_URL",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "build-arg"
+      ],
+      "consumed_by": [
+        "frontend-app"
+      ],
+      "declared_in": [
+        "frontend/.env.example"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "description": "Authentication (set to true when JWT or OAuth is enabled)",
+      "name": "NEXT_PUBLIC_AUTH_ENABLED",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "build-arg"
+      ],
+      "consumed_by": [
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/utils.ts"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "build-arg"
+      ],
+      "consumed_by": [
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/components/auth/oauth-buttons.tsx"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "NEXT_PUBLIC_OAUTH_PROVIDERS",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "build-arg",
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:frontend",
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/rag-api.ts"
+      ],
+      "declared_in": [
+        "frontend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "description": "RAG (Retrieval Augmented Generation)",
+      "name": "NEXT_PUBLIC_RAG_ENABLED",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "build-arg",
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:frontend",
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/api/me/mcp-connections/oauth/callback/route.ts",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/seo.ts"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "NEXT_PUBLIC_SITE_URL",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "build-arg"
+      ],
+      "consumed_by": [
+        "chat-frontend",
+        "frontend-app",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/lib/constants.ts"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "NEXT_PUBLIC_WS_URL",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:frontend",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/api/auth/login/route.ts",
+        "frontend:C:/Users/pollm/Repositories/FullStack/fullstack/frontend/src/app/api/auth/logout/route.ts"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "NODE_ENV",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:docling-serve"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "NVIDIA_VISIBLE_DEVICES",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "secret",
+        "unknown-consumer"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Docker Model Runner embeddings (Qwen 4B; 8B remains benchmark-only opt-in)",
+      "name": "OPENAI_API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "agents"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "OPENROUTER_API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "frontend/.env.example"
+      ],
+      "default": "https://logfire-api.pydantic.dev",
+      "default_class": "literal",
+      "description": "Logfire/OpenTelemetry (server-side instrumentation) Get your write token from: https://logfire.pydantic.dev",
+      "name": "OTEL_EXPORTER_OTLP_ENDPOINT",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "frontend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "OTEL_EXPORTER_OTLP_HEADERS",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "docling",
+      "default_class": "literal",
+      "description": "RAG ingestion parser: docling, pymupdf, llamaparse",
+      "name": "PDF_PARSER",
+      "required": false,
+      "surface": "backend",
+      "type": "Literal['pymupdf', 'llamaparse', 'docling']"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:pgweb"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "PGWEB_DATABASE_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "compose:app",
+        "compose:db",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "postgres-pgvector"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "fullstack",
+      "default_class": "literal",
+      "name": "POSTGRES_DB",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "postgres-pgvector"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "localhost",
+      "default_class": "literal",
+      "name": "POSTGRES_HOST",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "compose:app",
+        "compose:db",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "postgres-pgvector"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "POSTGRES_PASSWORD",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "postgres-pgvector"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "5432",
+      "default_class": "literal",
+      "name": "POSTGRES_PORT",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "compose:app",
+        "compose:db",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "postgres-pgvector"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "postgres",
+      "default_class": "literal",
+      "name": "POSTGRES_USER",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "fullstack",
+      "default_class": "literal",
+      "name": "PROJECT_NAME",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:browserless"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "QUEUED",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "recursive",
+      "default_class": "literal",
+      "name": "RAG_CHUNKING_STRATEGY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "50",
+      "default_class": "literal",
+      "name": "RAG_CHUNK_OVERLAP",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "512",
+      "default_class": "literal",
+      "name": "RAG_CHUNK_SIZE",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "documents",
+      "default_class": "literal",
+      "name": "RAG_DEFAULT_COLLECTION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "name": "RAG_ENABLE_IMAGE_DESCRIPTION",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "name": "RAG_ENABLE_OCR",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "RAG_HYBRID_SEARCH",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "description": "Image Description (LLM vision)",
+      "name": "RAG_IMAGE_DESCRIPTION_MODEL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "10",
+      "default_class": "literal",
+      "name": "RAG_TOP_K",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "0",
+      "default_class": "literal",
+      "name": "REDIS_DB",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "localhost",
+      "default_class": "literal",
+      "name": "REDIS_HOST",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:redis",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Traefik dashboard auth (generate with: htpasswd -nb admin password) TRAEFIK_DASHBOARD_AUTH=admin:$$apr1$$... Redis password for production",
+      "name": "REDIS_PASSWORD",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "6379",
+      "default_class": "literal",
+      "name": "REDIS_PORT",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "computed"
+      ],
+      "consumed_by": [],
+      "declared_in": [],
+      "default": null,
+      "default_class": "generated",
+      "name": "REDIS_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "REFRESH_TOKEN_EXPIRE_MINUTES",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "model-runner-host",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "http://localhost:12434",
+      "default_class": "literal",
+      "name": "RERANKER_BASE_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "3",
+      "default_class": "literal",
+      "name": "RERANKER_MAX_RETRIES",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "docker_model_runner",
+      "default_class": "literal",
+      "description": "Vector Database (pgvector) — uses existing PostgreSQL connection Reranker",
+      "name": "RERANKER_PROVIDER",
+      "required": false,
+      "surface": "backend",
+      "type": "Literal['docker_model_runner', 'disabled']"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "120.0",
+      "default_class": "literal",
+      "name": "RERANKER_TIMEOUT_SECONDS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "minio"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "S3_ACCESS_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "minio"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "fullstack",
+      "default_class": "literal",
+      "name": "S3_BUCKET",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "minio"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "S3_ENDPOINT",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "minio",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "S3_RAG_ACCESS_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "minio",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "fullstack-rag",
+      "default_class": "literal",
+      "name": "S3_RAG_BUCKET",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "minio",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "S3/MinIO (document ingestion)",
+      "name": "S3_RAG_ENDPOINT",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "us-east-1",
+      "default_class": "literal",
+      "name": "S3_RAG_REGION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "minio",
+        "rag"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "S3_RAG_SECRET_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "us-east-1",
+      "default_class": "literal",
+      "name": "S3_REGION",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "minio"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "S3_SECRET_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "backend-api"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Generate with: openssl rand -hex 32",
+      "name": "SECRET_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "STORAGE_SOFT_LIMIT_BYTES",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "redis://localhost:6379/1",
+      "default_class": "literal",
+      "name": "TASKIQ_BROKER_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "1",
+      "default_class": "literal",
+      "name": "TASKIQ_MAX_ASYNC_TASKS",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker",
+        "redis"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": "redis://localhost:6379/2",
+      "default_class": "literal",
+      "name": "TASKIQ_RESULT_BACKEND",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime",
+        "secret"
+      ],
+      "consumed_by": [
+        "agents"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Get your API key at https://tavily.com",
+      "name": "TAVILY_API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:browserless"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "TIMEOUT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [
+        "backend-api"
+      ],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "EDT",
+      "default_class": "literal",
+      "name": "TIMEZONE",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:browserless"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "TOKEN",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "traefik"
+      ],
+      "declared_in": [],
+      "default": null,
+      "default_class": "none",
+      "name": "TRAEFIK_DASHBOARD_AUTH",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "traefik"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "TRAEFIK_DASHBOARD_PORT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "traefik"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "TRAEFIK_HTTPS_PORT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "traefik"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "TRAEFIK_HTTP_PORT",
+      "required": false,
+      "surface": "compose",
+      "type": null
     }
   ]
 }

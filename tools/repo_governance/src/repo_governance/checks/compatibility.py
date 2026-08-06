@@ -72,3 +72,94 @@ def check_build_arg_classification(scope: CheckScope) -> list[Issue]:
             )
         )
     return issues
+
+
+def check_migration_graph(scope: CheckScope) -> list[Issue]:
+    """The revision graph is acyclic and connected, with the recorded head set.
+
+    Contiguity is graph connectivity, never filename numbering — this repository's filenames
+    skip several numbers while the chain itself is unbroken.
+    """
+    from repo_governance.extractors.alembic import extract_revisions
+
+    graph = extract_revisions(scope.ctx)
+    issues: list[Issue] = []
+
+    for unknown in graph.unknowns:
+        issues.append(
+            Issue(
+                message="A migration could not be read.",
+                path="backend/alembic/versions/",
+                evidence=unknown,
+                repair="A parser failure is reported as unknown, never as an absent revision.",
+            )
+        )
+
+    for orphan in graph.orphans:
+        issues.append(
+            Issue(
+                message="The revision graph is disconnected.",
+                path="backend/alembic/versions/",
+                evidence=orphan,
+                repair="Restore the missing revision, or correct the down_revision reference.",
+            )
+        )
+
+    for cycle in graph.cycles:
+        issues.append(
+            Issue(
+                message="The revision graph contains a cycle.",
+                path="backend/alembic/versions/",
+                evidence=" -> ".join(cycle),
+                repair="Break the cycle; Alembic cannot resolve an ordering through it.",
+            )
+        )
+
+    manifest = scope.ctx.paths.generated_manifests / "data-stores.json"
+    if manifest.is_file():
+        try:
+            expected = read_json(manifest)["postgres"]["migrations"]["head_expected"]
+        except (ValueError, KeyError):
+            expected = None
+        if expected is not None and sorted(expected) != sorted(graph.heads):
+            issues.append(
+                Issue(
+                    message="The migration head set does not match the recorded expectation.",
+                    path="governance/manifests/generated/data-stores.json",
+                    evidence=f"expected {sorted(expected)}, observed {sorted(graph.heads)}",
+                    repair=(
+                        "If the new head is intended, update head_expected in the same change that "
+                        "adds the revision. Branches and merge revisions are legal; an unexpected "
+                        "head is what is not."
+                    ),
+                )
+            )
+
+    return issues
+
+
+def check_redis_allocations(scope: CheckScope) -> list[Issue]:
+    """Each Redis logical database has exactly one declared purpose."""
+    manifest = scope.ctx.paths.generated_manifests / "data-stores.json"
+    if not manifest.is_file():
+        return []
+    try:
+        databases = read_json(manifest)["redis"]["databases"]
+    except (ValueError, KeyError):
+        return []
+
+    seen: dict[int, str] = {}
+    issues: list[Issue] = []
+    for entry in databases:
+        number = entry["db"]
+        if number in seen:
+            issues.append(
+                Issue(
+                    message=f"Redis database {number} is allocated twice.",
+                    path="governance/manifests/generated/data-stores.json",
+                    evidence=f"{seen[number]!r} and {entry['purpose']!r}",
+                    repair="Two consumers sharing a logical database work fine until one of them flushes it.",
+                )
+            )
+        seen[number] = entry["purpose"]
+    return issues

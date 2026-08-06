@@ -44,6 +44,29 @@
         "$ref": "#/$defs/component"
       }
     },
+    "websocket_events": {
+      "type": "array",
+      "description": "The WebSocket event inventory. Curated because these events are ad-hoc dicts with no schema anywhere in the codebase — enumerating them is a governance deliverable, not an extraction. The producer/consumer set difference is the compatibility check.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["type", "direction"],
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "direction": {
+            "enum": ["server-to-client", "client-to-server"]
+          },
+          "producer_ref": {
+            "type": ["string", "null"]
+          },
+          "consumer_ref": {
+            "type": ["string", "null"]
+          }
+        }
+      }
+    },
     "configuration_classifications": {
       "type": "array",
       "description": "Curated judgments about the configuration surface that extraction cannot make: which variables are secrets, which are deprecated aliases, which are computed properties rather than settable inputs, and which appear in a template with no reader. The configuration extractor enumerates variables and merges these in; it never infers them. Secret status in particular cannot be derived from types here, because secret fields are inconsistently typed.",
@@ -210,6 +233,13 @@
             "type": "string",
             "pattern": "^[A-Z][A-Z0-9_]*$"
           }
+        },
+        "compose_services": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Compose service names this component is realized by. Curated rather than extracted: the services manifest is pure extraction, and which component a service belongs to is a judgment about intent, not a fact readable from a Compose file."
         },
         "decision_refs": {
           "type": "array",

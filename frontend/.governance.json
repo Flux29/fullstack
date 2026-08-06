@@ -31,6 +31,9 @@
     "redis",
     "minio"
   ],
+  "compose_services": [
+    "frontend"
+  ],
   "configuration_refs": [
     "BACKEND_URL",
     "BACKEND_WS_URL",

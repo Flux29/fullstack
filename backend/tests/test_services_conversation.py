@@ -589,6 +589,28 @@ class TestConversationServiceAddMessage:
             mock_repo.create_message.assert_called_once()
 
     @pytest.mark.anyio
+    async def test_add_message_forwards_tokens_used(self, service: ConversationService):
+        """Turn usage reaches the repository so in-app history can report it."""
+        conv_id = uuid4()
+        mock_data = MagicMock()
+        mock_data.role = "assistant"
+        mock_data.content = "Hi"
+        mock_data.model_name = "anthropic/claude-sonnet-5"
+        mock_data.tokens_used = 4213
+
+        with patch("app.services.conversation.conversation_repo") as mock_repo:
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=MockConversation(id=conv_id))
+            mock_repo.create_message = AsyncMock(
+                return_value=MockMessage(
+                    conversation_id=conv_id, role="assistant", content="Hi", tokens_used=4213
+                )
+            )
+
+            await service.add_message(conv_id, mock_data)
+
+            assert mock_repo.create_message.call_args.kwargs["tokens_used"] == 4213
+
+    @pytest.mark.anyio
     async def test_add_message_verifies_conversation_exists(self, service: ConversationService):
         """add_message raises NotFoundError when conversation not found."""
         mock_data = MagicMock()

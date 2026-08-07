@@ -15,7 +15,7 @@ from pydantic_ai.tools import DeferredToolRequests, ToolApproved, ToolDenied
 from app.agents.assistant import AssistantAgent, Deps, get_agent
 from app.agents.prompts import get_system_prompt_with_rag
 from app.agents.utils import get_current_datetime
-from app.services.agent import load_conversation_history
+from app.services.agent import load_conversation_history, persist_assistant_turn
 from app.services.agent_session import AgentSession
 
 
@@ -295,3 +295,57 @@ class TestPersistedConversationHistory:
         load_history.assert_awaited_once_with(user, conversation_id)
         persist.assert_awaited_once()
         assert session.conversation_history == loaded
+
+
+class TestPromptCaching:
+    def test_cache_breakpoints_are_set_on_the_stable_prefix(self):
+        """The tool catalog is the largest, most repeated part of every request.
+
+        Canonical ordering exists to make it cacheable; without these settings
+        no breakpoint is sent and the prefix is re-billed on every call.
+        """
+        with patch("app.agents.assistant._build_model", return_value=TestModel()):
+            settings = AssistantAgent().agent.model_settings
+
+        assert settings["openrouter_cache_tool_definitions"] == "5m"
+        assert settings["openrouter_cache_instructions"] == "5m"
+
+
+class TestTurnUsageIsPersisted:
+    """Token usage reaches the messages row, so history is comparable in-app."""
+
+    @pytest.mark.anyio
+    async def test_persist_assistant_turn_forwards_tokens_used(self):
+        service = AsyncMock()
+        service.add_message.return_value = SimpleNamespace(id=uuid4())
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            await persist_assistant_turn(
+                str(uuid4()), "answer", "anthropic/claude-sonnet-5", [], tokens_used=4213
+            )
+
+        assert service.add_message.await_args.args[1].tokens_used == 4213
+
+    @pytest.mark.anyio
+    async def test_run_usage_exposes_total_tokens(self):
+        """``usage`` is a property on AgentRunResult and aggregates the whole run.
+
+        The session reads ``agent_run.result.usage.total_tokens``; a pydantic-ai
+        release that made usage a method again would break persistence silently,
+        because the write is wrapped in the turn's broad exception handler.
+        """
+        with patch("app.agents.assistant._build_model", return_value=TestModel(call_tools=[])):
+            agent = AssistantAgent().agent
+            async with agent.iter("hello", deps=Deps()) as run:
+                async for _ in run:
+                    pass
+
+        assert run.result is not None
+        assert isinstance(run.result.usage.total_tokens, int)

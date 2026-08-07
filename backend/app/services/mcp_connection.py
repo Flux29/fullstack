@@ -37,6 +37,7 @@ from app.agents.mcp import (
     McpToolInfo,
     _tool_prefix,
     build_mcp_toolsets,
+    drop_superseded_internals,
     probe_error_message,
     probe_mcp_server,
     static_server_specs,
@@ -476,6 +477,40 @@ class McpConnectionService:
         return db_connection
 
 
+def _gate_key(spec: McpServerSpec) -> str:
+    """Routing key for an MCP server: its tool prefix without the workspace suffix.
+
+    ``github-internal`` and a user's own ``github`` connection are the same
+    integration to the model, so they share one key and load together.
+    """
+    return _tool_prefix(spec.name).removesuffix("_internal")
+
+
+def _gate_against(loadout: GoogleLoadout) -> Any:
+    """Build the ``build_mcp_toolsets`` hook that registers and gates each server.
+
+    Every MCP server starts gated off, with its tool *names* published through
+    the loader's index. Nothing is removed — the model loads what it needs — but
+    the schemas stop riding along on turns that never touch them, which is where
+    the bulk of the per-request tokens were going.
+    """
+
+    def wrap(spec: McpServerSpec, tools: list[McpToolInfo], toolset: Any) -> Any:
+        allowed = None if spec.allowed_tools is None else set(spec.allowed_tools)
+        loadout.register(
+            prefix=_tool_prefix(spec.name),
+            product=_gate_key(spec),
+            tools=tuple(
+                (tool.name, tool.description)
+                for tool in tools
+                if allowed is None or tool.name in allowed
+            ),
+        )
+        return gate_google_toolset(toolset, product=_gate_key(spec))
+
+    return wrap
+
+
 async def build_toolsets_for_user(
     user_id: UUID | None, loadout: GoogleLoadout | None = None
 ) -> list[Any]:
@@ -486,20 +521,23 @@ async def build_toolsets_for_user(
     the deployment-managed servers still apply, there are just no per-user
     connections to add.
 
-    When *loadout* is given, each Google integration is registered with it and
-    wrapped in a gate, so only the products this turn routed to are visible to
-    the model. Without one, every connection is attached as before — the gate is
-    opt-in so channel traffic and direct callers keep the old behaviour.
+    When *loadout* is given, every integration is registered with it and wrapped
+    in a gate. Google products are routed from the prompt; MCP servers start off
+    and are pulled in by name through the loader, because they have no routing
+    terms and guessing from keywords would be worse than letting the model ask.
+    Without a loadout every connection is attached in full — the gate is opt-in,
+    so channel traffic, direct callers, and the A/B "before" arm are unaffected.
 
     Google toolsets are returned in a fixed order (canonical product order, then
     connection name) rather than the order rows come back from the database.
     Provider prompt caching keys on a stable prefix, so a catalog that reorders
     between turns cannot be cached even when it is small.
     """
-    specs = static_server_specs()
+    static_specs = static_server_specs()
+    user_specs: list[McpServerSpec] = []
     # (canonical product index, connection name, toolset) — sorted before return.
     google_toolsets: list[tuple[int, str, Any]] = []
-    used_prefixes = {_tool_prefix(spec.name) for spec in specs}
+    used_prefixes = {_tool_prefix(spec.name) for spec in static_specs}
     if user_id is not None:
         async with get_db_context() as db:
             connections, _ = await mcp_connection_repo.list_for_user(
@@ -542,7 +580,7 @@ async def build_toolsets_for_user(
                         (GOOGLE_PRODUCT_ORDER.index(kind), connection.name, toolset)
                     )
                     continue
-                specs.append(
+                user_specs.append(
                     McpServerSpec(
                         name=connection.name,
                         url=connection.url,
@@ -550,5 +588,10 @@ async def build_toolsets_for_user(
                         allowed_tools=connection.allowed_tools,
                     )
                 )
+    specs = [*drop_superseded_internals(static_specs, user_specs), *user_specs]
+    wrap = None if loadout is None else _gate_against(loadout)
     google_toolsets.sort(key=lambda entry: entry[:2])
-    return [*(await build_mcp_toolsets(specs)), *(toolset for _, _, toolset in google_toolsets)]
+    return [
+        *(await build_mcp_toolsets(specs, wrap=wrap)),
+        *(toolset for _, _, toolset in google_toolsets),
+    ]

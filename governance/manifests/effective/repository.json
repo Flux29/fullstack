@@ -10,7 +10,7 @@
         "redis",
         "rag"
       ],
-      "annotation_path": "backend/app/agents/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/backend/app/agents/.governance.json",
       "configuration_refs": [
         "MCP_SERVERS",
         "MCP_CONNECT_TIMEOUT_SECS",
@@ -92,7 +92,7 @@
         "docling-serve",
         "model-runner-host"
       ],
-      "annotation_path": "backend/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/backend/.governance.json",
       "compose_services": [
         "app",
         "taskiq-worker",
@@ -200,7 +200,7 @@
     },
     {
       "allowed_dependencies": [],
-      "annotation_path": "docker/mcp/chrome-devtools/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/docker/mcp/chrome-devtools/.governance.json",
       "compose_services": [
         "chrome-devtools-mcp",
         "browserless"
@@ -241,7 +241,7 @@
       "allowed_dependencies": [
         "docling-serve"
       ],
-      "annotation_path": "docker/mcp/docling/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/docker/mcp/docling/.governance.json",
       "compose_services": [
         "docling-mcp"
       ],
@@ -307,7 +307,7 @@
     },
     {
       "allowed_dependencies": [],
-      "annotation_path": "backend/app/services/email/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/backend/app/services/email/.governance.json",
       "configuration_refs": [
         "EMAIL_FROM",
         "EMAIL_FROM_NAME",
@@ -342,7 +342,7 @@
       "allowed_dependencies": [
         "backend-api"
       ],
-      "annotation_path": "frontend/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/frontend/.governance.json",
       "compose_services": [
         "frontend"
       ],
@@ -594,7 +594,7 @@
         "postgres-pgvector",
         "redis"
       ],
-      "annotation_path": "backend/app/services/rag/.governance.json",
+      "annotation_path": ".claude/worktrees/confident-pare-1865b1/backend/app/services/rag/.governance.json",
       "configuration_refs": [
         "S3_RAG_ENDPOINT",
         "S3_RAG_BUCKET",
@@ -727,7 +727,113 @@
       ]
     }
   ],
-  "conflicts": [],
+  "conflicts": [
+    {
+      "component": "agents",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "agents",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "agents",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "backend-api",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "backend-api",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "backend-api",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "chrome-devtools-mcp",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "chrome-devtools-mcp",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "chrome-devtools-mcp",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "docling-mcp",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "docling-mcp",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "docling-mcp",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "email",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "email",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "email",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "frontend-app",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "frontend-app",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "frontend-app",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "rag",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "rag",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    },
+    {
+      "component": "rag",
+      "detail": "Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.",
+      "field": "declared_in"
+    }
+  ],
   "exceptions_applied": [
     "alembic-numbering-gaps-accepted",
     "billing-generator-feature-disabled",

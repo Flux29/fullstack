@@ -17,6 +17,30 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **infrastructure** — docling-serve, traefik
 - **mcp-sidecar** — chrome-devtools-mcp, docling-mcp
 
+### Unresolved merge conflicts
+
+- `agents` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `agents` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `agents` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `backend-api` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `backend-api` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `backend-api` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `chrome-devtools-mcp` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `chrome-devtools-mcp` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `chrome-devtools-mcp` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `docling-mcp` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `docling-mcp` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `docling-mcp` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `email` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `email` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `email` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `frontend-app` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `frontend-app` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `frontend-app` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `rag` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `rag` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+- `rag` / declared_in — Declared twice: once as annotation and once as annotation. A component must be declared in exactly one place.
+
 ## Open findings (7)
 
 - **mcp-approval-gating-asymmetry** (high) — Human-in-the-loop tool approval uses pydantic-ai deferred tools and currently covers Google mutation tools only; MCP-sourced tools bypass approval entirely. A per-user connection with `allowed_tools` unset (NULL) exposes every tool the server advertises, so a write-capable arbitrary server combines full tool exposure with no approval gate. This requires an explicit product-security decision (approval parity, default allowlists, or a documented restriction) before MCP policies are promoted past advisory; an accepted-risk ADR alone is not sufficient.
@@ -62,7 +86,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 12 of 12)
+## Recent changes (latest 13 of 13)
 
 - **2026-08-06** — Resolve finding status by precedence not by ID order
   - Components: none recorded
@@ -85,6 +109,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Establish the Phase 0 governance baseline: record the authority model and generator provenance in ADR-001, register the twelve known findings at adoption, scrub live credentials and duplicate keys from backend/.env.example, and close the .gitignore and line-ending hygiene gaps.
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-governance-adoption-baseline.json`
+- **2026-08-06** — Gate every MCP server behind a names-only discovery index, cache the stable prefix, and persist per-turn token usage
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-06-gate-mcp-servers-behind-a-names-only-index-and-cache-the-prefix.json`
 - **2026-08-06** — Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.
   - Components: governance-kernel, backend-api, frontend-app, postgres-pgvector, redis, github-mcp, traefik
   - Record: `governance/history/changes/2026-08-06-deterministic-extraction.json`

@@ -1,0 +1,82 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "WS /api/v1/ws/agent",
+    "GET /api/v1/conversations/{conversation_id}/messages"
+  ],
+  "behavioral_effects": [
+    "Every MCP server (github, chrome, docling, huggingface, context7 and any user connection) is now gated off by default and reachable through the loader, reusing the ProductGatedToolset machinery that previously covered only Google products. Google keeps its keyword router; MCP servers deliberately get none. They have no natural term vocabulary, and the discovery index below makes model-driven loading strictly better than keyword guessing.",
+    "The loader tool's description is rebuilt on every model request to carry a names-only index of every withheld tool, grouped by integration key. This is what keeps gating lossless rather than a capability cut: the model can still see that github_search_code exists for a few tokens, and pays the roughly 350-token schema only for the one integration it commits to. The index is free to produce because probe_mcp_server already lists every server's tools before each turn and the result was previously discarded.",
+    "load_google_toolkit was renamed load_toolkit and now resolves MCP server keys in addition to Google product terms. A model asked to use GitHub would never have called a tool named load_google_toolkit.",
+    "A deployment '<name>-internal' server is dropped when the user has their own connection under the same name. github-internal and a user github connection advertise the same tools under two prefixes, so every request carried six exact duplicate pairs and the model had to choose between identical entries. _dedupe_by_prefix could not see this: github and github_internal are different prefixes.",
+    "openrouter_cache_tool_definitions and openrouter_cache_instructions are set to '5m', closing follow-up 1 of the lazy Google exposure change. The canonical ordering shipped there was the precondition.",
+    "messages.tokens_used is now written for assistant turns from RunUsage.total_tokens, aggregated across every model call in the run. The column, repository kwarg, Pydantic schemas and TypeScript type already existed; only the write site was missing, so there is no migration."
+  ],
+  "compatibility_impact": "No API, schema, wire-format or database change. build_mcp_toolsets gained an optional wrap hook and build_toolsets_for_user keeps its optional loadout parameter, both backwards compatible: callers that omit them attach every connected integration exactly as before. The loader tool's name changed from load_google_toolkit to load_toolkit; it is model-facing only, resolved through LOADER_TOOL_NAME, and not part of any external contract. tokens_used moves from always-null to populated on assistant messages, and MessageRead already declared the field, so consumers see a previously-null field start carrying values.",
+  "date": "2026-08-06",
+  "files_changed": [
+    "backend/app/agents/assistant.py",
+    "backend/app/agents/google_loadout.py",
+    "backend/app/agents/mcp.py",
+    "backend/app/services/agent.py",
+    "backend/app/services/agent_session.py",
+    "backend/app/services/mcp_connection.py",
+    "backend/tests/test_agents.py",
+    "backend/tests/test_google_loadout.py",
+    "backend/tests/test_mcp_connections.py",
+    "backend/tests/test_services_conversation.py"
+  ],
+  "follow_up": [
+    "Run the A/B protocol and record the result. Arm A is loadout=None at agent_session.py:217, arm B is the shipped default; three fixed prompts (no-tool, github, gmail) in fresh conversations per arm, compared in Logfire on gen_ai.usage.input_tokens, gen_ai.tool.definitions length and operation.cost per trace. Nothing in this record's token claims is confirmed until that runs, because the measurements here are byte-level and static.",
+    "Consider openrouter_cache_messages once tool-definition cache hits are confirmed in Logfire. It was deliberately held back so the first measured delta is attributable to the tool and instruction breakpoints alone.",
+    "Watch execute_tool load_toolkit frequency in Logfire. A high rate means the index is not persuading the model to load the right integration first time, and the description wording, not the gating, is what needs work.",
+    "If github activations dominate and cost roughly 66KB each, give the catalog entry at frontend/src/lib/mcp-catalog.ts an allowedTools list. Deliberately not done now: it permanently removes tools, and nothing in the telemetry yet says which of the 44 GitHub tools are worth keeping.",
+    "frontend/src/components/dashboard/usage-timeline.tsx is orphaned and fetches /billing/me/credits/usage/timeline, which does not exist in this backend. It is the plausible consumer for the tokens_used data this change starts writing, so either repoint it at conversation messages or delete it, but it should not stay as-is."
+  ],
+  "id": "2026-08-06-gate-mcp-servers-behind-a-names-only-index-and-cache-the-prefix",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The token reduction is not yet proven from live traffic, and no Logfire validator appears in validators_run because none has been run. Everything measured here is static: tool counts, serialized byte sizes, and the schema harness, which reports mean turn 6488 bytes against a 32249-byte full catalog (79.9 percent below) and caching active true where it previously reported false. The Logfire diagnosis that motivated the change is real (2026-07-24 to 2026-08-06, project fullstack, spans 'chat %': roughly 91 percent of about 46k input tokens per call were tool definitions, 111 of 122 tools never invoked in 14 days, input to output ratio 319 to 1, cost per call up from 0.027 to 0.095 USD), but the after-state has not been measured. The A/B protocol in follow-up 1 is the acceptance evidence.",
+    "Cache hits are unverified. scripts/measure_google_tool_schemas.py now reports caching_active true, which proves the breakpoints are sent, not that the provider honoured them. The exact Logfire attribute names for cache reads and writes on OpenRouter spans still need confirming against a real trace.",
+    "tokens_used undercounts raw prompt size once caching is active, because Anthropic reports cache reads outside input_tokens. It is the in-app history signal; Logfire remains the billing-accurate source. It is also not written for stopped or cancelled turns, where persist_assistant_turn is skipped because agent_run.result is None.",
+    "Subagent (deep research) token usage is not included in tokens_used. Those are separate agent runs and their usage lives on the subagent handles, not on agent_run.result.usage.",
+    "MCP server keys share the sticky loadout's four slots with Google products, so a user with eight Google products connected who also uses GitHub can evict a Google product sooner than before. Unmeasured; the loader covers any eviction at the cost of one round-trip.",
+    "Production code is net plus 127 lines against a stated goal of net-negative. Sixty lines of genuinely dead code were removed (AssistantAgent.run, AssistantAgent.iter, run_agent, and a duplicate _build_model_history shadowed by services/agent.py build_message_history), and the design avoided a parallel keyword-router table for MCP servers which would have added roughly forty more. The remainder is the discovery index and registration plumbing, which is new capability rather than restatement."
+  ],
+  "manifests_changed": [],
+  "reason": "Logfire showed the agent paying about 42k of every 46k input tokens for MCP tool definitions, 93 percent of which belonged to tools never invoked in a fortnight, re-billed uncached on all four to seven model calls per run. The previous change solved exactly this for Google Workspace but every non-Google server bypassed the gate. Generalize that machinery rather than build a second one, and replace keyword routing with the pattern Claude Code uses for deferred tools: withhold schemas, publish names, let the model fetch what it needs.",
+  "risks": [
+    "A model that ignores the index answers from memory instead of loading the integration it needs, producing a confidently wrong answer where it previously had the tool to hand. The index wording is the only mitigation and it is untested against a live model. This is the main thing the A/B run must check qualitatively, not just on token counts.",
+    "Every github or chrome task now costs one extra load_toolkit round-trip. Acceptable because that round-trip is cheap once a call is about 5k tokens instead of 46k, but it is a real latency cost on first use.",
+    "Dropping github-internal in favour of the user's connection swaps a token with a guaranteed read-only allowlist for a user PAT with none. The user's own credential is what they chose to connect, and the workspace server still applies for anyone without one, but the read-only guarantee is no longer universal.",
+    "_prepare_toolkit_loader now rebuilds the loader description on every model request. If it ever produced non-deterministic output it would break the cacheable prefix it sits behind. It is derived from canonically ordered state, and TestSerializationOrder covers the determinism."
+  ],
+  "rollback": "git revert restores previous behaviour completely: no migration, no persisted state beyond tokens_used values that become inert. For a partial rollback, passing loadout=None at agent_session.py:217 disables all gating repository-wide (Google and MCP alike) while keeping schema compaction, caching and the tokens_used write. This is the same single-line lever the A/B protocol uses as its control arm.",
+  "schema_version": 1,
+  "security_impact": "No change to authentication, OAuth token handling, SSRF validation, tool approval policy, or scopes. Gating only decides which already-authorized tools are described to the model on a given request; it never widens what a tool may do, and the loader can only activate integrations the user has connected. The GitHub read-only assertion (assert_read_only, GITHUB_MCP_READ_ONLY_TOOLS) still runs at probe time for the workspace server whenever it is attached. One deliberate reduction in guarantee: when a user connects their own GitHub, the workspace server's enforced read-only allowlist no longer applies to that integration because their connection supersedes it, recorded as a risk above.",
+  "summary": "Gate every MCP server behind a names-only discovery index, cache the stable prefix, and persist per-turn token usage",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "471 passed, 13 skipped. The one error (tests/test_rag_docker_integration.py::test_docling_parser_uses_v1_api_and_preserves_page_metadata) is pre-existing and was reproduced on the unmodified baseline via git stash.",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff check: All checks passed. ruff format --check: 225 files already formatted.",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed. Routing/approval policy, per-turn loadout superset and exclusion, negative no-load, and byte-identical serialization determinism all still hold with server keys sharing the loadout.",
+      "id": "agent-evals",
+      "result": "pass"
+    }
+  ]
+}

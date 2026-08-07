@@ -15,6 +15,7 @@ from app.agents import google_workspace_api as google_api
 from app.agents.assistant import Deps, _handle_deferred_tools, _prepare_toolkit_loader
 from app.agents.google_loadout import (
     GOOGLE_PRODUCT_ORDER,
+    LOADER_TOOL_NAME,
     STICKY_TTL_TURNS,
     GoogleLoadout,
     describe_activation,
@@ -212,21 +213,46 @@ class TestLoaderVisibility:
     def _ctx(self, loadout: GoogleLoadout | None) -> Any:
         return SimpleNamespace(deps=Deps(google_loadout=loadout))
 
+    def _tool_def(self) -> Any:
+        from pydantic_ai.tools import ToolDefinition
+
+        return ToolDefinition(name=LOADER_TOOL_NAME, description="fallback")
+
     def test_hidden_without_a_loadout(self):
-        assert _prepare_toolkit_loader(self._ctx(None), "tool-def") is None
+        assert _prepare_toolkit_loader(self._ctx(None), self._tool_def()) is None
 
     def test_hidden_when_nothing_is_gated_off(self):
         loadout = GoogleLoadout()
         loadout.begin_turn("check my gmail")
         loadout.register(prefix="gmail", product="gmail")
-        assert _prepare_toolkit_loader(self._ctx(loadout), "tool-def") is None
+        assert _prepare_toolkit_loader(self._ctx(loadout), self._tool_def()) is None
 
     def test_visible_while_a_connected_product_is_gated_off(self):
         loadout = GoogleLoadout()
         loadout.begin_turn("check my gmail")
         loadout.register(prefix="gmail", product="gmail")
         loadout.register(prefix="slides", product="slides")
-        assert _prepare_toolkit_loader(self._ctx(loadout), "tool-def") == "tool-def"
+        assert _prepare_toolkit_loader(self._ctx(loadout), self._tool_def()) is not None
+
+    def test_description_indexes_the_gated_tools_by_name(self):
+        """The index is what keeps gating lossless — without it the model cannot
+        know a withheld tool exists, and gating becomes a capability cut."""
+        loadout = GoogleLoadout()
+        loadout.begin_turn("check my gmail")
+        loadout.register(prefix="gmail", product="gmail")
+        loadout.register(
+            prefix="github",
+            product="github",
+            tools=(("search_code", "Search code."), ("issue_read", "Read an issue.")),
+        )
+        tool_def = _prepare_toolkit_loader(self._ctx(loadout), self._tool_def())
+
+        assert "github_search_code" in tool_def.description
+        assert "github_issue_read" in tool_def.description
+        # Names only: a schema would defeat the point of withholding it.
+        assert "Search code." not in tool_def.description
+        # Gmail is active this turn, so it is not something to load.
+        assert "gmail_" not in tool_def.description
 
 
 class TestApprovalResume:
@@ -305,7 +331,9 @@ class TestApprovalResume:
         )
         await _handle_deferred_tools(ctx, self._requests("sheets_delete_spreadsheet"))
 
-        assert _prepare_toolkit_loader(ctx, "tool-def") == "tool-def"
+        from pydantic_ai.tools import ToolDefinition
+
+        assert _prepare_toolkit_loader(ctx, ToolDefinition(name=LOADER_TOOL_NAME)) is not None
         loadout.activate("gmail")
         assert "gmail" in loadout.active_products()
 
@@ -422,15 +450,50 @@ class TestWhatTheModelIsActuallyOffered:
         assert not any(name.startswith("sheets_") for name in offered)
 
     @pytest.mark.anyio
+    async def test_the_model_is_handed_names_for_every_withheld_tool(self):
+        """Closes the loop the rest of this class opens.
+
+        Gating is only lossless if the index reaches the provider request — a
+        withheld tool the model is never told about is a removed capability, not
+        a deferred one.
+        """
+        from unittest.mock import patch
+
+        from pydantic_ai.models.test import TestModel
+
+        from app.agents.assistant import AssistantAgent
+
+        loadout = GoogleLoadout()
+        loadout.begin_turn("Check my Gmail inbox")
+        toolsets = [_toolset(product, loadout) for product in ("gmail", "sheets")]
+        loadout.register(
+            prefix="github", product="github", tools=(("search_code", "Search code."),)
+        )
+        model = TestModel(call_tools=[])
+        with patch("app.agents.assistant._build_model", return_value=model):
+            agent = AssistantAgent(extra_toolsets=toolsets).agent
+            await agent.run("Check my Gmail inbox", deps=Deps(google_loadout=loadout))
+
+        loader = next(
+            t
+            for t in model.last_model_request_parameters.function_tools
+            if t.name == LOADER_TOOL_NAME
+        )
+        # Gmail routed in, so its schemas are present and it is not in the index.
+        assert "github_search_code" in loader.description
+        assert "sheets_append_values" in loader.description
+        assert "gmail_" not in loader.description
+
+    @pytest.mark.anyio
     async def test_loader_is_offered_while_a_product_is_gated_off(self):
-        assert "load_google_toolkit" in await self._offered("Check my Gmail inbox")
+        assert LOADER_TOOL_NAME in await self._offered("Check my Gmail inbox")
 
     @pytest.mark.anyio
     async def test_activation_reaches_the_next_request_and_retires_the_loader(self):
         offered = await self._offered("Check my Gmail inbox", activate="sheets")
         assert sum(name.startswith("sheets_") for name in offered) == 13
         # Nothing left to load, so the loader stops costing schema bytes.
-        assert "load_google_toolkit" not in offered
+        assert LOADER_TOOL_NAME not in offered
 
 
 class TestSerializationOrder:

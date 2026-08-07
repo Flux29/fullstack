@@ -19,7 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from typing import Any
@@ -223,8 +223,44 @@ def _dedupe_by_prefix(specs: list[McpServerSpec]) -> list[McpServerSpec]:
     return unique
 
 
-async def build_mcp_toolsets(specs: list[McpServerSpec]) -> list[Any]:
-    """Toolsets for every reachable server in *specs* (probed concurrently)."""
+def drop_superseded_internals(
+    static_specs: list[McpServerSpec], user_specs: list[McpServerSpec]
+) -> list[McpServerSpec]:
+    """Drop each deployment "<name>-internal" server the user connected themselves.
+
+    The workspace GitHub server and a user's own GitHub connection advertise the
+    same tools under two prefixes, so every request carries both schemas and the
+    model has to pick between identical entries. ``_dedupe_by_prefix`` can't see
+    this: ``github`` and ``github_internal`` are different prefixes.
+
+    The user's connection wins because it is the credential they chose; the
+    workspace server stays for anyone who hasn't connected their own.
+    """
+    superseded = {f"{_tool_prefix(spec.name)}_internal" for spec in user_specs}
+    kept: list[McpServerSpec] = []
+    for spec in static_specs:
+        if _tool_prefix(spec.name) in superseded:
+            logger.info(
+                "Skipping workspace MCP server %r: superseded by the user's own connection",
+                spec.name,
+            )
+            continue
+        kept.append(spec)
+    return kept
+
+
+async def build_mcp_toolsets(
+    specs: list[McpServerSpec],
+    wrap: Callable[[McpServerSpec, list[McpToolInfo], Any], Any] | None = None,
+) -> list[Any]:
+    """Toolsets for every reachable server in *specs* (probed concurrently).
+
+    *wrap* sees each built toolset alongside the tools the probe just found and
+    returns what to attach in its place. It exists so the loadout can gate a
+    server behind the loader without this module having to know about routing —
+    and because the probe's tool list is otherwise thrown away, which is exactly
+    the catalog the loader needs to advertise.
+    """
     specs = _dedupe_by_prefix(specs)
     if not specs:
         return []
@@ -245,7 +281,8 @@ async def build_mcp_toolsets(specs: list[McpServerSpec]) -> list[Any]:
                 "Skipping MCP server %r for this turn: %s", spec.name, probe_error_message(exc)
             )
             return None
-        return _make_toolset(spec)
+        toolset = _make_toolset(spec)
+        return toolset if wrap is None else wrap(spec, tools, toolset)
 
     results = await asyncio.gather(*(_try(spec) for spec in specs))
     return [toolset for toolset in results if toolset is not None]

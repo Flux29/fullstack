@@ -22,6 +22,7 @@ from app.agents.mcp import (
     _mcp_transport,
     _tool_prefix,
     build_mcp_toolsets,
+    drop_superseded_internals,
     probe_mcp_server,
     static_server_specs,
 )
@@ -207,6 +208,33 @@ class TestBuildMcpToolsets:
         assert probed == ["https://workspace.example/mcp"]
 
 
+class TestDropSupersededInternals:
+    """A workspace "<name>-internal" server duplicates the user's own connection.
+
+    Both advertise the same tools under different prefixes, so every request
+    carried each schema twice — invisible to ``_dedupe_by_prefix``, which only
+    sees that ``github`` and ``github_internal`` differ.
+    """
+
+    def test_user_connection_supersedes_workspace_server(self):
+        static = [
+            McpServerSpec(name="github-internal", url="https://workspace.example/mcp"),
+            McpServerSpec(name="docling-internal", url="https://docling.example/mcp"),
+        ]
+        user = [McpServerSpec(name="github", url="https://user.example/mcp")]
+        kept = drop_superseded_internals(static, user)
+        assert [spec.name for spec in kept] == ["docling-internal"]
+
+    def test_workspace_server_kept_without_user_connection(self):
+        static = [McpServerSpec(name="github-internal", url="https://workspace.example/mcp")]
+        assert drop_superseded_internals(static, []) == static
+
+    def test_unrelated_names_are_untouched(self):
+        static = [McpServerSpec(name="github-internal", url="https://workspace.example/mcp")]
+        user = [McpServerSpec(name="notion", url="https://user.example/mcp")]
+        assert drop_superseded_internals(static, user) == static
+
+
 class TestProbeErrors:
     """A dead server must never abort the turn — including when the failure
     arrives as an exception group out of the anyio task group."""
@@ -328,7 +356,7 @@ class TestToolsetsForUser:
         monkeypatch.setattr(mcp_connection_service, "get_db_context", _no_db)
         seen: list[list[McpServerSpec]] = []
 
-        async def fake_build(specs: list[McpServerSpec]) -> list[str]:
+        async def fake_build(specs: list[McpServerSpec], wrap: object = None) -> list[str]:
             seen.append(specs)
             return ["toolset"]
 
@@ -336,6 +364,39 @@ class TestToolsetsForUser:
 
         assert await mcp_connection_service.build_toolsets_for_user(None) == ["toolset"]
         assert [spec.name for spec in seen[0]] == ["workspace"]
+
+    @pytest.mark.anyio
+    async def test_mcp_servers_are_gated_only_when_a_loadout_is_given(self, monkeypatch):
+        """The one-line A/B lever: no loadout means the pre-gating catalog.
+
+        The gate fails open elsewhere too, so a regression here would quietly
+        re-attach every schema with the rest of the suite still green.
+        """
+        from app.agents.google_loadout import GoogleLoadout, ProductGatedToolset
+
+        monkeypatch.setattr(
+            mcp_connection_service,
+            "static_server_specs",
+            lambda: [McpServerSpec(name="github-internal", url="https://example.com/mcp")],
+        )
+
+        async def ok_probe(url, headers=None, timeout=None):
+            return [McpToolInfo(name="search_code", description="Search code.")]
+
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", ok_probe)
+
+        ungated = await mcp_connection_service.build_toolsets_for_user(None)
+        assert not isinstance(ungated[0], ProductGatedToolset)
+
+        loadout = GoogleLoadout()
+        loadout.begin_turn("hello")
+        gated = await mcp_connection_service.build_toolsets_for_user(None, loadout=loadout)
+
+        assert isinstance(gated[0], ProductGatedToolset)
+        # The "-internal" suffix is a deployment detail, not an integration name.
+        assert gated[0].product == "github"
+        assert loadout.inactive_products() == ("github",)
+        assert loadout.loadable_index() == (("github", ("github_internal_search_code",)),)
 
     @pytest.mark.anyio
     async def test_google_toolsets_serialize_in_canonical_product_order(self, monkeypatch):

@@ -279,6 +279,7 @@ class AgentSession:
                     getattr(assistant, "model_name", None),
                     collected_tool_calls,
                     thinking="".join(collected_thinking) or None,
+                    tokens_used=agent_run.result.usage.total_tokens,
                 )
 
             if assistant_msg_id:

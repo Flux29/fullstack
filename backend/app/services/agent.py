@@ -206,15 +206,27 @@ async def persist_assistant_turn(
     model_name: str | None,
     collected_tool_calls: list[dict[str, Any]],
     thinking: str | None = None,
+    tokens_used: int | None = None,
 ) -> str | None:
-    """Persist the assistant message and any tool calls. Returns the saved message id."""
+    """Persist the assistant message and any tool calls. Returns the saved message id.
+
+    ``tokens_used`` is the whole turn's usage (every model call in the run), not
+    just the final one, so it reads as the cost of the exchange the row records.
+    Provider prompt caching reports cache hits outside ``input_tokens``, so this
+    undercounts raw prompt size once caching is on — it is the in-app history
+    signal, not the billing record.
+    """
     try:
         async with get_db_context() as db:
             conv_service = get_conversation_service(db)
             assistant_msg = await conv_service.add_message(
                 UUID(conversation_id),
                 MessageCreate(
-                    role="assistant", content=output, thinking=thinking, model_name=model_name
+                    role="assistant",
+                    content=output,
+                    thinking=thinking,
+                    model_name=model_name,
+                    tokens_used=tokens_used,
                 ),
             )
             for tc in collected_tool_calls:

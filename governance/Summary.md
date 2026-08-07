@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 12 of 12)
+## Recent changes (latest 13 of 13)
 
 - **2026-08-06** — Resolve finding status by precedence not by ID order
   - Components: none recorded
@@ -85,6 +85,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Establish the Phase 0 governance baseline: record the authority model and generator provenance in ADR-001, register the twelve known findings at adoption, scrub live credentials and duplicate keys from backend/.env.example, and close the .gitignore and line-ending hygiene gaps.
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-governance-adoption-baseline.json`
+- **2026-08-06** — Gate every MCP server behind a names-only discovery index, cache the stable prefix, and persist per-turn token usage
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-06-gate-mcp-servers-behind-a-names-only-index-and-cache-the-prefix.json`
 - **2026-08-06** — Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.
   - Components: governance-kernel, backend-api, frontend-app, postgres-pgvector, redis, github-mcp, traefik
   - Record: `governance/history/changes/2026-08-06-deterministic-extraction.json`

@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import re
 from collections import OrderedDict
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from typing import Any, Protocol
 
@@ -74,17 +75,37 @@ STICKY_TTL_TURNS = 3
 #: used evicted first).
 STICKY_MAX_PRODUCTS = 4
 
-LOADER_TOOL_NAME = "load_google_toolkit"
+LOADER_TOOL_NAME = "load_toolkit"
+
+#: Longest tool description carried in the loader's activation reply. The reply
+#: exists to name what became callable, not to re-document it — MCP servers ship
+#: descriptions that run to paragraphs.
+MAX_REGISTERED_DESCRIPTION = 100
 
 
 def product_tools(product: str) -> tuple[tuple[str, str], ...]:
-    """The ``(tool name, description)`` pairs a product exposes, in canonical order."""
+    """The ``(tool name, description)`` pairs a product exposes, in canonical order.
+
+    Empty for a key that is an MCP server rather than a Google product; those
+    learn their tools at registration time, from the pre-turn probe.
+    """
     if product == "gmail":
         return GMAIL_TOOLS
     if product == "calendar":
         return CALENDAR_TOOLS
     entry = DIRECT_GOOGLE_PRODUCTS.get(product)
     return entry.tools if entry is not None else ()
+
+
+def canonical_order(products: Iterable[str]) -> tuple[str, ...]:
+    """Google products in :data:`GOOGLE_PRODUCT_ORDER`, then other keys sorted.
+
+    Every ordering in this module runs through here so a given state always
+    serializes to the same bytes, which is what makes the catalog cacheable.
+    """
+    unique = set(products)
+    known = tuple(p for p in GOOGLE_PRODUCT_ORDER if p in unique)
+    return known + tuple(sorted(unique.difference(GOOGLE_PRODUCT_ORDER)))
 
 
 # --------------------------------------------------------------------------- #
@@ -355,6 +376,9 @@ class GoogleLoadout:
     turn: int = 0
     #: Tool-name prefix -> product, for the integrations attached to this turn.
     connections: dict[str, str] = field(default_factory=dict)
+    #: Tool-name prefix -> its unprefixed ``(tool, description)`` pairs, for keys
+    #: whose tools aren't known statically (MCP servers, learned from the probe).
+    registered_tools: dict[str, tuple[tuple[str, str], ...]] = field(default_factory=dict)
     selected: frozenset[str] = frozenset()
     activated: set[str] = field(default_factory=set)
     resume_only: frozenset[str] | None = None
@@ -370,6 +394,7 @@ class GoogleLoadout:
         """
         self.turn += 1
         self.connections = {}
+        self.registered_tools = {}
         self.activated = set()
         self.resume_only = None
         self._evict_stale()
@@ -382,9 +407,20 @@ class GoogleLoadout:
         else:
             self.selected = routing.products | inherited
 
-    def register(self, *, prefix: str, product: str) -> None:
-        """Record a Google integration attached to this turn."""
+    def register(
+        self, *, prefix: str, product: str, tools: tuple[tuple[str, str], ...] = ()
+    ) -> None:
+        """Record an integration attached to this turn.
+
+        *tools* carries the unprefixed ``(name, description)`` pairs for keys
+        :func:`product_tools` doesn't know statically — an MCP server's catalog
+        is only knowable from the probe that just ran.
+        """
         self.connections[prefix] = product
+        if tools:
+            self.registered_tools[prefix] = tuple(
+                (name, description[:MAX_REGISTERED_DESCRIPTION]) for name, description in tools
+            )
 
     def end_turn(self, used_tool_names: list[str]) -> None:
         """Fold the products actually called into sticky memory, then evict.
@@ -393,11 +429,9 @@ class GoogleLoadout:
         selected and ignored must age out, or one over-wide routing decision
         would pin itself in the loadout forever.
         """
-        used = self.products_for_tools(used_tool_names)
-        for product in GOOGLE_PRODUCT_ORDER:
-            if product in used:
-                self.sticky.pop(product, None)
-                self.sticky[product] = self.turn
+        for product in canonical_order(self.products_for_tools(used_tool_names)):
+            self.sticky.pop(product, None)
+            self.sticky[product] = self.turn
         self._evict_stale()
 
     def _evict_stale(self) -> None:
@@ -411,9 +445,12 @@ class GoogleLoadout:
     # -- queries ------------------------------------------------------------- #
 
     def available_products(self) -> tuple[str, ...]:
-        """Products the user actually has connected, in canonical order."""
-        connected = set(self.connections.values())
-        return tuple(p for p in GOOGLE_PRODUCT_ORDER if p in connected)
+        """Integrations attached to this turn, in canonical order.
+
+        Google products and MCP servers alike: both are gated the same way, they
+        differ only in how the loadout learned their tool lists.
+        """
+        return canonical_order(self.connections.values())
 
     def active_products(self) -> tuple[str, ...]:
         """Products whose tools are exposed to the model right now."""
@@ -450,6 +487,36 @@ class GoogleLoadout:
             if product is not None
         )
 
+    def tools_for(self, product: str) -> tuple[tuple[str, str], ...]:
+        """Prefixed ``(tool, description)`` pairs *product* exposes, canonically ordered.
+
+        Google products know their tools statically; an MCP server's come from
+        the probe recorded by :meth:`register`.
+        """
+        static = product_tools(product)
+        return tuple(
+            (f"{prefix}_{tool}", description)
+            for prefix in sorted(p for p, kind in self.connections.items() if kind == product)
+            for tool, description in (static or self.registered_tools.get(prefix, ()))
+        )
+
+    def loadable_index(self) -> tuple[tuple[str, tuple[str, ...]], ...]:
+        """``(key, tool names)`` for every connected integration currently gated off.
+
+        Names only. This is what makes withholding schemas safe: the model can
+        still see that ``github_search_code`` exists for a few tokens, and pays
+        for the schema behind it only once it decides to load that integration.
+        """
+        return tuple(
+            (product, tuple(name for name, _ in self.tools_for(product)))
+            for product in self.inactive_products()
+        )
+
+    def resolve_connection(self, text: str) -> str | None:
+        """Match *text* against a connected integration key ("github", "chrome")."""
+        candidate = re.sub(r"[^a-z0-9_]", "_", text.strip().lower()).strip("_")
+        return candidate if candidate in self.available_products() else None
+
     # -- mutations ----------------------------------------------------------- #
 
     def activate(self, product: str) -> tuple[tuple[str, str], ...]:
@@ -462,12 +529,7 @@ class GoogleLoadout:
         self.activated.add(product)
         if self.resume_only is not None:
             self.resume_only = self.resume_only | {product}
-        prefixes = sorted(p for p, kind in self.connections.items() if kind == product)
-        return tuple(
-            (f"{prefix}_{tool}", description)
-            for prefix in prefixes
-            for tool, description in product_tools(product)
-        )
+        return self.tools_for(product)
 
     def restrict_for_resume(self, *, pending_tool_names: list[str], messages: list[Any]) -> None:
         """Narrow the catalog for the model request that follows an approval.
@@ -558,8 +620,40 @@ class ProductGatedToolset(WrapperToolset[Any]):
 
 
 def gate_google_toolset(toolset: Any, *, product: str) -> Any:
-    """Wrap *toolset* so it disappears while its product is gated off."""
+    """Wrap *toolset* so it disappears while its product is gated off.
+
+    Works for any key — Google products and MCP servers are gated identically.
+    """
     return ProductGatedToolset(wrapped=toolset, product=product)
+
+
+def describe_loadable(loadout: GoogleLoadout) -> str:
+    """The loader's own description: a names-only index of what it can pull in.
+
+    Schemas are the expense — roughly 350 tokens per tool once parameters are
+    serialized — while a bare name costs three or four. Listing every withheld
+    tool by name therefore buys back the discoverability that gating removes, at
+    about one percent of the price, and the model spends schema tokens only on
+    the one integration it commits to.
+    """
+    lines = [
+        f"- {key} ({GOOGLE_PRODUCT_LABELS.get(key, key)}, {len(names)} tools): {', '.join(names)}"
+        for key, names in loadout.loadable_index()
+        if names
+    ]
+    if not lines:
+        return ""
+    return "\n".join(
+        [
+            "Load one integration's tools into this conversation, by key.",
+            "",
+            "The tools below exist but their schemas are not attached yet. Pass "
+            "a key to make that integration callable from your next step. Do not "
+            "call this for tools you can already see.",
+            "",
+            *lines,
+        ]
+    )
 
 
 def describe_activation(product: str, tools: tuple[tuple[str, str], ...]) -> str:

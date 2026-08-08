@@ -1,0 +1,38 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance/Summary.md recent-changes count matches the 11 records actually on disk"
+  ],
+  "compatibility_impact": "None - no contract, schema, or interface touched",
+  "date": "2026-08-08",
+  "files_changed": [
+    "governance/Summary.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-08-regenerate-the-stale-baseline-summary-md",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Does not explain why CI's sync-no-op gate missed this at baebb59; noted for the Phase 4 CI hardening"
+  ],
+  "manifests_changed": [],
+  "reason": "fullstack2 branches at baebb59 as the hook-enforcement baseline; that commit shipped a Summary rendered before its own change record landed, so the branch starts with one line of generated drift that must be zero before any gating work builds on it",
+  "risks": [],
+  "rollback": "git revert of the commit restores the stale line; nothing outside version control is affected",
+  "schema_version": 1,
+  "security_impact": "None - regenerated one count line in a generated summary document",
+  "summary": "Regenerate the stale baseline Summary.md",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "full check clean after regeneration, run post-finish per entry rule 8",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

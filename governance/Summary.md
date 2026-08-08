@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 12 of 12)
+## Recent changes (latest 13 of 13)
 
 - **2026-08-08** — Regenerate the stale baseline Summary.md
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-regenerate-the-stale-baseline-summary-md.json`
+- **2026-08-08** — Bump h2 to 4.4.1 for CVE-2026-71554
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-08-bump-h2-to-4-4-1-for-cve-2026-71554.json`
 - **2026-08-06** — Resolve finding status by precedence not by ID order
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-06-resolve-finding-status-by-precedence-not-by-id-order.json`

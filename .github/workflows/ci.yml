@@ -3,7 +3,9 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    # fullstack2 is the active line; its PR into main cannot run pull_request
+    # checks while conflicted, so the branch carries its own CI on push.
+    branches: [main, master, fullstack2]
   pull_request:
     branches: [main, master]
 

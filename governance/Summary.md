@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 25)
+## Recent changes (latest 20 of 26)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
+- **2026-08-09** — CI runs on pushes to fullstack2
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-09-ci-runs-on-pushes-to-fullstack2.json`
 - **2026-08-09** — API-route tests for the sync-source endpoints, plus the collection filter fix
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-api-route-tests-for-the-sync-source-endpoints-plus-the-collectio.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Add the minimal governance kernel: the twelve JSON Schemas, the governance contract, the self-governance policy, the validator registry, the ownership rules, a deterministic CLI with preflight/scan/sync/check/doctor, and a converged AGENTS.md entry point.
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-governance-kernel.json`
-- **2026-08-06** — Establish the Phase 0 governance baseline: record the authority model and generator provenance in ADR-001, register the twelve known findings at adoption, scrub live credentials and duplicate keys from backend/.env.example, and close the .gitignore and line-ending hygiene gaps.
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-06-governance-adoption-baseline.json`
 
 ## Decisions (5)
 

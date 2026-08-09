@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 30)
+## Recent changes (latest 20 of 31)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
+- **2026-08-09** — Seed 7 evaluation scenarios with pre-graph impact baselines
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-seed-7-evaluation-scenarios-with-pre-graph-impact-baselines.json`
 - **2026-08-09** — ruff format pass over the session's backend files
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-ruff-format-pass-over-the-session-s-backend-files.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — AGENTS.md: checker agents verify against sources, not the governance briefing
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-08-agents-md-checker-agents-verify-against-sources-not-the-governan.json`
-- **2026-08-06** — Resolve finding status by precedence not by ID order
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-06-resolve-finding-status-by-precedence-not-by-id-order.json`
 
 ## Decisions (5)
 

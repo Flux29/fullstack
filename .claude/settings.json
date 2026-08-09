@@ -33,7 +33,7 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "uv run --project tools/repo_governance governance hook session-context",
+            "command": "uv run --project \"$CLAUDE_PROJECT_DIR/tools/repo_governance\" governance hook session-context",
             "timeout": 60,
             "statusMessage": "Governance orientation"
           }
@@ -59,7 +59,7 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "python .claude/hooks/governance_gate.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/governance_gate.py\"",
             "timeout": 5,
             "statusMessage": "Governance read gate"
           }
@@ -73,7 +73,7 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "python .claude/hooks/governance_touched.py",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/governance_touched.py\"",
             "timeout": 5,
             "statusMessage": "Governance touched log"
           }
@@ -86,7 +86,7 @@
           {
             "type": "command",
             "shell": "bash",
-            "command": "uv run --project tools/repo_governance governance hook stop-check",
+            "command": "uv run --project \"$CLAUDE_PROJECT_DIR/tools/repo_governance\" governance hook stop-check",
             "timeout": 120,
             "statusMessage": "Governance stop check"
           }

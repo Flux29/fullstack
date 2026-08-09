@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 23)
+## Recent changes (latest 20 of 24)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
+- **2026-08-09** — Hook commands anchored to CLAUDE_PROJECT_DIR
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-09-hook-commands-anchored-to-claude-project-dir.json`
 - **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.
   - Components: governance-kernel, backend-api, frontend-app, postgres-pgvector, redis, github-mcp, traefik
   - Record: `governance/history/changes/2026-08-06-deterministic-extraction.json`
-- **2026-08-06** — Close the ENV_VARS drift finding
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-06-close-the-env-vars-drift-finding.json`
 
 ## Decisions (5)
 

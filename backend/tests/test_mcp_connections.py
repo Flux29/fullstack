@@ -22,7 +22,6 @@ from app.agents.mcp import (
     _mcp_transport,
     _tool_prefix,
     build_mcp_toolsets,
-    drop_superseded_internals,
     probe_mcp_server,
     static_server_specs,
 )
@@ -208,33 +207,6 @@ class TestBuildMcpToolsets:
         assert probed == ["https://workspace.example/mcp"]
 
 
-class TestDropSupersededInternals:
-    """A workspace "<name>-internal" server duplicates the user's own connection.
-
-    Both advertise the same tools under different prefixes, so every request
-    carried each schema twice — invisible to ``_dedupe_by_prefix``, which only
-    sees that ``github`` and ``github_internal`` differ.
-    """
-
-    def test_user_connection_supersedes_workspace_server(self):
-        static = [
-            McpServerSpec(name="github-internal", url="https://workspace.example/mcp"),
-            McpServerSpec(name="docling-internal", url="https://docling.example/mcp"),
-        ]
-        user = [McpServerSpec(name="github", url="https://user.example/mcp")]
-        kept = drop_superseded_internals(static, user)
-        assert [spec.name for spec in kept] == ["docling-internal"]
-
-    def test_workspace_server_kept_without_user_connection(self):
-        static = [McpServerSpec(name="github-internal", url="https://workspace.example/mcp")]
-        assert drop_superseded_internals(static, []) == static
-
-    def test_unrelated_names_are_untouched(self):
-        static = [McpServerSpec(name="github-internal", url="https://workspace.example/mcp")]
-        user = [McpServerSpec(name="notion", url="https://user.example/mcp")]
-        assert drop_superseded_internals(static, user) == static
-
-
 class TestProbeErrors:
     """A dead server must never abort the turn — including when the failure
     arrives as an exception group out of the anyio task group."""
@@ -356,7 +328,7 @@ class TestToolsetsForUser:
         monkeypatch.setattr(mcp_connection_service, "get_db_context", _no_db)
         seen: list[list[McpServerSpec]] = []
 
-        async def fake_build(specs: list[McpServerSpec], wrap: object = None) -> list[str]:
+        async def fake_build(specs: list[McpServerSpec]) -> list[str]:
             seen.append(specs)
             return ["toolset"]
 
@@ -364,39 +336,6 @@ class TestToolsetsForUser:
 
         assert await mcp_connection_service.build_toolsets_for_user(None) == ["toolset"]
         assert [spec.name for spec in seen[0]] == ["workspace"]
-
-    @pytest.mark.anyio
-    async def test_mcp_servers_are_gated_only_when_a_loadout_is_given(self, monkeypatch):
-        """The one-line A/B lever: no loadout means the pre-gating catalog.
-
-        The gate fails open elsewhere too, so a regression here would quietly
-        re-attach every schema with the rest of the suite still green.
-        """
-        from app.agents.google_loadout import GoogleLoadout, ProductGatedToolset
-
-        monkeypatch.setattr(
-            mcp_connection_service,
-            "static_server_specs",
-            lambda: [McpServerSpec(name="github-internal", url="https://example.com/mcp")],
-        )
-
-        async def ok_probe(url, headers=None, timeout=None):
-            return [McpToolInfo(name="search_code", description="Search code.")]
-
-        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", ok_probe)
-
-        ungated = await mcp_connection_service.build_toolsets_for_user(None)
-        assert not isinstance(ungated[0], ProductGatedToolset)
-
-        loadout = GoogleLoadout()
-        loadout.begin_turn("hello")
-        gated = await mcp_connection_service.build_toolsets_for_user(None, loadout=loadout)
-
-        assert isinstance(gated[0], ProductGatedToolset)
-        # The "-internal" suffix is a deployment detail, not an integration name.
-        assert gated[0].product == "github"
-        assert loadout.inactive_products() == ("github",)
-        assert loadout.loadable_index() == (("github", ("github_internal_search_code",)),)
 
     @pytest.mark.anyio
     async def test_google_toolsets_serialize_in_canonical_product_order(self, monkeypatch):
@@ -509,78 +448,17 @@ def _base_payload(**overrides) -> McpOAuthPayload:
     return McpOAuthPayload(**data)
 
 
-RETIRED_MCP_HOSTS = [
-    "gmailmcp.googleapis.com",
-    "drivemcp.googleapis.com",
-    "docsmcp.googleapis.com",
-    "sheetsmcp.googleapis.com",
-    "slidesmcp.googleapis.com",
-    "calendarmcp.googleapis.com",
-    "chatmcp.googleapis.com",
-]
-
-
-class TestRetiredGoogleWorkspaceMcp:
-    """The withdrawn preview MCP endpoints are refused, the REST ones are not."""
-
-    def test_host_list_matches_the_retired_set(self):
-        # Pins the seven hosts as a spec: dropping one from the frozenset would
-        # otherwise silently narrow every test below.
-        assert set(RETIRED_MCP_HOSTS) == mcp_oauth._RETIRED_GOOGLE_WORKSPACE_MCP_HOSTS
-
-    @pytest.mark.parametrize("host", RETIRED_MCP_HOSTS)
-    def test_every_retired_host_is_rejected_on_any_url(self, host):
-        # Hostname-wide, so an edited legacy path, an added port or a downgraded
-        # scheme cannot fall through to the generic flow and be driven at a host
-        # that no longer answers.
-        for url in (
-            f"https://{host}/mcp/v1",
-            f"https://{host}/mcp/v2",
-            f"https://{host}/",
-            f"https://{host}",
-            f"https://{host}/mcp/v1?x=1",
-            f"https://{host}/mcp/v1#f",
-            f"https://{host}/anything/else",
-            f"https://{host}:8443/mcp/v1",
-            f"http://{host}/mcp/v1",
-        ):
-            with pytest.raises(mcp_oauth.OAuthError, match="no longer supported"):
-                mcp_oauth.oauth_provider(url)
-
-    def test_contacts_rest_url_still_classifies_as_google_api(self):
-        # Regression guard: people.googleapis.com is shared with a retired MCP
-        # endpoint, so it is retired by path. Blanket hostname rejection here
-        # would disconnect the live Contacts integration.
-        url = "https://people.googleapis.com/v1"
-        assert mcp_oauth.oauth_provider(url) == "google_api"
-        assert mcp_oauth.is_retired_google_workspace_mcp_url(url) is False
-
-    def test_people_mcp_path_is_rejected(self):
-        with pytest.raises(mcp_oauth.OAuthError, match="no longer supported"):
-            mcp_oauth.oauth_provider("https://people.googleapis.com/mcp/v1")
-
-    @pytest.mark.parametrize(
-        "url",
-        [
-            "https://gmailmcp.googleapis.com.evil.test/mcp/v1",
-            "https://evil.test/gmailmcp.googleapis.com/mcp/v1",
-            "https://not-gmailmcp.googleapis.com/mcp/v1",
-            "https://mcp.googleapis.com/mcp/v1",
-            "https://workspace.example.com/mcp",
-            "https://srv/mcp",
-        ],
-    )
-    def test_lookalike_and_unrelated_servers_stay_generic(self, url):
-        assert mcp_oauth.oauth_provider(url) == "generic"
-        assert mcp_oauth.is_retired_google_workspace_mcp_url(url) is False
-
-    def test_rejection_names_the_replacement(self):
-        with pytest.raises(mcp_oauth.OAuthError) as exc:
-            mcp_oauth.oauth_provider("https://drivemcp.googleapis.com/mcp/v1")
-        assert "built-in Google integrations from the catalog" in str(exc.value)
-
-
 class TestOAuthTokens:
+    def test_google_provider_requires_exact_official_endpoint(self):
+        assert (
+            mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com/mcp/v1") == "google_workspace"
+        )
+        assert (
+            mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com.evil.test/mcp/v1")
+            == "generic"
+        )
+        assert mcp_oauth.oauth_provider("https://gmailmcp.googleapis.com/mcp/v1?x=1") == "generic"
+
     def test_direct_gmail_api_uses_standard_google_provider(self):
         assert mcp_oauth.oauth_provider(GMAIL_API_URL) == "google_api"
         server = mcp_oauth.google_api_server(GMAIL_API_URL)
@@ -601,7 +479,7 @@ class TestOAuthTokens:
             authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
             token_endpoint="https://oauth2.googleapis.com/token",
             registration_endpoint=None,
-            resource=GMAIL_API_URL,
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
             scope="gmail.readonly gmail.compose",
             metadata=MagicMock(),
         )
@@ -611,7 +489,7 @@ class TestOAuthTokens:
             redirect_uri="http://localhost:3000/callback",
             state="state",
             code_challenge="challenge",
-            provider="google_api",
+            provider="google_workspace",
         )
         params = httpx.QueryParams(httpx.URL(url).query)
         assert params["access_type"] == "offline"
@@ -630,31 +508,10 @@ class TestOAuthTokens:
             code="code",
             code_verifier="verifier",
             redirect_uri="http://localhost:3000/callback",
-            resource=GMAIL_API_URL,
-            provider="google_api",
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            provider="google_workspace",
         )
         assert "resource" not in request.await_args.args[1]
-
-    # DELETE-WITH-COMPAT: remove this test in the same change that drops
-    # "google_workspace" from McpOAuthPayload.provider.
-    def test_historical_google_workspace_payload_still_deserializes(self):
-        """Rows authorized before the MCP removal must stay readable.
-
-        ``provider`` is persisted inside the Fernet-encrypted ``oauth_payload``
-        JSON. Dropping the Literal member while such rows exist turns them into
-        undeserializable blobs, and the connection dies with a decrypt warning
-        rather than a re-authorize prompt.
-        """
-        stored = _base_payload(
-            provider="google_workspace",
-            server_url="https://gmailmcp.googleapis.com/mcp/v1",
-            access_token="AT",
-        ).model_dump_json()
-
-        payload = McpOAuthPayload.model_validate_json(stored)
-
-        assert payload.provider == "google_workspace"
-        assert payload.access_token == "AT"
 
     def test_apply_token_folds_grant(self):
         payload = _base_payload(code_verifier="verifier", refresh_token="old-refresh")
@@ -772,7 +629,6 @@ class TestMcpConnectionService:
         mock_repo.create = AsyncMock()
         mock_repo.update = AsyncMock()
         mock_repo.delete = AsyncMock()
-        mock_repo.list_enabled = AsyncMock(return_value=[])
         monkeypatch.setattr(mcp_connection_service, "mcp_connection_repo", mock_repo)
         return mock_repo
 
@@ -908,56 +764,43 @@ class TestMcpConnectionService:
         assert datetime.now(UTC).timestamp() - payload.started_at < mcp_oauth.FLOW_TTL_SECS
 
     @pytest.mark.anyio
-    @pytest.mark.parametrize(
-        "url",
-        # A dedicated host, and the host shared with live Contacts — the two
-        # classification branches. Path/port/scheme coverage is a unit concern.
-        ["https://gmailmcp.googleapis.com/mcp/v1", "https://people.googleapis.com/mcp/v1"],
-    )
-    async def test_oauth_start_refuses_retired_workspace_mcp(self, service, repo, monkeypatch, url):
+    async def test_google_oauth_uses_static_client_and_initial_allowlist(
+        self, service, repo, monkeypatch
+    ):
         _allow_any_url(monkeypatch)
-        discovery = AsyncMock()
+        discovered = mcp_oauth.DiscoveredServer(
+            authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+            token_endpoint="https://oauth2.googleapis.com/token",
+            registration_endpoint=None,
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            scope="https://www.googleapis.com/auth/gmail.readonly",
+            metadata=MagicMock(),
+        )
+        monkeypatch.setattr(mcp_oauth, "discover", AsyncMock(return_value=discovered))
         registration = AsyncMock()
-        monkeypatch.setattr(mcp_oauth, "discover", discovery)
         monkeypatch.setattr(mcp_oauth, "register_client", registration)
-
-        with pytest.raises(mcp_oauth.OAuthError, match="no longer supported"):
-            await service.oauth_start(user_id=uuid4(), name="gmail", url=url)
-
-        # Refused before any network work — no discovery against a dead host.
-        discovery.assert_not_awaited()
-        registration.assert_not_awaited()
-        repo.create.assert_not_called()
-
-    @pytest.mark.anyio
-    async def test_oauth_start_still_connects_contacts_rest_api(self, service, repo, monkeypatch):
-        """Contacts shares a hostname with a retired endpoint — it must survive."""
-        _allow_any_url(monkeypatch)
-        discovery = AsyncMock()
-        registration = AsyncMock()
-        monkeypatch.setattr(mcp_oauth, "discover", discovery)
-        monkeypatch.setattr(mcp_oauth, "register_client", registration)
-        monkeypatch.setattr(settings, "GOOGLE_API_CLIENT_ID", "full-stack-client")
-        monkeypatch.setattr(settings, "GOOGLE_API_CLIENT_SECRET", SecretStr("full-stack-secret"))
+        monkeypatch.setattr(settings, "GOOGLE_WORKSPACE_MCP_CLIENT_ID", "google-client")
+        monkeypatch.setattr(
+            settings, "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET", SecretStr("google-secret")
+        )
 
         url = await service.oauth_start(
             user_id=uuid4(),
-            name="contacts",
-            url=google_api_url("contacts"),
-            allowed_tools=["list_contacts", "search_contacts"],
+            name="gmail",
+            url="https://gmailmcp.googleapis.com/mcp/v1",
+            allowed_tools=["search_threads", "create_draft"],
         )
 
-        discovery.assert_not_awaited()
         registration.assert_not_awaited()
-        assert "accounts.google.com/o/oauth2/v2/auth" in url
+        assert "access_type=offline" in url and "prompt=consent" in url
         kwargs = repo.create.call_args.kwargs
-        assert kwargs["allowed_tools"] == ["list_contacts", "search_contacts"]
+        assert kwargs["allowed_tools"] == ["search_threads", "create_draft"]
         payload = McpOAuthPayload.model_validate_json(
             decrypt_value(kwargs["oauth_pending_payload"], settings.SECRET_KEY)
         )
-        assert payload.provider == "google_api"
-        assert payload.server_url == "https://people.googleapis.com/v1"
-        assert payload.client_id == "full-stack-client"
+        assert payload.provider == "google_workspace"
+        assert payload.client_id == "google-client"
+        assert payload.client_secret == "google-secret"
 
     @pytest.mark.anyio
     async def test_direct_google_api_skips_mcp_discovery_and_registration(
@@ -990,83 +833,28 @@ class TestMcpConnectionService:
         assert payload.server_url == GMAIL_API_URL
         assert "gmail.readonly" in (payload.scope or "")
 
-    def _mixed_connections(self) -> dict[str, McpConnection]:
-        """One enabled row per interesting case for the retirement sweep."""
-        return {
-            "retired": _connection(name="gmail-mcp", url="https://gmailmcp.googleapis.com/mcp/v1"),
-            "retired_altered_path": _connection(
-                name="drive-mcp", url="https://drivemcp.googleapis.com/mcp/v9/legacy"
-            ),
-            "retired_people": _connection(
-                name="people-mcp", url="https://people.googleapis.com/mcp/v1"
-            ),
-            "live_contacts": _connection(name="contacts", url="https://people.googleapis.com/v1"),
-            "live_gmail": _connection(name="gmail", url=GMAIL_API_URL),
-            "lookalike": _connection(
-                name="lookalike", url="https://gmailmcp.googleapis.com.evil.test/mcp/v1"
-            ),
-            # Same word, unrelated feature — the deployment-managed plugins.
-            "workspace_named": _connection(
-                name="workspace", url="https://workspace.example.com/mcp"
-            ),
-            "generic": _connection(name="linear", url="https://mcp.linear.app/mcp"),
-        }
-
     @pytest.mark.anyio
-    async def test_retirement_sweep_disables_only_retired_endpoints(self, service, repo):
-        rows = self._mixed_connections()
-        repo.list_enabled.return_value = list(rows.values())
-
-        affected = await service.disable_retired_google_workspace_mcp()
-
-        assert {c.name for c in affected} == {"gmail-mcp", "drive-mcp", "people-mcp"}
-        assert all(
-            call.kwargs["update_data"]["is_enabled"] is False for call in repo.update.call_args_list
+    async def test_google_oauth_rejects_unexpected_discovered_token_host(
+        self, service, repo, monkeypatch
+    ):
+        _allow_any_url(monkeypatch)
+        discovered = mcp_oauth.DiscoveredServer(
+            authorization_endpoint="https://accounts.google.com/o/oauth2/v2/auth",
+            token_endpoint="https://attacker.example/token",
+            registration_endpoint=None,
+            resource="https://gmailmcp.googleapis.com/mcp/v1",
+            scope=None,
+            metadata=MagicMock(),
         )
-        # Every survivor is untouched: Contacts, Gmail, lookalikes, the
-        # "workspace"-named plugin, and ordinary MCP servers.
-        disabled = {call.kwargs["db_connection"].name for call in repo.update.call_args_list}
-        assert disabled.isdisjoint({"contacts", "gmail", "lookalike", "workspace", "linear"})
+        monkeypatch.setattr(mcp_oauth, "discover", AsyncMock(return_value=discovered))
 
-    @pytest.mark.anyio
-    async def test_retirement_sweep_records_a_visible_reason(self, service, repo):
-        repo.list_enabled.return_value = [self._mixed_connections()["retired"]]
-
-        await service.disable_retired_google_workspace_mcp()
-
-        update_data = repo.update.call_args.kwargs["update_data"]
-        assert update_data["last_status"] == "error"
-        assert "no longer supported" in update_data["last_error"]
-        assert update_data["last_checked_at"] is not None
-
-    @pytest.mark.anyio
-    async def test_retirement_sweep_is_idempotent(self, service, repo):
-        """Second run is a no-op: only enabled rows are ever selected."""
-        rows = self._mixed_connections()
-        repo.list_enabled.return_value = list(rows.values())
-        first = await service.disable_retired_google_workspace_mcp()
-        assert len(first) == 3
-
-        # list_enabled reflects the disable, exactly as the query would.
-        repo.list_enabled.return_value = [
-            c for c in rows.values() if c not in first and c.is_enabled
-        ]
-        repo.update.reset_mock()
-
-        second = await service.disable_retired_google_workspace_mcp()
-
-        assert second == []
-        repo.update.assert_not_called()
-
-    @pytest.mark.anyio
-    async def test_retirement_preview_changes_nothing(self, service, repo):
-        rows = self._mixed_connections()
-        repo.list_enabled.return_value = list(rows.values())
-
-        preview = await service.list_retired_google_workspace_mcp()
-
-        assert {c.name for c in preview} == {"gmail-mcp", "drive-mcp", "people-mcp"}
-        repo.update.assert_not_called()
+        with pytest.raises(mcp_oauth.OAuthError, match="unexpected OAuth endpoint"):
+            await service.oauth_start(
+                user_id=uuid4(),
+                name="gmail",
+                url="https://gmailmcp.googleapis.com/mcp/v1",
+            )
+        repo.create.assert_not_called()
 
     @pytest.mark.anyio
     async def test_oauth_start_keeps_working_tokens_until_consent(self, service, repo, monkeypatch):

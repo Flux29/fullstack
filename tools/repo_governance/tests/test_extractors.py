@@ -255,3 +255,82 @@ def test_the_real_makefile_defines_four_canonical_stacks(real_context: Context) 
 
     assert [stack.id for stack in result.stacks] == ["base", "dev", "frontend", "prod"]
     assert result.unknowns == []
+
+
+# --- the invariant scanner and the map-vs-territory sampler ---------------------------
+
+
+def test_scan_finds_repository_imports_commits_and_utcnow(tmp_path: Path) -> None:
+    from repo_governance.extractors.python_ast import scan_invariants
+
+    source = tmp_path / "route.py"
+    source.write_text(
+        "from app.repositories import user_repo\n"
+        "import app.repositories.conversation\n"
+        "async def handler(db):\n"
+        "    await db.commit()\n"
+        "    return datetime.utcnow()\n",
+        encoding="utf-8",
+    )
+
+    scan = scan_invariants(source)
+
+    assert scan.repository_imports == ["app.repositories", "app.repositories.conversation"]
+    assert scan.commit_calls == 1
+    assert scan.utcnow_calls == 1
+    assert scan.parse_error is None
+
+
+def test_scan_collects_uppercase_settings_refs_only(tmp_path: Path) -> None:
+    from repo_governance.extractors.python_ast import scan_invariants
+
+    source = tmp_path / "service.py"
+    source.write_text(
+        "def f():\n"
+        "    key = settings.CHANNEL_ENCRYPTION_KEY\n"
+        "    other = settings.API_KEY\n"
+        "    method = settings.model_dump()\n",
+        encoding="utf-8",
+    )
+
+    assert scan_invariants(source).settings_refs == ["API_KEY", "CHANNEL_ENCRYPTION_KEY"]
+
+
+def test_scan_reports_a_syntax_error_never_an_empty_result(tmp_path: Path) -> None:
+    from repo_governance.extractors.python_ast import scan_invariants
+
+    source = tmp_path / "broken.py"
+    source.write_text("def f(:\n", encoding="utf-8")
+
+    assert scan_invariants(source).parse_error is not None
+
+
+def test_sample_is_reproducible_per_seed_in_the_real_repository(real_context: Context) -> None:
+    from repo_governance.builders import sample_map_claims
+
+    first = sample_map_claims(real_context, count=10, seed="fixed-seed")
+    second = sample_map_claims(real_context, count=10, seed="fixed-seed")
+    other = sample_map_claims(real_context, count=10, seed="another-seed")
+
+    assert first["status"] == "ok"
+    assert first["sampled"] == 10
+    assert first["files"] == second["files"]
+    assert first["files"] != other["files"]
+    assert first["unreadable"] == []
+
+
+def test_sample_reports_unknown_when_git_answers_for_an_enclosing_repository(tmp_path: Path) -> None:
+    import shutil
+
+    from repo_governance.builders import sample_map_claims
+
+    root = tmp_path / "repo"
+    (root / "governance").mkdir(parents=True)
+    shutil.copy(
+        Path(__file__).resolve().parents[3] / "governance" / "governance.toml",
+        root / "governance" / "governance.toml",
+    )
+
+    report = sample_map_claims(Context.discover(root), count=5, seed="s")
+
+    assert report["status"] == "unknown"

@@ -100,6 +100,25 @@ def main() -> None:
     """Repository governance control plane."""
 
 
+def _register_hook_group() -> None:
+    """The hook endpoints live in their own module; a syntax error there must not take
+    down the rest of the CLI, so the import failure is reported as a stub command."""
+    try:
+        from repo_governance.hooks import hook
+
+        main.add_command(hook, name="hook")
+    except Exception as error:  # pragma: no cover - import-failure guard
+        message = str(error)
+
+        @main.command("hook")
+        def broken_hook() -> None:
+            """Hook endpoints failed to import."""
+            raise click.ClickException(f"repo_governance.hooks failed to import: {message}")
+
+
+_register_hook_group()
+
+
 @main.command()
 def bootstrap() -> None:
     """Inventory the repository and confirm the governance baseline.
@@ -461,14 +480,95 @@ def explain(component_id: str) -> None:
 
 
 @main.command()
-def summary() -> None:
-    """Regenerate the bounded Summary.md."""
+@click.option("--count", default=25, show_default=True, help="How many files to sample.")
+@click.option("--seed", default=None, help="Sampling seed. Defaults to the HEAD commit, so a run is reproducible.")
+def sample(count: int, seed: str | None) -> None:
+    """Map-vs-territory spot check: verify manifest claims about sampled files. Read-only.
+
+    The statistical stand-in for exhaustive AST enforcement until the graph exists.
+    Nonzero exit on any mismatch; unreadable files are reported, never counted as passing.
+    """
+    from repo_governance.builders import sample_map_claims
+    from repo_governance.gitutil import head_commit
+
     ctx = _context()
-    changed = run_sync(ctx)
-    if "governance/Summary.md" in changed:
-        click.echo("Regenerated governance/Summary.md.")
-    else:
-        click.echo("governance/Summary.md is already current.")
+    resolved_seed = seed or head_commit(ctx.repo_root)
+    if resolved_seed is None:
+        click.echo("No --seed given and git HEAD is unavailable; a reproducible sample needs one.")
+        raise SystemExit(1)
+
+    report = sample_map_claims(ctx, count=count, seed=resolved_seed)
+    if report["status"] != "ok":
+        click.echo(f"Sample unknown: {report['reason']}")
+        raise SystemExit(1)
+
+    click.echo(
+        f"Sampled {report['sampled']} of {report['pool_size']} governed application files "
+        f"(seed {report['seed'][:12]})"
+    )
+    for item in report["unreadable"]:
+        click.echo(f"  unreadable: {item['path']} - {item['reason']}")
+    for item in report["mismatches"]:
+        click.echo(f"  MISMATCH {item['path']}")
+        click.echo(f"    claim:    {item['claim']}")
+        click.echo(f"    evidence: {item['evidence']}")
+
+    if report["mismatches"]:
+        click.echo(f"{len(report['mismatches'])} claim(s) disagree with the territory - each is an evaluation-record candidate.")
+        raise SystemExit(1)
+    click.echo("Every sampled file agrees with the claims the manifests make about it.")
+
+
+@main.command()
+def coverage() -> None:
+    """Read-surface coverage: orphans, ghosts, and rule-scope drift. Read-only.
+
+    Nonzero exit on any finding, so CI can hold the line the local warn-mode gate
+    deliberately does not.
+    """
+    from repo_governance.builders import analyse_read_surface_coverage
+
+    report = analyse_read_surface_coverage(_context())
+    if report["status"] != "ok":
+        click.echo(f"Coverage unknown: {report['reason']}")
+        raise SystemExit(1)
+
+    click.echo(
+        f"Read-surface coverage: {report['covered']}/{report['total_tracked']} tracked paths "
+        f"({report['coverage_percent']}%)"
+    )
+    for label, items, repair in (
+        ("Orphans (tracked, matched by nothing)", report["orphans"], "annotate the directory or add to [gate] always_allow"),
+        ("Ghosts (promised, absent on disk)", report["ghosts"], "fix the ownership glob or catalog entry"),
+        ("Rule-scope drift (RULE_SCOPES vs .claude/rules/)", report["rules_drift"], "align renderers/context.py with the files on disk"),
+    ):
+        if items:
+            click.echo(f"{label} — {repair}:")
+            for item in items:
+                click.echo(f"  - {item}")
+
+    if report["orphans"] or report["ghosts"] or report["rules_drift"]:
+        raise SystemExit(1)
+    click.echo("No orphans, no ghosts, no rule-scope drift.")
+
+
+@main.command()
+def summary() -> None:
+    """Report whether the bounded Summary.md is current. Read-only.
+
+    This used to run a full sync under a read-only-sounding name, which is exactly the
+    kind of blurred write path the hook workflow cannot afford: hooks instruct agents to
+    run commands, and an instruction chain landing here must never silently write.
+    """
+    from repo_governance.pipeline import SUMMARY_PATH
+
+    ctx = _context()
+    stale = [reason for path, reason in compare_generated(ctx) if path == SUMMARY_PATH]
+    if stale:
+        click.echo(f"governance/Summary.md is stale: {stale[0]}")
+        click.echo("Regenerate with `make governance-sync`.")
+        raise SystemExit(1)
+    click.echo("governance/Summary.md is current.")
 
 
 @main.group()

@@ -286,3 +286,252 @@ def build_decision_index(ctx: Context) -> dict[str, Any]:
         },
         "decisions": sorted(decisions, key=lambda item: item["id"]),
     }
+
+
+#: Characters fnmatch treats as pattern syntax. A rule containing none of them is a
+#: literal path, which matters because ownership globs contain literal `[locale]` segments.
+_WILDCARD_CHARS = ("*", "?", "[")
+
+
+def _classify_path_rules(rules: list[str]) -> tuple[set[str], set[str], set[str]]:
+    """Split path rules into exact files, directory prefixes, and fnmatch patterns.
+
+    Prefixes are matched by `startswith`, never fnmatch, so a literal bracketed segment
+    like `frontend/src/app/[locale]/` cannot be misread as a character class.
+    """
+    exact: set[str] = set()
+    prefixes: set[str] = set()
+    patterns: set[str] = set()
+    for rule in rules:
+        if rule.endswith("/**"):
+            prefixes.add(rule[:-2])
+        elif rule.endswith("/"):
+            prefixes.add(rule)
+        elif any(char in rule for char in _WILDCARD_CHARS):
+            patterns.add(rule)
+        else:
+            exact.add(rule)
+    return exact, prefixes, patterns
+
+
+def build_read_surface(
+    ctx: Context, components: dict[str, Any], generated_paths: frozenset[str] = frozenset()
+) -> dict[str, Any]:
+    """Compile the read-gate surface the PreToolUse hook script consults.
+
+    The hook is stdlib-only and must answer in milliseconds, so everything it needs is
+    flattened here at sync time: which paths a read may touch (the repo surface) and which
+    parts of the governance corpus are answered by queries rather than bulk reads (the
+    corpus surface). The gate is steering, not a security boundary — the script fails open
+    on anything this document does not confidently cover.
+
+    `generated_paths` plays the same role as in `build_catalog`: files this render is
+    about to write count as present, otherwise the first sync of a clean checkout and the
+    second would disagree about the surface and idempotence would break.
+    """
+    from repo_governance.checks.process import SANCTIONED_UNTRACKED_PREFIXES, SANCTIONED_UNTRACKED_SUFFIXES
+
+    gate = ctx.config.raw.get("gate", {})
+
+    rules: list[str] = []
+    for component in components.get("components", []):
+        rules.extend(component.get("owns", []))
+    # Same honesty rule as build_catalog: a declared path that neither exists nor is
+    # about to be written is a future intention, not readable surface — including it
+    # would only manufacture ghosts.
+    rules.extend(
+        spec["path"]
+        for spec in ctx.config.catalog_spec
+        if spec["path"] in generated_paths or (ctx.repo_root / spec["path"].rstrip("/")).exists()
+    )
+    rules.extend(SANCTIONED_UNTRACKED_PREFIXES)
+    rules.extend(gate.get("always_allow", ()))
+
+    exact, prefixes, patterns = _classify_path_rules(rules)
+    patterns.update(f"*{suffix}" for suffix in SANCTIONED_UNTRACKED_SUFFIXES)
+
+    return {
+        "schema_version": 1,
+        "provenance": {
+            "method": "extracted",
+            "sources": [
+                "governance/governance.toml",
+                "governance/manifests/generated/components.json",
+                "tools/repo_governance/src/repo_governance/checks/process.py",
+            ],
+            "extractor_version": ctx.config.version,
+        },
+        "default_modes": {
+            "corpus": str(gate.get("mode_corpus", "warn")),
+            "repo": str(gate.get("mode_repo", "warn")),
+        },
+        "corpus": {
+            "gated_roots": sorted(gate.get("corpus_gated_roots", ())),
+            "bounded_surfaces": sorted(gate.get("corpus_bounded_surfaces", ())),
+        },
+        "repo": {
+            "exact_files": sorted(exact),
+            "dir_prefixes": sorted(prefixes),
+            "glob_patterns": sorted(patterns),
+        },
+    }
+
+
+def analyse_read_surface_coverage(ctx: Context) -> dict[str, Any]:
+    """Measure how much of the tracked tree the compiled read surface accounts for.
+
+    Returns orphans (tracked on disk, matched by nothing), ghosts (promised by the
+    surface, absent on disk), rule-scope drift, and the coverage percentage that decides
+    whether a repo-surface deny would mean anything. Paths under the corpus roots count
+    as covered — they are governed by the query discipline, not by membership. A `None`
+    status means git could not answer for this root, never that coverage is clean.
+    """
+    import fnmatch
+
+    from repo_governance.gitutil import toplevel, tracked_files
+    from repo_governance.merge import build_components
+    from repo_governance.renderers.context import RULE_SCOPES
+
+    tracked = tracked_files(ctx.repo_root)
+    if tracked is None or toplevel(ctx.repo_root) != ctx.repo_root.resolve():
+        return {"status": "unknown", "reason": "git did not answer for this repository root"}
+
+    components, _ = build_components(ctx)
+    surface = build_read_surface(ctx, components)
+    exact = {item.casefold() for item in surface["repo"]["exact_files"]}
+    prefixes = [item.casefold() for item in surface["repo"]["dir_prefixes"]]
+    patterns = [item.casefold() for item in surface["repo"]["glob_patterns"]]
+
+    def covered(path: str) -> bool:
+        folded = path.casefold()
+        if folded.startswith("governance/"):
+            return True
+        if folded in exact:
+            return True
+        if any(folded.startswith(prefix) for prefix in prefixes):
+            return True
+        return any(fnmatch.fnmatchcase(folded, pattern) for pattern in patterns)
+
+    considered = [path for path in tracked if not path.startswith(".claude/worktrees/")]
+    orphans = sorted(path for path in considered if not covered(path))
+
+    ghosts = sorted(
+        {
+            item
+            for item in surface["repo"]["exact_files"]
+            if not (ctx.repo_root / item).is_file()
+        }
+        | {
+            item
+            for item in surface["repo"]["dir_prefixes"]
+            if not (ctx.repo_root / item.rstrip("/")).is_dir()
+        }
+    )
+
+    declared_rules = {rule_file for rule_file, _ in RULE_SCOPES}
+    on_disk_rules = {
+        f".claude/rules/{path.name}" for path in sorted((ctx.repo_root / ".claude" / "rules").glob("*.md"))
+    }
+    rules_drift = sorted(declared_rules ^ on_disk_rules)
+
+    total = len(considered)
+    return {
+        "status": "ok",
+        "total_tracked": total,
+        "covered": total - len(orphans),
+        "coverage_percent": round(100 * (total - len(orphans)) / total, 2) if total else 100.0,
+        "orphans": orphans,
+        "ghosts": ghosts,
+        "rules_drift": rules_drift,
+    }
+
+
+def sample_map_claims(ctx: Context, *, count: int, seed: str) -> dict[str, Any]:
+    """Spot-check the manifests' mechanically-verifiable claims against sampled files.
+
+    The statistical precursor to exhaustive AST enforcement: N files drawn from the
+    governed application surface with a seeded generator (reproducible per seed), each
+    checked against the claims that can be verified without a graph — layering imports,
+    repository commit discipline, the utcnow ban, and settings references being known to
+    the configuration manifest. A mismatch means the map and the territory disagree; a
+    parse error means the territory could not be read and is reported, never passed.
+    """
+    import random
+
+    from repo_governance.extractors.python_ast import extract_settings, scan_invariants
+    from repo_governance.gitutil import toplevel, tracked_files
+    from repo_governance.io_atomic import read_json
+
+    tracked = tracked_files(ctx.repo_root)
+    if tracked is None or toplevel(ctx.repo_root) != ctx.repo_root.resolve():
+        return {"status": "unknown", "reason": "git did not answer for this repository root"}
+
+    pool = [path for path in tracked if path.startswith("backend/app/") and path.endswith(".py")]
+    chosen = sorted(random.Random(seed).sample(pool, min(count, len(pool))))
+
+    known_settings: set[str] = set()
+    manifest_path = ctx.paths.generated_manifests / "configuration.json"
+    if manifest_path.is_file():
+        known_settings.update(
+            variable["name"]
+            for variable in read_json(manifest_path).get("variables", [])
+            if variable.get("surface") == "backend"
+        )
+    extraction = extract_settings(ctx.repo_root / "backend" / "app" / "core" / "config.py")
+    known_settings.update(item.name for item in extraction.fields)
+    known_settings.update(extraction.computed)
+    known_settings.update(extraction.constants)
+
+    mismatches: list[dict[str, str]] = []
+    unreadable: list[dict[str, str]] = []
+    for relative in chosen:
+        scan = scan_invariants(ctx.repo_root / relative)
+        if scan.parse_error is not None:
+            unreadable.append({"path": relative, "reason": scan.parse_error})
+            continue
+        if relative.startswith("backend/app/api/") and scan.repository_imports:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": "Routes call services; they never import or call repositories directly",
+                    "evidence": "imports " + ", ".join(scan.repository_imports),
+                }
+            )
+        if relative.startswith("backend/app/repositories/") and scan.commit_calls:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": "Repositories flush and refresh; the session auto-commits in get_db_session",
+                    "evidence": f"{scan.commit_calls} .commit() call(s)",
+                }
+            )
+        if scan.utcnow_calls:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": "datetime.now(UTC), never datetime.utcnow()",
+                    "evidence": f"{scan.utcnow_calls} .utcnow() call(s)",
+                }
+            )
+        unknown_refs = sorted(set(scan.settings_refs) - known_settings)
+        if unknown_refs:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": (
+                        "Every settings reference is a field, computed property, or "
+                        "constant the configuration manifest knows"
+                    ),
+                    "evidence": "unknown: " + ", ".join(unknown_refs),
+                }
+            )
+
+    return {
+        "status": "ok",
+        "seed": seed,
+        "pool_size": len(pool),
+        "sampled": len(chosen),
+        "files": chosen,
+        "mismatches": mismatches,
+        "unreadable": unreadable,
+    }

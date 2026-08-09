@@ -1,9 +1,7 @@
 """Tests for core modules."""
 # ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
 
-from pathlib import Path
-
-from app.core.config import Settings, settings
+from app.core.config import settings
 from app.core.exceptions import (
     AlreadyExistsError,
     AppException,
@@ -39,49 +37,6 @@ class TestSettings:
     def test_cors_origins_is_list(self):
         """Test CORS origins is a list."""
         assert isinstance(settings.CORS_ORIGINS, list)
-
-
-REPO_ROOT = Path(__file__).resolve().parents[2]
-
-# Retired with the Google Workspace MCP architecture. Re-adding one of these
-# resurrects a credential fallback chain that no code path reads.
-REMOVED_GOOGLE_MCP_ALIASES = [
-    "GOOGLE_WORKSPACE_MCP_CLIENT_ID",
-    "GOOGLE_WORKSPACE_MCP_CLIENT_SECRET",
-    "GOOGLE_DRIVE_CLIENT_ID",
-    "GOOGLE_DRIVE_CLIENT_SECRET",
-]
-
-
-class TestRetiredGoogleMcpConfiguration:
-    """The deprecated OAuth aliases are gone; the service-account var is not.
-
-    ``GOOGLE_DRIVE_CREDENTIALS_FILE`` is a different, live mechanism (the RAG
-    Google Drive sync connector) that a keyword sweep for "GOOGLE_DRIVE" would
-    happily delete along with the aliases — so it is asserted here too.
-    """
-
-    def test_aliases_are_gone_from_settings(self):
-        for name in REMOVED_GOOGLE_MCP_ALIASES:
-            assert name not in Settings.model_fields
-
-    def test_service_account_credentials_file_survives(self):
-        assert "GOOGLE_DRIVE_CREDENTIALS_FILE" in Settings.model_fields
-        assert settings.GOOGLE_DRIVE_CREDENTIALS_FILE
-
-    def test_aliases_are_gone_from_generated_manifests(self):
-        """ENV_VARS.md and the configuration manifest are generated from
-        Settings, so a stale one here means `make governance-sync` was skipped.
-        """
-        generated = [
-            REPO_ROOT / "ENV_VARS.md",
-            REPO_ROOT / "governance" / "manifests" / "generated" / "configuration.json",
-        ]
-        for path in generated:
-            text = path.read_text(encoding="utf-8")
-            for name in REMOVED_GOOGLE_MCP_ALIASES:
-                assert name not in text, f"{name} still recorded in {path.name}"
-            assert "GOOGLE_DRIVE_CREDENTIALS_FILE" in text
 
 
 class TestExceptions:

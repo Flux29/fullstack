@@ -1,0 +1,41 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "All four governance hook commands are location-independent; a drifted shell can no longer silently disable the read gate or stop-check via spawn errors"
+  ],
+  "compatibility_impact": "Hooks now run identically regardless of the session shell's working directory; no behavior change when cwd is the repo root",
+  "date": "2026-08-09",
+  "files_changed": [
+    ".claude/settings.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-hook-commands-anchored-to-claude-project-dir",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "A spawn-level failure still cannot announce itself (nothing runs to do the announcing) - this fix removes the known spawn-failure cause rather than adding an announcer; the CI gate smoke step remains the backstop for the scripts themselves"
+  ],
+  "manifests_changed": [],
+  "reason": "The Stop hook failed to spawn when the session shell's working directory sat in backend/ - every governance hook command used repo-relative paths, so any cwd drift silently disabled the read gate and stop-check with a spawn error instead of a designed, announced degradation. Hooks must be location-independent: Claude Code provides CLAUDE_PROJECT_DIR to hook processes, and anchoring the four governance hook commands to it removes the entire failure class",
+  "risks": [],
+  "rollback": "git revert restores relative paths and the cwd-drift failure class",
+  "schema_version": 1,
+  "security_impact": "None - same commands, absolute anchoring via the CLAUDE_PROJECT_DIR variable Claude Code provides to hook processes",
+  "summary": "Hook commands anchored to CLAUDE_PROJECT_DIR",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "full check clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "hook scripts are loaded by file path in tests, unaffected by command-string changes; verified live instead - both hook kinds executed correctly from a deliberately drifted backend/ cwd, the exact condition that produced the spawn failure",
+      "id": "governance-selftest",
+      "result": "pass"
+    }
+  ]
+}

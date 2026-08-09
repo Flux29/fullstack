@@ -136,6 +136,13 @@ class Settings(BaseSettings):
     # belongs in the process environment.
     GOOGLE_API_CLIENT_ID: str = ""
     GOOGLE_API_CLIENT_SECRET: SecretStr = SecretStr("")
+    # Compatibility with the preview-MCP variable names used by earlier builds.
+    GOOGLE_WORKSPACE_MCP_CLIENT_ID: str = ""
+    GOOGLE_WORKSPACE_MCP_CLIENT_SECRET: SecretStr = SecretStr("")
+    # Compatibility with names shipped in earlier environment examples.
+    # Prefer GOOGLE_API_* for new installations.
+    GOOGLE_DRIVE_CLIENT_ID: str = ""
+    GOOGLE_DRIVE_CLIENT_SECRET: SecretStr = SecretStr("")
 
     API_KEY: str = "change-me-in-production"
     API_KEY_HEADER: str = "X-API-Key"

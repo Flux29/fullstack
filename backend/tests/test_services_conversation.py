@@ -1,5 +1,6 @@
 """Tests for ConversationService (PostgreSQL async variant)."""
 
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -589,28 +590,6 @@ class TestConversationServiceAddMessage:
             mock_repo.create_message.assert_called_once()
 
     @pytest.mark.anyio
-    async def test_add_message_forwards_tokens_used(self, service: ConversationService):
-        """Turn usage reaches the repository so in-app history can report it."""
-        conv_id = uuid4()
-        mock_data = MagicMock()
-        mock_data.role = "assistant"
-        mock_data.content = "Hi"
-        mock_data.model_name = "anthropic/claude-sonnet-5"
-        mock_data.tokens_used = 4213
-
-        with patch("app.services.conversation.conversation_repo") as mock_repo:
-            mock_repo.get_conversation_by_id = AsyncMock(return_value=MockConversation(id=conv_id))
-            mock_repo.create_message = AsyncMock(
-                return_value=MockMessage(
-                    conversation_id=conv_id, role="assistant", content="Hi", tokens_used=4213
-                )
-            )
-
-            await service.add_message(conv_id, mock_data)
-
-            assert mock_repo.create_message.call_args.kwargs["tokens_used"] == 4213
-
-    @pytest.mark.anyio
     async def test_add_message_verifies_conversation_exists(self, service: ConversationService):
         """add_message raises NotFoundError when conversation not found."""
         mock_data = MagicMock()
@@ -620,6 +599,45 @@ class TestConversationServiceAddMessage:
 
             with pytest.raises(NotFoundError):
                 await service.add_message(uuid4(), mock_data)
+
+    @pytest.mark.anyio
+    async def test_add_message_carries_tokens_used_to_the_repository(
+        self, service: ConversationService
+    ):
+        """The token-accounting carriage seam: a count supplied at the schema layer
+        must arrive at the repository call unchanged, not be dropped on the way."""
+        conv_id = uuid4()
+        mock_data = MagicMock()
+        mock_data.role = "assistant"
+        mock_data.content = "answer"
+        mock_data.thinking = None
+        mock_data.model_name = "test-model"
+        mock_data.tokens_used = 123
+
+        with patch("app.services.conversation.conversation_repo") as mock_repo:
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=MockConversation(id=conv_id))
+            mock_repo.create_message = AsyncMock(
+                return_value=MockMessage(conversation_id=conv_id, role="assistant", tokens_used=123)
+            )
+
+            await service.add_message(conv_id, mock_data)
+
+            assert mock_repo.create_message.call_args.kwargs["tokens_used"] == 123
+
+    def test_message_read_schema_round_trips_tokens_used(self):
+        """The API surface half of the carriage: MessageRead exposes the persisted count."""
+        from app.schemas.conversation import MessageRead
+
+        row = MockMessage(role="assistant", content="answer", tokens_used=123)
+        row.created_at = datetime.now(UTC)
+        row.updated_at = None
+        row.thinking = None
+        row.tool_calls = []
+        row.files = []
+
+        read = MessageRead.model_validate(row)
+
+        assert read.tokens_used == 123
 
 
 class TestConversationServiceDeleteMessage:

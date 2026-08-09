@@ -62,14 +62,59 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 13 of 13)
+## Recent changes (latest 20 of 27)
 
+- **2026-08-09** — Test coverage for the sync-source service flow
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
+- **2026-08-09** — ruff format pass over the session's backend files
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-ruff-format-pass-over-the-session-s-backend-files.json`
+- **2026-08-09** — New chat creates a new conversation: null conversation_id is never sticky
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-09-new-chat-creates-a-new-conversation-null-conversation-id-is-neve.json`
+- **2026-08-09** — Hook commands anchored to CLAUDE_PROJECT_DIR
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-09-hook-commands-anchored-to-claude-project-dir.json`
+- **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
+- **2026-08-09** — CI runs on pushes to fullstack2
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-09-ci-runs-on-pushes-to-fullstack2.json`
+- **2026-08-09** — API-route tests for the sync-source endpoints, plus the collection filter fix
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-api-route-tests-for-the-sync-source-endpoints-plus-the-collectio.json`
+- **2026-08-09** — Anchor backend pytest scratch to the repo cache
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-anchor-backend-pytest-scratch-to-the-repo-cache.json`
+- **2026-08-08** — stop-check: reconcile the touched log against git state before blocking
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl.json`
+- **2026-08-08** — Regenerate the stale baseline Summary.md
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-regenerate-the-stale-baseline-summary-md.json`
+- **2026-08-08** — Pin chat retention and token-accounting carriage with regression tests
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-08-pin-chat-retention-and-token-accounting-carriage-with-regression.json`
+- **2026-08-08** — Phase 4: read-surface coverage verifier, CI gate smoke, corpus deny flip
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-phase-4-read-surface-coverage-verifier-ci-gate-smoke-corpus-deny.json`
+- **2026-08-08** — Hook-enforced governance: read-surface artifact, gate scripts, session and stop hooks
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-hook-enforced-governance-read-surface-artifact-gate-scripts-sess.json`
+- **2026-08-08** — governance sample: map-vs-territory spot checks on random tracked files
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-governance-sample-map-vs-territory-spot-checks-on-random-tracked.json`
+- **2026-08-08** — Bump h2 to 4.4.1 for CVE-2026-71554
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-08-bump-h2-to-4-4-1-for-cve-2026-71554.json`
+- **2026-08-08** — AGENTS.md: checker agents verify against sources, not the governance briefing
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-08-agents-md-checker-agents-verify-against-sources-not-the-governan.json`
 - **2026-08-06** — Resolve finding status by precedence not by ID order
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-06-resolve-finding-status-by-precedence-not-by-id-order.json`
-- **2026-08-06** — Remove the retired Google Workspace MCP architecture
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-06-remove-the-retired-google-workspace-mcp-architecture.json`
 - **2026-08-06** — Remove machine-specific paths from generated output
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-06-remove-machine-specific-paths-from-generated-output.json`
@@ -79,30 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Lazy Google Workspace tool exposure: toolkit loader, approval-resume slimming, per-turn relevance router, schema slimming
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-06-lazy-google-workspace-tool-exposure-toolkit-loader-approval-resu.json`
-- **2026-08-06** — Add the minimal governance kernel: the twelve JSON Schemas, the governance contract, the self-governance policy, the validator registry, the ownership rules, a deterministic CLI with preflight/scan/sync/check/doctor, and a converged AGENTS.md entry point.
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-06-governance-kernel.json`
-- **2026-08-06** — Establish the Phase 0 governance baseline: record the authority model and generator provenance in ADR-001, register the twelve known findings at adoption, scrub live credentials and duplicate keys from backend/.env.example, and close the .gitignore and line-ending hygiene gaps.
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-06-governance-adoption-baseline.json`
-- **2026-08-06** — Gate every MCP server behind a names-only discovery index, cache the stable prefix, and persist per-turn token usage
-  - Components: agents, backend-api
-  - Record: `governance/history/changes/2026-08-06-gate-mcp-servers-behind-a-names-only-index-and-cache-the-prefix.json`
-- **2026-08-06** — Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.
-  - Components: governance-kernel, backend-api, frontend-app, postgres-pgvector, redis, github-mcp, traefik
-  - Record: `governance/history/changes/2026-08-06-deterministic-extraction.json`
-- **2026-08-06** — Close the ENV_VARS drift finding
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-06-close-the-env-vars-drift-finding.json`
-- **2026-08-06** — Change history and bounded context
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-06-change-history-and-bounded-context.json`
-- **2026-08-06** — Declare the component boundaries and establish the reviewed baseline manifests: seven directory annotations, ten curated declarations, the exception register, four ADRs, six baseline manifests, four policy groups, and the merge engine that compiles them into the effective repository model.
-  - Components: backend-api, frontend-app, rag, email, agents, docling-mcp, chrome-devtools-mcp, github-mcp, mcp-user-connections, chat-frontend, model-runner-host, postgres-pgvector, redis, minio, docling-serve, traefik, governance-kernel
-  - Record: `governance/history/changes/2026-08-06-baseline-manifests-and-boundaries.json`
-- **2026-08-06** — Add three sprawl guardrails: new-file boundary, untracked-file check, simplification-pass rule
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-06-add-three-sprawl-guardrails-new-file-boundary-untracked-file-che.json`
 
 ## Decisions (5)
 

@@ -1,0 +1,51 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "sync_source secret-field encrypt/decrypt paths work instead of raising AttributeError; crypto.py docstring names the real setting",
+    "Subagent timestamps are timezone-aware; frontend toLocaleTimeString now renders the viewer's correct local time",
+    "governance sample --count 162: zero mismatches - the census that found both defects now runs clean"
+  ],
+  "compatibility_impact": "subagent_message timestamps change from naive to aware ISO (+00:00 suffix); JavaScript new Date() parses both, and the aware form corrects a real display bug where UTC wall-clock rendered as local time. No stored data migrates: no existing ciphertext can exist because encryption always raised before this fix",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/app/core/crypto.py",
+    "backend/app/services/agent_session.py",
+    "backend/app/services/sync_source.py",
+    "backend/tests/test_services.py"
+  ],
+  "follow_up": [
+    "Consider a dedicated DATA_ENCRYPTION_KEY with migration for all seven encrypt_value sites"
+  ],
+  "id": "2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "SECRET_KEY key-reuse across JWT and data-at-rest concerns is pre-existing repo convention, now in seven sites; splitting it is a deliberate future security change"
+  ],
+  "manifests_changed": [],
+  "reason": "The first governance sample census found both: sync_source.py encrypts connector secrets with settings.CHANNEL_ENCRYPTION_KEY, a name that has never existed in Settings in this repository's entire history (it arrived with crypto.py in a snapshot commit, written for a channels service this repo does not have), so every encrypt/decrypt path raises AttributeError when reached. The repo's established data-at-rest pattern is settings.SECRET_KEY, used at five working sites in mcp_connection.py for comparable secrets - correcting the reference beats adding a new secret for a phantom service. The utcnow fix is a display-correctness fix, not just style: JavaScript parses the naive ISO string as local time, so subagent timestamps currently render wrong by the viewer's UTC offset",
+  "risks": [],
+  "rollback": "git revert restores both defects; nothing encrypted under the new path survives a revert usefully since decrypt would break - acceptable while no production data exists on this branch",
+  "schema_version": 1,
+  "security_impact": "Connector secret encryption now actually executes: secrets at rest in sync_source configs are Fernet-encrypted under settings.SECRET_KEY, matching the five existing mcp_connection.py sites. Note the deliberate trade: SECRET_KEY now serves JWT signing and data-at-rest encryption in seven places - rotating it invalidates stored ciphertexts; a dedicated data-at-rest key across all seven sites is a possible future hardening, recorded as a limitation rather than smuggled into this fix",
+  "summary": "Fix the two census findings: phantom encryption setting and naive timestamps",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "431 passed, 13 skipped (rag-docker-integration excluded, pre-existing environmental ACL failure); 2 new tests pin the encryption round-trip and no-double-encryption, both shown red against the unfixed code via git stash",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish; sync no-op",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

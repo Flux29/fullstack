@@ -1,0 +1,44 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The full service flow is pinned: create encrypts at rest and masks on read, JSON-string and dict config rows both mask, updates preserve original ciphertext behind the mask sentinel, new secrets re-encrypt, clones re-encrypt without corrupting plaintext, error contracts raise domain exceptions, trigger_sync persists a log and dispatches the task, the worker decrypt path round-trips, and the connector schema keeps its secret flags"
+  ],
+  "compatibility_impact": "None - tests pin existing behavior; TestSyncSourceConfigEncryption moved file, same assertions",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/tests/test_services.py",
+    "backend/tests/test_services_sync_source.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-test-coverage-for-the-sync-source-service-flow",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "API-route coverage for rag.py sync-source endpoints remains a separate task, as planned"
+  ],
+  "manifests_changed": [],
+  "reason": "SyncSourceService handles connector credentials at rest and had zero service-level coverage - the gap was recorded as the uncertainty note on the aad16fb census fix. These tests pin the flow the encryption exists for: create persists Fernet-encrypted secrets, reads come back masked, updates preserve original ciphertext behind the mask sentinel, clones re-encrypt without corrupting plaintext. Mock only the persistence boundary; the connector registry and crypto run real",
+  "risks": [],
+  "rollback": "git revert removes the suite and restores the two moved tests' old location",
+  "schema_version": 1,
+  "security_impact": "None to behavior - coverage over the credentials-at-rest seams. Mutation evidence: a no-op _mask_config fails 3 tests, a pass-through _encrypt_config fails 4, so a silent regression in either direction of the secret-handling flow now breaks the suite loudly",
+  "summary": "Test coverage for the sync-source service flow",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "457 passed, 13 gated skips, zero exclusions; 18 tests in the new suite (16 net-new plus the 2 census-fix tests moved from test_services.py)",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish; governance sample --count 162 clean",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

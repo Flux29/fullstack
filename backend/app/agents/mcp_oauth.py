@@ -110,12 +110,6 @@ class McpOAuthPayload(BaseModel):
     # only once tokens arrive, so a re-authorization that points at a new URL
     # cannot move the connection while the old tokens are still stored.
     server_url: str
-    # "google_workspace" is retired: oauth_provider can no longer produce it.
-    # It stays in this Literal for one release because connections authorized
-    # before the removal carry it inside the Fernet-encrypted payload JSON, and
-    # dropping the member makes those rows fail to deserialize. Delete it, the
-    # compatibility block below, and the same member on exchange_code and
-    # refresh_tokens (which are handed this stored value) in one change.
     provider: Literal["generic", "google_workspace", "google_api"] = "generic"
     # Epoch seconds when the consent redirect was issued — see FLOW_TTL_SECS.
     started_at: float
@@ -145,26 +139,7 @@ class DiscoveredServer:
     metadata: OAuthMetadata
 
 
-# ---------------------------------------------------------------------------
-# COMPATIBILITY — retired Google Workspace MCP endpoints. Delete whole.
-#
-# Google Workspace runs entirely on the direct REST toolsets in
-# ``app/agents/google_apis`` (see :mod:`app.agents.google_workspace_api`); the
-# preview MCP servers were withdrawn after persistent connection failures.
-# Everything in this block exists only to make that transition legible, and
-# comes out next release together with the "google_workspace" member of
-# ``McpOAuthPayload.provider`` — one removal, at the milestone already recorded
-# on the GOOGLE_WORKSPACE_MCP_* alias family in the configuration manifest:
-# "Remove once no deployment sets it and the direct Google REST executor is the
-# only path" (governance/manifests/curated/architectural-intent.json).
-#
-# Until then these URLs are refused by name. Left to fall through they would
-# classify as "generic" and be driven through ordinary discovery and dynamic
-# registration against a host that no longer answers — a slow, opaque failure
-# where the user needs to be told to pick the built-in integration instead.
-# ---------------------------------------------------------------------------
-
-_RETIRED_GOOGLE_WORKSPACE_MCP_HOSTS = frozenset(
+_GOOGLE_WORKSPACE_MCP_HOSTS = frozenset(
     {
         "gmailmcp.googleapis.com",
         "drivemcp.googleapis.com",
@@ -173,69 +148,64 @@ _RETIRED_GOOGLE_WORKSPACE_MCP_HOSTS = frozenset(
         "slidesmcp.googleapis.com",
         "calendarmcp.googleapis.com",
         "chatmcp.googleapis.com",
+        "people.googleapis.com",
     }
 )
 
-# Deliberately not in the set above. This host also serves the live Contacts
-# integration (https://people.googleapis.com/v1, the canonical catalog entry),
-# so it is retired by path rather than by hostname: everything on it that the
-# direct REST integrations do not claim. A blanket hostname rejection here
-# would disconnect Contacts.
-_RETIRED_PEOPLE_MCP_HOST = "people.googleapis.com"
 
-RETIRED_GOOGLE_WORKSPACE_MCP_MESSAGE = (
-    "Google Workspace MCP endpoints are no longer supported; use the built-in "
-    "Google integrations from the catalog."
-)
+def oauth_provider(server_url: str) -> Literal["generic", "google_workspace", "google_api"]:
+    """Identify exact official Google Workspace MCP v1 endpoints.
 
-
-def is_retired_google_workspace_mcp_url(server_url: str) -> bool:
-    """True for a URL :func:`oauth_provider` refuses as a retired MCP endpoint.
-
-    Applies the same two steps in the same order as ``oauth_provider``: a URL
-    the direct REST integrations claim is never retired, which is what keeps
-    the shared ``people.googleapis.com`` host usable for Contacts. The
-    maintenance command that disables stored connections shares this predicate
-    rather than re-deriving the rule, so the two cannot drift apart.
-    """
-    if google_api_scopes(server_url) is not None:
-        return False
-    host = urlsplit(server_url).hostname
-    return host in _RETIRED_GOOGLE_WORKSPACE_MCP_HOSTS or host == _RETIRED_PEOPLE_MCP_HOST
-
-
-# --------------------------- end compatibility -----------------------------
-
-
-def oauth_provider(server_url: str) -> Literal["generic", "google_api"]:
-    """Classify *server_url* for the OAuth flow.
-
-    The order is load-bearing. The generally available Google REST APIs are
-    claimed first: they are the only URLs that receive the deployment's static
-    Google client credentials, so the match is exact (see
-    :func:`~app.agents.google_workspace_api.google_api_kind`) and no alternate
-    path, port or subdomain can impersonate one. Retired Workspace MCP
-    endpoints are refused second, because one of their hostnames still serves a
-    live integration. Everything else is a user-supplied server and runs the
-    ordinary discovery + dynamic-registration flow.
+    Static Google client credentials must never be sent to a user-controlled
+    server or a lookalike hostname, so this deliberately accepts no alternate
+    paths, query strings, fragments, ports, or subdomains.
     """
     if google_api_scopes(server_url) is not None:
         return "google_api"
-    if is_retired_google_workspace_mcp_url(server_url):
-        raise OAuthError(RETIRED_GOOGLE_WORKSPACE_MCP_MESSAGE)
+    parsed = urlsplit(server_url)
+    if (
+        parsed.scheme == "https"
+        and parsed.hostname in _GOOGLE_WORKSPACE_MCP_HOSTS
+        and parsed.port is None
+        and parsed.path == "/mcp/v1"
+        and not parsed.query
+        and not parsed.fragment
+    ):
+        return "google_workspace"
     return "generic"
 
 
 def google_client_credentials() -> tuple[str, str]:
     """Return the deployment's static Google Web OAuth client."""
-    client_id = settings.GOOGLE_API_CLIENT_ID
+    client_id = (
+        settings.GOOGLE_API_CLIENT_ID
+        or settings.GOOGLE_WORKSPACE_MCP_CLIENT_ID
+        or settings.GOOGLE_DRIVE_CLIENT_ID
+    )
     secret = settings.GOOGLE_API_CLIENT_SECRET.get_secret_value()
+    if not secret:
+        secret = settings.GOOGLE_WORKSPACE_MCP_CLIENT_SECRET.get_secret_value()
+    if not secret:
+        secret = settings.GOOGLE_DRIVE_CLIENT_SECRET.get_secret_value()
     if not client_id or not secret:
         raise OAuthError(
             "Google integrations require GOOGLE_API_CLIENT_ID and "
             "GOOGLE_API_CLIENT_SECRET (the Full Stack Web OAuth client)."
         )
     return client_id, secret
+
+
+def validate_google_discovery(server: DiscoveredServer) -> None:
+    """Prevent Google credentials from being posted to discovered lookalikes."""
+    auth = urlsplit(server.authorization_endpoint)
+    token = urlsplit(server.token_endpoint)
+    if not (
+        auth.scheme == "https"
+        and auth.hostname == "accounts.google.com"
+        and token.scheme == "https"
+        and token.hostname == "oauth2.googleapis.com"
+    ):
+        raise OAuthError("Google Workspace MCP advertised an unexpected OAuth endpoint.")
 
 
 def google_api_server(server_url: str) -> DiscoveredServer:
@@ -398,7 +368,7 @@ def authorization_url(
     redirect_uri: str,
     state: str,
     code_challenge: str,
-    provider: Literal["generic", "google_api"] = "generic",
+    provider: Literal["generic", "google_workspace", "google_api"] = "generic",
 ) -> str:
     """Build the consent URL the browser is redirected to."""
     params: dict[str, str] = {
@@ -409,7 +379,7 @@ def authorization_url(
         "code_challenge": code_challenge,
         "code_challenge_method": "S256",
     }
-    if provider == "google_api":
+    if provider in {"google_workspace", "google_api"}:
         # Required to receive a refresh token for background agent turns.
         params.update(
             access_type="offline",

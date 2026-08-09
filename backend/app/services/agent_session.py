@@ -2,7 +2,7 @@
 import asyncio
 import contextlib
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -171,7 +171,10 @@ class AgentSession:
         # opening the same chat in another tab, or switching conversations does
         # not silently give the model an empty/stale history. This happens
         # before persist_user_turn so the current prompt is not duplicated.
-        history_conversation_id = data.get("conversation_id") or self.current_conversation_id
+        # A null conversation_id is the frontend's "new chat" signal over this
+        # same socket — never fall back to the session's previous conversation,
+        # or the new chat inherits the old history and the old conversation row.
+        history_conversation_id = data.get("conversation_id")
         if history_conversation_id:
             self.conversation_history = await load_conversation_history(
                 self.user, history_conversation_id
@@ -183,7 +186,6 @@ class AgentSession:
             user_message,
             file_ids,
             requested_conversation_id=data.get("conversation_id"),
-            current_conversation_id=self.current_conversation_id,
         )
         if newly_created and self.current_conversation_id:
             await send_event(
@@ -279,7 +281,6 @@ class AgentSession:
                     getattr(assistant, "model_name", None),
                     collected_tool_calls,
                     thinking="".join(collected_thinking) or None,
-                    tokens_used=agent_run.result.usage.total_tokens,
                 )
 
             if assistant_msg_id:
@@ -462,7 +463,7 @@ class AgentSession:
                                 "error": handle.error,
                             },
                         )
-                        ts = datetime.utcnow().isoformat()
+                        ts = datetime.now(UTC).isoformat()
                         if status == "running":
                             await self._send(
                                 "subagent_message",
@@ -521,7 +522,7 @@ class AgentSession:
                             "error": handle.error,
                         },
                     )
-                    ts = datetime.utcnow().isoformat()
+                    ts = datetime.now(UTC).isoformat()
                     if status == "completed" and handle.result:
                         await self._send(
                             "subagent_message",

@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "2026-08-09-phase-6-growth-trigger-preempted",
+  "date": "2026-08-09",
+  "kind": "growth-trigger",
+  "summary": "Owner pre-empts the phase-6 growth trigger: build the trimmed AST-graph slice now, scenario corpus first.",
+  "observation": "The blueprint defers Phase 6 until impact sets are measurably too coarse. That trigger has not formally fired: no validator over-selection or context budget blowout has been recorded as a miss. The owner is pre-empting it deliberately, on accumulated evidence rather than a single recorded failure.",
+  "evidence": [
+    {
+      "source": "governance sample census",
+      "detail": "First full census (count 162, the whole pool) found 2 real defects the manifests did not predict: a latent AttributeError (settings.CHANNEL_ENCRYPTION_KEY referenced in sync_source.py with no Settings field defining it) and datetime.utcnow() calls in agent_session.py against the declared datetime.now(UTC) invariant.",
+      "ref": "governance/history/changes/2026-08-08-governance-sample-map-vs-territory-spot-checks-on-random-tracked.json"
+    },
+    {
+      "source": "governance check --full",
+      "detail": "19 declared rules carry check_impl phase-*/manual and are reported as not yet enforced on every run; four of them (three layering/boundary rules and the ORM-migration pairing rule) have waited on the import graph since inception."
+    },
+    {
+      "source": "governance impact demo",
+      "detail": "A single route file seeds a 5-component blast radius with 21 configuration variables: component-glob granularity cannot distinguish a one-line handler edit from a service rewrite, so validator selection is uniformly conservative."
+    }
+  ],
+  "proposed_action": "Trimmed phase-6 slice, scenario corpus first: (1) seed tools/repo_governance/tests/scenarios/ with 3 historical and 4 synthetic scenarios and capture pre-graph impact baselines; (2) build a deterministic Python import/module graph over backend/app via AST (never importing app.*); (3) wire layering-routes-services-repositories, forbidden-dependency-not-taken, thick-domains-expose-a-facade, and a deliberately naive orm-changes-have-migrations pairing check, all remaining advisory; (4) feed bounded reverse-import slices into impact and context with a conservative manifest fallback, and re-run the scenarios as the before/after acceptance evidence. TypeScript AST, centrality, visualizers, community detection, and governance/graph/ activation stay deferred within the phase.",
+  "status": "open",
+  "initiated_by": {
+    "kind": "user"
+  },
+  "trigger_ref": "Phase 6 growth trigger: kernel impact sets measurably too coarse (docs/Fullstack_Agentic_Governance_Blueprint.md, Growth triggers for the deferred phases)",
+  "policy_refs": [
+    "layering-routes-services-repositories",
+    "forbidden-dependency-not-taken",
+    "thick-domains-expose-a-facade",
+    "orm-changes-have-migrations"
+  ],
+  "component_refs": [
+    "governance-kernel",
+    "backend-api"
+  ],
+  "related_change_records": [
+    "2026-08-08-governance-sample-map-vs-territory-spot-checks-on-random-tracked"
+  ],
+  "limitations": [
+    "The orm-changes-have-migrations implementation in this slice will be a file-path pairing heuristic that does not satisfy the rule's own promotion criterion (symbol-level detection); it must stay advisory and never be promoted to blocking in that form.",
+    "The graph slice covers backend/app Python imports only; TypeScript, cross-language edges, and dynamic import sites remain unmodeled, and their absence is reported as uncertainty rather than treated as absence of coupling."
+  ],
+  "tool_version": "1.0.0"
+}

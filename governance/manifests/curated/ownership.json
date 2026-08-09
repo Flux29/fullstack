@@ -164,6 +164,10 @@
     {
       "path": "governance/manifests/generated/read-surface.json",
       "reason": "Same: the read-gate surface postdates the blueprint's fixed schema set; a kernel-internal schema validates it without growing the committed twelve."
+    },
+    {
+      "path": "governance/history/evaluations/*.json",
+      "reason": "Same: the blueprint catalogues evaluation records but ships no schema for them; a kernel-internal schema validates them without growing the committed twelve."
     }
   ]
 }

@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 28)
+## Recent changes (latest 20 of 29)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Hook commands anchored to CLAUDE_PROJECT_DIR
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-hook-commands-anchored-to-claude-project-dir.json`
+- **2026-08-09** — Gate: a file-rooted search is a named read, not an enumeration
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-gate-a-file-rooted-search-is-a-named-read-not-an-enumeration.json`
 - **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Remove machine-specific paths from generated output
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-06-remove-machine-specific-paths-from-generated-output.json`
-- **2026-08-06** — Local and CI enforcement
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-06-local-and-ci-enforcement.json`
 
 ## Decisions (5)
 

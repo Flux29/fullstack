@@ -256,6 +256,19 @@ def main() -> None:
             if rel is None:
                 _respond("allow")
                 return
+            # A file-rooted search is a named read, not an enumeration: Grep with
+            # path=<file> (or a Glob whose static prefix lands on a file) reads exactly
+            # that file, so it takes the Read branch's semantics — including the
+            # named-corpus-file allowance.
+            absolute_root = root if os.path.isabs(root) else os.path.join(REPO_ROOT, root)
+            if os.path.isfile(absolute_root):
+                if _fold(rel).startswith("governance/") or surface.repo_allows_file(rel):
+                    _respond("allow")
+                    return
+                _verdict(
+                    state, repo_mode, "repo", rel, f"{rel} is outside the governed read surface", REGISTER_INSTEAD
+                )
+                return
             gated = surface.corpus_gate_for(rel)
             if gated:
                 _verdict(

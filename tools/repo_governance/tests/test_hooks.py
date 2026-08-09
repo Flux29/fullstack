@@ -115,6 +115,32 @@ def test_bounded_surfaces_may_be_enumerated(gate, monkeypatch, capsys) -> None:
 # --- the two gated surfaces ----------------------------------------------------------
 
 
+def test_grep_rooted_at_an_allowed_file_is_a_named_read_not_enumeration(gate, monkeypatch, capsys) -> None:
+    """Live-session false positive: Grep with path=<exact allowed file> warned as if it
+    were enumerating a directory. Searching one file is equivalent to reading it."""
+    surface = dict(SYNTHETIC_SURFACE)
+    surface["repo"] = dict(surface["repo"], exact_files=["AGENTS.md", "Makefile"])
+    Path(gate.ARTIFACT_PATH).write_text(canonical_json(surface), encoding="utf-8")
+    Path(gate.REPO_ROOT, "Makefile").write_text("all:\n", encoding="utf-8")
+
+    output = _run_gate(gate, monkeypatch, capsys, _grep("Makefile"))
+
+    assert _decision(output) == "allow"
+    assert "systemMessage" not in output
+
+
+def test_grep_of_one_named_corpus_file_is_allowed_even_in_deny_mode(gate, monkeypatch, capsys) -> None:
+    record = Path(gate.REPO_ROOT, "governance", "history", "changes", "2026-01-01-x.json")
+    record.parent.mkdir(parents=True, exist_ok=True)
+    record.write_text("{}", encoding="utf-8")
+
+    output = _run_gate(
+        gate, monkeypatch, capsys, _grep("governance/history/changes/2026-01-01-x.json"), mode="deny"
+    )
+
+    assert _decision(output) == "allow"
+
+
 def test_corpus_bulk_grep_warns_with_the_query_instruction(gate, monkeypatch, capsys) -> None:
     output = _run_gate(gate, monkeypatch, capsys, _grep("governance/history"))
     assert _decision(output) == "allow"

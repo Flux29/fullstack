@@ -50,6 +50,7 @@
       "governance/history/",
       "governance/history/changes/",
       "governance/history/decisions/",
+      "governance/history/evaluations/",
       "governance/schemas/",
       "tools/repo_governance/",
       "tools/repo_governance/tests/"

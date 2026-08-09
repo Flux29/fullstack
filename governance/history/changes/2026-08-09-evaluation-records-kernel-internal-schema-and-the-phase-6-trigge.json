@@ -1,0 +1,48 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "Additive. A seventh kernel-internal schema binding; existing documents and bindings unchanged. The read surface and catalog gain the evaluations directory because it now exists, per the declared catalog spec.",
+  "date": "2026-08-09",
+  "files_changed": [
+    "governance/catalog.json",
+    "governance/history/evaluations/",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/tests/test_evaluations.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-evaluation-records-kernel-internal-schema-and-the-phase-6-trigge",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The blueprint requires growth triggers to become evaluation records before build tasks; the phase-6 trigger is being deliberately pre-empted by owner decision, and governance/history/evaluations/ has no schema binding today so a record there would fail the blocking document check",
+  "risks": [],
+  "rollback": "Revert the commit. The schema binding and the record are inert data; removing them returns governance/history/evaluations/ to declared-but-absent, and sync regenerates catalog and read-surface accordingly.",
+  "schema_version": 1,
+  "security_impact": "None. Adds a kernel-internal validation schema and one curated JSON record; no runtime code paths, no secrets, no network or database access.",
+  "summary": "Evaluation records: kernel-internal schema and the phase-6 trigger pre-emption record",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

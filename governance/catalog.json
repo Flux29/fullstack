@@ -50,6 +50,14 @@
     },
     {
       "authority": "curated",
+      "description": "Evidence about governance behavior itself: misses, false positives, and context quality.",
+      "kind": "history-evaluation",
+      "path": "governance/history/evaluations/",
+      "read_when": "Proposing a change to governance extraction, policy, or ranking.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
       "description": "Components with no home directory: image-only services, host runtimes, database-resident surfaces, and multi-root frontend features.",
       "kind": "manifest-curated",
       "path": "governance/manifests/curated/architectural-intent.json",

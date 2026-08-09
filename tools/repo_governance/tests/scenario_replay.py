@@ -17,10 +17,11 @@ import os
 from pathlib import Path
 from typing import Any
 
+from scenario_contract import GOLDEN_DIR
+
 from repo_governance.config import Context
 from repo_governance.io_atomic import canonical_json, read_json, write_text_atomic
 from repo_governance.renderers.context import CHARS_PER_TOKEN, analyse_impact, render_context, rules_for
-from scenario_contract import GOLDEN_DIR
 
 UPDATE_ENV = "GOVERNANCE_UPDATE_GOLDENS"
 

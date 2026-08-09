@@ -2,7 +2,7 @@
 import asyncio
 import contextlib
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from fastapi import WebSocket, WebSocketDisconnect
@@ -461,7 +461,7 @@ class AgentSession:
                                 "error": handle.error,
                             },
                         )
-                        ts = datetime.utcnow().isoformat()
+                        ts = datetime.now(UTC).isoformat()
                         if status == "running":
                             await self._send(
                                 "subagent_message",
@@ -520,7 +520,7 @@ class AgentSession:
                             "error": handle.error,
                         },
                     )
-                    ts = datetime.utcnow().isoformat()
+                    ts = datetime.now(UTC).isoformat()
                     if status == "completed" and handle.result:
                         await self._send(
                             "subagent_message",

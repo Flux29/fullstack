@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 15 of 15)
+## Recent changes (latest 16 of 16)
 
+- **2026-08-08** — stop-check: reconcile the touched log against git state before blocking
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl.json`
 - **2026-08-08** — Regenerate the stale baseline Summary.md
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-regenerate-the-stale-baseline-summary-md.json`

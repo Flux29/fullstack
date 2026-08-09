@@ -100,6 +100,19 @@ def head_commit(root: Path) -> str | None:
     return output.strip() if output else None
 
 
+def toplevel(root: Path) -> Path | None:
+    """The repository top-level git actually answers for, or None if unknown.
+
+    git walks upward from `root`, so a directory nested inside some other repository gets
+    that repository's answers. Callers comparing porcelain output against `root`-relative
+    paths must check this is really `root` before trusting the result.
+    """
+    output = _run(["rev-parse", "--show-toplevel"], root)
+    if not output:
+        return None
+    return Path(output.strip()).resolve()
+
+
 def is_clean(root: Path) -> bool | None:
     changes = working_tree_changes(root)
     if changes is None:

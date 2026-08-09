@@ -163,6 +163,7 @@ def session_context() -> None:
 def _stop_evaluation(ctx: Context, session_id: str) -> tuple[list[str], list[str]]:
     """Returns (blockers, annotations) for a turn that touched repository files."""
     from repo_governance.checks import CheckScope, run_checks
+    from repo_governance.gitutil import toplevel, untracked_files, working_tree_changes
     from repo_governance.session import SessionError, load
 
     directory = _hook_state_dir(ctx, session_id)
@@ -188,9 +189,25 @@ def _stop_evaluation(ctx: Context, session_id: str) -> tuple[list[str], list[str
     for finding in report.blocking:
         blockers.append(f"[{finding.rule}] {finding.path}: {finding.message} Repair: {finding.repair}")
 
+    # The touched log is session memory: it outlives commits and never sees change
+    # records written by the governance CLI rather than the agent's editor. Only paths
+    # still dirty in the working tree may block; a committed touch was already carried
+    # through the governed flow. When git cannot answer for THIS root — unavailable, or
+    # answering for an enclosing repository — stay conservative and treat every touch
+    # as dirty rather than silently passing.
     touched_paths = {entry.get("path", "") for entry in touched}
-    material = sorted(path for path in touched_paths if not path.startswith("governance/history/"))
-    records = sorted(path for path in touched_paths if path.startswith("governance/history/changes/"))
+    tree_changes = working_tree_changes(ctx.repo_root)
+    new_files = untracked_files(ctx.repo_root)
+    git_answers_here = toplevel(ctx.repo_root) == ctx.repo_root.resolve()
+    if not git_answers_here or (tree_changes is None and new_files is None):
+        dirty = touched_paths
+        records = {path for path in touched_paths if path.startswith("governance/history/changes/")}
+    else:
+        dirty_now = {*(tree_changes or ()), *(new_files or ())}
+        dirty = touched_paths & dirty_now
+        records = {path for path in dirty_now if path.startswith("governance/history/changes/")}
+
+    material = sorted(path for path in dirty if not path.startswith("governance/history/"))
     if material and not records:
         try:
             load(ctx)

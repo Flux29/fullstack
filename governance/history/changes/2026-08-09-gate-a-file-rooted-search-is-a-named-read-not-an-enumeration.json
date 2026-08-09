@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Searching one named file now behaves exactly like reading it, on both gate surfaces",
+    "Evidence source: identical false-positive warn (repo:Makefile) in two independent live sessions' warn logs"
+  ],
+  "compatibility_impact": "Grep/Glob rooted at an exact file no longer warns (repo surface) or denies (corpus surface); directory-rooted behavior identical",
+  "date": "2026-08-09",
+  "files_changed": [
+    ".claude/hooks/governance_gate.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-gate-a-file-rooted-search-is-a-named-read-not-an-enumeration",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Two sessions of live warn-log evidence show the same false positive: Grep or Glob whose resolved root IS a file (path=Makefile) gets classified as directory enumeration, warning on an explicitly allowed exact file. Same defect class denies grepping one named change record in corpus deny mode, violating the documented contract that reading one named file is always allowed. Searching a single file is equivalent to reading it and must take the Read branch's semantics",
+  "risks": [],
+  "rollback": "git revert",
+  "schema_version": 1,
+  "security_impact": "None - the change only widens allowance to targets that are single existing files, which the Read branch already allowed by contract; bulk enumeration handling is unchanged",
+  "summary": "Gate: a file-rooted search is a named read, not an enumeration",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "120 tests; the two new tests were shown red on the defect before the fix",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

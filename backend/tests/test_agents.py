@@ -23,7 +23,7 @@ from pydantic_ai.tools import DeferredToolRequests, ToolApproved, ToolDenied
 from app.agents.assistant import AssistantAgent, Deps, get_agent
 from app.agents.prompts import get_system_prompt_with_rag
 from app.agents.utils import get_current_datetime
-from app.services.agent import build_message_history, load_conversation_history
+from app.services.agent import build_message_history, load_conversation_history, persist_user_turn
 from app.services.agent_session import AgentSession
 
 
@@ -398,3 +398,108 @@ class TestPersistedConversationHistory:
             {"role": "user", "content": "new prompt"},
             {"role": "assistant", "content": "new answer"},
         ]
+
+    @pytest.mark.anyio
+    async def test_persist_without_a_requested_id_always_creates(self):
+        user = SimpleNamespace(id=uuid4())
+        created = SimpleNamespace(id=uuid4())
+        service = AsyncMock()
+        service.create_conversation = AsyncMock(return_value=created)
+        service.add_message = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            conv_id, newly_created, _ = await persist_user_turn(
+                user, "hello", [], requested_conversation_id=None
+            )
+
+        assert newly_created is True
+        assert conv_id == str(created.id)
+        service.add_message.assert_awaited_once()
+
+    @pytest.mark.anyio
+    async def test_persist_with_a_requested_id_continues_that_conversation(self):
+        user = SimpleNamespace(id=uuid4())
+        requested = str(uuid4())
+        service = AsyncMock()
+        service.get_conversation = AsyncMock(return_value=SimpleNamespace(title="existing"))
+        service.add_message = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            conv_id, newly_created, _ = await persist_user_turn(
+                user, "follow-up", [], requested_conversation_id=requested
+            )
+
+        assert newly_created is False
+        assert conv_id == requested
+        service.create_conversation.assert_not_awaited()
+
+    @pytest.mark.anyio
+    async def test_new_chat_over_a_live_session_creates_a_fresh_conversation(self):
+        """The new-chat incident: conversation_id null means NEW CHAT, even mid-session.
+
+        The frontend's startNewChat keeps the WebSocket open, sends the next message with
+        conversation_id null, and waits for conversation_created to learn the new id. A
+        session that falls back to its sticky current_conversation_id instead appends the
+        message to the OLD conversation and hands the model the OLD history — chats that
+        never end, which is exactly what shipped inside the d11400c snapshot.
+        """
+        user = SimpleNamespace(id=uuid4())
+        session = AgentSession(MagicMock(), user)
+        session.current_conversation_id = str(uuid4())  # a previous chat on this socket
+        session._stream_agent_run = AsyncMock()
+        session._google_loadout_for_turn = MagicMock(return_value=MagicMock())
+
+        new_conversation = SimpleNamespace(id=uuid4())
+        conv_service = AsyncMock()
+        conv_service.create_conversation = AsyncMock(return_value=new_conversation)
+        conv_service.add_message = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        captured: dict = {}
+        agent_run = SimpleNamespace(result=SimpleNamespace(output="answer"))
+
+        @contextlib.asynccontextmanager
+        async def fake_iter(user_input, **kwargs):
+            captured.update(kwargs)
+            yield agent_run
+
+        assistant = MagicMock()
+        assistant.agent.iter = fake_iter
+        assistant.model_name = "test-model"
+        load_history = AsyncMock(return_value=[{"role": "user", "content": "old chat"}])
+        send_event = AsyncMock(return_value=True)
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=conv_service),
+            patch("app.services.agent_session.load_conversation_history", load_history),
+            patch("app.services.agent_session.persist_assistant_turn", AsyncMock(return_value="m")),
+            patch("app.services.agent_session.send_event", send_event),
+            patch("app.services.agent_session.build_toolsets_for_user", AsyncMock(return_value=[])),
+            patch("app.services.agent_session.get_agent", return_value=assistant),
+        ):
+            await session.process_message({"message": "fresh start", "conversation_id": None})
+
+        conv_service.create_conversation.assert_awaited_once()
+        assert session.current_conversation_id == str(new_conversation.id)
+        load_history.assert_not_awaited()  # the old chat's history must not leak in
+        assert captured["message_history"] == []
+        event_names = [call.args[1] for call in send_event.await_args_list]
+        assert "conversation_created" in event_names

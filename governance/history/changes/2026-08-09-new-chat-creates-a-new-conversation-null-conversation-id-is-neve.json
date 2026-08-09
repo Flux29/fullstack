@@ -1,0 +1,49 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "New chats over a live WebSocket session create a fresh conversation instead of appending to the previous one, and no longer inherit the previous chat's history into the model context",
+    "Mutation evidence: resurrecting both sticky fallbacks fails the end-to-end test; diagnosed root present since the d11400c squash snapshot - neither suspected later commit touched this seam"
+  ],
+  "compatibility_impact": "persist_user_turn drops its now-dead current_conversation_id parameter (single caller updated; test mocks are signature-agnostic). Wire contract now matches what the frontend has expected all along: conversation_id null creates a conversation and emits conversation_created. Safe against the send-while-processing race because the outbound queue drains only when idle, after the new id is known",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/app/services/agent.py",
+    "backend/app/services/agent_session.py",
+    "backend/tests/test_agents.py"
+  ],
+  "follow_up": [
+    "Owner-observed live verification in the running app: start a chat, click New chat, send - expect a new conversation in the sidebar and no old-history bleed"
+  ],
+  "id": "2026-08-09-new-chat-creates-a-new-conversation-null-conversation-id-is-neve",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The history-windowing finding stands separately: an explicitly resumed long conversation still loads its entire history"
+  ],
+  "manifests_changed": [],
+  "reason": "The frontend's startNewChat clears state and sends conversation_id null over the SAME WebSocket, expecting the conversation_created event back - but the backend only created a conversation when the session's sticky current_conversation_id was ALSO unset, so every new chat after the first appended to the old conversation and inherited its full history. Present since the d11400c squash snapshot; neither of the suspected later commits touched this seam. Contract fixed to match the frontend: null means new chat, unconditionally - safe because the outbound queue drains only after complete, when the new id is already known",
+  "risks": [],
+  "rollback": "git revert restores the sticky-session behavior and the bug",
+  "schema_version": 1,
+  "security_impact": "None - conversation resolution only; the ownership check on requested conversations is unchanged",
+  "summary": "New chat creates a new conversation: null conversation_id is never sticky",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "473 passed, 13 gated skips, zero exclusions; 3 new tests - the end-to-end new-chat-mid-session pin plus two persist_user_turn contract pins; all Phase-5 retention pins stayed green as designed",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish; governance sample --count 162 clean over the touched files",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

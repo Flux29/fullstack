@@ -139,9 +139,13 @@ async def persist_user_turn(
     user_message: str,
     file_ids: list[Any],
     requested_conversation_id: str | None,
-    current_conversation_id: str | None,
 ) -> tuple[str | None, bool, str | None]:
     """Resolve the conversation, persist the user message, and link any uploaded files.
+
+    A ``requested_conversation_id`` of None means the client is starting a new chat:
+    a new conversation is always created. The WebSocket session's previous conversation
+    must never leak in here — the frontend keeps one socket across chats and relies on
+    the ``conversation_created`` event to learn the new id.
 
     Returns ``(conversation_id, was_newly_created, organization_id)``. When
     ``was_newly_created`` is True the caller should emit a ``conversation_created``
@@ -151,12 +155,12 @@ async def persist_user_turn(
     """
     newly_created = False
     organization_id: str | None = None
+    conversation_id = requested_conversation_id
     try:
         async with get_db_context() as db:
             conv_service = get_conversation_service(db)
 
             if requested_conversation_id:
-                current_conversation_id = requested_conversation_id
                 conv = await conv_service.get_conversation(
                     UUID(requested_conversation_id), user_id=user.id
                 )
@@ -166,18 +170,18 @@ async def persist_user_turn(
                         ConversationUpdate(title=truncate_title(user_message)),
                         user_id=user.id,
                     )
-            elif not current_conversation_id:
+            else:
                 conversation = await conv_service.create_conversation(
                     ConversationCreate(
                         user_id=user.id,
                         title=truncate_title(user_message),
                     )
                 )
-                current_conversation_id = str(conversation.id)
+                conversation_id = str(conversation.id)
                 newly_created = True
 
             user_msg = await conv_service.add_message(
-                UUID(current_conversation_id),
+                UUID(conversation_id),
                 MessageCreate(role="user", content=user_message),
             )
             if file_ids:
@@ -188,7 +192,7 @@ async def persist_user_turn(
     except Exception as e:
         logger.warning("Failed to persist conversation: %s", e)
 
-    return current_conversation_id, newly_created, organization_id
+    return conversation_id, newly_created, organization_id
 
 
 def normalize_tool_args(args: Any) -> dict[str, Any]:

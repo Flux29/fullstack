@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 24)
+## Recent changes (latest 20 of 25)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
+- **2026-08-09** — New chat creates a new conversation: null conversation_id is never sticky
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-09-new-chat-creates-a-new-conversation-null-conversation-id-is-neve.json`
 - **2026-08-09** — Hook commands anchored to CLAUDE_PROJECT_DIR
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-hook-commands-anchored-to-claude-project-dir.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Establish the Phase 0 governance baseline: record the authority model and generator provenance in ADR-001, register the twelve known findings at adoption, scrub live credentials and duplicate keys from backend/.env.example, and close the .gitignore and line-ending hygiene gaps.
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-governance-adoption-baseline.json`
-- **2026-08-06** — Add deterministic extraction: settings AST, both environment templates, Compose across the stack matrix, the Makefile's canonical stacks, the Alembic revision graph, frontend routes and proxy mappings, the MCP catalog, the GitHub read-only enforcement layers, and a sanitized OpenAPI export. Regenerate ENV_VARS.md and three manifests, and wire seven policy rules to real checks.
-  - Components: governance-kernel, backend-api, frontend-app, postgres-pgvector, redis, github-mcp, traefik
-  - Record: `governance/history/changes/2026-08-06-deterministic-extraction.json`
 
 ## Decisions (5)
 

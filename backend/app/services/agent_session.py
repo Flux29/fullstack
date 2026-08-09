@@ -171,7 +171,10 @@ class AgentSession:
         # opening the same chat in another tab, or switching conversations does
         # not silently give the model an empty/stale history. This happens
         # before persist_user_turn so the current prompt is not duplicated.
-        history_conversation_id = data.get("conversation_id") or self.current_conversation_id
+        # A null conversation_id is the frontend's "new chat" signal over this
+        # same socket — never fall back to the session's previous conversation,
+        # or the new chat inherits the old history and the old conversation row.
+        history_conversation_id = data.get("conversation_id")
         if history_conversation_id:
             self.conversation_history = await load_conversation_history(
                 self.user, history_conversation_id
@@ -183,7 +186,6 @@ class AgentSession:
             user_message,
             file_ids,
             requested_conversation_id=data.get("conversation_id"),
-            current_conversation_id=self.current_conversation_id,
         )
         if newly_created and self.current_conversation_id:
             await send_event(

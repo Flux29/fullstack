@@ -1,0 +1,49 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Route contracts pinned: 201 create, 200 list/patch/trigger, 204 empty-body delete, RAGSyncResponse shaping from the sync log, and the error envelope (code, message, details) for 404 and 400",
+    "Mutation evidence: reverting the filter fix fails its test; changing the create status code fails two"
+  ],
+  "compatibility_impact": "One behavior fix shipped with its test: list_sync_sources now passes collection_name to the service, so the documented filter works instead of silently returning everything; request and response shapes unchanged, so the Next.js proxy needs no update",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/app/api/routes/v1/rag.py",
+    "backend/tests/api/test_rag_sync_sources.py"
+  ],
+  "follow_up": [
+    "Decide whether clone_source gets a route or gets removed",
+    "Design active-organization context for the sync-source routes"
+  ],
+  "id": "2026-08-09-api-route-tests-for-the-sync-source-endpoints-plus-the-collectio",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "FINDING: clone_source exists on the service with no HTTP route - capability without a surface, flagged rather than inventing an endpoint",
+    "FINDING: org scoping is not wired at the HTTP layer - routes never pass organization_id although service signatures and docstrings anticipate it; a design decision, not a one-line fix"
+  ],
+  "manifests_changed": [],
+  "reason": "The 1638867 service-suite record names the HTTP layer as the remaining gap: six admin-gated endpoints expose the credential flow with no route tests for auth gating, status codes, the error envelope, or serialization. Planning exploration also found list_sync_sources accepting and documenting a collection_name query parameter it never passes to the service - the filter silently does nothing - so the fix ships with the test that pins the corrected pass-through rather than enshrining the bug",
+  "risks": [],
+  "rollback": "git revert restores the ignored filter and removes the tests",
+  "schema_version": 1,
+  "security_impact": "The HTTP surface of the credential flow is now pinned: admin gating on all six endpoints (401 challenge, 403 non-admin), and an end-to-end test proving a POST with plaintext secrets returns masked JSON while ciphertext reaches the repository",
+  "summary": "API-route tests for the sync-source endpoints, plus the collection filter fix",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "470 passed (457 plus 13 new route tests), 13 gated skips, zero exclusions",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish; governance sample --count 162 clean including the touched route file",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

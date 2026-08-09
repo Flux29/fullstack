@@ -7,6 +7,7 @@ See: https://anyio.readthedocs.io/en/stable/testing.html
 # ruff: noqa: I001 - Imports structured for Jinja2 template conditionals
 
 from collections.abc import AsyncGenerator
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -17,6 +18,23 @@ from app.core.config import settings
 from app.api.deps import get_redis
 from app.clients.redis import RedisClient
 from app.api.deps import get_db_session
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Keep temporary directories inside the repository's gitignored cache.
+
+    pytest defaults to a per-user directory under the system temp root, which this
+    machine has already had poisoned once: a run under a different security context
+    left ACLs the desktop user could not even read, and every test using a tmp_path
+    fixture erred at setup while scanning that root. Anchoring scratch to the repo
+    cache makes the suite immune to the machine's temp-dir state — the governance
+    suite has used the same arrangement from the start.
+    """
+    if config.option.basetemp:
+        return
+    basetemp = Path(__file__).resolve().parents[2] / ".cache" / "pytest-backend"
+    basetemp.parent.mkdir(parents=True, exist_ok=True)
+    config.option.basetemp = str(basetemp)
 
 
 @pytest.fixture

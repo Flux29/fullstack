@@ -24,7 +24,12 @@ from app.services.sync_source import (
     _encrypt_config,
 )
 
-S3_CONFIG = {"bucket": "docs", "prefix": "", "access_key_id": "AKIA123", "secret_access_key": "shhh"}
+S3_CONFIG = {
+    "bucket": "docs",
+    "prefix": "",
+    "access_key_id": "AKIA123",
+    "secret_access_key": "shhh",
+}
 S3_SECRETS = ("access_key_id", "secret_access_key")
 
 
@@ -116,7 +121,9 @@ class TestCreatePersistsEncryptedAndReadsBackMasked:
             )
 
         for field in S3_SECRETS:
-            assert decrypt_value(created_row["config"][field], settings.SECRET_KEY) == S3_CONFIG[field]
+            assert (
+                decrypt_value(created_row["config"][field], settings.SECRET_KEY) == S3_CONFIG[field]
+            )
 
     @pytest.mark.anyio
     async def test_list_sources_masks_secrets_from_a_dict_config(self, service):
@@ -213,7 +220,9 @@ class TestUpdatePreservesCredentials:
             await service.clone_source(str(existing.id), SyncSourceClone(collection_name="kb-two"))
 
         cloned = created_row["config"]
-        assert cloned["secret_access_key"] != existing.config["secret_access_key"]  # fresh Fernet token
+        assert (
+            cloned["secret_access_key"] != existing.config["secret_access_key"]
+        )  # fresh Fernet token
         assert decrypt_value(cloned["secret_access_key"], settings.SECRET_KEY) == "shhh"
         assert created_row["name"] == "Docs bucket (copy)"
         assert created_row["collection_name"] == "kb-two"
@@ -231,7 +240,9 @@ class TestErrorContracts:
     async def test_create_source_missing_required_field_raises_bad_request(self, service):
         config = {key: value for key, value in S3_CONFIG.items() if key != "bucket"}
         with pytest.raises(BadRequestError):
-            await service.create_source(SyncSourceCreate(name="x", connector_type="s3", config=config))
+            await service.create_source(
+                SyncSourceCreate(name="x", connector_type="s3", config=config)
+            )
 
     @pytest.mark.anyio
     async def test_get_source_not_found_raises_not_found(self, service):

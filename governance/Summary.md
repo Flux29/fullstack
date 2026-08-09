@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 26)
+## Recent changes (latest 20 of 27)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
+- **2026-08-09** — ruff format pass over the session's backend files
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-ruff-format-pass-over-the-session-s-backend-files.json`
 - **2026-08-09** — New chat creates a new conversation: null conversation_id is never sticky
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-09-new-chat-creates-a-new-conversation-null-conversation-id-is-neve.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Lazy Google Workspace tool exposure: toolkit loader, approval-resume slimming, per-turn relevance router, schema slimming
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-06-lazy-google-workspace-tool-exposure-toolkit-loader-approval-resu.json`
-- **2026-08-06** — Add the minimal governance kernel: the twelve JSON Schemas, the governance contract, the self-governance policy, the validator registry, the ownership rules, a deterministic CLI with preflight/scan/sync/check/doctor, and a converged AGENTS.md entry point.
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-06-governance-kernel.json`
 
 ## Decisions (5)
 

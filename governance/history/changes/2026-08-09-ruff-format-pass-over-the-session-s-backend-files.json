@@ -1,0 +1,46 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "ruff format --check passes; the CI lint job's second half is satisfied"
+  ],
+  "compatibility_impact": "None",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/tests/api/test_rag_sync_sources.py",
+    "backend/tests/test_agents.py",
+    "backend/tests/test_services_conversation.py",
+    "backend/tests/test_services_sync_source.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-ruff-format-pass-over-the-session-s-backend-files",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Process note recorded: the house command is ruff check --fix AND ruff format - this session ran only the first half; CI caught the omission on its first branch run, which is the backstop working"
+  ],
+  "manifests_changed": [],
+  "reason": "First CI run on fullstack2 failed its ruff format check: four files written this session were linted with ruff check but never run through ruff format, missing the house command's second half. Formatting only - no behavior",
+  "risks": [],
+  "rollback": "git revert",
+  "schema_version": 1,
+  "security_impact": "None - whitespace and line-wrapping in four test files",
+  "summary": "ruff format pass over the session's backend files",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "473 passed, formatting only",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

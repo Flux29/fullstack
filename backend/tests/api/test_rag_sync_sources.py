@@ -22,7 +22,12 @@ from app.services.sync_source import _SECRET_MASK, _encrypt_config
 
 SOURCES_URL = f"{settings.API_V1_STR}/rag/sync/sources"
 CONNECTORS_URL = f"{settings.API_V1_STR}/rag/sync/connectors"
-S3_CONFIG = {"bucket": "docs", "prefix": "", "access_key_id": "AKIA123", "secret_access_key": "shhh"}
+S3_CONFIG = {
+    "bucket": "docs",
+    "prefix": "",
+    "access_key_id": "AKIA123",
+    "secret_access_key": "shhh",
+}
 S3_SECRETS = ("access_key_id", "secret_access_key")
 
 
@@ -216,7 +221,9 @@ class TestHttpContract:
         assert str(source_id) in payload["message"]
 
     @pytest.mark.anyio
-    async def test_trigger_missing_source_returns_404_error_envelope(self, admin_client, mock_service):
+    async def test_trigger_missing_source_returns_404_error_envelope(
+        self, admin_client, mock_service
+    ):
         mock_service.trigger_sync = AsyncMock(
             side_effect=NotFoundError(message="Sync source not found", details={"source_id": "x"})
         )
@@ -281,7 +288,9 @@ class TestEndToEndCredentialFlow:
         body_config = response.json()["config"]
         for field in S3_SECRETS:
             assert body_config[field] == _SECRET_MASK, f"{field} leaked through the HTTP response"
-            assert is_encrypted(created_row["config"][field]), f"{field} hit the repository in plaintext"
+            assert is_encrypted(created_row["config"][field]), (
+                f"{field} hit the repository in plaintext"
+            )
         assert body_config["bucket"] == "docs"
 
     @pytest.mark.anyio

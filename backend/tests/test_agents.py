@@ -380,14 +380,25 @@ class TestPersistedConversationHistory:
         assistant.model_name = "test-model"
 
         with (
-            patch("app.services.agent_session.load_conversation_history", AsyncMock(return_value=list(loaded))),
-            patch("app.services.agent_session.persist_user_turn", AsyncMock(return_value=(conversation_id, False, None))),
-            patch("app.services.agent_session.persist_assistant_turn", AsyncMock(return_value="msg-id")),
+            patch(
+                "app.services.agent_session.load_conversation_history",
+                AsyncMock(return_value=list(loaded)),
+            ),
+            patch(
+                "app.services.agent_session.persist_user_turn",
+                AsyncMock(return_value=(conversation_id, False, None)),
+            ),
+            patch(
+                "app.services.agent_session.persist_assistant_turn",
+                AsyncMock(return_value="msg-id"),
+            ),
             patch("app.services.agent_session.send_event", AsyncMock(return_value=True)),
             patch("app.services.agent_session.build_toolsets_for_user", AsyncMock(return_value=[])),
             patch("app.services.agent_session.get_agent", return_value=assistant),
         ):
-            await session.process_message({"message": "new prompt", "conversation_id": conversation_id})
+            await session.process_message(
+                {"message": "new prompt", "conversation_id": conversation_id}
+            )
 
         history_arg = captured["message_history"]
         assert [type(message) for message in history_arg] == [ModelRequest, ModelResponse]

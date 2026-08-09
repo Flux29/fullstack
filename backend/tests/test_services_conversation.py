@@ -601,7 +601,9 @@ class TestConversationServiceAddMessage:
                 await service.add_message(uuid4(), mock_data)
 
     @pytest.mark.anyio
-    async def test_add_message_carries_tokens_used_to_the_repository(self, service: ConversationService):
+    async def test_add_message_carries_tokens_used_to_the_repository(
+        self, service: ConversationService
+    ):
         """The token-accounting carriage seam: a count supplied at the schema layer
         must arrive at the repository call unchanged, not be dropped on the way."""
         conv_id = uuid4()

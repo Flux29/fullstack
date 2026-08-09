@@ -184,7 +184,8 @@ def _verdict(state: SessionState, mode: str, surface: str, subject: str, summary
 
 
 def selftest() -> None:
-    """Stateless health probe for the session-context hook: no stdin, no dedupe, exit 0."""
+    """Stateless health probe: no stdin, no dedupe. Exits 1 on degraded so CI can gate
+    on it; the session-context hook reads stdout and ignores the exit code."""
     mode = os.environ.get("GOVERNANCE_GATE", "").strip().lower()
     if mode == "off":
         print(json.dumps({"gate": "off"}))
@@ -195,6 +196,7 @@ def selftest() -> None:
         print(json.dumps({"gate": "healthy", "modes": surface.modes}))
     except Exception as error:
         print(json.dumps({"gate": "degraded", "reason": str(error)}))
+        raise SystemExit(1) from None
 
 
 def main() -> None:

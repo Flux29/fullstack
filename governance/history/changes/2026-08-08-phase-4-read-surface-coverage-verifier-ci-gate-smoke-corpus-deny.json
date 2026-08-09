@@ -1,0 +1,58 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance coverage measures the read surface against git ls-files: 823/823 tracked paths covered (100 percent) after sanctioning .fastapi-fullstack.json and .pre-commit-config.yaml and fixing the evaluations ghost",
+    "DECISION per plan 4.5: repo surface stays warn - measured coverage started at 99.76 percent, far above the 90 percent threshold where a per-read deny is theater; the CI coverage step carries that enforcement",
+    "CI governance job gains a read-gate smoke step and a blocking coverage step",
+    "RULE_SCOPES vs .claude/rules drift is checked by the same coverage command"
+  ],
+  "compatibility_impact": "gate --selftest exits 1 on degraded (new CI contract; the session-context caller ignores exit codes); declared-but-absent catalog paths no longer enter the read surface",
+  "date": "2026-08-08",
+  "files_changed": [
+    ".claude/hooks/governance_gate.py",
+    ".github/workflows/ci.yml",
+    "governance/governance.toml",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/gitutil.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [
+    "Wire api-changes-reach-the-proxy using the proxy mappings already in interfaces.json"
+  ],
+  "id": "2026-08-08-phase-4-read-surface-coverage-verifier-ci-gate-smoke-corpus-deny",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The optional api-changes-reach-the-proxy wiring (plan 4.6) was not taken - it remains the next candidate when a phase-3 rule is promoted"
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The gate is only as honest as its surface: coverage measurement proves every tracked path is either governed, sanctioned, or deliberately gated before any deny fires. Corpus surface flips to deny because Phase 3 items 2, 5, and 7 passed live; the repo surface decision follows the measured coverage number per the plan - deny there is theater if the allowed set covers nearly everything, and CI carries that enforcement instead",
+  "risks": [],
+  "rollback": "git revert; the corpus deny flip alone reverts by setting mode_corpus back to warn in the [gate] table and running sync",
+  "schema_version": 1,
+  "security_impact": "Corpus surface now denies bulk enumeration by default (observed live: the gate denied its own author's Grep of governance/manifests); fail-open posture unchanged - a broken gate still degrades to allow, and CI now fails closed on gate health and coverage instead",
+  "summary": "Phase 4: read-surface coverage verifier, CI gate smoke, corpus deny flip",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "113 tests - new coverage tests hold the same 100 percent bar CI holds; idempotence regression caught during development and fixed via the build_catalog generated_paths pattern",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish; sync is a no-op",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

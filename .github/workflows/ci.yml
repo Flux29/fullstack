@@ -51,6 +51,19 @@ jobs:
           uv run --project tools/repo_governance governance sync
           git diff --exit-code
 
+      # The interactive hooks fail open by design, so CI is the fail-closed layer: a gate
+      # that cannot load its artifact, or a tracked path outside the read surface, fails
+      # the merge instead of silently degrading every future session.
+      - name: Read-gate smoke
+        run: |
+          python .claude/hooks/governance_gate.py --selftest
+          echo '{"session_id":"ci","tool_name":"Read","tool_input":{"file_path":"AGENTS.md"}}' \
+            | python .claude/hooks/governance_gate.py \
+            | python -c "import json,sys; d=json.load(sys.stdin); assert d['hookSpecificOutput']['permissionDecision']=='allow', d"
+
+      - name: Read-surface coverage
+        run: uv run --project tools/repo_governance governance coverage
+
   lint:
     runs-on: ubuntu-latest
     steps:

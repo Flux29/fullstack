@@ -26,6 +26,20 @@
     ]
   },
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "uv run --project tools/repo_governance governance hook session-context",
+            "timeout": 60,
+            "statusMessage": "Governance orientation"
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Write",
@@ -36,6 +50,45 @@
             "command": "python -c 'import json,sys,os; d=json.load(sys.stdin); p=(d.get(\"tool_input\") or {}).get(\"file_path\") or \"\"; n=p.replace(chr(92),\"/\"); ok=(not p) or os.path.exists(p) or (\"/Temp/claude/\" in n); print(json.dumps({\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}} if ok else {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"NEW file: \"+p+\" - prefer editing an existing file; create only if genuinely needed.\"}}))'",
             "timeout": 15,
             "statusMessage": "New-file gate"
+          }
+        ]
+      },
+      {
+        "matcher": "Read|Glob|Grep",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "python .claude/hooks/governance_gate.py",
+            "timeout": 5,
+            "statusMessage": "Governance read gate"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "python .claude/hooks/governance_touched.py",
+            "timeout": 5,
+            "statusMessage": "Governance touched log"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "uv run --project tools/repo_governance governance hook stop-check",
+            "timeout": 120,
+            "statusMessage": "Governance stop check"
           }
         ]
       }

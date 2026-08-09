@@ -160,6 +160,10 @@
     {
       "path": "governance/manifests/effective/repository.json",
       "reason": "Same: the blueprint lists the effective manifest but no schema for the merged shape."
+    },
+    {
+      "path": "governance/manifests/generated/read-surface.json",
+      "reason": "Same: the read-gate surface postdates the blueprint's fixed schema set; a kernel-internal schema validates it without growing the committed twelve."
     }
   ]
 }

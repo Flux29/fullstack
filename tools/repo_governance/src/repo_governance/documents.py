@@ -45,6 +45,7 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/manifests/curated/ownership.json", "ownership"),
     ("governance/manifests/curated/exceptions.json", "exceptions"),
     ("governance/manifests/generated/tests.json", "tests"),
+    ("governance/manifests/generated/read-surface.json", "read-surface"),
     ("governance/manifests/effective/repository.json", "effective"),
 )
 
@@ -251,6 +252,45 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
                         "covered_by": {"type": "array", "items": {"type": "string"}},
                         "gap": {"type": "string"},
                     },
+                },
+            },
+        },
+    },
+    "read-surface": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/read-surface/v1",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["schema_version", "provenance", "default_modes", "corpus", "repo"],
+        "properties": {
+            "schema_version": {"const": 1},
+            "provenance": _PROVENANCE,
+            "default_modes": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["corpus", "repo"],
+                "properties": {
+                    "corpus": {"enum": ["off", "warn", "deny"]},
+                    "repo": {"enum": ["off", "warn", "deny"]},
+                },
+            },
+            "corpus": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["gated_roots", "bounded_surfaces"],
+                "properties": {
+                    "gated_roots": {"type": "array", "items": {"type": "string"}},
+                    "bounded_surfaces": {"type": "array", "items": {"type": "string"}},
+                },
+            },
+            "repo": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["exact_files", "dir_prefixes", "glob_patterns"],
+                "properties": {
+                    "exact_files": {"type": "array", "items": {"type": "string"}},
+                    "dir_prefixes": {"type": "array", "items": {"type": "string"}},
+                    "glob_patterns": {"type": "array", "items": {"type": "string"}},
                 },
             },
         },

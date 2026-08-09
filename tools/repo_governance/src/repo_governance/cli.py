@@ -100,6 +100,25 @@ def main() -> None:
     """Repository governance control plane."""
 
 
+def _register_hook_group() -> None:
+    """The hook endpoints live in their own module; a syntax error there must not take
+    down the rest of the CLI, so the import failure is reported as a stub command."""
+    try:
+        from repo_governance.hooks import hook
+
+        main.add_command(hook, name="hook")
+    except Exception as error:  # pragma: no cover - import-failure guard
+        message = str(error)
+
+        @main.command("hook")
+        def broken_hook() -> None:
+            """Hook endpoints failed to import."""
+            raise click.ClickException(f"repo_governance.hooks failed to import: {message}")
+
+
+_register_hook_group()
+
+
 @main.command()
 def bootstrap() -> None:
     """Inventory the repository and confirm the governance baseline.
@@ -462,13 +481,21 @@ def explain(component_id: str) -> None:
 
 @main.command()
 def summary() -> None:
-    """Regenerate the bounded Summary.md."""
+    """Report whether the bounded Summary.md is current. Read-only.
+
+    This used to run a full sync under a read-only-sounding name, which is exactly the
+    kind of blurred write path the hook workflow cannot afford: hooks instruct agents to
+    run commands, and an instruction chain landing here must never silently write.
+    """
+    from repo_governance.pipeline import SUMMARY_PATH
+
     ctx = _context()
-    changed = run_sync(ctx)
-    if "governance/Summary.md" in changed:
-        click.echo("Regenerated governance/Summary.md.")
-    else:
-        click.echo("governance/Summary.md is already current.")
+    stale = [reason for path, reason in compare_generated(ctx) if path == SUMMARY_PATH]
+    if stale:
+        click.echo(f"governance/Summary.md is stale: {stale[0]}")
+        click.echo("Regenerate with `make governance-sync`.")
+        raise SystemExit(1)
+    click.echo("governance/Summary.md is current.")
 
 
 @main.group()

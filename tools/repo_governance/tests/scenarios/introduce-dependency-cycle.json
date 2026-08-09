@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "introduce-dependency-cycle",
+  "kind": "synthetic",
+  "title": "Introduce a repository-to-service dependency cycle",
+  "description": "backend/app/repositories/user.py gains an import of backend/app/services/user.py, closing a cycle between the service and repository layers. The change is entirely internal to the backend: no contract, page, or infrastructure component is touched.",
+  "change": {
+    "paths": [
+      "backend/app/repositories/user.py",
+      "backend/app/services/user.py"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "backend-api"
+    ],
+    "validators": [
+      "backend-lint",
+      "backend-unit"
+    ],
+    "proxy_routes": [],
+    "context_documents": [
+      ".claude/rules/architecture.md",
+      ".claude/rules/code-style.md"
+    ],
+    "policies": [
+      "layering-routes-services-repositories"
+    ],
+    "findings": []
+  },
+  "notes": "The canonical over-inclusion case: ground truth is one component and two validators, while manifest-level impact reaches five components, twenty-one configuration variables, and frontend-test. What the graph adds is the file-level reverse-importer set of the two seeds - every service and route that imports the user repository or service - which is the actual review surface for a layering cycle."
+}

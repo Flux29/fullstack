@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "rename-env-var",
+  "kind": "synthetic",
+  "title": "Rename a backend environment variable shared with Compose",
+  "description": "A Settings field in backend/app/core/config.py is renamed; docker-compose.yml and backend/.env.example carry the same name and must follow. ENV_VARS.md is generated from the configuration manifest and must be regenerated, never hand-edited.",
+  "change": {
+    "paths": [
+      "backend/app/core/config.py",
+      "docker-compose.yml",
+      "backend/.env.example"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "backend-api"
+    ],
+    "validators": [
+      "backend-lint",
+      "backend-unit",
+      "compose-check"
+    ],
+    "proxy_routes": [],
+    "context_documents": [
+      ".claude/rules/code-style.md",
+      ".claude/rules/exceptions-security.md"
+    ],
+    "policies": [
+      "generated-documentation-is-not-hand-edited"
+    ],
+    "findings": []
+  },
+  "notes": "Ground truth is deliberately narrow: the rename itself is a backend-api change whose blast radius is the surfaces that spell the old name, plus the regeneration obligation on ENV_VARS.md. docker-compose.yml has no owning component today, which the baseline records as an unassigned path - that coverage gap is part of what this scenario measures."
+}

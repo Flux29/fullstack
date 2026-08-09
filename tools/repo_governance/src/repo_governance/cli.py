@@ -480,6 +480,46 @@ def explain(component_id: str) -> None:
 
 
 @main.command()
+@click.option("--count", default=25, show_default=True, help="How many files to sample.")
+@click.option("--seed", default=None, help="Sampling seed. Defaults to the HEAD commit, so a run is reproducible.")
+def sample(count: int, seed: str | None) -> None:
+    """Map-vs-territory spot check: verify manifest claims about sampled files. Read-only.
+
+    The statistical stand-in for exhaustive AST enforcement until the graph exists.
+    Nonzero exit on any mismatch; unreadable files are reported, never counted as passing.
+    """
+    from repo_governance.builders import sample_map_claims
+    from repo_governance.gitutil import head_commit
+
+    ctx = _context()
+    resolved_seed = seed or head_commit(ctx.repo_root)
+    if resolved_seed is None:
+        click.echo("No --seed given and git HEAD is unavailable; a reproducible sample needs one.")
+        raise SystemExit(1)
+
+    report = sample_map_claims(ctx, count=count, seed=resolved_seed)
+    if report["status"] != "ok":
+        click.echo(f"Sample unknown: {report['reason']}")
+        raise SystemExit(1)
+
+    click.echo(
+        f"Sampled {report['sampled']} of {report['pool_size']} governed application files "
+        f"(seed {report['seed'][:12]})"
+    )
+    for item in report["unreadable"]:
+        click.echo(f"  unreadable: {item['path']} - {item['reason']}")
+    for item in report["mismatches"]:
+        click.echo(f"  MISMATCH {item['path']}")
+        click.echo(f"    claim:    {item['claim']}")
+        click.echo(f"    evidence: {item['evidence']}")
+
+    if report["mismatches"]:
+        click.echo(f"{len(report['mismatches'])} claim(s) disagree with the territory - each is an evaluation-record candidate.")
+        raise SystemExit(1)
+    click.echo("Every sampled file agrees with the claims the manifests make about it.")
+
+
+@main.command()
 def coverage() -> None:
     """Read-surface coverage: orphans, ghosts, and rule-scope drift. Read-only.
 

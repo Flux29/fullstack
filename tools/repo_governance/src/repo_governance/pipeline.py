@@ -18,6 +18,7 @@ EFFECTIVE_PATH = "governance/manifests/effective/repository.json"
 CONFIGURATION_PATH = "governance/manifests/generated/configuration.json"
 SERVICES_PATH = "governance/manifests/generated/services.json"
 INTERFACES_PATH = "governance/manifests/generated/interfaces.json"
+READ_SURFACE_PATH = "governance/manifests/generated/read-surface.json"
 DECISION_INDEX_PATH = "governance/history/decisions/index.json"
 SUMMARY_PATH = "governance/Summary.md"
 ENV_VARS_PATH = "ENV_VARS.md"
@@ -90,7 +91,12 @@ def render_all(ctx: Context) -> dict[str, str]:
     outputs[CONFIGURATION_PATH] = canonical_json(configuration)
     outputs[ENV_VARS_PATH] = render_env_vars(ctx, configuration)
 
-    from repo_governance.builders import build_decision_index, build_interfaces, build_services
+    from repo_governance.builders import (
+        build_decision_index,
+        build_interfaces,
+        build_read_surface,
+        build_services,
+    )
     from repo_governance.renderers.summary import render_summary
 
     interfaces = build_interfaces(ctx)
@@ -98,6 +104,7 @@ def render_all(ctx: Context) -> dict[str, str]:
     outputs[SERVICES_PATH] = canonical_json(build_services(ctx))
     outputs[INTERFACES_PATH] = canonical_json(interfaces)
     outputs[DECISION_INDEX_PATH] = canonical_json(decision_index)
+    outputs[READ_SURFACE_PATH] = canonical_json(build_read_surface(ctx, components))
 
     # Summary summarizes other generated documents. They are handed to it directly rather
     # than read back from disk, so a first sync of a clean checkout produces the final bytes.

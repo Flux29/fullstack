@@ -22,6 +22,51 @@ protected_paths = [
   "governance/manifests/curated/ownership.json",
 ]
 
+[gate]
+# Read-gate configuration, compiled by `governance sync` into
+# governance/manifests/generated/read-surface.json. The PreToolUse hook script reads that
+# artifact, never this file. The gate is steering, not a security boundary: it fails open
+# on any uncertainty and denies only on positive evidence. Modes: off | warn | deny.
+# The GOVERNANCE_GATE environment variable (user-set, outside agent reach) overrides both.
+mode_corpus = "warn"
+mode_repo = "warn"
+# Bulk enumeration (Glob/Grep) under these roots is answered by queries, not reads:
+# `governance context | impact | explain`. Reads of one named file stay allowed.
+corpus_gated_roots = [
+  "governance/history/",
+  "governance/manifests/",
+]
+# The bounded governance surfaces an agent may always read whole.
+corpus_bounded_surfaces = [
+  "governance/Summary.md",
+  "governance/catalog.json",
+  "governance/governance.toml",
+  "governance/schemas/",
+  "governance/validators.json",
+]
+# Paths outside any component's ownership that a session legitimately touches.
+always_allow = [
+  ".claude/",
+  ".gitattributes",
+  ".github/",
+  ".gitignore",
+  "AGENTS.md",
+  "CLAUDE.md",
+  "CONTRIBUTING.md",
+  "ENV_VARS.md",
+  "MANUAL_STEPS.md",
+  "Makefile",
+  "README.md",
+  "SECURITY.md",
+  "docker-compose.dev.yml",
+  "docker-compose.frontend.yml",
+  "docker-compose.prod.yml",
+  "docker-compose.yml",
+  "docker/",
+  "docs/",
+  "emails/",
+]
+
 # ---------------------------------------------------------------------------------------
 # Catalog specification.
 #
@@ -125,6 +170,14 @@ description = "Test frameworks, gating environment variables, ratcheted coverage
 authority = "generated"
 update = "sync"
 read_when = "Deciding what proves a change, or asking whether an invariant is actually covered."
+
+[[catalog]]
+path = "governance/manifests/generated/read-surface.json"
+kind = "manifest-generated"
+description = "The read-gate surface: allowed path sets and gated corpus roots, compiled for the PreToolUse hook script."
+authority = "generated"
+update = "sync"
+read_when = "Changing the [gate] table or component ownership, or diagnosing a gate decision."
 
 [[catalog]]
 path = "governance/manifests/curated/architectural-intent.json"

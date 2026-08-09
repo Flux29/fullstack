@@ -78,6 +78,17 @@ Non-obvious rules that are easy to violate:
   the frontend source they cover. A `PreToolUse` hook in `.claude/settings.json` prompts for
   confirmation on a new-file Write; `governance check` lists untracked files outside these
   locations.
+- Lifecycle hooks in `.claude/settings.json` enforce parts of this file (steering, not a
+  security boundary — they fail open, announce their own degradation, and never run
+  `sync` themselves). `SessionStart` injects a compact orientation map. A read gate on
+  `Read|Glob|Grep` (a stdlib script reading the sync-generated
+  `governance/manifests/generated/read-surface.json`) warns on bulk enumeration of
+  `governance/history/` and `governance/manifests/` — query those instead — and on reads
+  outside the governed surface; reading one named file is always allowed. A `Stop` hook
+  blocks turn-end with exact repair commands while touched files lack a change session or
+  record, or generated files are stale. Modes are set in the `[gate]` table of
+  `governance/governance.toml`; the `GOVERNANCE_GATE` environment variable (`off|warn|deny`,
+  user-set only) overrides both surfaces.
 - Default to a **net-zero or net-negative diff**. Reuse, consolidate, or delete before you
   add. A change that only adds has to say, in its change record, why nothing could be
   removed or reused instead.

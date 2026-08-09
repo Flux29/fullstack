@@ -1,0 +1,67 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "SessionStart injects a bounded orientation map (~1.2k tokens) with a gate health line",
+    "Bulk enumeration of governance/history and governance/manifests warns with query-instead instructions; named-file reads always pass",
+    "Stop blocks turn-end with exact repair commands while touched files lack a change session or record",
+    "sync now emits read-surface.json compiled from component ownership, the catalog, sanctioned locations, and the governance.toml [gate] table"
+  ],
+  "compatibility_impact": "governance summary is now read-only where it previously ran a full sync under a read-only-sounding name; scripts and hook JSON are additive; read-surface.json is a new generated manifest validated by a kernel-internal schema",
+  "date": "2026-08-08",
+  "files_changed": [
+    ".claude/hooks/",
+    ".claude/settings.json",
+    "AGENTS.md",
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/hooks.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [
+    "Phase 3: owner-observed live checklist including the degraded drill",
+    "Phase 4: coverage verifier, CI gate smoke step, per-surface deny decisions",
+    "Phase 5: chat-retention and token-accounting regression tests"
+  ],
+  "id": "2026-08-08-hook-enforced-governance-read-surface-artifact-gate-scripts-sess",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Hooks take effect only after session restart: the Phase 3 live acceptance checklist is pending owner observation",
+    "Both gate surfaces stay in warn until the Phase 4 coverage measurement justifies deny per surface",
+    "PreToolUse warn notes surface via user-visible systemMessage, not model context - Claude Code offers no context injection on an allow decision"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The governance system is advisory - nothing makes an agent consult it, keep it fresh, or stay inside it; observed failures include 300k-token unguided exploration and changes shipped without records. Wires the existing CLI into Claude Code lifecycle hooks per the approved v2 plan: compact map at session start, corpus bulk-reads gated via a sync-generated artifact read by stdlib scripts, turn-end blocked until records and freshness hold",
+  "risks": [],
+  "rollback": "git revert restores code, config, and manifests; hook state under .cache/repo-governance/hooks/ is unversioned scratch and can be deleted; hooks deactivate on the next session start after revert",
+  "schema_version": 1,
+  "security_impact": "Hooks execute repo-committed scripts only; the read gate is fail-open steering (deny requires positive certainty), never a security boundary; session state lives under gitignored .cache; GOVERNANCE_GATE escape hatch is environment-set by the user, outside agent reach; no network, credentials, or secret paths touched",
+  "summary": "Hook-enforced governance: read-surface artifact, gate scripts, session and stop hooks",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "107 tests green, 27 new in test_hooks.py covering the deny ladder, fail-open paths, dedupe, loop guard, latency budget, and artifact compilation",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish; sync idempotent with read-surface.json in scope",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

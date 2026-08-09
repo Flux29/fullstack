@@ -286,3 +286,79 @@ def build_decision_index(ctx: Context) -> dict[str, Any]:
         },
         "decisions": sorted(decisions, key=lambda item: item["id"]),
     }
+
+
+#: Characters fnmatch treats as pattern syntax. A rule containing none of them is a
+#: literal path, which matters because ownership globs contain literal `[locale]` segments.
+_WILDCARD_CHARS = ("*", "?", "[")
+
+
+def _classify_path_rules(rules: list[str]) -> tuple[set[str], set[str], set[str]]:
+    """Split path rules into exact files, directory prefixes, and fnmatch patterns.
+
+    Prefixes are matched by `startswith`, never fnmatch, so a literal bracketed segment
+    like `frontend/src/app/[locale]/` cannot be misread as a character class.
+    """
+    exact: set[str] = set()
+    prefixes: set[str] = set()
+    patterns: set[str] = set()
+    for rule in rules:
+        if rule.endswith("/**"):
+            prefixes.add(rule[:-2])
+        elif rule.endswith("/"):
+            prefixes.add(rule)
+        elif any(char in rule for char in _WILDCARD_CHARS):
+            patterns.add(rule)
+        else:
+            exact.add(rule)
+    return exact, prefixes, patterns
+
+
+def build_read_surface(ctx: Context, components: dict[str, Any]) -> dict[str, Any]:
+    """Compile the read-gate surface the PreToolUse hook script consults.
+
+    The hook is stdlib-only and must answer in milliseconds, so everything it needs is
+    flattened here at sync time: which paths a read may touch (the repo surface) and which
+    parts of the governance corpus are answered by queries rather than bulk reads (the
+    corpus surface). The gate is steering, not a security boundary — the script fails open
+    on anything this document does not confidently cover.
+    """
+    from repo_governance.checks.process import SANCTIONED_UNTRACKED_PREFIXES, SANCTIONED_UNTRACKED_SUFFIXES
+
+    gate = ctx.config.raw.get("gate", {})
+
+    rules: list[str] = []
+    for component in components.get("components", []):
+        rules.extend(component.get("owns", []))
+    rules.extend(spec["path"] for spec in ctx.config.catalog_spec)
+    rules.extend(SANCTIONED_UNTRACKED_PREFIXES)
+    rules.extend(gate.get("always_allow", ()))
+
+    exact, prefixes, patterns = _classify_path_rules(rules)
+    patterns.update(f"*{suffix}" for suffix in SANCTIONED_UNTRACKED_SUFFIXES)
+
+    return {
+        "schema_version": 1,
+        "provenance": {
+            "method": "extracted",
+            "sources": [
+                "governance/governance.toml",
+                "governance/manifests/generated/components.json",
+                "tools/repo_governance/src/repo_governance/checks/process.py",
+            ],
+            "extractor_version": ctx.config.version,
+        },
+        "default_modes": {
+            "corpus": str(gate.get("mode_corpus", "warn")),
+            "repo": str(gate.get("mode_repo", "warn")),
+        },
+        "corpus": {
+            "gated_roots": sorted(gate.get("corpus_gated_roots", ())),
+            "bounded_surfaces": sorted(gate.get("corpus_bounded_surfaces", ())),
+        },
+        "repo": {
+            "exact_files": sorted(exact),
+            "dir_prefixes": sorted(prefixes),
+            "glob_patterns": sorted(patterns),
+        },
+    }

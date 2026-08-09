@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 19 of 19)
+## Recent changes (latest 20 of 20)
 
+- **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
 - **2026-08-08** — stop-check: reconcile the touched log against git state before blocking
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl.json`

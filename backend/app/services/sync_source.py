@@ -39,7 +39,7 @@ def _encrypt_config(config: dict, connector_type: str) -> dict:
     secrets = _secret_fields(connector_type)
     return {
         k: (
-            encrypt_value(v, settings.CHANNEL_ENCRYPTION_KEY)
+            encrypt_value(v, settings.SECRET_KEY)
             if k in secrets and isinstance(v, str) and v and not is_encrypted(v)
             else v
         )
@@ -49,7 +49,7 @@ def _encrypt_config(config: dict, connector_type: str) -> dict:
 
 def _decrypt_config(config: dict) -> dict:
     return {
-        k: (decrypt_value(v, settings.CHANNEL_ENCRYPTION_KEY) if is_encrypted(v) else v)
+        k: (decrypt_value(v, settings.SECRET_KEY) if is_encrypted(v) else v)
         for k, v in config.items()
     }
 

@@ -3,8 +3,8 @@
 Usage:
     from app.core.crypto import encrypt_value, decrypt_value, is_encrypted
 
-    stored = encrypt_value(plaintext, settings.CHANNEL_ENCRYPTION_KEY)
-    original = decrypt_value(stored, settings.CHANNEL_ENCRYPTION_KEY)
+    stored = encrypt_value(plaintext, settings.SECRET_KEY)
+    original = decrypt_value(stored, settings.SECRET_KEY)
 """
 
 import base64

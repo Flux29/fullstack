@@ -151,3 +151,52 @@ def module_contains(path: Path, needles: tuple[str, ...]) -> bool:
         return False
     text = path.read_text(encoding="utf-8")
     return all(needle in text for needle in needles)
+
+
+@dataclass
+class InvariantScan:
+    """What one application file shows the declared invariants, read without importing it."""
+
+    repository_imports: list[str] = field(default_factory=list)
+    commit_calls: int = 0
+    utcnow_calls: int = 0
+    settings_refs: list[str] = field(default_factory=list)
+    parse_error: str | None = None
+
+
+def scan_invariants(path: Path) -> InvariantScan:
+    """Collect the facts the sampled-claims verifier compares against the manifests.
+
+    A syntax error is an explicit `parse_error`, never an empty result — an unreadable
+    file is uncertainty about the territory, not evidence the map is right.
+    """
+    scan = InvariantScan()
+    try:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError, ValueError) as error:
+        scan.parse_error = str(error)
+        return scan
+
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("app.repositories"):
+            scan.repository_imports.append(node.module or "")
+        elif isinstance(node, ast.Import):
+            scan.repository_imports.extend(
+                alias.name for alias in node.names if alias.name.startswith("app.repositories")
+            )
+        elif isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
+            if node.func.attr == "commit":
+                scan.commit_calls += 1
+            elif node.func.attr == "utcnow":
+                scan.utcnow_calls += 1
+        elif (
+            isinstance(node, ast.Attribute)
+            and isinstance(node.value, ast.Name)
+            and node.value.id == "settings"
+            and node.attr.isupper()
+        ):
+            scan.settings_refs.append(node.attr)
+
+    scan.repository_imports = sorted(set(scan.repository_imports))
+    scan.settings_refs = sorted(set(scan.settings_refs))
+    return scan

@@ -1,0 +1,52 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance sample verifies manifest claims about seeded-random application files: layering imports, repository commit discipline, the utcnow ban, and settings references known to the configuration manifest",
+    "First full census (count 162, the whole pool): 160 of 162 files agree with the map"
+  ],
+  "compatibility_impact": "None - new read-only command; no existing behavior changed",
+  "date": "2026-08-08",
+  "files_changed": [
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/extractors/python_ast.py",
+    "tools/repo_governance/tests/test_extractors.py"
+  ],
+  "follow_up": [
+    "Fix the two census findings (task spawned), then re-run governance sample --count 162 expecting zero mismatches",
+    "Consider a scheduled CI job running sample at default count with a rotating seed once the two findings are fixed"
+  ],
+  "id": "2026-08-08-governance-sample-map-vs-territory-spot-checks-on-random-tracked",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "FINDING (latent runtime bug): backend/app/services/sync_source.py references settings.CHANNEL_ENCRYPTION_KEY, which no Settings field, computed property, or env template defines - the encrypt/decrypt paths raise AttributeError if reached; spawned as a follow-up task",
+    "FINDING (invariant violation): backend/app/services/agent_session.py lines 464 and 523 call datetime.utcnow() against the declared datetime.now(UTC) invariant; same follow-up task",
+    "The sampler checks only mechanically-verifiable claims; curated purpose and intent text remain review-trusted until blueprint phase 6"
+  ],
+  "manifests_changed": [],
+  "reason": "Until the blueprint phase-6 AST graph exists, nothing verifies that the curated claims agents are briefed with match the code they describe; a wrong claim would mislead every session that trusts it. A seeded random sample verifying the mechanically-checkable claims - layering imports, repository commit discipline, utcnow ban, settings references known to the configuration manifest - bounds that staleness cheaply. Plan Phase 6 item 6, adopted proactively as the only fidelity check available before the graph",
+  "risks": [],
+  "rollback": "git revert removes the command, scanner, and tests",
+  "schema_version": 1,
+  "security_impact": "None for the tool itself - read-only AST parsing, never imports application modules. The first census surfaced a security-adjacent finding recorded below",
+  "summary": "governance sample: map-vs-territory spot checks on random tracked files",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "118 tests - scanner unit tests (imports, commits, utcnow, uppercase settings refs, syntax-error-as-unknown), seeded reproducibility on the real repository, toplevel guard",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

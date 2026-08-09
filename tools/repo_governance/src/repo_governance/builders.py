@@ -444,3 +444,94 @@ def analyse_read_surface_coverage(ctx: Context) -> dict[str, Any]:
         "ghosts": ghosts,
         "rules_drift": rules_drift,
     }
+
+
+def sample_map_claims(ctx: Context, *, count: int, seed: str) -> dict[str, Any]:
+    """Spot-check the manifests' mechanically-verifiable claims against sampled files.
+
+    The statistical precursor to exhaustive AST enforcement: N files drawn from the
+    governed application surface with a seeded generator (reproducible per seed), each
+    checked against the claims that can be verified without a graph — layering imports,
+    repository commit discipline, the utcnow ban, and settings references being known to
+    the configuration manifest. A mismatch means the map and the territory disagree; a
+    parse error means the territory could not be read and is reported, never passed.
+    """
+    import random
+
+    from repo_governance.extractors.python_ast import extract_settings, scan_invariants
+    from repo_governance.gitutil import toplevel, tracked_files
+    from repo_governance.io_atomic import read_json
+
+    tracked = tracked_files(ctx.repo_root)
+    if tracked is None or toplevel(ctx.repo_root) != ctx.repo_root.resolve():
+        return {"status": "unknown", "reason": "git did not answer for this repository root"}
+
+    pool = [path for path in tracked if path.startswith("backend/app/") and path.endswith(".py")]
+    chosen = sorted(random.Random(seed).sample(pool, min(count, len(pool))))
+
+    known_settings: set[str] = set()
+    manifest_path = ctx.paths.generated_manifests / "configuration.json"
+    if manifest_path.is_file():
+        known_settings.update(
+            variable["name"]
+            for variable in read_json(manifest_path).get("variables", [])
+            if variable.get("surface") == "backend"
+        )
+    extraction = extract_settings(ctx.repo_root / "backend" / "app" / "core" / "config.py")
+    known_settings.update(item.name for item in extraction.fields)
+    known_settings.update(extraction.computed)
+    known_settings.update(extraction.constants)
+
+    mismatches: list[dict[str, str]] = []
+    unreadable: list[dict[str, str]] = []
+    for relative in chosen:
+        scan = scan_invariants(ctx.repo_root / relative)
+        if scan.parse_error is not None:
+            unreadable.append({"path": relative, "reason": scan.parse_error})
+            continue
+        if relative.startswith("backend/app/api/") and scan.repository_imports:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": "Routes call services; they never import or call repositories directly",
+                    "evidence": "imports " + ", ".join(scan.repository_imports),
+                }
+            )
+        if relative.startswith("backend/app/repositories/") and scan.commit_calls:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": "Repositories flush and refresh; the session auto-commits in get_db_session",
+                    "evidence": f"{scan.commit_calls} .commit() call(s)",
+                }
+            )
+        if scan.utcnow_calls:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": "datetime.now(UTC), never datetime.utcnow()",
+                    "evidence": f"{scan.utcnow_calls} .utcnow() call(s)",
+                }
+            )
+        unknown_refs = sorted(set(scan.settings_refs) - known_settings)
+        if unknown_refs:
+            mismatches.append(
+                {
+                    "path": relative,
+                    "claim": (
+                        "Every settings reference is a field, computed property, or "
+                        "constant the configuration manifest knows"
+                    ),
+                    "evidence": "unknown: " + ", ".join(unknown_refs),
+                }
+            )
+
+    return {
+        "status": "ok",
+        "seed": seed,
+        "pool_size": len(pool),
+        "sampled": len(chosen),
+        "files": chosen,
+        "mismatches": mismatches,
+        "unreadable": unreadable,
+    }

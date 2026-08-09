@@ -1,0 +1,34 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "AGENTS.md Hard boundaries now requires checker agents to verify against sources rather than the governance briefing, decorrelating doer and checker failure modes"
+  ],
+  "compatibility_impact": "None - guidance for review workflows, no code or config touched",
+  "date": "2026-08-08",
+  "files_changed": [
+    "AGENTS.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-08-agents-md-checker-agents-verify-against-sources-not-the-governan",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "The governance lens creates a correlated-failure mode: an implementing agent and its checker reading the same briefing inherit the same wrong curated claim, and the check approves the mistake. Decorrelating the checker - it must read the diff, neighboring code, and actual imports rather than the summary the doer consumed - is the cheapest counter, identified in the accuracy review and adopted as plan Phase 6 item 7",
+  "risks": [],
+  "rollback": "git revert restores the previous AGENTS.md",
+  "schema_version": 1,
+  "security_impact": "None - one documentation bullet",
+  "summary": "AGENTS.md: checker agents verify against sources, not the governance briefing",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "full check clean post-finish; docs-only change",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -78,6 +78,10 @@ Non-obvious rules that are easy to violate:
   the frontend source they cover. A `PreToolUse` hook in `.claude/settings.json` prompts for
   confirmation on a new-file Write; `governance check` lists untracked files outside these
   locations.
+- Reviewer and checker agents verify against authoritative sources — the diff, the
+  neighboring code, the actual imports — never against the governance briefing the
+  implementing agent already consumed. A checker that reads the same summary inherits the
+  same blind spots; checkers are only a real check on the map if they read the territory.
 - Lifecycle hooks in `.claude/settings.json` enforce parts of this file (steering, not a
   security boundary — they fail open, announce their own degradation, and never run
   `sync` themselves). `SessionStart` injects a compact orientation map. A read gate on

@@ -1,0 +1,33 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. No runtime code, schema, HTTP interface, WebSocket event, or environment variable changed; governance sync reported no bytes changed. The skills reference two existing contracts without altering them - the embedding dimension/fingerprint agreement in policies/compatibility.json and the mandatory Next.js proxy hop - and instruct agents to check them rather than weaken them.",
+  "date": "2026-08-09",
+  "files_changed": [
+    ".claude/skills/debt-sweep/",
+    ".claude/skills/endpoint-fullstack/",
+    ".claude/skills/gov-change/",
+    ".claude/skills/pick-workflow/",
+    ".claude/skills/rag-change/",
+    ".claude/skills/refactor-governed/"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-add-six-agent-workflow-skills-that-chain-prompt-commands-inside",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Recurring operations (governed change, refactor, RAG change, full-stack endpoint, debt sweep) were re-derived by hand each session, so the governance envelope and the proxy-hop and embedding-dimension gates were applied inconsistently. Encoding them as skills makes the envelope the default path rather than a remembered one, and a router skill keeps agents from picking the wrong chain.",
+  "risks": [],
+  "rollback": "Delete the six directories under .claude/skills/: gov-change, pick-workflow, refactor-governed, rag-change, endpoint-fullstack, debt-sweep. No migration, persisted state, or generated artifact is involved; removal is complete and immediate.",
+  "schema_version": 1,
+  "security_impact": "None. The skills are prompt-only markdown with no executable code and grant no permissions or tool access. They restate existing policy rather than relaxing it: secrets never committed, connector credentials Fernet-encrypted at rest, security-review named as a required cross-cutting pass for auth/secrets/MCP/user-input work. No validators.json entries were added, so no new command surface is introduced, and google-live-e2e is documented as deliberately excluded from automated selection.",
+  "summary": "Add six agent-workflow skills that chain prompt commands inside the governance envelope",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

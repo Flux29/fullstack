@@ -299,12 +299,53 @@ def test_stop_evaluation_reports_gate_degradations(real_context: Context) -> Non
 
 
 def test_stop_evaluation_blocks_material_changes_without_a_record(minimal_repo: Path) -> None:
+    """minimal_repo is not its own git repository — git answers for whatever encloses the
+    temp directory — so the toplevel guard rejects the answer, every touch counts as
+    dirty, and the record rule blocks conservatively."""
     ctx = Context.discover(minimal_repo)
     state = ctx.paths.cache / "hooks" / "s1"
     state.mkdir(parents=True)
     (state / "touched.jsonl").write_text('{"path": "backend/app/main.py", "tool": "Edit"}\n', encoding="utf-8")
     blockers, _ = _stop_evaluation(ctx, "s1")
     assert any("no change session and no change record" in blocker for blocker in blockers)
+
+
+def test_stop_evaluation_does_not_block_touched_paths_that_were_committed(
+    minimal_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The false positive from the first live firing: session memory outliving commits.
+
+    A path touched earlier in the session but since committed through the governed flow
+    must not block turn-end — the touched log is evidence of activity, not of debt.
+    """
+    monkeypatch.setattr("repo_governance.gitutil.working_tree_changes", lambda root: [])
+    monkeypatch.setattr("repo_governance.gitutil.untracked_files", lambda root: [])
+    monkeypatch.setattr("repo_governance.gitutil.toplevel", lambda root: minimal_repo.resolve())
+    ctx = Context.discover(minimal_repo)
+    state = ctx.paths.cache / "hooks" / "s1"
+    state.mkdir(parents=True)
+    (state / "touched.jsonl").write_text('{"path": "backend/app/main.py", "tool": "Edit"}\n', encoding="utf-8")
+    blockers, _ = _stop_evaluation(ctx, "s1")
+    assert not any("no change session" in blocker for blocker in blockers)
+
+
+def test_stop_evaluation_counts_records_the_cli_wrote_outside_the_editor(
+    minimal_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Change records are written by the governance CLI, not the agent's Edit tool, so
+    they never appear in the touched log — the working tree is where they must count."""
+    monkeypatch.setattr(
+        "repo_governance.gitutil.working_tree_changes",
+        lambda root: ["backend/app/main.py", "governance/history/changes/2026-08-08-x.json"],
+    )
+    monkeypatch.setattr("repo_governance.gitutil.untracked_files", lambda root: [])
+    monkeypatch.setattr("repo_governance.gitutil.toplevel", lambda root: minimal_repo.resolve())
+    ctx = Context.discover(minimal_repo)
+    state = ctx.paths.cache / "hooks" / "s1"
+    state.mkdir(parents=True)
+    (state / "touched.jsonl").write_text('{"path": "backend/app/main.py", "tool": "Edit"}\n', encoding="utf-8")
+    blockers, _ = _stop_evaluation(ctx, "s1")
+    assert not any("no change session" in blocker for blocker in blockers)
 
 
 def test_stop_evaluation_notes_an_open_session_instead_of_blocking(minimal_repo: Path) -> None:

@@ -1,0 +1,51 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "build_message_history conversion is pinned: role mapping, ordering, unknown-role filtering",
+    "The retention seam is pinned: loaded history must reach agent.iter as message_history, and a completed turn appends both new turns to in-memory history",
+    "Token carriage is pinned: MessageCreate.tokens_used reaches the repository call unchanged and round-trips through MessageRead",
+    "Mutate-red-revert evidence: each of three seam mutations failed exactly its own test, suite green after revert"
+  ],
+  "compatibility_impact": "None - no application code changed; three seams were mutated during verification and reverted byte-identically via git checkout",
+  "date": "2026-08-08",
+  "files_changed": [
+    "backend/tests/test_agents.py",
+    "backend/tests/test_services_conversation.py"
+  ],
+  "follow_up": [
+    "Decide the tokens_used producer: owner-reviewed cherry-pick of 066e4f0 or a fresh implementation, then pin usage.total_tokens at persist time",
+    "History windowing design, gated on the retention tests staying green"
+  ],
+  "id": "2026-08-08-pin-chat-retention-and-token-accounting-carriage-with-regression",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "FINDING: tokens_used has no producer at this baseline - nothing writes usage.total_tokens at persist time; that write arrived in excluded commit 066e4f0, so every assistant message persists tokens_used=NULL until it is cherry-picked or re-implemented, and either path must add the producer pinning test",
+    "FINDING: no windowing or cap exists between load-all-history and message_history - the likely token-blowup root; any future windowing fix must keep these retention tests green, which is why they exist first"
+  ],
+  "manifests_changed": [],
+  "reason": "Both areas regressed silently in past optimization passes; these tests make the seams break loudly before anyone optimizes near them again. Discovery during seam re-location: the tokens_used producer (usage.total_tokens written at persist time) arrived only in excluded commit 066e4f0, so at this baseline only the carriage path (schema to service to repo to API schema) exists to pin - the producer gap is recorded as a finding, not silently re-implemented from distrusted code",
+  "risks": [],
+  "rollback": "git revert removes the tests; nothing outside version control is affected",
+  "schema_version": 1,
+  "security_impact": "None - test-only change; mocked sessions, no credentials, no network",
+  "summary": "Pin chat retention and token-accounting carriage with regression tests",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "429 passed, 13 skipped with rag-docker-integration excluded (pre-existing Windows temp-dir ACL failure documented in the h2 change record); 4 net-new tests plus 2 vacuous placeholders replaced with real conversion tests",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

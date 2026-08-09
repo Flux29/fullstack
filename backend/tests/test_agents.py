@@ -8,14 +8,22 @@ from uuid import uuid4
 
 import pytest
 from pydantic_ai import FunctionToolCallEvent, FunctionToolResultEvent
-from pydantic_ai.messages import RetryPromptPart, ToolCallPart
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    RetryPromptPart,
+    SystemPromptPart,
+    TextPart,
+    ToolCallPart,
+    UserPromptPart,
+)
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.tools import DeferredToolRequests, ToolApproved, ToolDenied
 
 from app.agents.assistant import AssistantAgent, Deps, get_agent
 from app.agents.prompts import get_system_prompt_with_rag
 from app.agents.utils import get_current_datetime
-from app.services.agent import load_conversation_history
+from app.services.agent import build_message_history, load_conversation_history
 from app.services.agent_session import AgentSession
 
 
@@ -218,23 +226,37 @@ class TestAgentSessionApproval:
 class TestHistoryConversion:
     """Tests for conversation history conversion."""
 
-    def test_empty_history(self):
-        """Test with empty history."""
-        _agent = AssistantAgent()
-        # History conversion happens inside run/iter methods
-        # We test the structure here
-        history = []
-        assert len(history) == 0
-
-    def test_history_roles(self):
-        """Test history with different roles."""
+    def test_build_message_history_converts_each_role_and_preserves_order(self):
         history = [
+            {"role": "system", "content": "You are helpful"},
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi there!"},
-            {"role": "system", "content": "You are helpful"},
         ]
-        assert len(history) == 3
-        assert all("role" in msg and "content" in msg for msg in history)
+
+        converted = build_message_history(history)
+
+        assert len(converted) == 3
+        assert isinstance(converted[0], ModelRequest)
+        assert isinstance(converted[0].parts[0], SystemPromptPart)
+        assert isinstance(converted[1], ModelRequest)
+        assert isinstance(converted[1].parts[0], UserPromptPart)
+        assert converted[1].parts[0].content == "Hello"
+        assert isinstance(converted[2], ModelResponse)
+        assert isinstance(converted[2].parts[0], TextPart)
+        assert converted[2].parts[0].content == "Hi there!"
+
+    def test_build_message_history_drops_unknown_roles_rather_than_crashing(self):
+        history = [
+            {"role": "user", "content": "question"},
+            {"role": "tool", "content": "tool output"},
+            {"role": "assistant", "content": "answer"},
+        ]
+
+        converted = build_message_history(history)
+
+        assert len(converted) == 2
+        assert isinstance(converted[0], ModelRequest)
+        assert isinstance(converted[1], ModelResponse)
 
 
 class TestPersistedConversationHistory:
@@ -295,3 +317,84 @@ class TestPersistedConversationHistory:
         load_history.assert_awaited_once_with(user, conversation_id)
         persist.assert_awaited_once()
         assert session.conversation_history == loaded
+
+    @pytest.mark.anyio
+    async def test_loader_excludes_non_model_roles(self):
+        user = SimpleNamespace(id=uuid4())
+        conversation_id = uuid4()
+        service = AsyncMock()
+        service.list_messages.side_effect = [
+            (
+                [
+                    SimpleNamespace(role="user", content="question"),
+                    SimpleNamespace(role="tool", content="raw tool payload"),
+                    SimpleNamespace(role="assistant", content="answer"),
+                ],
+                3,
+            ),
+        ]
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            history = await load_conversation_history(user, str(conversation_id))
+
+        assert history == [
+            {"role": "user", "content": "question"},
+            {"role": "assistant", "content": "answer"},
+        ]
+
+    @pytest.mark.anyio
+    async def test_completed_turn_hands_loaded_history_to_the_model_and_appends_the_new_turn(self):
+        """The retention seam itself: history that was loaded must reach the model.
+
+        The incident this pins: history was loaded and stored on the session but the
+        model was run without it — nothing crashed, the chat just forgot its past.
+        """
+        conversation_id = str(uuid4())
+        user = SimpleNamespace(id=uuid4())
+        session = AgentSession(MagicMock(), user)
+        session._stream_agent_run = AsyncMock()
+        session._google_loadout_for_turn = MagicMock(return_value=MagicMock())
+        loaded = [
+            {"role": "user", "content": "earlier prompt"},
+            {"role": "assistant", "content": "earlier answer"},
+        ]
+
+        captured: dict = {}
+        agent_run = SimpleNamespace(result=SimpleNamespace(output="new answer"))
+
+        @contextlib.asynccontextmanager
+        async def fake_iter(user_input, **kwargs):
+            captured["user_input"] = user_input
+            captured.update(kwargs)
+            yield agent_run
+
+        assistant = MagicMock()
+        assistant.agent.iter = fake_iter
+        assistant.model_name = "test-model"
+
+        with (
+            patch("app.services.agent_session.load_conversation_history", AsyncMock(return_value=list(loaded))),
+            patch("app.services.agent_session.persist_user_turn", AsyncMock(return_value=(conversation_id, False, None))),
+            patch("app.services.agent_session.persist_assistant_turn", AsyncMock(return_value="msg-id")),
+            patch("app.services.agent_session.send_event", AsyncMock(return_value=True)),
+            patch("app.services.agent_session.build_toolsets_for_user", AsyncMock(return_value=[])),
+            patch("app.services.agent_session.get_agent", return_value=assistant),
+        ):
+            await session.process_message({"message": "new prompt", "conversation_id": conversation_id})
+
+        history_arg = captured["message_history"]
+        assert [type(message) for message in history_arg] == [ModelRequest, ModelResponse]
+        assert history_arg[0].parts[0].content == "earlier prompt"
+        assert history_arg[1].parts[0].content == "earlier answer"
+        assert session.conversation_history == [
+            *loaded,
+            {"role": "user", "content": "new prompt"},
+            {"role": "assistant", "content": "new answer"},
+        ]

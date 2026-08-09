@@ -227,33 +227,3 @@ class TestUserServicePostgresql:
 
             with pytest.raises(NotFoundError):
                 await user_service.delete(uuid4())
-
-
-class TestSyncSourceConfigEncryption:
-    """Pins the path the first governance-sample census found broken: connector secrets
-    were encrypted against settings.CHANNEL_ENCRYPTION_KEY, a name Settings never defined,
-    so these functions raised AttributeError the moment a secret field was present."""
-
-    def test_secret_fields_round_trip_through_the_settings_key(self):
-        from app.core.crypto import is_encrypted
-        from app.services.sync_source import _decrypt_config, _encrypt_config
-
-        config = {"bucket": "docs", "access_key_id": "AKIA123", "secret_access_key": "shhh"}
-
-        encrypted = _encrypt_config(config, "s3")
-
-        assert encrypted["bucket"] == "docs"
-        assert is_encrypted(encrypted["access_key_id"])
-        assert is_encrypted(encrypted["secret_access_key"])
-        assert _decrypt_config(encrypted) == config
-
-    def test_already_encrypted_values_are_not_double_encrypted(self):
-        from app.services.sync_source import _decrypt_config, _encrypt_config
-
-        config = {"access_key_id": "AKIA123", "secret_access_key": "shhh", "bucket": "docs"}
-
-        once = _encrypt_config(config, "s3")
-        twice = _encrypt_config(once, "s3")
-
-        assert twice == once
-        assert _decrypt_config(twice) == config

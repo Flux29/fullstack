@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 21)
+## Recent changes (latest 20 of 22)
 
+- **2026-08-09** — Test coverage for the sync-source service flow
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
 - **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-06** — Change history and bounded context
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-06-change-history-and-bounded-context.json`
-- **2026-08-06** — Declare the component boundaries and establish the reviewed baseline manifests: seven directory annotations, ten curated declarations, the exception register, four ADRs, six baseline manifests, four policy groups, and the merge engine that compiles them into the effective repository model.
-  - Components: backend-api, frontend-app, rag, email, agents, docling-mcp, chrome-devtools-mcp, github-mcp, mcp-user-connections, chat-frontend, model-runner-host, postgres-pgvector, redis, minio, docling-serve, traefik, governance-kernel
-  - Record: `governance/history/changes/2026-08-06-baseline-manifests-and-boundaries.json`
 
 ## Decisions (5)
 

@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 31)
+## Recent changes (latest 20 of 32)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
@@ -91,6 +91,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — CI runs on pushes to fullstack2
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-ci-runs-on-pushes-to-fullstack2.json`
+- **2026-08-09** — AST import graph over backend/app and enforcement of four phase-6 rules
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-ast-import-graph-over-backend-app-and-enforcement-of-four-phase.json`
 - **2026-08-09** — API-route tests for the sync-source endpoints, plus the collection filter fix
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-api-route-tests-for-the-sync-source-endpoints-plus-the-collectio.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — Bump h2 to 4.4.1 for CVE-2026-71554
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-08-bump-h2-to-4-4-1-for-cve-2026-71554.json`
-- **2026-08-08** — AGENTS.md: checker agents verify against sources, not the governance briefing
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-08-agents-md-checker-agents-verify-against-sources-not-the-governan.json`
 
 ## Decisions (5)
 

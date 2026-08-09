@@ -12,13 +12,13 @@ import json
 
 import pytest
 from jsonschema import Draft202012Validator
+from scenario_contract import SCENARIO_SCHEMA, load_scenarios, scenario_ids
+from scenario_replay import compare_or_update, score_scenario, update_mode
 
 from repo_governance.checks import iter_rules
 from repo_governance.config import Context
 from repo_governance.documents import validator_ids
 from repo_governance.io_atomic import read_json, write_text_atomic
-from scenario_contract import SCENARIO_SCHEMA, load_scenarios, scenario_ids
-from scenario_replay import compare_or_update, score_scenario, update_mode
 
 
 @pytest.mark.parametrize("scenario_id", scenario_ids())

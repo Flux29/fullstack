@@ -480,6 +480,39 @@ def explain(component_id: str) -> None:
 
 
 @main.command()
+def coverage() -> None:
+    """Read-surface coverage: orphans, ghosts, and rule-scope drift. Read-only.
+
+    Nonzero exit on any finding, so CI can hold the line the local warn-mode gate
+    deliberately does not.
+    """
+    from repo_governance.builders import analyse_read_surface_coverage
+
+    report = analyse_read_surface_coverage(_context())
+    if report["status"] != "ok":
+        click.echo(f"Coverage unknown: {report['reason']}")
+        raise SystemExit(1)
+
+    click.echo(
+        f"Read-surface coverage: {report['covered']}/{report['total_tracked']} tracked paths "
+        f"({report['coverage_percent']}%)"
+    )
+    for label, items, repair in (
+        ("Orphans (tracked, matched by nothing)", report["orphans"], "annotate the directory or add to [gate] always_allow"),
+        ("Ghosts (promised, absent on disk)", report["ghosts"], "fix the ownership glob or catalog entry"),
+        ("Rule-scope drift (RULE_SCOPES vs .claude/rules/)", report["rules_drift"], "align renderers/context.py with the files on disk"),
+    ):
+        if items:
+            click.echo(f"{label} — {repair}:")
+            for item in items:
+                click.echo(f"  - {item}")
+
+    if report["orphans"] or report["ghosts"] or report["rules_drift"]:
+        raise SystemExit(1)
+    click.echo("No orphans, no ghosts, no rule-scope drift.")
+
+
+@main.command()
 def summary() -> None:
     """Report whether the bounded Summary.md is current. Read-only.
 

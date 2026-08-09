@@ -100,6 +100,14 @@ def head_commit(root: Path) -> str | None:
     return output.strip() if output else None
 
 
+def tracked_files(root: Path) -> list[str] | None:
+    """Repo-relative POSIX paths git tracks, or None if unknown."""
+    output = _run(["ls-files", "-z"], root)
+    if output is None:
+        return None
+    return sorted({field for field in output.split("\0") if field})
+
+
 def toplevel(root: Path) -> Path | None:
     """The repository top-level git actually answers for, or None if unknown.
 

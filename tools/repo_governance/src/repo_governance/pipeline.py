@@ -104,7 +104,6 @@ def render_all(ctx: Context) -> dict[str, str]:
     outputs[SERVICES_PATH] = canonical_json(build_services(ctx))
     outputs[INTERFACES_PATH] = canonical_json(interfaces)
     outputs[DECISION_INDEX_PATH] = canonical_json(decision_index)
-    outputs[READ_SURFACE_PATH] = canonical_json(build_read_surface(ctx, components))
 
     # Summary summarizes other generated documents. They are handed to it directly rather
     # than read back from disk, so a first sync of a clean checkout produces the final bytes.
@@ -113,6 +112,13 @@ def render_all(ctx: Context) -> dict[str, str]:
         effective=effective,
         decision_index=decision_index,
         interfaces=interfaces,
+    )
+
+    # The read surface treats about-to-be-written files as present for the same reason
+    # the catalog does, so it is rendered once every other output path is known.
+    read_surface_generated = frozenset({*outputs, READ_SURFACE_PATH, CATALOG_PATH})
+    outputs[READ_SURFACE_PATH] = canonical_json(
+        build_read_surface(ctx, components, generated_paths=read_surface_generated)
     )
 
     # The catalog is rendered last because it describes the whole output set, including

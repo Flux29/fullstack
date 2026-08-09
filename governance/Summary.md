@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 16 of 16)
+## Recent changes (latest 17 of 17)
 
 - **2026-08-08** — stop-check: reconcile the touched log against git state before blocking
   - Components: governance-kernel
@@ -73,6 +73,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — Pin chat retention and token-accounting carriage with regression tests
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-08-pin-chat-retention-and-token-accounting-carriage-with-regression.json`
+- **2026-08-08** — Phase 4: read-surface coverage verifier, CI gate smoke, corpus deny flip
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-08-phase-4-read-surface-coverage-verifier-ci-gate-smoke-corpus-deny.json`
 - **2026-08-08** — Hook-enforced governance: read-surface artifact, gate scripts, session and stop hooks
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-hook-enforced-governance-read-surface-artifact-gate-scripts-sess.json`

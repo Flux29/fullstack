@@ -28,7 +28,7 @@ protected_paths = [
 # artifact, never this file. The gate is steering, not a security boundary: it fails open
 # on any uncertainty and denies only on positive evidence. Modes: off | warn | deny.
 # The GOVERNANCE_GATE environment variable (user-set, outside agent reach) overrides both.
-mode_corpus = "warn"
+mode_corpus = "deny"
 mode_repo = "warn"
 # Bulk enumeration (Glob/Grep) under these roots is answered by queries, not reads:
 # `governance context | impact | explain`. Reads of one named file stay allowed.
@@ -47,9 +47,11 @@ corpus_bounded_surfaces = [
 # Paths outside any component's ownership that a session legitimately touches.
 always_allow = [
   ".claude/",
+  ".fastapi-fullstack.json",
   ".gitattributes",
   ".github/",
   ".gitignore",
+  ".pre-commit-config.yaml",
   "AGENTS.md",
   "CLAUDE.md",
   "CONTRIBUTING.md",

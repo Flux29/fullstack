@@ -212,9 +212,11 @@ def test_selftest_reports_healthy_then_degraded(gate, monkeypatch, capsys) -> No
     assert healthy["modes"] == {"corpus": "warn", "repo": "warn"}
 
     Path(gate.ARTIFACT_PATH).unlink()
-    gate.selftest()
+    with pytest.raises(SystemExit) as excinfo:
+        gate.selftest()
     degraded = json.loads(capsys.readouterr().out)
     assert degraded["gate"] == "degraded"
+    assert excinfo.value.code == 1  # CI gates on this; session-context ignores it
 
 
 # --- the touched log -------------------------------------------------------------------
@@ -383,4 +385,52 @@ def test_bracketed_ownership_globs_compile_to_prefixes(real_context: Context) ->
     prefixes = surface["repo"]["dir_prefixes"]
     assert "frontend/src/app/[locale]/(dashboard)/chat/" in prefixes
     assert all(not prefix.endswith("**") for prefix in prefixes)
-    assert surface["default_modes"] == {"corpus": "warn", "repo": "warn"}
+    assert surface["default_modes"] == {"corpus": "deny", "repo": "warn"}
+
+
+def test_declared_but_absent_catalog_paths_stay_out_of_the_surface(real_context: Context) -> None:
+    """Same honesty rule as the catalog: a declared future path is not readable surface.
+
+    governance/history/evaluations/ is declared in the catalog spec but does not exist
+    yet; including it would manufacture a permanent ghost in the coverage report."""
+    from repo_governance.builders import build_read_surface
+    from repo_governance.merge import build_components
+
+    components, _ = build_components(real_context)
+    surface = build_read_surface(real_context, components)
+    assert "governance/history/evaluations/" not in surface["repo"]["dir_prefixes"]
+
+
+# --- coverage: the fail-closed CI layer -------------------------------------------------
+
+
+def test_read_surface_coverage_is_clean_in_the_real_repository(real_context: Context) -> None:
+    """The same bar CI holds: every tracked path governed, nothing promised but absent."""
+    from repo_governance.builders import analyse_read_surface_coverage
+
+    report = analyse_read_surface_coverage(real_context)
+    assert report["status"] == "ok"
+    assert report["orphans"] == []
+    assert report["ghosts"] == []
+    assert report["rules_drift"] == []
+    assert report["coverage_percent"] == 100.0
+
+
+def test_coverage_reports_unknown_when_git_answers_for_an_enclosing_repository(minimal_repo: Path) -> None:
+    from repo_governance.builders import analyse_read_surface_coverage
+
+    report = analyse_read_surface_coverage(Context.discover(minimal_repo))
+    assert report["status"] == "unknown"
+
+
+def test_coverage_names_orphans_and_ghosts(real_context: Context, monkeypatch: pytest.MonkeyPatch) -> None:
+    from repo_governance.builders import analyse_read_surface_coverage
+
+    monkeypatch.setattr(
+        "repo_governance.gitutil.tracked_files",
+        lambda root: ["backend/app/main.py", "stray/orphan.txt", ".claude/worktrees/w1/ignored.py"],
+    )
+    report = analyse_read_surface_coverage(real_context)
+    assert report["status"] == "ok"
+    assert report["orphans"] == ["stray/orphan.txt"]
+    assert report["total_tracked"] == 2  # the worktree path is excluded from consideration

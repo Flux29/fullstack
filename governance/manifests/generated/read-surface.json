@@ -13,7 +13,7 @@
     ]
   },
   "default_modes": {
-    "corpus": "warn",
+    "corpus": "deny",
     "repo": "warn"
   },
   "provenance": {
@@ -50,14 +50,15 @@
       "governance/history/",
       "governance/history/changes/",
       "governance/history/decisions/",
-      "governance/history/evaluations/",
       "governance/schemas/",
       "tools/repo_governance/",
       "tools/repo_governance/tests/"
     ],
     "exact_files": [
+      ".fastapi-fullstack.json",
       ".gitattributes",
       ".gitignore",
+      ".pre-commit-config.yaml",
       "AGENTS.md",
       "CLAUDE.md",
       "CONTRIBUTING.md",

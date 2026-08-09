@@ -314,7 +314,9 @@ def _classify_path_rules(rules: list[str]) -> tuple[set[str], set[str], set[str]
     return exact, prefixes, patterns
 
 
-def build_read_surface(ctx: Context, components: dict[str, Any]) -> dict[str, Any]:
+def build_read_surface(
+    ctx: Context, components: dict[str, Any], generated_paths: frozenset[str] = frozenset()
+) -> dict[str, Any]:
     """Compile the read-gate surface the PreToolUse hook script consults.
 
     The hook is stdlib-only and must answer in milliseconds, so everything it needs is
@@ -322,6 +324,10 @@ def build_read_surface(ctx: Context, components: dict[str, Any]) -> dict[str, An
     parts of the governance corpus are answered by queries rather than bulk reads (the
     corpus surface). The gate is steering, not a security boundary — the script fails open
     on anything this document does not confidently cover.
+
+    `generated_paths` plays the same role as in `build_catalog`: files this render is
+    about to write count as present, otherwise the first sync of a clean checkout and the
+    second would disagree about the surface and idempotence would break.
     """
     from repo_governance.checks.process import SANCTIONED_UNTRACKED_PREFIXES, SANCTIONED_UNTRACKED_SUFFIXES
 
@@ -330,7 +336,14 @@ def build_read_surface(ctx: Context, components: dict[str, Any]) -> dict[str, An
     rules: list[str] = []
     for component in components.get("components", []):
         rules.extend(component.get("owns", []))
-    rules.extend(spec["path"] for spec in ctx.config.catalog_spec)
+    # Same honesty rule as build_catalog: a declared path that neither exists nor is
+    # about to be written is a future intention, not readable surface — including it
+    # would only manufacture ghosts.
+    rules.extend(
+        spec["path"]
+        for spec in ctx.config.catalog_spec
+        if spec["path"] in generated_paths or (ctx.repo_root / spec["path"].rstrip("/")).exists()
+    )
     rules.extend(SANCTIONED_UNTRACKED_PREFIXES)
     rules.extend(gate.get("always_allow", ()))
 
@@ -361,4 +374,73 @@ def build_read_surface(ctx: Context, components: dict[str, Any]) -> dict[str, An
             "dir_prefixes": sorted(prefixes),
             "glob_patterns": sorted(patterns),
         },
+    }
+
+
+def analyse_read_surface_coverage(ctx: Context) -> dict[str, Any]:
+    """Measure how much of the tracked tree the compiled read surface accounts for.
+
+    Returns orphans (tracked on disk, matched by nothing), ghosts (promised by the
+    surface, absent on disk), rule-scope drift, and the coverage percentage that decides
+    whether a repo-surface deny would mean anything. Paths under the corpus roots count
+    as covered — they are governed by the query discipline, not by membership. A `None`
+    status means git could not answer for this root, never that coverage is clean.
+    """
+    import fnmatch
+
+    from repo_governance.gitutil import toplevel, tracked_files
+    from repo_governance.merge import build_components
+    from repo_governance.renderers.context import RULE_SCOPES
+
+    tracked = tracked_files(ctx.repo_root)
+    if tracked is None or toplevel(ctx.repo_root) != ctx.repo_root.resolve():
+        return {"status": "unknown", "reason": "git did not answer for this repository root"}
+
+    components, _ = build_components(ctx)
+    surface = build_read_surface(ctx, components)
+    exact = {item.casefold() for item in surface["repo"]["exact_files"]}
+    prefixes = [item.casefold() for item in surface["repo"]["dir_prefixes"]]
+    patterns = [item.casefold() for item in surface["repo"]["glob_patterns"]]
+
+    def covered(path: str) -> bool:
+        folded = path.casefold()
+        if folded.startswith("governance/"):
+            return True
+        if folded in exact:
+            return True
+        if any(folded.startswith(prefix) for prefix in prefixes):
+            return True
+        return any(fnmatch.fnmatchcase(folded, pattern) for pattern in patterns)
+
+    considered = [path for path in tracked if not path.startswith(".claude/worktrees/")]
+    orphans = sorted(path for path in considered if not covered(path))
+
+    ghosts = sorted(
+        {
+            item
+            for item in surface["repo"]["exact_files"]
+            if not (ctx.repo_root / item).is_file()
+        }
+        | {
+            item
+            for item in surface["repo"]["dir_prefixes"]
+            if not (ctx.repo_root / item.rstrip("/")).is_dir()
+        }
+    )
+
+    declared_rules = {rule_file for rule_file, _ in RULE_SCOPES}
+    on_disk_rules = {
+        f".claude/rules/{path.name}" for path in sorted((ctx.repo_root / ".claude" / "rules").glob("*.md"))
+    }
+    rules_drift = sorted(declared_rules ^ on_disk_rules)
+
+    total = len(considered)
+    return {
+        "status": "ok",
+        "total_tracked": total,
+        "covered": total - len(orphans),
+        "coverage_percent": round(100 * (total - len(orphans)) / total, 2) if total else 100.0,
+        "orphans": orphans,
+        "ghosts": ghosts,
+        "rules_drift": rules_drift,
     }

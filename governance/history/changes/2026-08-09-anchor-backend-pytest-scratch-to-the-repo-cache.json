@@ -1,0 +1,45 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Backend tmp_path fixtures are immune to the machine's per-user temp root state, mirroring the governance suite's arrangement",
+    "All pytest scratch for both suites now lives under one gitignored .cache tree"
+  ],
+  "compatibility_impact": "pytest --basetemp on the command line still wins (the hook defers to it); cache_dir moves from backend/.pytest_cache to .cache/pytest-backend-cache at the repo root",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/pyproject.toml",
+    "backend/tests/conftest.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-anchor-backend-pytest-scratch-to-the-repo-cache",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The one-time ACL cleanup of the poisoned directories was manual and elevated (owner-performed); this change prevents recurrence from breaking the suite but cannot prevent a foreign-context process from poisoning other paths"
+  ],
+  "manifests_changed": [],
+  "reason": "The machine's per-user pytest temp root and backend/.pytest_cache were both left ACL-poisoned by a run under a different security context (elevated terminal or agent sandbox), which made every tmp_path fixture error at setup and forced ad-hoc exclusion of the rag-docker-integration file. The governance suite anchored its basetemp to the repo cache from day one for exactly this environment class; the backend suite gets the same arrangement so recurrence is harmless instead of suite-breaking",
+  "risks": [],
+  "rollback": "git revert restores default temp locations; delete .cache/pytest-backend* to drop the relocated scratch",
+  "schema_version": 1,
+  "security_impact": "None - test scratch relocation into the gitignored repo cache",
+  "summary": "Anchor backend pytest scratch to the repo cache",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "441 passed, 13 deliberately-gated skips, zero exclusions - the rag-docker-integration file runs in full for the first time this branch, including the tmp_path docling test that erred at setup before; cacheprovider warnings gone",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

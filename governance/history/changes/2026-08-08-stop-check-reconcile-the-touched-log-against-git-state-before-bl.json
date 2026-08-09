@@ -1,0 +1,46 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "First live Stop-hook firing found the defect; committed work no longer re-blocks turn-end",
+    "gitutil gains toplevel() so porcelain answers are only trusted for the root they describe"
+  ],
+  "compatibility_impact": "Stop-check blocks strictly less often: only touched paths still dirty in the working tree count, and change records anywhere in the dirty tree satisfy the record rule; the conservative all-touches-dirty behavior is retained when git is unavailable or answers for an enclosing repository",
+  "date": "2026-08-08",
+  "files_changed": [
+    "tools/repo_governance/src/repo_governance/gitutil.py",
+    "tools/repo_governance/src/repo_governance/hooks.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The live-firing also revealed hooks activate immediately in this environment rather than at next session start - the Phase 3 checklist can run sooner than planned"
+  ],
+  "manifests_changed": [],
+  "reason": "First live firing of the Stop hook produced a false positive: it blocked on files already committed in governed commits with change records, because the touched log is session-scoped memory that outlives commits and never sees records written by the governance CLI subprocess rather than the agent's Edit tool. The touched log is evidence of what a session did, not of what remains unaccounted for - only still-dirty paths may block",
+  "risks": [],
+  "rollback": "git revert restores the previous session-memory-only behavior and its false positive",
+  "schema_version": 1,
+  "security_impact": "None - read-only git queries; one new rev-parse --show-toplevel call",
+  "summary": "stop-check: reconcile the touched log against git state before blocking",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "109 tests green - 2 new tests pin committed-touch reconciliation and CLI-written record counting; the minimal-repo conservative path re-pinned under the toplevel guard",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -1,0 +1,115 @@
+{
+  "corpus": {
+    "bounded_surfaces": [
+      "governance/Summary.md",
+      "governance/catalog.json",
+      "governance/governance.toml",
+      "governance/schemas/",
+      "governance/validators.json"
+    ],
+    "gated_roots": [
+      "governance/history/",
+      "governance/manifests/"
+    ]
+  },
+  "default_modes": {
+    "corpus": "deny",
+    "repo": "warn"
+  },
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      "governance/governance.toml",
+      "governance/manifests/generated/components.json",
+      "tools/repo_governance/src/repo_governance/checks/process.py"
+    ]
+  },
+  "repo": {
+    "dir_prefixes": [
+      ".claude/",
+      ".github/",
+      "backend/",
+      "backend/alembic/versions/",
+      "backend/app/agents/",
+      "backend/app/services/email/",
+      "backend/app/services/rag/",
+      "backend/evals/",
+      "backend/scripts/",
+      "backend/tests/",
+      "docker/",
+      "docker/mcp/chrome-devtools/",
+      "docker/mcp/docling/",
+      "docs/",
+      "emails/",
+      "frontend/",
+      "frontend/e2e/",
+      "frontend/src/app/[locale]/(dashboard)/chat/",
+      "frontend/src/components/chat/",
+      "governance/",
+      "governance/history/",
+      "governance/history/changes/",
+      "governance/history/decisions/",
+      "governance/schemas/",
+      "tools/repo_governance/",
+      "tools/repo_governance/tests/"
+    ],
+    "exact_files": [
+      ".fastapi-fullstack.json",
+      ".gitattributes",
+      ".gitignore",
+      ".pre-commit-config.yaml",
+      "AGENTS.md",
+      "CLAUDE.md",
+      "CONTRIBUTING.md",
+      "ENV_VARS.md",
+      "MANUAL_STEPS.md",
+      "Makefile",
+      "README.md",
+      "SECURITY.md",
+      "backend/app/services/agent.py",
+      "backend/app/services/agent_session.py",
+      "backend/app/services/mcp_connection.py",
+      "backend/app/services/rag_document.py",
+      "backend/app/services/rag_status.py",
+      "backend/app/services/rag_sync.py",
+      "docker-compose.dev.yml",
+      "docker-compose.frontend.yml",
+      "docker-compose.prod.yml",
+      "docker-compose.yml",
+      "frontend/src/hooks/use-chat.ts",
+      "frontend/src/hooks/use-websocket.ts",
+      "frontend/src/stores/chat-mode-store.ts",
+      "frontend/src/stores/chat-sidebar-store.ts",
+      "frontend/src/stores/chat-store.ts",
+      "governance/Summary.md",
+      "governance/catalog.json",
+      "governance/governance.toml",
+      "governance/manifests/curated/architectural-intent.json",
+      "governance/manifests/curated/exceptions.json",
+      "governance/manifests/curated/ownership.json",
+      "governance/manifests/effective/repository.json",
+      "governance/manifests/generated/ai-runtime.json",
+      "governance/manifests/generated/components.json",
+      "governance/manifests/generated/configuration.json",
+      "governance/manifests/generated/data-stores.json",
+      "governance/manifests/generated/interfaces.json",
+      "governance/manifests/generated/read-surface.json",
+      "governance/manifests/generated/services.json",
+      "governance/manifests/generated/tests.json",
+      "governance/policies/architecture.json",
+      "governance/policies/compatibility.json",
+      "governance/policies/process.json",
+      "governance/policies/security.json",
+      "governance/policies/self-governance.json",
+      "governance/validators.json"
+    ],
+    "glob_patterns": [
+      "*.spec.ts",
+      "*.spec.tsx",
+      "*.test.ts",
+      "*.test.tsx"
+    ]
+  },
+  "schema_version": 1
+}

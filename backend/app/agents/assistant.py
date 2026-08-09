@@ -1,6 +1,6 @@
 import logging
-from collections.abc import Awaitable, Callable
-from dataclasses import dataclass, field, replace
+from collections.abc import AsyncGenerator, Awaitable, Callable
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
@@ -11,6 +11,15 @@ from pydantic_ai.capabilities import (
     Thinking,
     WebFetch,
     WebSearch,
+)
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    SystemPromptPart,
+    TextPart,
+    ToolCallPart,
+    ToolReturnPart,
+    UserPromptPart,
 )
 from pydantic_ai.models.openrouter import OpenRouterModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
@@ -23,10 +32,10 @@ from subagents_pydantic_ai import SubAgentCapability
 
 from app.agents.google_loadout import (
     GOOGLE_PRODUCT_LABELS,
+    GOOGLE_PRODUCT_ORDER,
     LOADER_TOOL_NAME,
     GoogleLoadout,
     describe_activation,
-    describe_loadable,
     resolve_product,
 )
 from app.agents.prompts import (
@@ -104,21 +113,15 @@ async def _handle_deferred_tools(
 
 
 def _prepare_toolkit_loader(ctx: RunContext[Deps], tool_def: Any) -> Any:
-    """Expose the loader only while a connected integration is gated off.
+    """Expose the loader only while a connected Google product is gated off.
 
     With nothing gated there is nothing to load, and carrying a dead tool would
     add schema bytes to every request for no capability.
-
-    The description is rewritten per request to carry the names-only index of
-    what is currently withheld. That index is the whole basis for gating being
-    lossless rather than a capability cut: the model can see every tool it
-    doesn't have, and buys the schemas one integration at a time.
     """
     loadout = ctx.deps.google_loadout
     if loadout is None or not loadout.inactive_products():
         return None
-    index = describe_loadable(loadout)
-    return replace(tool_def, description=index) if index else tool_def
+    return tool_def
 
 
 class AssistantAgent:
@@ -180,15 +183,6 @@ class AssistantAgent:
             model_settings["temperature"] = self.temperature
         if self.thinking_effort:
             model_settings["openai_reasoning_summary"] = "auto"  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
-        # The system prompt and tool catalog are byte-identical across every
-        # model request within a run, and a run averages several. Without a
-        # cache breakpoint that whole prefix is re-billed each call. One cache
-        # write at 1.25x beats re-reading at 1.0x from the second call onward,
-        # so this pays for itself on any run that calls a tool at all. Gating
-        # can change the catalog mid-run via the loader; that invalidates once
-        # and re-caches, which is still cheaper than never caching.
-        model_settings["openrouter_cache_tool_definitions"] = "5m"  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
-        model_settings["openrouter_cache_instructions"] = "5m"  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
         toolsets: list[Any] = []
 
         skills_dir = Path(__file__).parent.parent.parent / "skills"
@@ -311,38 +305,39 @@ class AssistantAgent:
             return format_answers(payload, answers)
 
         @agent.tool(prepare=_prepare_toolkit_loader, name=LOADER_TOOL_NAME)
-        async def load_toolkit(ctx: RunContext[Deps], product: str) -> str:
-            """Load one integration's tools into this conversation.
+        async def load_google_toolkit(ctx: RunContext[Deps], product: str) -> str:
+            """Load the tools for one Google Workspace product into this conversation.
 
-            The live description, including the index of what can be loaded, is
-            built per request by ``_prepare_toolkit_loader`` — this text is only
-            the fallback for when nothing is gated off.
+            Only the products relevant to the request are attached up front. If
+            you need one that isn't available yet, call this first — the tools
+            appear immediately afterwards and you can call them on your next
+            step. Do not call it for a product whose tools you can already see.
 
             Args:
-                product: The integration key to load.
+                product: One of "gmail", "calendar", "drive", "docs", "sheets",
+                    "slides", "chat", "contacts".
 
             Returns:
                 The tool names that just became available, one per line.
             """
             loadout = ctx.deps.google_loadout
             if loadout is None:
-                return "All connected tools are already available."
+                return "All connected Google tools are already available."
             # resolve_product is built from the router's own term tables, so the
-            # loader accepts every spelling the router already understands; MCP
-            # servers have no terms and are matched on their key instead.
-            requested = resolve_product(product) or loadout.resolve_connection(product)
-            available = loadout.available_products()
+            # loader accepts every spelling the router already understands.
+            requested = resolve_product(product)
             if requested is None:
                 raise ModelRetry(
-                    f"Unknown integration {product!r}. Choose one of: "
-                    f"{', '.join(available) or 'none — nothing is connected'}."
+                    f"Unknown product {product!r}. Choose one of: "
+                    f"{', '.join(GOOGLE_PRODUCT_ORDER)}."
                 )
+            available = loadout.available_products()
             if requested not in available:
-                connected = ", ".join(available) or "none"
+                connected = ", ".join(GOOGLE_PRODUCT_LABELS[p] for p in available) or "none"
                 return (
-                    f"{GOOGLE_PRODUCT_LABELS.get(requested, requested)} is not connected for "
-                    f"this user. Connected integrations: {connected}. Tell the user they can "
-                    "add it in Settings → Integrations."
+                    f"{GOOGLE_PRODUCT_LABELS[requested]} is not connected for this user. "
+                    f"Connected integrations: {connected}. Tell the user they can add it "
+                    "in Settings → Integrations."
                 )
             return describe_activation(requested, loadout.activate(requested))
 
@@ -371,11 +366,67 @@ class AssistantAgent:
             """
             return await run_python_code(code)
 
+    @staticmethod
+    def _build_model_history(
+        history: list[dict[str, str]] | None,
+    ) -> list[ModelRequest | ModelResponse]:
+        model_history: list[ModelRequest | ModelResponse] = []
+        for msg in history or []:
+            if msg["role"] == "user":
+                model_history.append(ModelRequest(parts=[UserPromptPart(content=msg["content"])]))
+            elif msg["role"] == "assistant":
+                model_history.append(ModelResponse(parts=[TextPart(content=msg["content"])]))
+            elif msg["role"] == "system":
+                model_history.append(ModelRequest(parts=[SystemPromptPart(content=msg["content"])]))
+        return model_history
+
     @property
     def agent(self) -> Agent[Deps, str]:
         if self._agent is None:
             self._agent = self._create_agent()
         return self._agent
+
+    async def run(
+        self,
+        user_input: str,
+        history: list[dict[str, str]] | None = None,
+        deps: Deps | None = None,
+    ) -> tuple[str, list[ToolCallPart | ToolReturnPart], Deps]:
+        agent_deps = deps if deps is not None else Deps()
+
+        logger.info("Running agent with user input: %s...", user_input[:100])
+        result = await self.agent.run(
+            user_input,
+            deps=agent_deps,
+            message_history=self._build_model_history(history),
+        )
+
+        tool_events: list[ToolCallPart | ToolReturnPart] = []
+        for message in result.all_messages():
+            if hasattr(message, "parts"):
+                for part in message.parts:
+                    if isinstance(part, (ToolCallPart, ToolReturnPart)):
+                        tool_events.append(part)
+
+        logger.info("Agent run complete. Output length: %s chars", len(result.output))
+
+        return result.output, tool_events, agent_deps
+
+    async def iter(
+        self,
+        user_input: str,
+        history: list[dict[str, str]] | None = None,
+        deps: Deps | None = None,
+    ) -> AsyncGenerator[Any, None]:
+        agent_deps = deps if deps is not None else Deps()
+
+        async with self.agent.iter(
+            user_input,
+            deps=agent_deps,
+            message_history=self._build_model_history(history),
+        ) as run:
+            async for event in run:
+                yield event
 
 
 def get_agent(
@@ -398,3 +449,12 @@ def get_agent(
         subagent_capability=subagent_capability,
         context_manager_capability=context_manager_capability,
     )
+
+
+async def run_agent(
+    user_input: str,
+    history: list[dict[str, str]],
+    deps: Deps | None = None,
+) -> tuple[str, list[ToolCallPart | ToolReturnPart], Deps]:
+    agent = get_agent()
+    return await agent.run(user_input, history, deps)

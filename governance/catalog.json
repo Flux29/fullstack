@@ -122,6 +122,14 @@
     },
     {
       "authority": "generated",
+      "description": "The read-gate surface: allowed path sets and gated corpus roots, compiled for the PreToolUse hook script.",
+      "kind": "manifest-generated",
+      "path": "governance/manifests/generated/read-surface.json",
+      "read_when": "Changing the [gate] table or component ownership, or diagnosing a gate decision.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
       "description": "Compose services resolved across the file-stack x profile matrix, plus host runtimes and volume classification.",
       "kind": "manifest-generated",
       "path": "governance/manifests/generated/services.json",

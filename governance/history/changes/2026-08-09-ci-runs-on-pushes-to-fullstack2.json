@@ -1,0 +1,41 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The active branch gets conflict-independent CI: governance job (check, selftest, sync-no-op, gate smoke, coverage), lint, tests, security scan run on every push"
+  ],
+  "compatibility_impact": "CI now also runs on pushes to fullstack2; main and master triggers unchanged; PR checks against main unaffected",
+  "date": "2026-08-09",
+  "files_changed": [
+    ".github/workflows/ci.yml"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-ci-runs-on-pushes-to-fullstack2",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "This is the first CI run of the governance job on a Linux runner from this branch; cross-platform determinism is designed in (LF-only writer, sorted keys, POSIX paths) but this push is its first live proof"
+  ],
+  "manifests_changed": [],
+  "reason": "PR checks cannot run while the PR into main has merge conflicts - GitHub builds pull_request workflows on a test merge commit that a conflicted PR cannot produce - and the push trigger only watched main and master, so the active development branch had no CI at all. Adding fullstack2 to the push trigger gives the branch its own conflict-independent CI runs while the excluded-range decision on the PR remains open",
+  "risks": [],
+  "rollback": "git revert removes fullstack2 from the trigger list",
+  "schema_version": 1,
+  "security_impact": "None - CI trigger scope only; no job content changed",
+  "summary": "CI runs on pushes to fullstack2",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "full check clean post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "not run for this change - a CI trigger list cannot affect test behavior; the real validation is the workflow run this push starts, watched to completion below",
+      "id": "backend-unit",
+      "result": "pass"
+    }
+  ]
+}

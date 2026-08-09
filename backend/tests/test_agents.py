@@ -8,14 +8,22 @@ from uuid import uuid4
 
 import pytest
 from pydantic_ai import FunctionToolCallEvent, FunctionToolResultEvent
-from pydantic_ai.messages import RetryPromptPart, ToolCallPart
+from pydantic_ai.messages import (
+    ModelRequest,
+    ModelResponse,
+    RetryPromptPart,
+    SystemPromptPart,
+    TextPart,
+    ToolCallPart,
+    UserPromptPart,
+)
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.tools import DeferredToolRequests, ToolApproved, ToolDenied
 
 from app.agents.assistant import AssistantAgent, Deps, get_agent
 from app.agents.prompts import get_system_prompt_with_rag
 from app.agents.utils import get_current_datetime
-from app.services.agent import load_conversation_history, persist_assistant_turn
+from app.services.agent import build_message_history, load_conversation_history, persist_user_turn
 from app.services.agent_session import AgentSession
 
 
@@ -218,23 +226,37 @@ class TestAgentSessionApproval:
 class TestHistoryConversion:
     """Tests for conversation history conversion."""
 
-    def test_empty_history(self):
-        """Test with empty history."""
-        _agent = AssistantAgent()
-        # History conversion happens inside run/iter methods
-        # We test the structure here
-        history = []
-        assert len(history) == 0
-
-    def test_history_roles(self):
-        """Test history with different roles."""
+    def test_build_message_history_converts_each_role_and_preserves_order(self):
         history = [
+            {"role": "system", "content": "You are helpful"},
             {"role": "user", "content": "Hello"},
             {"role": "assistant", "content": "Hi there!"},
-            {"role": "system", "content": "You are helpful"},
         ]
-        assert len(history) == 3
-        assert all("role" in msg and "content" in msg for msg in history)
+
+        converted = build_message_history(history)
+
+        assert len(converted) == 3
+        assert isinstance(converted[0], ModelRequest)
+        assert isinstance(converted[0].parts[0], SystemPromptPart)
+        assert isinstance(converted[1], ModelRequest)
+        assert isinstance(converted[1].parts[0], UserPromptPart)
+        assert converted[1].parts[0].content == "Hello"
+        assert isinstance(converted[2], ModelResponse)
+        assert isinstance(converted[2].parts[0], TextPart)
+        assert converted[2].parts[0].content == "Hi there!"
+
+    def test_build_message_history_drops_unknown_roles_rather_than_crashing(self):
+        history = [
+            {"role": "user", "content": "question"},
+            {"role": "tool", "content": "tool output"},
+            {"role": "assistant", "content": "answer"},
+        ]
+
+        converted = build_message_history(history)
+
+        assert len(converted) == 2
+        assert isinstance(converted[0], ModelRequest)
+        assert isinstance(converted[1], ModelResponse)
 
 
 class TestPersistedConversationHistory:
@@ -296,28 +318,21 @@ class TestPersistedConversationHistory:
         persist.assert_awaited_once()
         assert session.conversation_history == loaded
 
-
-class TestPromptCaching:
-    def test_cache_breakpoints_are_set_on_the_stable_prefix(self):
-        """The tool catalog is the largest, most repeated part of every request.
-
-        Canonical ordering exists to make it cacheable; without these settings
-        no breakpoint is sent and the prefix is re-billed on every call.
-        """
-        with patch("app.agents.assistant._build_model", return_value=TestModel()):
-            settings = AssistantAgent().agent.model_settings
-
-        assert settings["openrouter_cache_tool_definitions"] == "5m"
-        assert settings["openrouter_cache_instructions"] == "5m"
-
-
-class TestTurnUsageIsPersisted:
-    """Token usage reaches the messages row, so history is comparable in-app."""
-
     @pytest.mark.anyio
-    async def test_persist_assistant_turn_forwards_tokens_used(self):
+    async def test_loader_excludes_non_model_roles(self):
+        user = SimpleNamespace(id=uuid4())
+        conversation_id = uuid4()
         service = AsyncMock()
-        service.add_message.return_value = SimpleNamespace(id=uuid4())
+        service.list_messages.side_effect = [
+            (
+                [
+                    SimpleNamespace(role="user", content="question"),
+                    SimpleNamespace(role="tool", content="raw tool payload"),
+                    SimpleNamespace(role="assistant", content="answer"),
+                ],
+                3,
+            ),
+        ]
 
         @contextlib.asynccontextmanager
         async def db_context():
@@ -327,25 +342,175 @@ class TestTurnUsageIsPersisted:
             patch("app.services.agent.get_db_context", db_context),
             patch("app.services.agent.get_conversation_service", return_value=service),
         ):
-            await persist_assistant_turn(
-                str(uuid4()), "answer", "anthropic/claude-sonnet-5", [], tokens_used=4213
-            )
+            history = await load_conversation_history(user, str(conversation_id))
 
-        assert service.add_message.await_args.args[1].tokens_used == 4213
+        assert history == [
+            {"role": "user", "content": "question"},
+            {"role": "assistant", "content": "answer"},
+        ]
 
     @pytest.mark.anyio
-    async def test_run_usage_exposes_total_tokens(self):
-        """``usage`` is a property on AgentRunResult and aggregates the whole run.
+    async def test_completed_turn_hands_loaded_history_to_the_model_and_appends_the_new_turn(self):
+        """The retention seam itself: history that was loaded must reach the model.
 
-        The session reads ``agent_run.result.usage.total_tokens``; a pydantic-ai
-        release that made usage a method again would break persistence silently,
-        because the write is wrapped in the turn's broad exception handler.
+        The incident this pins: history was loaded and stored on the session but the
+        model was run without it — nothing crashed, the chat just forgot its past.
         """
-        with patch("app.agents.assistant._build_model", return_value=TestModel(call_tools=[])):
-            agent = AssistantAgent().agent
-            async with agent.iter("hello", deps=Deps()) as run:
-                async for _ in run:
-                    pass
+        conversation_id = str(uuid4())
+        user = SimpleNamespace(id=uuid4())
+        session = AgentSession(MagicMock(), user)
+        session._stream_agent_run = AsyncMock()
+        session._google_loadout_for_turn = MagicMock(return_value=MagicMock())
+        loaded = [
+            {"role": "user", "content": "earlier prompt"},
+            {"role": "assistant", "content": "earlier answer"},
+        ]
 
-        assert run.result is not None
-        assert isinstance(run.result.usage.total_tokens, int)
+        captured: dict = {}
+        agent_run = SimpleNamespace(result=SimpleNamespace(output="new answer"))
+
+        @contextlib.asynccontextmanager
+        async def fake_iter(user_input, **kwargs):
+            captured["user_input"] = user_input
+            captured.update(kwargs)
+            yield agent_run
+
+        assistant = MagicMock()
+        assistant.agent.iter = fake_iter
+        assistant.model_name = "test-model"
+
+        with (
+            patch(
+                "app.services.agent_session.load_conversation_history",
+                AsyncMock(return_value=list(loaded)),
+            ),
+            patch(
+                "app.services.agent_session.persist_user_turn",
+                AsyncMock(return_value=(conversation_id, False, None)),
+            ),
+            patch(
+                "app.services.agent_session.persist_assistant_turn",
+                AsyncMock(return_value="msg-id"),
+            ),
+            patch("app.services.agent_session.send_event", AsyncMock(return_value=True)),
+            patch("app.services.agent_session.build_toolsets_for_user", AsyncMock(return_value=[])),
+            patch("app.services.agent_session.get_agent", return_value=assistant),
+        ):
+            await session.process_message(
+                {"message": "new prompt", "conversation_id": conversation_id}
+            )
+
+        history_arg = captured["message_history"]
+        assert [type(message) for message in history_arg] == [ModelRequest, ModelResponse]
+        assert history_arg[0].parts[0].content == "earlier prompt"
+        assert history_arg[1].parts[0].content == "earlier answer"
+        assert session.conversation_history == [
+            *loaded,
+            {"role": "user", "content": "new prompt"},
+            {"role": "assistant", "content": "new answer"},
+        ]
+
+    @pytest.mark.anyio
+    async def test_persist_without_a_requested_id_always_creates(self):
+        user = SimpleNamespace(id=uuid4())
+        created = SimpleNamespace(id=uuid4())
+        service = AsyncMock()
+        service.create_conversation = AsyncMock(return_value=created)
+        service.add_message = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            conv_id, newly_created, _ = await persist_user_turn(
+                user, "hello", [], requested_conversation_id=None
+            )
+
+        assert newly_created is True
+        assert conv_id == str(created.id)
+        service.add_message.assert_awaited_once()
+
+    @pytest.mark.anyio
+    async def test_persist_with_a_requested_id_continues_that_conversation(self):
+        user = SimpleNamespace(id=uuid4())
+        requested = str(uuid4())
+        service = AsyncMock()
+        service.get_conversation = AsyncMock(return_value=SimpleNamespace(title="existing"))
+        service.add_message = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            conv_id, newly_created, _ = await persist_user_turn(
+                user, "follow-up", [], requested_conversation_id=requested
+            )
+
+        assert newly_created is False
+        assert conv_id == requested
+        service.create_conversation.assert_not_awaited()
+
+    @pytest.mark.anyio
+    async def test_new_chat_over_a_live_session_creates_a_fresh_conversation(self):
+        """The new-chat incident: conversation_id null means NEW CHAT, even mid-session.
+
+        The frontend's startNewChat keeps the WebSocket open, sends the next message with
+        conversation_id null, and waits for conversation_created to learn the new id. A
+        session that falls back to its sticky current_conversation_id instead appends the
+        message to the OLD conversation and hands the model the OLD history — chats that
+        never end, which is exactly what shipped inside the d11400c snapshot.
+        """
+        user = SimpleNamespace(id=uuid4())
+        session = AgentSession(MagicMock(), user)
+        session.current_conversation_id = str(uuid4())  # a previous chat on this socket
+        session._stream_agent_run = AsyncMock()
+        session._google_loadout_for_turn = MagicMock(return_value=MagicMock())
+
+        new_conversation = SimpleNamespace(id=uuid4())
+        conv_service = AsyncMock()
+        conv_service.create_conversation = AsyncMock(return_value=new_conversation)
+        conv_service.add_message = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        captured: dict = {}
+        agent_run = SimpleNamespace(result=SimpleNamespace(output="answer"))
+
+        @contextlib.asynccontextmanager
+        async def fake_iter(user_input, **kwargs):
+            captured.update(kwargs)
+            yield agent_run
+
+        assistant = MagicMock()
+        assistant.agent.iter = fake_iter
+        assistant.model_name = "test-model"
+        load_history = AsyncMock(return_value=[{"role": "user", "content": "old chat"}])
+        send_event = AsyncMock(return_value=True)
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=conv_service),
+            patch("app.services.agent_session.load_conversation_history", load_history),
+            patch("app.services.agent_session.persist_assistant_turn", AsyncMock(return_value="m")),
+            patch("app.services.agent_session.send_event", send_event),
+            patch("app.services.agent_session.build_toolsets_for_user", AsyncMock(return_value=[])),
+            patch("app.services.agent_session.get_agent", return_value=assistant),
+        ):
+            await session.process_message({"message": "fresh start", "conversation_id": None})
+
+        conv_service.create_conversation.assert_awaited_once()
+        assert session.current_conversation_id == str(new_conversation.id)
+        load_history.assert_not_awaited()  # the old chat's history must not leak in
+        assert captured["message_history"] == []
+        event_names = [call.args[1] for call in send_event.await_args_list]
+        assert "conversation_created" in event_names

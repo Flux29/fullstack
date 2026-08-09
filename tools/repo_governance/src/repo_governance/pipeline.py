@@ -18,6 +18,7 @@ EFFECTIVE_PATH = "governance/manifests/effective/repository.json"
 CONFIGURATION_PATH = "governance/manifests/generated/configuration.json"
 SERVICES_PATH = "governance/manifests/generated/services.json"
 INTERFACES_PATH = "governance/manifests/generated/interfaces.json"
+READ_SURFACE_PATH = "governance/manifests/generated/read-surface.json"
 DECISION_INDEX_PATH = "governance/history/decisions/index.json"
 SUMMARY_PATH = "governance/Summary.md"
 ENV_VARS_PATH = "ENV_VARS.md"
@@ -90,7 +91,12 @@ def render_all(ctx: Context) -> dict[str, str]:
     outputs[CONFIGURATION_PATH] = canonical_json(configuration)
     outputs[ENV_VARS_PATH] = render_env_vars(ctx, configuration)
 
-    from repo_governance.builders import build_decision_index, build_interfaces, build_services
+    from repo_governance.builders import (
+        build_decision_index,
+        build_interfaces,
+        build_read_surface,
+        build_services,
+    )
     from repo_governance.renderers.summary import render_summary
 
     interfaces = build_interfaces(ctx)
@@ -106,6 +112,13 @@ def render_all(ctx: Context) -> dict[str, str]:
         effective=effective,
         decision_index=decision_index,
         interfaces=interfaces,
+    )
+
+    # The read surface treats about-to-be-written files as present for the same reason
+    # the catalog does, so it is rendered once every other output path is known.
+    read_surface_generated = frozenset({*outputs, READ_SURFACE_PATH, CATALOG_PATH})
+    outputs[READ_SURFACE_PATH] = canonical_json(
+        build_read_surface(ctx, components, generated_paths=read_surface_generated)
     )
 
     # The catalog is rendered last because it describes the whole output set, including

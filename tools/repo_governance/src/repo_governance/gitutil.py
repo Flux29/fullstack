@@ -100,6 +100,27 @@ def head_commit(root: Path) -> str | None:
     return output.strip() if output else None
 
 
+def tracked_files(root: Path) -> list[str] | None:
+    """Repo-relative POSIX paths git tracks, or None if unknown."""
+    output = _run(["ls-files", "-z"], root)
+    if output is None:
+        return None
+    return sorted({field for field in output.split("\0") if field})
+
+
+def toplevel(root: Path) -> Path | None:
+    """The repository top-level git actually answers for, or None if unknown.
+
+    git walks upward from `root`, so a directory nested inside some other repository gets
+    that repository's answers. Callers comparing porcelain output against `root`-relative
+    paths must check this is really `root` before trusting the result.
+    """
+    output = _run(["rev-parse", "--show-toplevel"], root)
+    if not output:
+        return None
+    return Path(output.strip()).resolve()
+
+
 def is_clean(root: Path) -> bool | None:
     changes = working_tree_changes(root)
     if changes is None:

@@ -313,7 +313,7 @@ async def list_sync_sources(
     Pass ``collection_name`` to see only sources assigned to a specific KB.
     Omit it to list all org-level integrations (assigned and unassigned).
     """
-    return await sync_source_svc.list_sources()
+    return await sync_source_svc.list_sources(collection_name=collection_name)
 
 
 @router.post(

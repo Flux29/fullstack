@@ -198,6 +198,9 @@ unknown-argument = "ignore"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# Repo-root cache dir, next to the basetemp that tests/conftest.py anchors there:
+# the default backend/.pytest_cache has been ACL-poisoned by a foreign-context run once.
+cache_dir = "../.cache/pytest-backend-cache"
 
 [tool.coverage.run]
 source = ["app"]

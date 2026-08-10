@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 45)
+## Recent changes (latest 20 of 46)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -91,6 +91,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Align the five template-era skills with governance reality
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-align-the-five-template-era-skills-with-governance-reality.json`
+- **2026-08-10** — Add the template-upgrade skill: governed template upgrades driven by provenance records
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-10-add-the-template-upgrade-skill-governed-template-upgrades-driven.json`
 - **2026-08-10** — Add the ship skill: governed close-out to commit, push, and PR
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-ship-skill-governed-close-out-to-commit-push-and-pr.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Evaluation records: kernel-internal schema and the phase-6 trigger pre-emption record
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-09-evaluation-records-kernel-internal-schema-and-the-phase-6-trigge.json`
-- **2026-08-09** — CI runs on pushes to fullstack2
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-09-ci-runs-on-pushes-to-fullstack2.json`
 
 ## Decisions (5)
 

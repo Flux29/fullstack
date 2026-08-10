@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Template upgrades now have a governed procedure: dry-run, classify every conflict against ownership.json generator_provenance, apply, full validator sweep including skills-check, one record naming each resolution - the fifteen provenance records written in S3/S4 are its direct input"
+  ],
+  "compatibility_impact": "None - additive skill",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/template-upgrade/"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-add-the-template-upgrade-skill-governed-template-upgrades-driven",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Not exercised against a real template release in this session; the procedure was validated for citation integrity against the four upgrade Make targets and the ownership.json schema"
+  ],
+  "manifests_changed": [],
+  "reason": "pick-workflow sketched a four-step upgrade chain in one table row while the Makefile carries four upgrade targets and ownership.json now carries fifteen provenance records naming exactly which files a template upgrade must not clobber - the largest-blast-radius operation in the repository had the least guidance",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - skill text only",
+  "summary": "Add the template-upgrade skill: governed template upgrades driven by provenance records",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "25-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

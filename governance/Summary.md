@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 48)
+## Recent changes (latest 20 of 49)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -70,6 +70,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Register .claude as a governed component with an advisory reference checker
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-register-claude-as-a-governed-component-with-an-advisory-referen.json`
+- **2026-08-10** — Record the evaluation-and-audit loop for the agent surface
+  - Components: agent-operating-surface, governance-kernel
+  - Record: `governance/history/changes/2026-08-10-record-the-evaluation-and-audit-loop-for-the-agent-surface.json`
 - **2026-08-10** — Read-gate hardening: breadth rule with context-first unlock; repo surface warn to deny
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-read-gate-hardening-breadth-rule-with-context-first-unlock-repo.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Hook commands anchored to CLAUDE_PROJECT_DIR
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-hook-commands-anchored-to-claude-project-dir.json`
-- **2026-08-09** — Gate: a file-rooted search is a named read, not an enumeration
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-09-gate-a-file-rooted-search-is-a-named-read-not-an-enumeration.json`
 
 ## Decisions (5)
 

@@ -1,0 +1,45 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "alembic env.py now imports all 12 model modules; Base.metadata at autogenerate time contains all 15 tables including conversation_shares, user_slash_commands, and mcp_connections, so alembic revision --autogenerate can no longer propose DROP TABLE for them"
+  ],
+  "compatibility_impact": "None to applied migrations - the revision chain is untouched. Only autogenerate diffing gains the previously-missing tables. Resolves the FINDING recorded in the AST-import-graph change record.",
+  "date": "2026-08-09",
+  "files_changed": [
+    "backend/alembic/env.py"
+  ],
+  "follow_up": [
+    "A future symbol-level orm-changes check should also assert env.py stays in lockstep with app/db/models/__init__.py - the two lists drifted silently once already"
+  ],
+  "id": "2026-08-09-alembic-env-py-imports-every-model-module-so-autogenerate-sees-t",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The migrations validator (upgrade/downgrade cycle) skipped locally by design: its downgrade-to-base step would drop the live dev database schema, and its gate correctly detects the local alembic config cannot reach a disposable database. CI runs it against a throwaway pgvector container in the test job."
+  ],
+  "manifests_changed": [],
+  "reason": "The import graph work found env.py imports only 9 of 12 model modules - conversation_share, user_slash_command, and mcp_connection are absent from Base.metadata at autogenerate time, so alembic revision --autogenerate would propose DROP TABLE for their three tables; recorded as a FINDING in the AST-import-graph change record",
+  "risks": [],
+  "rollback": "Revert the commit; autogenerate returns to seeing 9 of 12 model modules and the finding reopens.",
+  "schema_version": 1,
+  "security_impact": "None. Three import lines in migration tooling; no runtime code path changes.",
+  "summary": "alembic env.py imports every model module so autogenerate sees the full metadata",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "473 passed, 13 gated skips - unchanged from the recorded baseline",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean of blocking findings post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

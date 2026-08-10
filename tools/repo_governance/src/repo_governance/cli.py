@@ -575,6 +575,59 @@ def summary() -> None:
     click.echo("governance/Summary.md is current.")
 
 
+@main.command("gate-metrics")
+@click.option("--json", "as_json", is_flag=True, help="Emit the raw report for evaluation records.")
+def gate_metrics(as_json: bool) -> None:
+    """Aggregate read-gate telemetry into the evidence that tunes [gate]. Read-only.
+
+    Interpretation: high deny counts with high compliance and no decomposition means the
+    gate is redirecting cheaply; decomposed sessions mean an agent simulated a denied
+    sweep with scoped searches and tokens went up, which argues for demoting that root or
+    improving the substitute query; shadow would-fire counts are the promotion case for a
+    candidate root. Rising map-first sessions are the convergence signal — the map became
+    the habit before the gate had to speak.
+    """
+    import json as json_module
+
+    from repo_governance.hooks import gate_metrics_report
+
+    report = gate_metrics_report(_context())
+    if as_json:
+        click.echo(json_module.dumps(report, indent=2, sort_keys=True))
+        return
+    sessions = report["sessions"]
+    breadth = report["breadth"]
+    click.echo(
+        f"sessions: {sessions['with_telemetry']} with telemetry, "
+        f"{sessions['without_telemetry']} without (pre-telemetry), {sessions['degraded']} degraded"
+    )
+    denies = ", ".join(f"{root}: {count}" for root, count in sorted(breadth["deny_counts_by_root"].items()))
+    click.echo(
+        f"breadth denials: {sum(breadth['deny_counts_by_root'].values())} "
+        f"across {breadth['sessions_with_denials']} session(s)" + (f"  [{denies}]" if denies else "")
+    )
+    if breadth["sessions_with_denials"]:
+        latency = breadth["median_events_to_unlock"]
+        click.echo(
+            f"  complied after denial: {breadth['complied_after_denial']}/{breadth['sessions_with_denials']}"
+            + (f"; median events to unlock: {latency}" if latency is not None else "")
+            + (f"; never unlocked: {breadth['never_unlocked']}" if breadth["never_unlocked"] else "")
+        )
+        click.echo(
+            f"  sweep decomposition (>=3 scoped searches under a denied root pre-unlock): "
+            f"{breadth['decomposed_sessions']} session(s)"
+        )
+    click.echo(f"map-first sessions (scoped query before any denial): {breadth['map_first_sessions']}")
+    shadows = ", ".join(f"{root}: {count}" for root, count in sorted(report["shadow_would_fire_by_root"].items()))
+    click.echo(f"shadow would-fire: {shadows if shadows else 'none'}")
+    click.echo(
+        f"repo-surface verdicts: {report['repo_surface']['read_verdicts']} read(s), "
+        f"{report['repo_surface']['enum_verdicts']} enumeration(s); "
+        f"corpus verdicts: {report['corpus_surface']['enum_verdicts']}"
+    )
+    click.echo("Promotion/demotion of roots is a governed change to [gate] in governance/governance.toml.")
+
+
 @main.group()
 def change() -> None:
     """Governed change sessions."""

@@ -213,6 +213,9 @@ governance-explain:
 governance-summary:
 	$(GOVERNANCE) summary
 
+governance-gate-metrics:
+	$(GOVERNANCE) gate-metrics $(ARGS)
+
 governance-change-start:
 	$(GOVERNANCE) change start --summary "$(SUMMARY)" --reason "$(REASON)"
 

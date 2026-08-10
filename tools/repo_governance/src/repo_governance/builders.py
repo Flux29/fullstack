@@ -368,6 +368,7 @@ def build_read_surface(
         },
         "breadth": {
             "roots": sorted(gate.get("breadth_roots", ())),
+            "shadow_roots": sorted(gate.get("breadth_shadow_roots", ())),
         },
         "corpus": {
             "gated_roots": sorted(gate.get("corpus_gated_roots", ())),

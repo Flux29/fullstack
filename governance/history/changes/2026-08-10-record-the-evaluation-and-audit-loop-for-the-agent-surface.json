@@ -1,0 +1,57 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The audit-and-enforce cycle is now a recorded evaluation (2026-08-10-agent-surface-audit-loop) with a three-layer recurrence mechanism: strict CI skills-check, debt-sweep surveying the agent surface with gate-metrics and a prose spot-check, and template-upgrade re-running skills-check before finalize",
+    "debt-sweep carries the rag-facade debt item explicitly with its shape (refactor-governed)"
+  ],
+  "compatibility_impact": "None",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/.governance.json",
+    ".claude/skills/debt-sweep/SKILL.md",
+    "governance/history/evaluations/2026-08-10-agent-surface-audit-loop.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-record-the-evaluation-and-audit-loop-for-the-agent-surface",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The MCP filesystem-writer deny decision remains deliberately open per user instruction; the trade-off is presented for deliberation in the session report, not decided here"
+  ],
+  "manifests_changed": [
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "reason": "One-shot cleanup without a recurrence mechanism is how the surface got stale the first time - the audit found eight stale citations precisely because nothing measured the skills after they were written",
+  "risks": [],
+  "rollback": "git revert of the single commit, then make governance-sync",
+  "schema_version": 1,
+  "security_impact": "None - an evaluation record, a survey-checklist addition, and a component invariant",
+  "summary": "Record the evaluation-and-audit loop for the agent surface",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "27-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "153 tests",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

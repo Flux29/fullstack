@@ -42,9 +42,18 @@ Cross-check the skill's findings against governance's own:
 Also worth a direct look, since these produce ranked, actionable output:
 
 ```bash
-make lint          # ruff + ty debt, file by file
-make test-cov      # coverage against the ratcheted floor
+make lint                    # ruff + ty debt, file by file
+make test-cov                # coverage against the ratcheted floor
+make governance-skills-check # citation integrity of the agent surface
+make governance-gate-metrics # read-gate verdicts: where agents are being denied
 ```
+
+The **agent surface is part of the sweep**: skills-check proves citations resolve, not
+that prose is true — spot-check one skill per sweep against the code it describes.
+Known standing item: **the `services/rag/` facade** — the thick-domain rule promises a
+facade that rag has never had, and its ~25 direct sub-module import sites
+(`main.py`, `deps.py`, worker, CLI) are the `thick-domains-expose-a-facade` advisory
+findings. Shape: `refactor-governed`.
 
 ## Phase 2 — Rank
 

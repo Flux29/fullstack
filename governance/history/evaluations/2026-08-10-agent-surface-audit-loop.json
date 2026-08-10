@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "id": "2026-08-10-agent-surface-audit-loop",
+  "date": "2026-08-10",
+  "kind": "policy-outcome",
+  "summary": "A full audit of the .claude agent surface found systematic citation drift in the ungoverned corpus; the skills-check validator now enforces citation integrity, and this record fixes the recurrence mechanism so the surface cannot silently rot again.",
+  "observation": "Before 2026-08-10 no component owned .claude: impact analysis returned unassigned with no validators, and the corpus had drifted exactly as unowned knowledge does. The audit found 8 stale citations (docs/rag.md cited twice but never written, services/billing/ and services/channels/ cited as reference implementations but never generated, email_tasks.py and cleanup_tasks.py cited as examples but absent), one auto-loaded rule file teaching the wrong test harness (pytest-asyncio with real-session fixtures against an anyio mocked-session conftest), and a facade rule stated as fact that the rag package has never satisfied. Every drifted file was template-era; every governance-era file was clean - authorship inside the envelope correlated exactly with accuracy.",
+  "evidence": [
+    {
+      "source": "governance skills-check (first advisory run, session 2026-08-10-register-claude-as-a-governed-component)",
+      "detail": "8 findings across 22 files on first run; 0 findings after the S2-S4 content sessions; strict mode and the CI step landed in the ratchet session with the corpus already clean.",
+      "ref": "2026-08-10-promote-skills-check-to-blocking-and-wire-it-into-ci"
+    },
+    {
+      "source": "governance impact --paths .claude/skills",
+      "detail": "Before: unassigned, no validators. After: agent-operating-surface, validators skills-check + governance-check."
+    }
+  ],
+  "proposed_action": "Three-layer recurrence mechanism: (1) skills-check runs strict in CI and via impact selection on every .claude-touching session; (2) debt-sweep's survey now includes the agent surface - gate-metrics verdict trends and a prose-accuracy spot-check of one skill per sweep, because skills-check proves citations exist, not that descriptions are true; (3) a template upgrade re-runs skills-check over any upstream .claude changes before finalize (template-upgrade skill, rule 4). Repeat a full manual audit when a batch of new skills lands or a template upgrade rewrites the surface.",
+  "status": "acted-on",
+  "initiated_by": {
+    "kind": "user",
+    "ref": "skills-surface audit and remediation plan, 2026-08-10"
+  },
+  "tool_version": "1.0.0"
+}

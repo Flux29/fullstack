@@ -1,0 +1,48 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Every file mutation in a Claude Code session now flows through tools the gates and the touched-log observe"
+  ],
+  "compatibility_impact": "The four filesystem MCP writers and Windows-MCP FileSystem become unusable in Claude Code sessions inside this repository only; their read tools and all use outside the repo are untouched, and native Read/Write/Edit cover the same capability through the gates",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/settings.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-deny-the-mcp-filesystem-writer-tools-inside-the-repository",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Enumerated denylist: a future machine-side MCP server with write tools is not covered until added here - keep the list short and honest rather than aspirational"
+  ],
+  "manifests_changed": [],
+  "reason": "MCP filesystem writers bypass both the new-file gate and the PostToolUse touched-log, so a write through them is invisible to the Stop hook and can land outside any change session - native Read/Write/Edit cover the same capability through the gates, making the bypass pure loss",
+  "risks": [],
+  "rollback": "git revert of the single commit, or delete the deny block",
+  "schema_version": 1,
+  "security_impact": "Positive - closes the last known write path that is both ungated (new-file gate matches Write|NotebookEdit only) and unlogged (touched-log matches Edit|Write only, so the Stop hook cannot see MCP writes). Claude-side steering, not a security boundary: non-Claude agents ignore these settings",
+  "summary": "Deny the MCP filesystem writer tools inside the repository",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "parsed cleanly",
+      "id": "settings-json-valid",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

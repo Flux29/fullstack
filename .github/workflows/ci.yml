@@ -66,6 +66,11 @@ jobs:
       - name: Read-surface coverage
         run: uv run --project tools/repo_governance governance coverage
 
+      # The agent operating surface (.claude skills, commands, rules) may cite only
+      # paths, Make targets, and validator IDs that exist. Strict: stale citations fail.
+      - name: Skills reference check
+        run: uv run --project tools/repo_governance governance skills-check
+
   lint:
     runs-on: ubuntu-latest
     steps:

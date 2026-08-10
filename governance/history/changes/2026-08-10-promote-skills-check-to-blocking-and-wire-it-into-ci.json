@@ -1,0 +1,53 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "skills-check exits nonzero on any stale citation by default; --advisory remains for exploratory runs",
+    "CI governance job gains a Skills reference check step after the coverage step",
+    "The governance selftest now asserts zero findings against the committed corpus, making the suite a second enforcement layer"
+  ],
+  "compatibility_impact": "ci_job for skills-check now claims membership in the governance CI job, and the step exists in the same commit, so the claim is true at commit time",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    "governance/validators.json",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/tests/test_skills_check.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-promote-skills-check-to-blocking-and-wire-it-into-ci",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The checker validates citations, not prose accuracy - a skill can still describe behavior wrongly while citing real files"
+  ],
+  "manifests_changed": [],
+  "reason": "The content it polices is now clean after the S2-S4 sessions; an advisory checker nobody is forced to read reverts to drift within one template upgrade",
+  "risks": [],
+  "rollback": "git revert of the single commit restores advisory default, null ci_job, and removes the CI step",
+  "schema_version": 1,
+  "security_impact": "None - strictness flip and one read-only CI step",
+  "summary": "Promote skills-check to blocking and wire it into CI",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "strict default, 0 findings on the 22-file corpus",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "152 tests including the tightened zero-findings ratchet assertion",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

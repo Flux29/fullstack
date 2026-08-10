@@ -34,7 +34,8 @@ VERIFIED_CLASSES = "generated-file freshness, document schemas, change records, 
 _ENTRY_RULES = (
     "Entry rules: `make governance-preflight` -> `make governance-change-start SUMMARY=... REASON=...` -> "
     "`make governance-context PATHS=... TASK=...` -> smallest coherent change -> `make governance-sync` -> "
-    "validators from `make governance-impact` -> `make governance-change-finish` -> `make governance-check`."
+    "validators from `make governance-impact` -> `make governance-change-finish` -> `make governance-check`.\n"
+    "Start non-trivial work with the `pick-workflow` skill; every change runs inside `gov-change`."
 )
 _CORPUS_RULE = (
     "Do not bulk-read governance/history/ or governance/manifests/ - query them: "

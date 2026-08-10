@@ -21,7 +21,11 @@ make governance-summary        # open findings, accepted exceptions, active cont
 
 Then invoke `engineering:tech-debt` via the Skill tool, scoped to the area under review.
 For a repo-wide sweep, delegate the reading to `Explore` rather than pulling every module
-into this context.
+into this context — but run one scoped `make governance-context PATHS="..." TASK="..."`
+query **before** spawning it: the read gate denies discovery sweeps (Glob/Grep at the
+repo root or a bare top-level directory) until a scoped query has unlocked the session,
+and a subagent spawned first burns its opening turns on denials. Give the subagent
+component directories to search, not repo-root globs.
 
 Cross-check the skill's findings against governance's own:
 

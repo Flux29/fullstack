@@ -1,0 +1,53 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "fix-issue now opens the gov-change envelope, requires the regression test before the fix, and routes unknown causes to engineering:debug",
+    "review now verifies the proxy-hop contract (handler, client, caller) and frontend conventions instead of backend-only checks, and verifies against sources rather than briefings",
+    "add-endpoint slimmed to the dependency-ordered scaffold; net -13 lines of restated rules that auto-load anyway"
+  ],
+  "compatibility_impact": "None - command names unchanged; slash-command routing stable",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/commands/add-endpoint.md",
+    ".claude/commands/fix-issue.md",
+    ".claude/commands/review.md",
+    "governance/manifests/curated/ownership.json"
+  ],
+  "follow_up": [
+    "S5 flips skills-check to strict and adds the CI step"
+  ],
+  "id": "2026-08-10-bring-the-three-commands-into-the-governance-era",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Commands are guidance, not enforcement; the Stop hook remains the backstop when a direct invocation skips the envelope"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json"
+  ],
+  "reason": "fix-issue never opens an envelope or writes a regression test first, review checks only the backend and skips the proxy hop that architecture policy declares part of every REST chain, and add-endpoint restates rules that auto-load - commands that predate the constitution teach agents to ignore it",
+  "risks": [],
+  "rollback": "git revert of the single commit; no generated files moved",
+  "schema_version": 1,
+  "security_impact": "None - command text and provenance records only",
+  "summary": "Bring the three commands into the governance era",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "0 findings across the 22-file corpus",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

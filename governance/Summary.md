@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 40)
+## Recent changes (latest 20 of 41)
 
 - **2026-08-10** — Register .claude as a governed component with an advisory reference checker
   - Components: agent-operating-surface, governance-kernel
@@ -70,6 +70,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Read-gate hardening: breadth rule with context-first unlock; repo surface warn to deny
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-read-gate-hardening-breadth-rule-with-context-first-unlock-repo.json`
+- **2026-08-10** — Promote skills-check to blocking and wire it into CI
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-10-promote-skills-check-to-blocking-and-wire-it-into-ci.json`
 - **2026-08-10** — Gate telemetry: verdict event log, shadow roots, and a gate-metrics aggregation command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-gate-telemetry-verdict-event-log-shadow-roots-and-a-gate-metrics.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Anchor backend pytest scratch to the repo cache
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-anchor-backend-pytest-scratch-to-the-repo-cache.json`
-- **2026-08-09** — alembic env.py imports every model module so autogenerate sees the full metadata
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-09-alembic-env-py-imports-every-model-module-so-autogenerate-sees-t.json`
 
 ## Decisions (5)
 

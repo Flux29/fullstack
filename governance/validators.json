@@ -149,10 +149,10 @@
     {
       "id": "skills-check",
       "command": "make governance-skills-check",
-      "description": "Reference integrity for the agent operating surface: every path, Make target, and validator ID cited by .claude skills, commands, and rules must exist. Advisory until the corpus is clean; the ratchet session flips it to strict.",
+      "description": "Reference integrity for the agent operating surface: every path, Make target, and validator ID cited by .claude skills, commands, and rules must exist. Strict by default; nonzero exit on any stale citation.",
       "destructive": false,
       "requires": [],
-      "ci_job": null
+      "ci_job": "governance"
     }
   ]
 }

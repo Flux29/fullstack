@@ -1,9 +1,8 @@
 """skills-check: reference integrity for the .claude corpus.
 
 Synthetic cases prove each classification rule on inputs the real repository must never
-contain; the real-repo case proves the committed corpus stays scannable. The zero-findings
-assertion against the real tree deliberately waits for the ratchet session - the checker
-lands while the corpus it polices is still being cleaned.
+contain; the real-repo case is the ratchet - the committed corpus must scan with zero
+findings, so this suite is a second enforcement layer beside the strict CLI default.
 """
 
 from __future__ import annotations
@@ -151,9 +150,13 @@ def test_report_is_deterministic(skills_repo: Path):
     assert first == second
 
 
-def test_real_repository_corpus_scans_clean_of_errors(real_context: Context):
+def test_real_repository_corpus_has_zero_findings(real_context: Context):
+    """The ratchet: the committed corpus stays citation-clean from here on.
+
+    A finding here means a skill, command, or rule cites something that does not
+    exist. Fix the text or the territory - never this assertion.
+    """
     report = analyse_skill_references(real_context)
     assert report["status"] == "ok"
     assert report["files_scanned"] >= 15
-    assert isinstance(report["findings"], list)
-    # Zero findings is asserted only after the ratchet session cleans the corpus.
+    assert report["findings"] == []

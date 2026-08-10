@@ -560,8 +560,8 @@ def coverage() -> None:
 @click.option(
     "--strict/--advisory",
     "strict",
-    default=False,
-    help="Strict exits nonzero on findings; advisory (the default until the corpus is clean) reports and exits 0.",
+    default=True,
+    help="Strict (the default) exits nonzero on findings; --advisory reports and exits 0 for exploratory runs.",
 )
 def skills_check(strict: bool) -> None:
     """Reference integrity for .claude skills, commands, and rules. Read-only.
@@ -588,9 +588,9 @@ def skills_check(strict: bool) -> None:
         click.echo("Every citation resolves: paths, Make targets, and validator IDs all exist.")
         return
     if strict:
-        click.echo(f"{count} finding(s).")
+        click.echo(f"{count} finding(s) - each is a citation to something that does not exist. Fix the text or the territory.")
         raise SystemExit(1)
-    click.echo(f"{count} finding(s), advisory mode - each is a stale citation to fix before the ratchet flips --strict on.")
+    click.echo(f"{count} finding(s), advisory run - the default is strict and CI will fail on these.")
 
 
 @main.command()

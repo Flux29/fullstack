@@ -43,6 +43,12 @@ breadth_roots = [
   "frontend/src",
   "tools",
 ]
+# Shadow candidates: logged as would-fire events in the session telemetry, never denied.
+# A root is promoted to breadth_roots only with would-fire evidence, and demoted from it
+# on friction evidence (see `governance gate-metrics`). Both moves are governed changes.
+breadth_shadow_roots = [
+  "backend/app/services",
+]
 # Bulk enumeration (Glob/Grep) under these roots is answered by queries, not reads:
 # `governance context | impact | explain`. Reads of one named file stay allowed.
 corpus_gated_roots = [

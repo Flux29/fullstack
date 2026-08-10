@@ -7,6 +7,9 @@
       "frontend",
       "frontend/src",
       "tools"
+    ],
+    "shadow_roots": [
+      "backend/app/services"
     ]
   },
   "corpus": {

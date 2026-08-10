@@ -18,6 +18,7 @@ import re
 import subprocess
 import sys
 from pathlib import Path
+from statistics import median
 
 import click
 
@@ -76,6 +77,125 @@ def _gate_health(ctx: Context) -> str:
     if status.get("gate") == "off":
         return "gate: off (GOVERNANCE_GATE=off set by the user)"
     return f"gate: degraded ({status.get('reason', 'unknown')}) - reads are ungated; run `make governance-sync`"
+
+
+def _root_covers(denied_root: str, candidate: str) -> bool:
+    if denied_root == ".":
+        return True
+    return candidate == denied_root or candidate.startswith(denied_root + "/")
+
+
+def gate_metrics_report(ctx: Context) -> dict:
+    """Aggregate the gate's per-session telemetry into the evidence that tunes [gate].
+
+    Reads `events.jsonl` from every session state directory: an ordered log of
+    enumeration verdicts (allows included), shadow-root would-fires, non-allow read
+    verdicts, and the unlock event. Read-only over the cache; sessions predating the
+    telemetry are counted, not guessed at. The numbers feed evaluation records in
+    governance/history/evaluations/ — promotion and demotion of roots stay governed
+    changes, so this report proposes and a human ratchets.
+    """
+    hooks_root = ctx.paths.cache / "hooks"
+    report: dict = {
+        "sessions": {"with_telemetry": 0, "without_telemetry": 0, "degraded": 0},
+        "breadth": {
+            "deny_counts_by_root": {},
+            "warn_counts_by_root": {},
+            "sessions_with_denials": 0,
+            "complied_after_denial": 0,
+            "never_unlocked": 0,
+            "median_events_to_unlock": None,
+            "decomposed_sessions": 0,
+            "map_first_sessions": 0,
+        },
+        "shadow_would_fire_by_root": {},
+        "repo_surface": {"read_verdicts": 0, "enum_verdicts": 0},
+        "corpus_surface": {"enum_verdicts": 0},
+    }
+    if not hooks_root.is_dir():
+        return report
+
+    unlock_latencies: list[int] = []
+    breadth = report["breadth"]
+    for session_dir in sorted(hooks_root.iterdir()):
+        if not session_dir.is_dir():
+            continue
+        try:
+            degraded_text = (session_dir / "degraded.json").read_text(encoding="utf-8")
+            if json.loads(degraded_text):
+                report["sessions"]["degraded"] += 1
+        except Exception:
+            pass
+        events_path = session_dir / "events.jsonl"
+        if not events_path.is_file():
+            report["sessions"]["without_telemetry"] += 1
+            continue
+        events: list[dict] = []
+        try:
+            for line in events_path.read_text(encoding="utf-8").splitlines():
+                try:
+                    parsed = json.loads(line)
+                except Exception:
+                    continue
+                if isinstance(parsed, dict):
+                    events.append(parsed)
+        except Exception:
+            report["sessions"]["without_telemetry"] += 1
+            continue
+        report["sessions"]["with_telemetry"] += 1
+
+        first_deny_index: int | None = None
+        first_deny_root = ""
+        unlock_index: int | None = None
+        for index, event in enumerate(events):
+            kind = event.get("kind")
+            if kind == "unlock" and unlock_index is None:
+                unlock_index = index
+            elif kind == "shadow":
+                root = str(event.get("root", "?"))
+                report["shadow_would_fire_by_root"][root] = report["shadow_would_fire_by_root"].get(root, 0) + 1
+            elif kind == "read":
+                report["repo_surface"]["read_verdicts"] += 1
+            elif kind == "enum":
+                surface = event.get("surface")
+                root = str(event.get("root", "?"))
+                if surface == "corpus":
+                    report["corpus_surface"]["enum_verdicts"] += 1
+                elif surface == "repo":
+                    report["repo_surface"]["enum_verdicts"] += 1
+                elif surface == "breadth":
+                    decision = event.get("decision")
+                    if decision == "deny":
+                        breadth["deny_counts_by_root"][root] = breadth["deny_counts_by_root"].get(root, 0) + 1
+                        if first_deny_index is None:
+                            first_deny_index, first_deny_root = index, root
+                    elif decision == "warn":
+                        breadth["warn_counts_by_root"][root] = breadth["warn_counts_by_root"].get(root, 0) + 1
+
+        if unlock_index is not None and (first_deny_index is None or unlock_index < first_deny_index):
+            breadth["map_first_sessions"] += 1
+        if first_deny_index is None:
+            continue
+        breadth["sessions_with_denials"] += 1
+        if unlock_index is not None and unlock_index > first_deny_index:
+            breadth["complied_after_denial"] += 1
+            unlock_latencies.append(unlock_index - first_deny_index - 1)
+        else:
+            breadth["never_unlocked"] += 1
+        window_end = unlock_index if unlock_index is not None and unlock_index > first_deny_index else len(events)
+        scoped_after_denial = sum(
+            1
+            for event in events[first_deny_index + 1 : window_end]
+            if event.get("kind") == "enum"
+            and event.get("decision") == "allow"
+            and _root_covers(first_deny_root, str(event.get("root", "")))
+        )
+        if scoped_after_denial >= 3:
+            breadth["decomposed_sessions"] += 1
+
+    if unlock_latencies:
+        breadth["median_events_to_unlock"] = int(median(unlock_latencies))
+    return report
 
 
 def _read_state(directory: Path, name: str) -> dict:

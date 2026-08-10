@@ -1,4 +1,14 @@
 {
+  "breadth": {
+    "roots": [
+      ".",
+      "backend",
+      "backend/app",
+      "frontend",
+      "frontend/src",
+      "tools"
+    ]
+  },
   "corpus": {
     "bounded_surfaces": [
       "governance/Summary.md",
@@ -13,8 +23,9 @@
     ]
   },
   "default_modes": {
+    "breadth": "deny",
     "corpus": "deny",
-    "repo": "warn"
+    "repo": "deny"
   },
   "provenance": {
     "extractor_version": "1.0.0",

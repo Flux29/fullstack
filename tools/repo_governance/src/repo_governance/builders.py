@@ -362,8 +362,12 @@ def build_read_surface(
             "extractor_version": ctx.config.version,
         },
         "default_modes": {
+            "breadth": str(gate.get("mode_breadth", "warn")),
             "corpus": str(gate.get("mode_corpus", "warn")),
             "repo": str(gate.get("mode_repo", "warn")),
+        },
+        "breadth": {
+            "roots": sorted(gate.get("breadth_roots", ())),
         },
         "corpus": {
             "gated_roots": sorted(gate.get("corpus_gated_roots", ())),

@@ -19,6 +19,9 @@ from app.db.models.chat_file import ChatFile  # noqa: F401
 from app.db.models.rag_document import RAGDocument  # noqa: F401
 from app.db.models.sync_log import SyncLog  # noqa: F401
 from app.db.models.sync_source import SyncSource  # noqa: F401
+from app.db.models.conversation_share import ConversationShare  # noqa: F401
+from app.db.models.user_slash_command import UserSlashCommand  # noqa: F401
+from app.db.models.mcp_connection import McpConnection  # noqa: F401
 
 config = context.config
 

@@ -1,0 +1,51 @@
+{
+  "schema_version": 1,
+  "id": "2026-08-09-graph-impact-before-after",
+  "date": "2026-08-09",
+  "kind": "scenario-replay",
+  "summary": "Phase-6 trimmed slice judged on the scenario corpus: recall never regresses, the rag-move recall gap closes, and two over-selection modes were caught and bounded during the replay itself.",
+  "observation": "Replaying the 7-scenario corpus before and after the import graph fed impact: across all 35 field comparisons recall never regressed. move-governed-subsystem closed the known recall gap (components recall 0.75 to 1.0 - manifest-only impact missed backend-api although deps.py, main.py, and the rag route deep-import the moved modules) with components precision rising 0.27 to 0.31, and gained a 13-file review surface. introduce-dependency-cycle and hist-new-chat gained 3 and 1 graph-derived files. The replay also caught two over-selection modes in the first graph-aware capture: depth-2 expansion routed through the core/config.py hub and truncated at the 50-node cap, and expanding hub seeds directly collapsed rename-env-var components precision from 0.20 to 0.07.",
+  "evidence": [
+    {
+      "source": "scenario-comparison (replay harness)",
+      "detail": "move-governed-subsystem: components precision 0.27 to 0.31, recall 0.75 to 1.0, graph_files 0 to 13. introduce-dependency-cycle: graph_files 0 to 3, component fields at parity. rename-env-var: parity on every field after hub suppression (0.20 to 0.07 precision collapse in the unsuppressed capture). Kernel scenarios (sampler, stop-check): exact answers, unchanged.",
+      "ref": "tools/repo_governance/tests/golden/impact-baselines/"
+    },
+    {
+      "source": "governance selftest",
+      "detail": "test_replay_recall_never_regresses_from_before_to_after holds after-recall >= before-recall per scored field per scenario in CI; both golden sides stay committed."
+    },
+    {
+      "source": "governance impact (live)",
+      "detail": "Depth-2 capture on the rag seeds truncated at 50 modules by reaching core/config.py (which imports rag.config - the same inversion the facade check flags) and then everything that imports settings. Depth 1 yields the 13 direct importers, which is the honest review surface."
+    }
+  ],
+  "proposed_action": "Adopted during the replay, as the corpus is designed to force: GRAPH_EXPANSION_DEPTH=1 (direct importers are the review surface; transitive reach at component granularity remains the declared-dependency BFS's job) and GRAPH_HUB_IMPORTER_LIMIT=25 (a seed with more direct importers than that is reported as a hub note and not expanded - its manifest radius already says everything). Both constants carry the scenario evidence in their docstrings.",
+  "status": "acted-on",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "trigger_ref": "Phase 6 exit criterion: impact analysis improves validator and context selection on the evaluation scenarios without unacceptable false positives",
+  "policy_refs": [
+    "layering-routes-services-repositories",
+    "forbidden-dependency-not-taken",
+    "thick-domains-expose-a-facade",
+    "orm-changes-have-migrations"
+  ],
+  "component_refs": [
+    "governance-kernel",
+    "backend-api",
+    "rag"
+  ],
+  "related_change_records": [
+    "2026-08-09-evaluation-records-kernel-internal-schema-and-the-phase-6-trigge",
+    "2026-08-09-seed-7-evaluation-scenarios-with-pre-graph-impact-baselines",
+    "2026-08-09-ast-import-graph-over-backend-app-and-enforcement-of-four-phase"
+  ],
+  "limitations": [
+    "Component-level precision is mostly unchanged by design: expansion adds seeds, and the declared-dependency BFS still widens conservatively from there. The precision gains this slice delivers are at file granularity (graph_files), which the component vocabulary cannot express.",
+    "move-governed-subsystem validators precision dipped 0.43 to 0.33 because the newly-reached backend-api and postgres components select backend-lint and migrations - defensible selections for a change that breaks deps.py and main.py, so the scenario's expected set may be too narrow rather than the answer too wide; left for the next corpus review.",
+    "The env-var-rename scenario shows the ceiling of import granularity: the true review surface is the modules referencing the renamed variable, which needs the sampler's settings-ref extraction joined to the graph (symbol level), not module-level edges."
+  ],
+  "tool_version": "1.0.0"
+}

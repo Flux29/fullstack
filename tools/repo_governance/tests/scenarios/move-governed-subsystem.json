@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "move-governed-subsystem",
+  "kind": "synthetic",
+  "title": "Move the RAG subsystem's core modules",
+  "description": "The rag thick domain is restructured: config.py, vectorstore.py, and embeddings.py move or change layout. Every deep importer outside the package - deps.py, main.py, the rag routes, the agent tool, the worker tasks, commands, and core/config.py - has an import that breaks.",
+  "change": {
+    "paths": [
+      "backend/app/services/rag/config.py",
+      "backend/app/services/rag/vectorstore.py",
+      "backend/app/services/rag/embeddings.py"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "agents",
+      "backend-api",
+      "model-runner-host",
+      "rag"
+    ],
+    "validators": [
+      "backend-unit",
+      "preflight-model",
+      "rag-docker-integration"
+    ],
+    "proxy_routes": [
+      "frontend/src/app/api/v1/rag/search/route.ts",
+      "frontend/src/app/api/v1/rag/sync/sources/route.ts"
+    ],
+    "context_documents": [
+      ".claude/rules/architecture.md",
+      ".claude/rules/code-style.md"
+    ],
+    "policies": [
+      "thick-domains-expose-a-facade",
+      "embedding-dimension-contract"
+    ],
+    "findings": []
+  },
+  "notes": "backend-api belongs in the expected set because api/deps.py, main.py, and the rag route module deep-import these exact files - and the manifest-level baseline misses it entirely, because component dependency declarations point from rag consumers to rag, not the reverse. This is the recall gap the import graph exists to close. agents is expected because rag_tool.py imports embeddings, retrieval, and vectorstore directly; model-runner-host because the embedding dimension contract rides on these modules."
+}

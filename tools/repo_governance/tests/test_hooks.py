@@ -417,14 +417,26 @@ def test_bracketed_ownership_globs_compile_to_prefixes(real_context: Context) ->
 def test_declared_but_absent_catalog_paths_stay_out_of_the_surface(real_context: Context) -> None:
     """Same honesty rule as the catalog: a declared future path is not readable surface.
 
-    governance/history/evaluations/ is declared in the catalog spec but does not exist
-    yet; including it would manufacture a permanent ghost in the coverage report."""
+    Checks whichever catalog-spec paths are absent on disk at test time, so the property
+    survives declared paths coming into existence. governance/history/evaluations/ was the
+    standing example of declared-but-absent until the first evaluation record landed; now
+    present, it anchors the flip side of the same rule."""
     from repo_governance.builders import build_read_surface
     from repo_governance.merge import build_components
 
     components, _ = build_components(real_context)
     surface = build_read_surface(real_context, components)
-    assert "governance/history/evaluations/" not in surface["repo"]["dir_prefixes"]
+    prefixes = surface["repo"]["dir_prefixes"]
+    exact = surface["repo"]["exact_files"]
+
+    for spec in real_context.config.catalog_spec:
+        path = spec["path"]
+        if (real_context.repo_root / path.rstrip("/")).exists():
+            continue
+        surface_list = prefixes if path.endswith("/") else exact
+        assert path not in surface_list, f"absent catalog path {path} leaked into the surface"
+
+    assert "governance/history/evaluations/" in prefixes
 
 
 # --- coverage: the fail-closed CI layer -------------------------------------------------

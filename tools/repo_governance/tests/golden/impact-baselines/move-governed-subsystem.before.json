@@ -1,0 +1,91 @@
+{
+  "components": [
+    "agents",
+    "chat-frontend",
+    "chrome-devtools-mcp",
+    "docling-mcp",
+    "docling-serve",
+    "frontend-app",
+    "github-mcp",
+    "minio",
+    "model-runner-host",
+    "rag",
+    "redis"
+  ],
+  "configuration": [
+    "AI_MODEL",
+    "BROWSERLESS_TOKEN",
+    "CROSS_ENCODER_MODEL",
+    "DOCLING_SERVE_URL",
+    "EMBEDDING_BASE_URL",
+    "EMBEDDING_CACHE_URL",
+    "EMBEDDING_DIMENSION",
+    "EMBEDDING_MODEL",
+    "GITHUB_MCP_TOKEN",
+    "GOOGLE_API_CLIENT_ID",
+    "GOOGLE_API_CLIENT_SECRET",
+    "MCP_CONNECT_TIMEOUT_SECS",
+    "MCP_SERVERS",
+    "OPENROUTER_API_KEY",
+    "RAG_CHUNK_OVERLAP",
+    "RAG_CHUNK_SIZE",
+    "RAG_DEFAULT_COLLECTION",
+    "RAG_TOP_K",
+    "RERANKER_BASE_URL",
+    "S3_RAG_ACCESS_KEY",
+    "S3_RAG_BUCKET",
+    "S3_RAG_ENDPOINT",
+    "S3_RAG_SECRET_KEY",
+    "TAVILY_API_KEY"
+  ],
+  "contracts": [
+    "/[locale]/chat",
+    "/api/v1/me/mcp-connections",
+    "GET /api/v1/agent/models",
+    "GET /api/v1/rag/search",
+    "GET /api/v1/rag/status/stream",
+    "HTTP on container port 5001",
+    "MCP over HTTP on container port 8000",
+    "MCP over HTTP on container port 8082",
+    "OpenAI-compatible embeddings API",
+    "POST /api/v1/rag/sync/sources/{source_id}/trigger",
+    "Pages under /[locale]",
+    "Proxy routes under /api",
+    "Redis protocol on the data-internal network",
+    "Rerank API",
+    "S3 API on the data-internal network",
+    "WS /api/v1/ws/agent"
+  ],
+  "decisions": [
+    "ADR-002",
+    "ADR-003",
+    "ADR-004"
+  ],
+  "findings": [
+    "mcp-approval-gating-asymmetry",
+    "mcp-no-connection-time-ssrf-revalidation",
+    "mcp-url-embedded-credentials-unencrypted"
+  ],
+  "notes": [
+    "The chat WebSocket bypasses the proxy layer; see the ws-chat-bypasses-proxy exception. Its consumer is chat-frontend."
+  ],
+  "proxy_routes": [
+    "frontend/src/app/api/me/mcp-connections/route.ts",
+    "frontend/src/app/api/v1/agent/models/route.ts",
+    "frontend/src/app/api/v1/rag/search/route.ts",
+    "frontend/src/app/api/v1/rag/sync/sources/route.ts"
+  ],
+  "seeds": [
+    "rag"
+  ],
+  "unassigned": [],
+  "validators": [
+    "agent-evals",
+    "backend-unit",
+    "compose-check",
+    "frontend-test",
+    "preflight-model",
+    "preflight-volumes",
+    "rag-docker-integration"
+  ]
+}

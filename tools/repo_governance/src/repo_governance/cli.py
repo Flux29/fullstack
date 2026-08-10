@@ -465,6 +465,10 @@ def impact(paths: tuple[str, ...], depth: int) -> None:
         click.echo(f"Decisions:        {', '.join(result.decisions)}")
     if result.findings:
         click.echo(f"Open findings:    {', '.join(result.findings)}")
+    if result.graph_files:
+        click.echo("Reverse importers (import graph):")
+        for file in result.graph_files:
+            click.echo(f"  - {file}")
     for note in result.notes:
         click.echo(f"Note: {note}")
     click.echo(f"Validators:       {', '.join(result.validators) or 'none selected'}")

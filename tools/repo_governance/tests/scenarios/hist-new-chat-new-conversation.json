@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "id": "hist-new-chat-new-conversation",
+  "kind": "historical",
+  "title": "New chat creates a new conversation: null conversation_id is never sticky",
+  "description": "A WebSocket session-contract fix in the agent services: conversation_id null unconditionally creates a conversation and emits conversation_created; persist_user_turn drops a dead parameter. Backend services and their tests changed; the wire consumer is the chat frontend over the WS exception, so no proxy handler is involved.",
+  "source_change_record": "2026-08-09-new-chat-creates-a-new-conversation-null-conversation-id-is-neve",
+  "change": {
+    "paths": [
+      "backend/app/services/agent.py",
+      "backend/app/services/agent_session.py",
+      "backend/tests/test_agents.py"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "agents",
+      "backend-api",
+      "chat-frontend"
+    ],
+    "validators": [
+      "backend-unit",
+      "governance-check"
+    ],
+    "proxy_routes": [],
+    "context_documents": [
+      ".claude/rules/architecture.md",
+      ".claude/rules/code-style.md",
+      ".claude/rules/testing.md"
+    ],
+    "policies": [
+      "websocket-events-have-producers-and-consumers"
+    ],
+    "findings": []
+  },
+  "notes": "Seeded from the change record's affected_components (agents, backend-api) plus chat-frontend, which the record's compatibility_impact names as the consumer whose expectation the fix restores - the conversation_created event travels the WS exception, not the proxy. Validators are the ones the record actually ran. The untyped-WS-events policy governs the event emission this change altered."
+}

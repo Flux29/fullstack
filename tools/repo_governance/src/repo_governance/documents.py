@@ -1,11 +1,11 @@
 """Which schema validates which document, and the kernel-internal schemas.
 
 The blueprint fixes the committed schema set at exactly twelve files under
-`governance/schemas/`. Four governance documents have no schema in that set — the
-validator registry, the ownership rules, the exceptions manifest, the tests manifest, and
-the merged effective manifest. Rather than adding a thirteenth committed schema and
-diverging from the specified tree, those are validated against schemas defined here, in
-the kernel. `governance/manifests/curated/ownership.json` records which documents this
+`governance/schemas/`. Documents outside that set — the validator registry, the ownership
+rules, the exceptions manifest, the tests manifest, the merged effective manifest, the
+read-gate surface, and evaluation records — have no schema in the committed twelve. Rather
+than adding a thirteenth committed schema and diverging from the specified tree, those are
+validated against schemas defined here, in the kernel. `governance/manifests/curated/ownership.json` records which documents this
 applies to and why, so the arrangement is visible rather than buried in code.
 """
 
@@ -47,6 +47,7 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/manifests/generated/tests.json", "tests"),
     ("governance/manifests/generated/read-surface.json", "read-surface"),
     ("governance/manifests/effective/repository.json", "effective"),
+    ("governance/history/evaluations/*.json", "evaluations"),
 )
 
 _SLUG = {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"}
@@ -319,6 +320,86 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
                 },
             },
             "exceptions_applied": {"type": "array", "items": _SLUG},
+        },
+    },
+    "evaluations": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/evaluations/v1",
+        "description": (
+            "Evidence about governance behavior itself: misses, false positives, context "
+            "quality, and growth-trigger decisions. The blueprint requires a trigger to "
+            "become an evaluation record before it becomes a build task."
+        ),
+        "type": "object",
+        "additionalProperties": False,
+        "required": [
+            "schema_version",
+            "id",
+            "date",
+            "kind",
+            "summary",
+            "observation",
+            "evidence",
+            "proposed_action",
+            "status",
+            "tool_version",
+        ],
+        "properties": {
+            "schema_version": {"const": 1},
+            "id": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}-[a-z0-9][a-z0-9-]{0,63}$"},
+            "date": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}$"},
+            "kind": {
+                "enum": [
+                    "growth-trigger",
+                    "impact-quality",
+                    "policy-outcome",
+                    "sampler-mismatch",
+                    "scenario-replay",
+                ]
+            },
+            "summary": {"type": "string", "minLength": 1},
+            "observation": {
+                "type": "string",
+                "minLength": 1,
+                "description": "The symptom as observed, stated as fact, separate from what to do about it.",
+            },
+            "evidence": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["source", "detail"],
+                    "properties": {
+                        "source": {"type": "string", "minLength": 1},
+                        "detail": {"type": "string", "minLength": 1},
+                        "ref": {"type": "string"},
+                    },
+                },
+            },
+            "proposed_action": {"type": "string", "minLength": 1},
+            "status": {"enum": ["open", "acted-on", "declined", "superseded"]},
+            "initiated_by": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["kind"],
+                "properties": {
+                    "kind": {"enum": ["user", "agent", "automation"]},
+                    "ref": {"type": "string"},
+                },
+            },
+            "trigger_ref": {
+                "type": "string",
+                "description": "The named growth trigger or policy rule this record evaluates.",
+            },
+            "policy_refs": {"type": "array", "items": _SLUG},
+            "component_refs": {"type": "array", "items": _SLUG},
+            "related_change_records": {
+                "type": "array",
+                "items": {"type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}-[a-z0-9][a-z0-9-]{0,63}$"},
+            },
+            "limitations": {"type": "array", "items": {"type": "string"}},
+            "tool_version": {"type": "string"},
         },
     },
 }

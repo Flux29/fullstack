@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "id": "add-route-and-proxy",
+  "kind": "synthetic",
+  "title": "Add a FastAPI route and its Next.js proxy handler",
+  "description": "A new REST endpoint lands as a route module under api/routes/v1/ plus the mandatory proxy route handler under frontend/src/app/api/. Neither file exists yet; the paths are what the change would create. An API change is incomplete until the proxy handler exists too.",
+  "change": {
+    "paths": [
+      "backend/app/api/routes/v1/widgets.py",
+      "frontend/src/app/api/v1/widgets/route.ts"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "backend-api",
+      "frontend-app"
+    ],
+    "validators": [
+      "backend-lint",
+      "backend-unit",
+      "frontend-test"
+    ],
+    "proxy_routes": [],
+    "context_documents": [
+      ".claude/rules/api-conventions.md",
+      ".claude/rules/architecture.md",
+      ".claude/rules/code-style.md",
+      ".claude/rules/exceptions-security.md",
+      ".claude/rules/frontend.md"
+    ],
+    "policies": [
+      "api-changes-reach-the-proxy",
+      "layering-routes-services-repositories"
+    ],
+    "findings": []
+  },
+  "notes": "expected.proxy_routes is empty because the new handler is part of the change itself, not something impact should discover from the interfaces manifest - a route that does not exist yet has no extracted proxy mapping. The measure here is that both stacks' components and validators are selected from the two seed paths."
+}

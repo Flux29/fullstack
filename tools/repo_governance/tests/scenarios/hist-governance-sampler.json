@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "id": "hist-governance-sampler",
+  "kind": "historical",
+  "title": "governance sample: map-vs-territory spot checks on random tracked files",
+  "description": "A new read-only kernel command: seeded random sampling of backend application files, verifying mechanically-checkable manifest claims via AST. Entirely inside the governance tool; no application code changed.",
+  "source_change_record": "2026-08-08-governance-sample-map-vs-territory-spot-checks-on-random-tracked",
+  "change": {
+    "paths": [
+      "tools/repo_governance/src/repo_governance/builders.py",
+      "tools/repo_governance/src/repo_governance/cli.py",
+      "tools/repo_governance/src/repo_governance/extractors/python_ast.py",
+      "tools/repo_governance/tests/test_extractors.py"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "governance-kernel"
+    ],
+    "validators": [
+      "governance-check",
+      "governance-selftest"
+    ],
+    "proxy_routes": [],
+    "context_documents": [],
+    "policies": [
+      "material-changes-are-recorded"
+    ],
+    "findings": []
+  },
+  "notes": "Seeded from the change record: one component, the two kernel validators it ran. context_documents is empty because no .claude/rules file scopes tools/. The kernel baseline is the corpus's precision anchor - manifest-level impact already answers this one exactly, and the graph must not make it worse."
+}

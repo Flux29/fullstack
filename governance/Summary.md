@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 29)
+## Recent changes (latest 20 of 34)
 
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
+- **2026-08-09** — Seed 7 evaluation scenarios with pre-graph impact baselines
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-seed-7-evaluation-scenarios-with-pre-graph-impact-baselines.json`
 - **2026-08-09** — ruff format pass over the session's backend files
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-ruff-format-pass-over-the-session-s-backend-files.json`
@@ -82,15 +85,27 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
+- **2026-08-09** — Evaluation records: kernel-internal schema and the phase-6 trigger pre-emption record
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-evaluation-records-kernel-internal-schema-and-the-phase-6-trigge.json`
 - **2026-08-09** — CI runs on pushes to fullstack2
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-ci-runs-on-pushes-to-fullstack2.json`
+- **2026-08-09** — Bounded import-graph slices feed impact and context; scenario corpus recaptured as the before-after comparison
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-bounded-import-graph-slices-feed-impact-and-context-scenario-cor.json`
+- **2026-08-09** — AST import graph over backend/app and enforcement of four phase-6 rules
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-09-ast-import-graph-over-backend-app-and-enforcement-of-four-phase.json`
 - **2026-08-09** — API-route tests for the sync-source endpoints, plus the collection filter fix
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-api-route-tests-for-the-sync-source-endpoints-plus-the-collectio.json`
 - **2026-08-09** — Anchor backend pytest scratch to the repo cache
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-anchor-backend-pytest-scratch-to-the-repo-cache.json`
+- **2026-08-09** — alembic env.py imports every model module so autogenerate sees the full metadata
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-09-alembic-env-py-imports-every-model-module-so-autogenerate-sees-t.json`
 - **2026-08-09** — Add six agent-workflow skills that chain prompt commands inside the governance envelope
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-add-six-agent-workflow-skills-that-chain-prompt-commands-inside.json`
@@ -109,21 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — Hook-enforced governance: read-surface artifact, gate scripts, session and stop hooks
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-hook-enforced-governance-read-surface-artifact-gate-scripts-sess.json`
-- **2026-08-08** — governance sample: map-vs-territory spot checks on random tracked files
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-08-governance-sample-map-vs-territory-spot-checks-on-random-tracked.json`
-- **2026-08-08** — Bump h2 to 4.4.1 for CVE-2026-71554
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-08-bump-h2-to-4-4-1-for-cve-2026-71554.json`
-- **2026-08-08** — AGENTS.md: checker agents verify against sources, not the governance briefing
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-08-agents-md-checker-agents-verify-against-sources-not-the-governan.json`
-- **2026-08-06** — Resolve finding status by precedence not by ID order
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-06-resolve-finding-status-by-precedence-not-by-id-order.json`
-- **2026-08-06** — Remove machine-specific paths from generated output
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-06-remove-machine-specific-paths-from-generated-output.json`
 
 ## Decisions (5)
 

@@ -1,0 +1,62 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "impact and context now expand backend Python seeds with their direct reverse importers from the AST graph: Impact gains graph_files, the CLI prints a Reverse importers block, and context renders a droppable reverse-importers section trimmed right after history",
+    "Scenario replay closed the phase-6 exit criterion: across all 35 field comparisons recall never regressed; move-governed-subsystem closed its recall gap (components recall 0.75 to 1.0, precision up 0.27 to 0.31, 13-file review surface); introduce-dependency-cycle and hist-new-chat gained 3 and 1 graph-derived files; kernel scenarios stayed exact",
+    "Two over-selection modes were caught BY the replay and bounded: depth-2 expansion routed through the core/config.py hub and truncated at the node cap (depth pinned to 1 - direct importers are the review surface), and hub seeds with more than 25 direct importers are reported as a note instead of expanded (rename-env-var precision would have collapsed 0.20 to 0.07)"
+  ],
+  "compatibility_impact": "Additive: Impact gains graph_files with a default, existing consumers unaffected (cli impact and render_context are the only two, both updated). Scenario goldens gained the .after side; .before stays committed as the comparison input. Graph unavailability degrades to the manifest-declared radius with an explicit note - unknowns are reported, never treated as absence.",
+  "date": "2026-08-09",
+  "files_changed": [
+    "governance/history/evaluations/2026-08-09-graph-impact-before-after.json",
+    "governance/history/evaluations/2026-08-09-phase-6-growth-trigger-preempted.json",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/renderers/context.py",
+    "tools/repo_governance/tests/golden/impact-baselines/add-route-and-proxy.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-governance-sampler.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-new-chat-new-conversation.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-stop-check-reconcile.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/introduce-dependency-cycle.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/move-governed-subsystem.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/rename-env-var.after.json",
+    "tools/repo_governance/tests/scenario_replay.py",
+    "tools/repo_governance/tests/test_impact_graph.py",
+    "tools/repo_governance/tests/test_scenarios.py"
+  ],
+  "follow_up": [
+    "Fix backend/alembic/env.py model imports (next governed change in this slice)",
+    "Join the sampler settings-ref extraction to the graph for symbol-level env-var impact (future slice)"
+  ],
+  "id": "2026-08-09-bounded-import-graph-slices-feed-impact-and-context-scenario-cor",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Component-level precision is mostly unchanged by design; the gains are at file granularity, which the component vocabulary cannot express. The env-var-rename scenario shows the ceiling of module-level granularity - the true surface is settings-ref symbol level, a future slice.",
+    "move-governed-subsystem validators precision dipped 0.43 to 0.33 because newly-reached components select their validators - defensible selections, possibly a too-narrow expected set; left for the next corpus review."
+  ],
+  "manifests_changed": [],
+  "reason": "Manifest-only impact maps every backend path to component granularity - the pre-graph baselines show a two-file backend change selecting five components and the rag move missing backend-api entirely; the graph now exists to bound the real file-level radius, and the phase-6 exit criterion is judged on the scenario replay",
+  "risks": [],
+  "rollback": "Revert the commit: impact returns to manifest-only answers, the .after goldens disappear and the .before goldens become the comparison target again (golden_for prefers after only when present). The closing evaluation record and the acted-on status flip revert with it.",
+  "schema_version": 1,
+  "security_impact": "None. The expansion reads the AST graph already built by the kernel; no new I/O surface, no secrets, output remains names and repo-relative paths.",
+  "summary": "Bounded import-graph slices feed impact and context; scenario corpus recaptured as the before-after comparison",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "195 tests - 8 graph-aware impact tests (seed expansion, hub suppression, fallback note, truncation note, budget trim, determinism) plus the before/after corpus tests: recall non-regression per field per scenario, both golden sides committed, graph scenarios gain file-level answers",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "full check clean of blocking findings post-finish",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

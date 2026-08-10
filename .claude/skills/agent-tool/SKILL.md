@@ -1,11 +1,16 @@
 ---
 name: agent-tool
-description: Add a new tool/function the AI agent can call (e.g. look something up, hit an external API, perform an action). Use when extending the assistant's capabilities, wiring a new function into the agent, or when the model needs a new action. This project uses pydantic_ai.
+description: Add a new tool/function the AI agent can call (e.g. look something up, hit an external API, perform an action). Use when extending the assistant's capabilities, wiring a new function into the agent, or when the model needs a new action. This project uses pydantic_ai; the change runs inside the gov-change envelope and is gated by the agent-evals validator.
 ---
 
 # Add an Agent Tool (pydantic_ai)
 
 Agent tools live in `backend/app/agents/tools/` and are surfaced to the model so it can call them mid-conversation. The assistant is defined in `backend/app/agents/`.
+
+This is a governed change: open with `gov-change` GOV-OPEN (`PATHS="backend/app/agents"`),
+close with GOV-CLOSE. The agent surface draws two validators: `backend-unit` and
+`agent-evals` — the deterministic pydantic-evals tool-routing and approval-policy suite,
+cheap enough to run on every change here.
 
 ## Steps
 
@@ -36,4 +41,7 @@ Agent tools live in `backend/app/agents/tools/` and are surfaced to the model so
 - The docstring is the contract with the model — keep it accurate and action-oriented.
 - Return small, structured payloads; don't dump huge blobs into the context.
 - Long-running or side-effecting work belongs in a service (and possibly a background task), not inline in the tool.
+- Before closing, run the `agent-evals` validator
+  (`uv run --directory backend pytest tests/test_google_workspace_evals.py -v`) — tool
+  routing and approval policy are exactly what a new tool can silently break.
 - See `docs/howto/add-agent-tool.md` for a fuller walkthrough.

@@ -141,6 +141,41 @@
       "status": "locally-diverged",
       "on_upgrade": "classify-conflict",
       "reason": "Coverage fail_under ratcheted from the aspirational 100 to a measured floor."
+    },
+    {
+      "path": ".claude/skills/agent-tool/SKILL.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Wired into the gov-change envelope and the agent-evals validator. An upgrade must not strip the governance routing."
+    },
+    {
+      "path": ".claude/skills/alembic-migration/SKILL.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Wired into the gov-change envelope and the migrations validator. Same upgrade-conflict handling."
+    },
+    {
+      "path": ".claude/skills/background-task/SKILL.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Template example modules (email_tasks, cleanup_tasks) replaced with the modules that exist; wired into the gov-change envelope."
+    },
+    {
+      "path": ".claude/skills/frontend-feature/SKILL.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Verification uplifted to the frontend-test validator plus a browser check; wired into the gov-change envelope."
+    },
+    {
+      "path": ".claude/skills/pytest-suite/SKILL.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Corrected to the flat test layout and wired to backend-unit/backend-coverage; an upgrade must not reintroduce the mirrored-tree claim."
     }
   ],
   "internal_schemas": [

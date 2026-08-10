@@ -40,8 +40,12 @@ Every retrieval result you gather afterwards is meaningless.
 
 ## 3. Change
 
-Class A/B — edit inside `backend/app/services/rag/`. Route and worker callers import the
-package facade only; do not reach into sub-modules from outside.
+Class A/B — edit inside `backend/app/services/rag/`. The package has **no facade yet**:
+today's callers (`main.py`, `deps.py`, the worker, the CLI) import sub-modules directly,
+and the `thick-domains-expose-a-facade` policy rule tracks that as advisory findings.
+Do not deepen the divergence — new callers import the narrowest existing module, and
+building the facade is a logged debt item for a `refactor-governed` session, not a side
+quest of this change.
 
 Class C — implement in `backend/app/services/rag/connectors/` following the existing Google
 Drive and S3 connectors, register it in the connector registry, and expose its config fields.
@@ -74,9 +78,12 @@ Required sequence:
 5. Run `rag-docker-integration` — it is the dedicated test for the embedding dimension guard
    and the cache-key fingerprint.
 
-Defaults you are changing away from, and must not break by accident: Qwen 4B via Docker Model
-Runner, normalized **1,024-dimensional** vectors; reranker
-`gte-reranker-modernbert-base-gguf-q8_0` through Model Runner's native `/rerank`.
+The contract itself — the five points that must agree (settings, the vectorstore guard
+and DDL, the migration CHECK constraint, the per-collection fingerprint, the cache key
+version) — is `embedding-dimension-contract` in `governance/policies/compatibility.json`.
+The current values (model, dimension, normalization, reranker) live in
+`backend/app/services/rag/config.py` and settings. Read both rather than any prose copy,
+including this skill's earlier revisions.
 
 Never load a SentenceTransformers cross-encoder inside the backend, and never add an
 in-process Docling model — PDF/DOCX/PPTX/XLSX/images go through the shared Docling Serve

@@ -38,8 +38,10 @@ layering rules, not general principles:
 (`app/services/<domain>.py`) until it owns infrastructure — clients, adapters, pipelines,
 parsers, templates. Then it becomes a subpackage (`app/services/<domain>/`) with the infra
 inside it and a single facade re-exported from `__init__.py`. Routes and workers import the
-facade only; sub-modules are package-internal. Follow `services/rag/`, `services/billing/`,
-`services/channels/`, `services/email/`.
+facade only; sub-modules are package-internal. `services/email/` is the reference
+implementation; `services/rag/` is thick but ships no facade yet (a logged debt item the
+`thick-domains-expose-a-facade` policy rule tracks) — promote toward the email shape,
+not the rag one.
 
 Do not create a new top-level package under `app/`. That level is reserved for framework
 concerns (`api/`, `core/`, `db/`, `repositories/`, `schemas/`, `services/`, `worker/`,

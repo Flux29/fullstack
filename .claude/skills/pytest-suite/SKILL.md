@@ -1,11 +1,20 @@
 ---
 name: pytest-suite
-description: Write or extend the backend test suite following this project's conventions. Use when adding tests for a new service/route/repository, when coverage is missing, or when asked to test a feature. Knows the mocked-session + httpx AsyncClient setup so tests run with no database.
+description: Write or extend the backend test suite following this project's conventions. Use when adding tests for a new service/route/repository, when coverage is missing, or when asked to test a feature. Knows the mocked-session + httpx AsyncClient setup so tests run with no database. Runs inside the gov-change envelope; the registered validators are backend-unit and backend-coverage.
 ---
 
 # Backend Tests (pytest + anyio)
 
-Tests live in `backend/tests/`, mirror the source layout (`app/services/user.py` → `tests/services/test_user.py`), and run with **no real database** — `conftest.py` overrides `get_db_session` with an `AsyncMock` via FastAPI `dependency_overrides`.
+Tests live in `backend/tests/` as **flat files named by surface** — `test_services.py`,
+`test_repositories.py`, `test_agents.py`, `test_services_conversation.py` — extend the
+file for the surface you touched rather than inventing a mirrored directory tree. The
+suite runs with **no real database**: `conftest.py` overrides `get_db_session` with an
+`AsyncMock` via FastAPI `dependency_overrides`.
+
+Testing existing code is a governed change like any other: open with `gov-change`
+GOV-OPEN, close with GOV-CLOSE. The registered validators are `backend-unit`
+(`make test`) and `backend-coverage` (`make test-cov`) — the coverage floor is a
+ratchet; never lower it to make a session pass.
 
 ## Key fixtures (`tests/conftest.py`)
 
@@ -50,7 +59,7 @@ async def test_create_user_returns_201(client: AsyncClient):
 
 ```bash
 cd backend && uv run pytest                 # all
-uv run pytest tests/services/test_user.py -v
+uv run pytest tests/test_services.py -v      # one surface
 uv run pytest --cov=app                      # coverage
 ```
 

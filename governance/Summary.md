@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 38)
+## Recent changes (latest 20 of 39)
 
 - **2026-08-10** — Register .claude as a governed component with an advisory reference checker
   - Components: agent-operating-surface, governance-kernel
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Correct .claude rules to match the code they describe
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-correct-claude-rules-to-match-the-code-they-describe.json`
+- **2026-08-10** — Align the five template-era skills with governance reality
+  - Components: agent-operating-surface, governance-kernel
+  - Record: `governance/history/changes/2026-08-10-align-the-five-template-era-skills-with-governance-reality.json`
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Add six agent-workflow skills that chain prompt commands inside the governance envelope
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-09-add-six-agent-workflow-skills-that-chain-prompt-commands-inside.json`
-- **2026-08-08** — stop-check: reconcile the touched log against git state before blocking
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl.json`
 
 ## Decisions (5)
 

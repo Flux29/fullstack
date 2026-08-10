@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A live symptom now has a named entry path: Logfire MCP queries (schema reference, exception fingerprints, targeted SQL over the instrumented spans) before engineering:debug and fix-issue - previously no skill connected the shipped instrumentation to the fix loop"
+  ],
+  "compatibility_impact": "None - additive skill",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/prod-debug/"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-add-the-prod-debug-skill-observability-first-debugging-through-l",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Smoke-testing the MCP query flow against live Logfire requires the machine-side server authorized in the running session; the skill was validated for citation integrity and against logfire_setup.py, not by a live query in this session"
+  ],
+  "manifests_changed": [],
+  "reason": "The backend ships full Logfire instrumentation and a Logfire MCP server is connected, yet no skill routes a production symptom through traces before code reading - the fix loop started at grep instead of at the telemetry that already knows the answer",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - skill text only; it mandates a read-only posture toward production and routes every mutation through the governed fix loop",
+  "summary": "Add the prod-debug skill: observability-first debugging through Logfire",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "24-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

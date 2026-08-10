@@ -556,6 +556,43 @@ def coverage() -> None:
     click.echo("No orphans, no ghosts, no rule-scope drift.")
 
 
+@main.command("skills-check")
+@click.option(
+    "--strict/--advisory",
+    "strict",
+    default=False,
+    help="Strict exits nonzero on findings; advisory (the default until the corpus is clean) reports and exits 0.",
+)
+def skills_check(strict: bool) -> None:
+    """Reference integrity for .claude skills, commands, and rules. Read-only.
+
+    Every positively identifiable citation - repository paths, Make targets, and
+    validator IDs - is verified against the tree, the Makefile, and the validator
+    registry. Unclassifiable tokens are ignored, never flagged: a checker that
+    false-positives on prose gets switched off and then catches nothing.
+    """
+    from repo_governance.skills import analyse_skill_references
+
+    report = analyse_skill_references(_context())
+    if report["status"] != "ok":
+        click.echo(f"Skills check unknown: {report['reason']}")
+        raise SystemExit(1)
+
+    click.echo(f"Scanned {report['files_scanned']} file(s) under .claude/")
+    for finding in report["findings"]:
+        click.echo(f"  {finding['file']}:{finding['line']} [{finding['kind']}] {finding['token']}")
+        click.echo(f"    {finding['detail']}")
+
+    count = len(report["findings"])
+    if not count:
+        click.echo("Every citation resolves: paths, Make targets, and validator IDs all exist.")
+        return
+    if strict:
+        click.echo(f"{count} finding(s).")
+        raise SystemExit(1)
+    click.echo(f"{count} finding(s), advisory mode - each is a stale citation to fix before the ratchet flips --strict on.")
+
+
 @main.command()
 def summary() -> None:
     """Report whether the bounded Summary.md is current. Read-only.

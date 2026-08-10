@@ -1,5 +1,6 @@
 {
   "components": [
+    "agent-operating-surface",
     "governance-kernel"
   ],
   "configuration": [],
@@ -19,6 +20,7 @@
   "unassigned": [],
   "validators": [
     "governance-check",
-    "governance-selftest"
+    "governance-selftest",
+    "skills-check"
   ]
 }

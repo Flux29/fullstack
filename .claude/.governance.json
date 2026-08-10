@@ -1,0 +1,26 @@
+{
+  "$schema": "../governance/schemas/local-governance.schema.json",
+  "id": "agent-operating-surface",
+  "kind": "governance",
+  "purpose": "Claude Code operating surface: the skills, commands, rules, lifecycle hooks, and permissions that steer how coding agents work in this repository",
+  "entrypoints": [
+    ".claude/settings.json",
+    ".claude/skills/pick-workflow/SKILL.md",
+    ".claude/skills/gov-change/SKILL.md"
+  ],
+  "owns": [
+    ".claude/**"
+  ],
+  "invariants": [
+    "Skills, commands, and rules may cite only repository paths, Make targets, and validator IDs that exist; governance skills-check is the mechanical enforcement",
+    "The validator registry of record is governance/validators.json; skill text references validators by ID and never restates commands as a second source of truth",
+    "Hooks under .claude/hooks/ are stdlib-only Python scripts, because a uv cold start would be paid on every gated tool call"
+  ],
+  "allowed_dependencies": [
+    "governance-kernel"
+  ],
+  "validation": [
+    "skills-check",
+    "governance-check"
+  ]
+}

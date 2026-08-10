@@ -1,0 +1,69 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance impact on .claude paths now resolves to agent-operating-surface and selects skills-check + governance-check instead of returning unassigned with no validators",
+    "governance skills-check (advisory) verifies every path, Make target, and validator ID cited by .claude skills, commands, and rules"
+  ],
+  "compatibility_impact": "None - additive: new component, new advisory validator, one new sanctioned untracked prefix (.claude/)",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/.governance.json",
+    "Makefile",
+    "governance/Summary.md",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/validators.json",
+    "tools/repo_governance/src/repo_governance/checks/process.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/skills.py",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-governance-sampler.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-stop-check-reconcile.after.json",
+    "tools/repo_governance/tests/test_skills_check.py"
+  ],
+  "follow_up": [
+    "S2-S4 fix the 8 advisory findings; S5 flips skills-check to strict and wires the CI step"
+  ],
+  "id": "2026-08-10-register-claude-as-a-governed-component-with-an-advisory-referen",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "skills-check is advisory and not in CI until the S5 ratchet session, because the corpus it polices still carries the 8 known stale citations",
+    "net-positive diff: this lands new enforcement machinery; nothing could be deleted because no equivalent checker existed"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "reason": ".claude skills and rules are the highest-leverage agent inputs in the repo yet no component owns them: impact analysis returns unassigned, no validator covers them, and an audit found stale references in a third of the skills - unowned knowledge drifts silently",
+  "risks": [],
+  "rollback": "git revert of the single commit, then make governance-sync to regenerate manifests; no external or database state involved",
+  "schema_version": 1,
+  "security_impact": "None - the checker is read-only and the component annotation grants no execution surface; validators.json gained one non-destructive entry resolved through make",
+  "summary": "Register .claude as a governed component with an advisory reference checker",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "152 tests; two impact goldens re-recorded because agent-operating-surface now correctly joins the blast radius of .claude-seeded scenarios",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "advisory mode by design; 8 pre-existing stale citations reported and recorded as the S2-S4 worklist",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "only blocking finding was this session own unfinished record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -216,6 +216,9 @@ governance-summary:
 governance-gate-metrics:
 	$(GOVERNANCE) gate-metrics $(ARGS)
 
+governance-skills-check:
+	$(GOVERNANCE) skills-check $(ARGS)
+
 governance-change-start:
 	$(GOVERNANCE) change start --summary "$(SUMMARY)" --reason "$(REASON)"
 

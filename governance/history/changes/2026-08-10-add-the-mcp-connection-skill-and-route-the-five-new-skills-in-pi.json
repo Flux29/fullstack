@@ -1,0 +1,45 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "mcp-connection covers both halves of the MCP surface (deployment-managed servers and db-resident per-user connections), citing the curated component and snapshot-mcp-connections for runtime evidence instead of duplicating them",
+    "pick-workflow now routes to all five skills added this cycle: prod-debug for live symptoms, mcp-connection, e2e-playwright, template-upgrade, and ship as the standard close of every branch"
+  ],
+  "compatibility_impact": "None - additive skill plus router table additions; no existing route removed",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/mcp-connection/",
+    ".claude/skills/pick-workflow/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-add-the-mcp-connection-skill-and-route-the-five-new-skills-in-pi",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Not exercised against a real MCP connection change in this session; validated for citation integrity against the curated manifest, security policy, and the agents annotation"
+  ],
+  "manifests_changed": [],
+  "reason": "The per-user MCP surface spans agents code, a service, OAuth, a frontend catalog, three standing security findings, and a db-resident component with its own evidence command - yet no skill covered it, and the five skills added this cycle were invisible to the router",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "Positive - the privileged MCP surface now has a skill that names its three standing findings, forbids the unset-allowed_tools and unstripped-URL patterns, and makes security-review a mandatory close step",
+  "summary": "Add the mcp-connection skill and route the five new skills in pick-workflow",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "27-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

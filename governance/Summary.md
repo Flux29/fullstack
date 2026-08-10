@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 47)
+## Recent changes (latest 20 of 48)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -100,6 +100,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Add the prod-debug skill: observability-first debugging through Logfire
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-prod-debug-skill-observability-first-debugging-through-l.json`
+- **2026-08-10** — Add the mcp-connection skill and route the five new skills in pick-workflow
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-10-add-the-mcp-connection-skill-and-route-the-five-new-skills-in-pi.json`
 - **2026-08-10** — Add the e2e-playwright skill: end-to-end testing conventions and when the stack is worth it
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-e2e-playwright-skill-end-to-end-testing-conventions-and.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Gate: a file-rooted search is a named read, not an enumeration
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-09-gate-a-file-rooted-search-is-a-named-read-not-an-enumeration.json`
-- **2026-08-09** — Fix the two census findings: phantom encryption setting and naive timestamps
-  - Components: agents, backend-api
-  - Record: `governance/history/changes/2026-08-09-fix-the-two-census-findings-phantom-encryption-setting-and-naive.json`
 
 ## Decisions (5)
 

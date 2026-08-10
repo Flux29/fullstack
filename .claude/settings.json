@@ -22,7 +22,11 @@
       "Bash(uv run --directory backend pytest*)",
       "Bash(uv run --directory backend ruff*)",
       "Bash(uv run --directory backend ty*)",
-      "Bash(uv run --directory backend alembic*)"
+      "Bash(uv run --directory backend alembic*)",
+      "Bash(cd backend && uv run fullstack*)",
+      "Bash(make taskiq-*)",
+      "Bash(make db-*)",
+      "Bash(cd frontend && bun run *)"
     ]
   },
   "hooks": {
@@ -42,12 +46,12 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Write|NotebookEdit",
         "hooks": [
           {
             "type": "command",
             "shell": "bash",
-            "command": "python -c 'import json,sys,os; d=json.load(sys.stdin); p=(d.get(\"tool_input\") or {}).get(\"file_path\") or \"\"; n=p.replace(chr(92),\"/\"); ok=(not p) or os.path.exists(p) or (\"/Temp/claude/\" in n); print(json.dumps({\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"allow\"}} if ok else {\"hookSpecificOutput\":{\"hookEventName\":\"PreToolUse\",\"permissionDecision\":\"ask\",\"permissionDecisionReason\":\"NEW file: \"+p+\" - prefer editing an existing file; create only if genuinely needed.\"}}))'",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/new_file_gate.py\"",
             "timeout": 15,
             "statusMessage": "New-file gate"
           }

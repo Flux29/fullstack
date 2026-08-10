@@ -1,0 +1,51 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "New-file gate extracted to .claude/hooks/new_file_gate.py with matcher Write|NotebookEdit and sanctioned-dir auto-allow, so the ask signal now means something",
+    "Allowlist gains cd backend uv run fullstack, make taskiq-*, make db-*, cd frontend bun run"
+  ],
+  "compatibility_impact": "Gate behaviour is a strict superset of the old inline gate: everything it allowed is still allowed, so no new prompts for existing flows",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/hooks/new_file_gate.py",
+    ".claude/settings.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-extract-the-new-file-gate-to-a-script-covering-notebookedit-and",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "MCP filesystem writers still bypass the gate; the deny-rule decision is parked for S13 deliberation",
+    "The inline one-liner was deleted (net negative in settings.json), the script is net-new code with docstring-stated invariants"
+  ],
+  "manifests_changed": [],
+  "reason": "The inline Write-only gate misses NotebookEdit and prompts even in directories where new files are the norm, and missing allowlist entries turn every rag CLI or taskiq invocation into a permission prompt",
+  "risks": [],
+  "rollback": "git revert restores the inline python -c gate and the narrower allowlist",
+  "schema_version": 1,
+  "security_impact": "The gate now covers NotebookEdit, closing a silent write bypass; permissions additions are dev-loop commands (rag CLI, taskiq, db, bun run) with no secret or destructive surface. MCP filesystem-writer denies deliberately deferred to S13 per user decision",
+  "summary": "Extract the new-file gate to a script covering NotebookEdit and sanctioned dirs; widen the permissions allowlist",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "8 synthetic events - sanctioned-dir allow, service-file ask, NotebookEdit ask (previously silently bypassed), scratchpad allow, new-skill allow, frontend test-suffix allow, outside-repo ask, malformed-input fail-open",
+      "id": "new-file-gate-selftest",
+      "result": "pass"
+    }
+  ]
+}

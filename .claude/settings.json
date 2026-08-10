@@ -27,6 +27,13 @@
       "Bash(make taskiq-*)",
       "Bash(make db-*)",
       "Bash(cd frontend && bun run *)"
+    ],
+    "deny": [
+      "mcp__filesystem__write_file",
+      "mcp__filesystem__edit_file",
+      "mcp__filesystem__create_directory",
+      "mcp__filesystem__move_file",
+      "mcp__Windows-MCP__FileSystem"
     ]
   },
   "hooks": {

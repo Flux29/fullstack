@@ -21,7 +21,7 @@
     }
   ],
   "proposed_action": "Trimmed phase-6 slice, scenario corpus first: (1) seed tools/repo_governance/tests/scenarios/ with 3 historical and 4 synthetic scenarios and capture pre-graph impact baselines; (2) build a deterministic Python import/module graph over backend/app via AST (never importing app.*); (3) wire layering-routes-services-repositories, forbidden-dependency-not-taken, thick-domains-expose-a-facade, and a deliberately naive orm-changes-have-migrations pairing check, all remaining advisory; (4) feed bounded reverse-import slices into impact and context with a conservative manifest fallback, and re-run the scenarios as the before/after acceptance evidence. TypeScript AST, centrality, visualizers, community detection, and governance/graph/ activation stay deferred within the phase.",
-  "status": "open",
+  "status": "acted-on",
   "initiated_by": {
     "kind": "user"
   },

@@ -42,11 +42,17 @@ def replay(ctx: Context, scenario: dict[str, Any]) -> dict[str, Any]:
     return dataclasses.asdict(impact)
 
 
-def observed_values(ctx: Context, scenario: dict[str, Any], impact: dict[str, Any]) -> dict[str, list[str]]:
+def observed_values(scenario: dict[str, Any], impact: dict[str, Any]) -> dict[str, list[str]]:
     """The observed counterpart of each scored `expected` field."""
     observed = {field: list(impact.get(field, [])) for field in SCORED_FIELDS}
     observed["context_documents"] = rules_for(list(scenario["change"]["paths"]))
     return observed
+
+
+def score_impact(scenario: dict[str, Any], impact: dict[str, Any]) -> dict[str, dict[str, float]]:
+    """Score a serialized impact answer (live or golden) against the scenario's expected sets."""
+    observed = observed_values(scenario, impact)
+    return {field: score(scenario["expected"][field], observed[field]) for field in SCORED_FIELDS}
 
 
 def score(expected: list[str], observed: list[str]) -> dict[str, float]:
@@ -66,12 +72,9 @@ def context_tokens(ctx: Context, scenario: dict[str, Any]) -> int:
 
 def score_scenario(ctx: Context, scenario: dict[str, Any]) -> dict[str, Any]:
     impact = replay(ctx, scenario)
-    observed = observed_values(ctx, scenario, impact)
     return {
         "id": scenario["id"],
-        "fields": {
-            field: score(scenario["expected"][field], observed[field]) for field in SCORED_FIELDS
-        },
+        "fields": score_impact(scenario, impact),
         "context_tokens": context_tokens(ctx, scenario),
         "graph_files_count": len(impact.get("graph_files", [])),
         "unassigned": list(impact.get("unassigned", [])),

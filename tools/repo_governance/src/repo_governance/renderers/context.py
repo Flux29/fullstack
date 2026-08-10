@@ -23,6 +23,22 @@ from repo_governance.io_atomic import read_json
 #: budget without pulling in a tokenizer.
 CHARS_PER_TOKEN = 4
 
+#: Bounds for the import-graph seed expansion. Depth 1 — direct importers — is the review
+#: surface: those files hold an import that the change can break. Scenario replay showed
+#: depth 2 routing through hub modules (core/config.py imports rag.config, and everything
+#: imports core.config) and truncating at the node cap, which is over-selection, not
+#: insight; transitive reach at component granularity is the declared-dependency BFS's
+#: job. Truncation at the node cap is reported as a note, never silent.
+GRAPH_EXPANSION_DEPTH = 1
+GRAPH_EXPANSION_MAX_NODES = 50
+
+#: A seed whose direct importers exceed this is a hub (core/config.py has ~48 — nearly
+#: every module reads settings). Expanding a hub is over-selection, not insight: scenario
+#: replay showed the env-var-rename scenario's components precision collapsing from 0.2 to
+#: 0.07 because "everything imports config" laundered the manifest's own answer into 48
+#: file entries. A hub is reported as a note; its manifest-declared radius stands.
+GRAPH_HUB_IMPORTER_LIMIT = 25
+
 #: Which convention file applies to which paths. Context returns references to these rather
 #: than restating them — they already implement progressive disclosure.
 RULE_SCOPES: tuple[tuple[str, tuple[str, ...]], ...] = (
@@ -48,6 +64,68 @@ class Impact:
     findings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     unassigned: list[str] = field(default_factory=list)
+    #: Files that import the changed backend modules, from the AST import graph. The
+    #: file-level blast radius the component globs cannot express.
+    graph_files: list[str] = field(default_factory=list)
+
+
+def _expand_with_import_graph(ctx: Context, paths: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """Expand backend Python seeds with their reverse importers.
+
+    Returns ``(expanded_paths, graph_files, notes)``. Conservative by contract: when no
+    input path maps to a graph module the paths come back unchanged, and when the graph
+    cannot be built the failure is a note and the manifest-declared radius stands —
+    unknowns are reported, never treated as an empty radius.
+    """
+    try:
+        from repo_governance.extractors.imports import get_import_graph
+
+        graph = get_import_graph(ctx)
+    except Exception as error:  # noqa: BLE001 - the fallback IS the contract here
+        return paths, [], [f"Import graph unavailable ({error}); falling back to manifest-declared dependencies."]
+
+    seeds = {module for path in paths if (module := graph.module_for_path(path)) is not None}
+    if not seeds:
+        return paths, [], []
+
+    notes: list[str] = []
+    hubs = {
+        module: count
+        for module in sorted(seeds)
+        if (count := len(graph.importers_of(module))) > GRAPH_HUB_IMPORTER_LIMIT
+    }
+    for module, count in hubs.items():
+        notes.append(
+            f"{module} is a hub with {count} direct importers; file-level expansion is "
+            "suppressed for it because the radius would be the whole application - the "
+            "manifest-declared blast radius stands."
+        )
+
+    graph_files: list[str] = []
+    expansion_seeds = seeds - set(hubs)
+    if expansion_seeds:
+        importers, truncated = graph.reverse_closure(
+            expansion_seeds, max_depth=GRAPH_EXPANSION_DEPTH, max_nodes=GRAPH_EXPANSION_MAX_NODES
+        )
+        graph_files = sorted(
+            {file for module in importers if (file := graph.path_for_module(module)) is not None}
+        )
+        notes.append(
+            f"Import graph: {len(graph_files)} module(s) import the changed backend modules "
+            f"(depth <= {GRAPH_EXPANSION_DEPTH})."
+        )
+        if truncated:
+            notes.append(
+                f"Reverse import closure truncated at {GRAPH_EXPANSION_MAX_NODES} modules; "
+                "the radius beyond the bound is unknown."
+            )
+    dynamic = sorted(set(graph.dynamic_import_sites) & seeds)
+    if dynamic:
+        notes.append(
+            f"Changed module(s) {', '.join(dynamic)} use dynamic imports; their true "
+            "dependency set is wider than the graph can see."
+        )
+    return sorted({*paths, *graph_files}), graph_files, notes
 
 
 def _components(ctx: Context) -> list[dict[str, Any]]:
@@ -73,13 +151,21 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
     by_id = {component["id"]: component for component in components}
     result = Impact()
 
+    # File-level expansion runs before component mapping, so a service-only change whose
+    # importers include route files reaches backend-api (and from there the proxy join)
+    # even though no component declares that edge.
+    expanded, graph_files, graph_notes = _expand_with_import_graph(ctx, paths)
+    result.graph_files = graph_files
+    result.notes.extend(graph_notes)
+
     seeds: set[str] = set()
-    for path in paths:
+    for path in expanded:
         owner = owner_of(components, path)
         if owner:
             seeds.add(owner)
-        else:
-            result.unassigned.append(path)
+    # Only the caller's own paths raise the coverage warning; a graph-derived file with no
+    # owner is a discovery, not a hole in what the caller asked about.
+    result.unassigned = [path for path in paths if owner_of(components, path) is None]
     result.seeds = sorted(seeds)
 
     # Reverse dependency closure: who depends on the seeds, transitively to `depth`.
@@ -119,7 +205,7 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
             for target in route.get("backend_targets", []):
                 template = target.get("path_template", "")
                 if any(template and template in interface for interface in public) or any(
-                    path.startswith(route["file"].rsplit("/", 1)[0]) for path in paths
+                    path.startswith(route["file"].rsplit("/", 1)[0]) for path in expanded
                 ):
                     result.proxy_routes.append(route["file"])
                     owner = owner_of(components, route["file"])
@@ -279,8 +365,19 @@ def render_context(ctx: Context, paths: list[str], task: str | None, token_budge
     if history:
         sections.append(("history", "\n## Recent related changes\n\n" + history))
 
-    # Trim from the least load-bearing end until the budget is met.
-    priority = ["history", "decisions", "rules", "findings", "configuration", "notes", "proxy", "contracts"]
+    if impact.graph_files:
+        sections.append(
+            (
+                "graph",
+                "\n## Reverse importers (import graph)\n\n"
+                "Files that import what you are changing; the file-level review surface.\n\n"
+                + "".join(f"- `{item}`\n" for item in impact.graph_files),
+            )
+        )
+
+    # Trim from the least load-bearing end until the budget is met. The graph section goes
+    # second: cheap to re-derive with `governance impact`, unlike invariants and contracts.
+    priority = ["history", "graph", "decisions", "rules", "findings", "configuration", "notes", "proxy", "contracts"]
     budget = token_budget * CHARS_PER_TOKEN
     while sum(len(text) for _, text in sections) > budget and priority:
         drop = priority.pop(0)

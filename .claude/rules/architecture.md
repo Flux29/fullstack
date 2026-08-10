@@ -80,26 +80,21 @@ Services come in two shapes — choose based on whether the domain owns infrastr
 
 **Thin domain → flat module (`app/services/<domain>.py`).** Default. Just a class with `db`, repo calls, and domain exceptions. Examples: `user.py`, `conversation.py`, `invitation.py`.
 
-**Thick domain → subpackage (`app/services/<domain>/`).** When the domain has its own infra. The subpackage contains both the service classes AND the infra (clients, adapters, pipeline modules, domain-specific exceptions). External callers only import from the package root — sub-modules are package-internal.
+**Thick domain → subpackage (`app/services/<domain>/`).** When the domain has its own infra. The subpackage contains both the service classes AND the infra (clients, adapters, pipeline modules, domain-specific exceptions). The two thick domains in this repository are `services/email/` and `services/rag/`:
 
 ```
-app/services/billing/
-├── __init__.py            # re-exports BillingService (the public facade)
-├── facade.py              # BillingService — the only thing routes see
-├── checkout_service.py    # internal sub-service
-├── credit_service.py
-├── subscription_service.py
-├── webhook_handler.py
-├── stripe_client.py       # external API client (infra)
-├── pricing.py             # pure data
-├── exceptions.py          # domain-specific, inherits from core/exceptions
-└── handlers/              # event handler modules (infra)
+app/services/email/            app/services/rag/
+├── __init__.py  # facade      ├── config.py      ├── embeddings.py
+├── service.py                 ├── documents.py   ├── embedding_cache.py
+├── templates.py               ├── ingestion.py   ├── vectorstore.py
+├── exceptions.py              ├── retrieval.py   ├── reranker.py
+└── providers/                 ├── connectors/    └── sources/
+    ├── base.py, log.py,      (no facade yet — see below)
+    └── resend.py, smtp.py
 ```
-
-Other thick domains using the same shape: `services/rag/` (ingestion + vectorstore + embeddings + connectors), `services/channels/` (Slack + Telegram adapters + router), `services/email/` (providers + templates).
 
 Rules for thick subpackages:
-- Public API: only the top-level facade exported from `__init__.py`. Routes/workers never import sub-modules directly.
+- Public API: a facade re-exported from `__init__.py`; routes/workers import the facade, not sub-modules. **Status, honestly:** `email/` ships the facade; `rag/` has no facade yet and its callers import sub-modules directly. The `thick-domains-expose-a-facade` policy rule tracks divergence as advisory findings, and building the rag facade is a logged debt item — a *new* thick domain must ship its facade from the start.
 - Domain-specific exceptions live in the subpackage and inherit from `core/exceptions.py` base classes.
 - Top-level `app/` is reserved for framework concerns (`api/`, `core/`, `db/`, `repositories/`, `schemas/`, `services/`, `worker/`, `agents/`, `commands/`, `clients/`). No new top-level domain packages.
 

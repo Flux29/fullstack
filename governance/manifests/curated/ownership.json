@@ -176,6 +176,27 @@
       "status": "locally-diverged",
       "on_upgrade": "classify-conflict",
       "reason": "Corrected to the flat test layout and wired to backend-unit/backend-coverage; an upgrade must not reintroduce the mirrored-tree claim."
+    },
+    {
+      "path": ".claude/commands/add-endpoint.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Slimmed to the dependency-ordered scaffold; layer conventions live in the auto-loaded rules and the full delivery lives in endpoint-fullstack."
+    },
+    {
+      "path": ".claude/commands/fix-issue.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Wired into the gov-change envelope with regression-test-first; an upgrade must not strip the governance routing."
+    },
+    {
+      "path": ".claude/commands/review.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Extended with the proxy-hop contract check and frontend conventions; the shipped version reviewed only the backend."
     }
   ],
   "internal_schemas": [

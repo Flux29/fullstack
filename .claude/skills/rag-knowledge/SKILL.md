@@ -37,16 +37,22 @@ Implement a connector in `backend/app/services/rag/connectors/` following the ex
 
 ## Tuning retrieval
 
-- Chunk size/overlap and parser (Docling Serve by default; PyMuPDF/LlamaParse opt-in) are configured via env — see `docs/configuration.md` and `docs/rag.md`.
+- Chunk size/overlap and parser (Docling Serve by default; PyMuPDF/LlamaParse opt-in) are configured via env — see `docs/configuration.md`.
 - Reranking uses Docker Model Runner's native `/rerank` endpoint with the configured GGUF reranker and improves result ordering when enabled.
 - If search returns poor results: confirm the collection is populated (`rag-stats`), check the active collection in the chat's KB selector, and verify the embedding provider/key.
 
 ## Rules
 
-- Qwen 4B through Docker Model Runner is the default and always stores normalized 1,024-dimensional vectors.
-- The default reranker is `huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0`; do not download or load a SentenceTransformers cross-encoder inside the backend.
-- Collection fingerprints include the exact model request ID, artifact revision, dimensions, normalization version, and query/document instructions. A mismatch is an intentional hard failure; delete/re-create and re-ingest the collection explicitly.
-- Embedding results use Redis DB 3 as L1 and PostgreSQL `embedding_cache` as durable L2. Query and document keys remain distinct.
+- The embedding contract — model, dimension, normalization, instructions, reranker, and
+  the collection fingerprint that binds them — is declared in
+  `governance/policies/compatibility.json`. That file is the single statement of the
+  contract; `rag-change` §4 is the procedure for changing it. A fingerprint mismatch is
+  an intentional hard failure: delete/re-create and re-ingest the collection explicitly.
+- Do not download or load a SentenceTransformers cross-encoder inside the backend;
+  reranking goes through Model Runner's native `/rerank`.
+- Embedding results use Redis DB 3 as L1 and PostgreSQL `embedding_cache` as durable L2.
+  Query and document keys remain distinct.
 - PDF/DOCX/PPTX/XLSX/images go through the shared Docling Serve container; TXT/Markdown remain local. Do not add an in-process Docling model.
 - Heavy ingestion runs as a background job, not inline in a request.
-- See `docs/rag.md` for the full pipeline reference.
+- See `docs/file-processing.md` for the full pipeline reference (ingestion flow, parser
+  selection, chunking, embedding, reranking) and `docs/configuration.md` for the env surface.

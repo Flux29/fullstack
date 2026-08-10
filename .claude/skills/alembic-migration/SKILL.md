@@ -1,11 +1,18 @@
 ---
 name: alembic-migration
-description: Create, review, and apply database schema changes with Alembic. Use whenever a SQLAlchemy model is added or changed, a column/index/constraint needs to change, or a data backfill is required — anything that alters the PostgreSQL schema.
+description: Create, review, and apply database schema changes with Alembic. Use whenever a SQLAlchemy model is added or changed, a column/index/constraint needs to change, or a data backfill is required — anything that alters the PostgreSQL schema. Runs inside the gov-change envelope; gated by the migrations validator.
 ---
 
 # Alembic Migrations
 
 This project uses **async SQLAlchemy 2.0 + Alembic** on PostgreSQL. Migrations live in `backend/alembic/versions/` and are numbered (`0001_…`, `0002_…`).
+
+This is a governed change: open with `gov-change` GOV-OPEN
+(`PATHS="backend/app/db/models,backend/alembic/versions"`), close with GOV-CLOSE. The
+registered gate is the `migrations` validator
+(`uv run --directory backend pytest tests/test_migrations.py -v`) — the automated
+upgrade/downgrade round-trip. It self-skips without a reachable database, so a skipped
+run is not a passing run; say which happened.
 
 ## Workflow
 
@@ -38,4 +45,4 @@ For backfills, add explicit `op.execute(...)` or a small data-loop in `upgrade()
 
 - Never edit a migration that has already been applied in shared environments — add a new one.
 - `make dev` / `make bootstrap` run `alembic upgrade head` automatically; you don't need a separate step in dev.
-- Keep models and migrations in sync — a model change without a migration will pass tests (sessions are mocked) but break on real Postgres.
+- Keep models and migrations in sync — a model change without a migration will pass tests (sessions are mocked) but break on real Postgres. That is exactly why the `migrations` validator exists; run it before closing the record.

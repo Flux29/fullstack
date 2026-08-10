@@ -67,23 +67,11 @@ your change moved. A sync that touches manifests you did not expect means the bl
 was wider than you thought.
 
 **`governance-impact` returns validator IDs, not commands.** Resolve each through
-[validators.json](governance/validators.json). Never invent a validation command; the
-registry exists so an annotation cannot introduce executable shell text.
-
-| ID | Command | Covers |
-| --- | --- | --- |
-| `backend-lint` | `make lint` | ruff check, ruff format --check, ty |
-| `backend-unit` | `make test` | pytest, mocked session, no live services |
-| `backend-coverage` | `make test-cov` | coverage against the ratcheted floor |
-| `frontend-test` | `make frontend-test` | lint, types, vitest |
-| `playwright` | `make playwright` | e2e; local only, needs a running stack |
-| `migrations` | `uv run --directory backend pytest tests/test_migrations.py -v` | upgrade/downgrade round-trip |
-| `rag-docker-integration` | `uv run --directory backend pytest tests/test_rag_docker_integration.py -v` | parser, embeddings, reranker, cache fingerprint |
-| `agent-evals` | `uv run --directory backend pytest tests/test_google_workspace_evals.py -v` | tool routing, approval policy |
-| `compose-check` / `compose-check-prod` | `make compose-check` / `-prod` | Compose file-stack x profile matrix |
-| `preflight-volumes` / `-model` / `-ports` / `-edge-ports` / `-mcp` | `make preflight-*` | operational probes |
-| `governance-check` | `make governance-check` | regeneration, schemas, references, policies |
-| `governance-selftest` | `uv run --project tools/repo_governance pytest tools/repo_governance/tests` | the governance tool itself |
+[validators.json](governance/validators.json) — it maps every ID to its exact command
+and is the **only** source of truth for them; this skill deliberately does not carry a
+copy, because a copied table drifts and `skills-check` would rightly flag it. Never
+invent a validation command; the registry exists so an annotation cannot introduce
+executable shell text.
 
 `google-live-e2e` is deliberately excluded from the registry. It sends real email and mutates
 a live Google Workspace account. Never select it automatically; invoke it by hand, knowingly.

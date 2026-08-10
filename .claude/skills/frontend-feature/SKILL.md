@@ -1,11 +1,14 @@
 ---
 name: frontend-feature
-description: Build a new page, view, or data-driven feature in the Next.js frontend. Use when adding a route under the dashboard/marketing area, wiring UI to a backend endpoint, adding client state, or creating a localized page. Covers App Router, data fetching, Zustand stores, and i18n.
+description: Build a new page, view, or data-driven feature in the Next.js frontend. Use when adding a route under the dashboard/marketing area, wiring UI to a backend endpoint, adding client state, or creating a localized page. Covers App Router, data fetching, Zustand stores, and i18n. Runs inside the gov-change envelope; gated by the frontend-test validator plus a browser check.
 ---
 
 # Frontend Feature (Next.js 15 + React 19)
 
 The frontend lives in `frontend/src/` — App Router, TypeScript, Tailwind, `next-intl`, and Zustand. Routes are **locale-prefixed**: `app/[locale]/…`.
+
+This is a governed change: open with `gov-change` GOV-OPEN (`PATHS="frontend/src"`),
+close with GOV-CLOSE. Expect `governance-impact` to select `frontend-test`.
 
 ## Layout
 
@@ -32,12 +35,14 @@ The frontend lives in `frontend/src/` — App Router, TypeScript, Tailwind, `nex
 
 6. **i18n** — user-facing copy goes through `next-intl` messages, not hardcoded strings. Add keys to the message catalog and read them with `useTranslations` / `getTranslations`.
 
-7. **Verify:**
+7. **Verify — three layers, not one:**
    ```bash
-   cd frontend
-   bun run type-check && bun run lint
-   bun dev            # check the page renders against a running backend (make dev)
+   make frontend-test    # the registered validator: lint, type-check, AND vitest
    ```
+   Then look at it: `bun dev` against a running backend (`make dev`) and drive the page
+   in a browser — the Browser pane or Playwright MCP counts; "types pass" does not. UI
+   is not done until it has been seen rendering. If the feature spans the proxy hop and
+   a stack is running, the `playwright` validator is the only end-to-end proof.
 
 ## Rules
 

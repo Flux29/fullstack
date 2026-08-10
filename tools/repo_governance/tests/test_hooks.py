@@ -492,6 +492,17 @@ def test_session_context_fits_its_budget_and_lists_the_catalog(real_context: Con
     assert "governance-change-start" in text
 
 
+def test_session_context_routes_to_the_workflow_skills(real_context: Context) -> None:
+    """The orientation names the routing skills, and the budget must not truncate them.
+
+    Truncation is silent (hooks.py applies the budget with a plain slice), so the
+    pointer's presence is asserted against the final rendered text, not the constant.
+    """
+    text = render_session_context(real_context)
+    assert "pick-workflow" in text
+    assert "gov-change" in text
+
+
 def test_stop_evaluation_passes_an_untouched_session(real_context: Context) -> None:
     blockers, _ = _stop_evaluation(real_context, "session-that-never-existed")
     assert blockers == []

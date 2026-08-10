@@ -18,7 +18,10 @@ reason as the structural defect being removed, not the activity being performed.
 
 Invoke the `engineering:tech-debt` skill via the Skill tool, scoped to the target path.
 For a module you do not yet understand, run `Explore` or `feature-dev:code-explorer` first
-and take its conclusions rather than reading every file into this context.
+and take its conclusions rather than reading every file into this context. GOV-OPEN's
+`governance-context` query has already unlocked the read gate for this session — keep it
+that way for the subagent by rooting its searches in the component directory, not the
+repo root.
 
 Rank the findings, then **pick exactly one.** A refactor session that fixes three things
 produces a change record no one can review and a diff no one can bisect.

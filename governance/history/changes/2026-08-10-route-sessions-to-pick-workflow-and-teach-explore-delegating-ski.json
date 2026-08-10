@@ -1,0 +1,54 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Every SessionStart orientation now routes non-trivial work to pick-workflow and gov-change by name - previously the skills were never mentioned and the router only fired if the model guessed it",
+    "debt-sweep, refactor-governed, and pick-workflow now instruct: run the scoped governance-context query BEFORE spawning Explore, and give subagents component roots - the gate denies repo-root sweeps and gates subagents too"
+  ],
+  "compatibility_impact": "None - the orientation gained one line; rendered length is 5010 of the 8000-char budget, so nothing truncates",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/debt-sweep/SKILL.md",
+    ".claude/skills/pick-workflow/SKILL.md",
+    ".claude/skills/refactor-governed/SKILL.md",
+    "tools/repo_governance/src/repo_governance/hooks.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-route-sessions-to-pick-workflow-and-teach-explore-delegating-ski",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The pointer is steering, not enforcement; a session that ignores it still hits the Stop hook backstop"
+  ],
+  "manifests_changed": [],
+  "reason": "The SessionStart orientation names the make targets but never the skills that sequence them, and debt-sweep, refactor-governed, and pick-workflow spawn Explore subagents into a read gate that denies broad sweeps until a scoped governance query has unlocked it - agents discover this by being denied",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - orientation text and skill guidance only",
+  "summary": "Route sessions to pick-workflow and teach Explore-delegating skills the read gate",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "153 tests including the new orientation-pointer assertion against rendered output",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

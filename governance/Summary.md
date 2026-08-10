@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 42)
+## Recent changes (latest 20 of 43)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -79,6 +79,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Gate telemetry: verdict event log, shadow roots, and a gate-metrics aggregation command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-gate-telemetry-verdict-event-log-shadow-roots-and-a-gate-metrics.json`
+- **2026-08-10** — Extract the new-file gate to a script covering NotebookEdit and sanctioned dirs; widen the permissions allowlist
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-10-extract-the-new-file-gate-to-a-script-covering-notebookedit-and.json`
 - **2026-08-10** — Correct .claude rules to match the code they describe
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-correct-claude-rules-to-match-the-code-they-describe.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — AST import graph over backend/app and enforcement of four phase-6 rules
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-09-ast-import-graph-over-backend-app-and-enforcement-of-four-phase.json`
-- **2026-08-09** — API-route tests for the sync-source endpoints, plus the collection filter fix
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-09-api-route-tests-for-the-sync-source-endpoints-plus-the-collectio.json`
 
 ## Decisions (5)
 

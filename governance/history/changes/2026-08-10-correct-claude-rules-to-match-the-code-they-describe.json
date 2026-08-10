@@ -1,0 +1,50 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "testing.md now teaches the real harness: anyio, mocked get_db_session, httpx.AsyncClient over ASGITransport - it previously taught pytest-asyncio with real-session fixtures",
+    "architecture.md thick-domain section now shows the two real subpackages (email, rag) instead of nonexistent billing/channels, and states facade status honestly",
+    "frontend.md now carries the proxy-handler rule, lib-client rule, query-keys, stores, and next-intl instead of a use-fetch instruction that contradicted the skills"
+  ],
+  "compatibility_impact": "None - no rule file was renamed, added, or deleted, so RULE_SCOPES and the coverage rules-drift check are untouched",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/rules/architecture.md",
+    ".claude/rules/frontend.md",
+    ".claude/rules/testing.md"
+  ],
+  "follow_up": [
+    "Debt item: build the services/rag facade and migrate its ~25 direct sub-module import sites in a refactor-governed session",
+    "S3 fixes the remaining 6 advisory skills-check findings"
+  ],
+  "id": "2026-08-10-correct-claude-rules-to-match-the-code-they-describe",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "services/rag still has no facade; documented as target state and a logged debt item rather than fixed here"
+  ],
+  "manifests_changed": [],
+  "reason": "testing.md teaches pytest-asyncio and real-session fixtures while conftest.py is anyio with a fully mocked session, and architecture.md cites services/billing and services/channels which do not exist - rules that lie train agents to distrust all rules",
+  "risks": [],
+  "rollback": "git revert of the single commit; no generated files moved (sync reported no bytes changed)",
+  "schema_version": 1,
+  "security_impact": "None - documentation-only edits to three .claude/rules files",
+  "summary": "Correct .claude rules to match the code they describe",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "advisory; both rules-file findings cleared (8 to 6), remaining 6 are the S3 skills worklist",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

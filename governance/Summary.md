@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 37)
+## Recent changes (latest 20 of 38)
 
 - **2026-08-10** — Register .claude as a governed component with an advisory reference checker
   - Components: agent-operating-surface, governance-kernel
@@ -73,6 +73,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Gate telemetry: verdict event log, shadow roots, and a gate-metrics aggregation command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-gate-telemetry-verdict-event-log-shadow-roots-and-a-gate-metrics.json`
+- **2026-08-10** — Correct .claude rules to match the code they describe
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-10-correct-claude-rules-to-match-the-code-they-describe.json`
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — stop-check: reconcile the touched log against git state before blocking
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl.json`
-- **2026-08-08** — Regenerate the stale baseline Summary.md
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-08-regenerate-the-stale-baseline-summary-md.json`
 
 ## Decisions (5)
 

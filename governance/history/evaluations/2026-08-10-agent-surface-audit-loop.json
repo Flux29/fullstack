@@ -14,6 +14,10 @@
     {
       "source": "governance impact --paths .claude/skills",
       "detail": "Before: unassigned, no validators. After: agent-operating-surface, validators skills-check + governance-check."
+    },
+    {
+      "source": "validation sweep (2026-08-10, follow-up session)",
+      "detail": "prod-debug validated end to end against live telemetry: 11,695 records/24h from service fullstack (development), and the exception-triage query surfaced 13 auth-domain exceptions generated minutes earlier by the Playwright auth specs - the two validation streams observed each other. e2e-playwright harness validated: 166 tests across 5 browser projects in 1.9m via make playwright with working auth.setup storage state; the suite itself is red (128 passed, 33 failed, 5 not run, stable across a frontend image rebuild) with two real findings - integrations.spec content drift (page renders, Gmail card copy 'identify the connected mailbox' absent) on all browsers, and a webkit/Mobile Safari cluster on chat specs. template-upgrade front half validated: upgrade-dry-run ran against a real pending upstream release (migration 0027 users.magic_link_epoch, enforced auth rate limits, COOKIE_SECURE, two removed env vars) after exposing that the upstream tool crashes on a Windows cp1252 console without PYTHONUTF8=1. Apply/finalize remains deferred to a real upgrade decision; the e2e failures are follow-up fix-issue work, not harness defects."
     }
   ],
   "proposed_action": "Three-layer recurrence mechanism: (1) skills-check runs strict in CI and via impact selection on every .claude-touching session; (2) debt-sweep's survey now includes the agent surface - gate-metrics verdict trends and a prose-accuracy spot-check of one skill per sweep, because skills-check proves citations exist, not that descriptions are true; (3) a template upgrade re-runs skills-check over any upstream .claude changes before finalize (template-upgrade skill, rule 4). Repeat a full manual audit when a batch of new skills lands or a template upgrade rewrites the surface.",

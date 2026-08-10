@@ -1,0 +1,64 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The not-validated-in-session limitations from the S9-S11 records are now closed or precisely narrowed, with results in the evaluation record",
+    "template-upgrade carries the PYTHONUTF8=1 requirement its own dry-run exposed"
+  ],
+  "compatibility_impact": "None",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/template-upgrade/SKILL.md",
+    "governance/history/evaluations/2026-08-10-agent-surface-audit-loop.json"
+  ],
+  "follow_up": [
+    "fix-issue: integrations.spec content drift (all browsers) and the webkit/Mobile Safari chat cluster - 33 failing e2e tests",
+    "Decision available: apply the pending upstream release via template-upgrade"
+  ],
+  "id": "2026-08-10-record-the-validation-sweep-results-for-the-agent-surface",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "template-upgrade apply/finalize remains unvalidated until a real upgrade is wanted"
+  ],
+  "manifests_changed": [],
+  "reason": "Three skills shipped with a stated not-validated-in-session limitation; the sweep has now run against live telemetry, the running stack, and a pending upstream release, and its results plus the one environment gotcha it exposed belong in the durable record rather than the chat log",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - evaluation evidence and one skill note",
+  "summary": "Record the validation sweep results for the agent surface",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "27-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "schema reference, project-scoped span query (11695 records/24h), exception triage (13 auth-domain exceptions) against live Logfire data",
+      "id": "prod-debug-live",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "166 tests, 5 browser projects, 1.9m, auth.setup working; suite red with real findings (128/33/5), recorded as follow-up work",
+      "id": "e2e-playwright-harness",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ran against a real pending upstream release after the PYTHONUTF8 fix",
+      "id": "template-upgrade-dry-run",
+      "result": "pass"
+    }
+  ]
+}

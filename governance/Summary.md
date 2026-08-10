@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 50)
+## Recent changes (latest 20 of 51)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -70,6 +70,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Register .claude as a governed component with an advisory reference checker
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-register-claude-as-a-governed-component-with-an-advisory-referen.json`
+- **2026-08-10** — Record the validation sweep results for the agent surface
+  - Components: agent-operating-surface, governance-kernel
+  - Record: `governance/history/changes/2026-08-10-record-the-validation-sweep-results-for-the-agent-surface.json`
 - **2026-08-10** — Record the evaluation-and-audit loop for the agent surface
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-record-the-evaluation-and-audit-loop-for-the-agent-surface.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — ruff format pass over the session's backend files
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-ruff-format-pass-over-the-session-s-backend-files.json`
-- **2026-08-09** — New chat creates a new conversation: null conversation_id is never sticky
-  - Components: agents, backend-api
-  - Record: `governance/history/changes/2026-08-09-new-chat-creates-a-new-conversation-null-conversation-id-is-neve.json`
 
 ## Decisions (5)
 

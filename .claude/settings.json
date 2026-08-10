@@ -78,6 +78,18 @@
             "statusMessage": "Governance touched log"
           }
         ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "bash",
+            "command": "python \"$CLAUDE_PROJECT_DIR/.claude/hooks/governance_gate.py\" --record-context",
+            "timeout": 5,
+            "statusMessage": "Governance context marker"
+          }
+        ]
       }
     ],
     "Stop": [

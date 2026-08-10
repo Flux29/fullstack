@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The playwright validator now has a skill stating its prerequisites (running stack via make dev), its auth.setup storage-state convention, when the spin-up is worth it, and that a skipped run must be reported as not-run rather than passing"
+  ],
+  "compatibility_impact": "None - additive skill",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/e2e-playwright/"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-add-the-e2e-playwright-skill-end-to-end-testing-conventions-and",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The e2e suite itself was not run in this session (no stack was started); the skill was validated for citation integrity against frontend/e2e and playwright.config.ts"
+  ],
+  "manifests_changed": [],
+  "reason": "frontend/e2e exists and the playwright validator is registered but local-only, and no skill said how to write an e2e test or when the stack spin-up pays for itself - so the only validator that proves the proxy hop end to end went unrun by default",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - skill text only",
+  "summary": "Add the e2e-playwright skill: end-to-end testing conventions and when the stack is worth it",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "26-file corpus, 0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

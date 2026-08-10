@@ -4,14 +4,14 @@
 
 Current state, what is unresolved, and recent material history. This is not the permanent record — older changes stay queryable under `governance/history/changes/`.
 
-## Components (17)
+## Components (18)
 
 - **agent-runtime** — agents
 - **backend-subsystem** — backend-api, email, rag
 - **data** — minio, postgres-pgvector, redis
 - **db-resident-surface** — mcp-user-connections
 - **frontend-feature** — chat-frontend, frontend-app
-- **governance** — governance-kernel
+- **governance** — agent-operating-surface, governance-kernel
 - **host-runtime** — model-runner-host
 - **image-only-service** — github-mcp
 - **infrastructure** — docling-serve, traefik
@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 36)
+## Recent changes (latest 20 of 37)
 
+- **2026-08-10** — Register .claude as a governed component with an advisory reference checker
+  - Components: agent-operating-surface, governance-kernel
+  - Record: `governance/history/changes/2026-08-10-register-claude-as-a-governed-component-with-an-advisory-referen.json`
 - **2026-08-10** — Read-gate hardening: breadth rule with context-first unlock; repo surface warn to deny
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-read-gate-hardening-breadth-rule-with-context-first-unlock-repo.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — Regenerate the stale baseline Summary.md
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-regenerate-the-stale-baseline-summary-md.json`
-- **2026-08-08** — Pin chat retention and token-accounting carriage with regression tests
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-08-pin-chat-retention-and-token-accounting-carriage-with-regression.json`
 
 ## Decisions (5)
 

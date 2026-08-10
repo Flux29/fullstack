@@ -21,6 +21,7 @@ SANCTIONED_UNTRACKED_PREFIXES = (
     "tools/repo_governance/tests/",
     "frontend/e2e/",
     "docs/",
+    ".claude/",
 )
 
 #: Frontend unit tests sit beside their source, so they are recognised by name, not location.

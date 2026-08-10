@@ -145,6 +145,14 @@
       "destructive": false,
       "requires": [],
       "ci_job": "governance"
+    },
+    {
+      "id": "skills-check",
+      "command": "make governance-skills-check",
+      "description": "Reference integrity for the agent operating surface: every path, Make target, and validator ID cited by .claude skills, commands, and rules must exist. Advisory until the corpus is clean; the ratchet session flips it to strict.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": null
     }
   ]
 }

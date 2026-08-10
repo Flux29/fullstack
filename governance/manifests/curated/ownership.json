@@ -94,7 +94,10 @@
     "governance/manifests/curated/",
     "governance/history/decisions/ADR-*.md",
     "governance/history/evaluations/",
-    "**/.governance.json"
+    "**/.governance.json",
+    ".claude/skills/",
+    ".claude/commands/",
+    ".claude/rules/"
   ],
   "generator_provenance": [
     {

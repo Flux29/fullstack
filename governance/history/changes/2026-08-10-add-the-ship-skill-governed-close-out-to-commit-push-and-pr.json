@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The commit-after-change-finish rule and the single-branch conventions (fetch-first, short-lived auto-deleted PR branches, clean_gone) now live in a skill instead of one pick-workflow bullet and out-of-repo memory"
+  ],
+  "compatibility_impact": "None - additive skill; no existing skill renamed",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/skills/ship/"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-add-the-ship-skill-governed-close-out-to-commit-push-and-pr",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "pick-workflow routing table gains references to the five new skills in the S12 session, not piecemeal"
+  ],
+  "manifests_changed": [],
+  "reason": "The commit-after-change-finish ordering rule lived in a single pick-workflow bullet and the single-branch conventions lived only in memory outside the repo, so every session ended with improvised git steps that sometimes preceded the record they were supposed to carry",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - skill text only; it instructs never force-pushing main and never skipping hooks",
+  "summary": "Add the ship skill: governed close-out to commit, push, and PR",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "23-file corpus, 0 findings - the new skill is citation-clean from birth",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

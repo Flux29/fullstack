@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 43)
+## Recent changes (latest 20 of 44)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -91,6 +91,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Align the five template-era skills with governance reality
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-align-the-five-template-era-skills-with-governance-reality.json`
+- **2026-08-10** — Add the ship skill: governed close-out to commit, push, and PR
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-10-add-the-ship-skill-governed-close-out-to-commit-push-and-pr.json`
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-09** — Bounded import-graph slices feed impact and context; scenario corpus recaptured as the before-after comparison
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-09-bounded-import-graph-slices-feed-impact-and-context-scenario-cor.json`
-- **2026-08-09** — AST import graph over backend/app and enforcement of four phase-6 rules
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-09-ast-import-graph-over-backend-app-and-enforcement-of-four-phase.json`
 
 ## Decisions (5)
 

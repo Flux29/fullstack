@@ -1,0 +1,24 @@
+{
+  "components": [
+    "governance-kernel"
+  ],
+  "configuration": [],
+  "contracts": [
+    "make governance-*"
+  ],
+  "decisions": [
+    "ADR-001"
+  ],
+  "findings": [],
+  "graph_files": [],
+  "notes": [],
+  "proxy_routes": [],
+  "seeds": [
+    "governance-kernel"
+  ],
+  "unassigned": [],
+  "validators": [
+    "governance-check",
+    "governance-selftest"
+  ]
+}

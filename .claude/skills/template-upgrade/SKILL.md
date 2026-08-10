@@ -19,8 +19,11 @@ Run the whole thing inside `gov-change` — one upgrade, one session, one record
 
 ```bash
 git status -sb            # clean tree first; an upgrade over dirty state is unreviewable
-make upgrade-dry-run
+PYTHONUTF8=1 make upgrade-dry-run
 ```
+
+`PYTHONUTF8=1` is load-bearing on Windows: the upstream tool prints Unicode arrows and
+dies mid-plan on a cp1252 console without it (verified 2026-08-10, v0.2.17 plan).
 
 Sort every file the dry-run would touch into three piles using `generator_provenance`:
 

@@ -1,0 +1,40 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "read-surface.json gains a breadth section and default_modes.breadth; the internal schema now requires both, so a pre-change artifact fails schema validation until governance-sync regenerates it - the standard stale-manifest repair. The gate script tolerates a pre-breadth artifact by leaving the rule inert rather than degrading, so mixed states cannot brick reads. Sessions started before this change lack the context marker and will see their first unscoped sweep denied with the substitute command; one scoped query unlocks. No application code, HTTP contract, or environment variable changes.",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/hooks/governance_gate.py",
+    ".claude/settings.json",
+    "AGENTS.md",
+    "governance/governance.toml",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/hooks.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-10-read-gate-hardening-breadth-rule-with-context-first-unlock-repo",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The gate protected the governance corpus but had no opinion about navigation: discovery sweeps rooted at the repo root or bare top-level dirs were silently allowed over the code surface, and out-of-surface reads warned once per session then went silent. Advisory orientation loses to the model's exploration prior, so the token-efficiency goal of governance-context-first navigation was unenforced. A breadth rule denies unscoped sweeps until a scoped governance context or impact query is recorded this session, with the exact substitute command in the denial; the repo surface moves from warn to deny.",
+  "risks": [],
+  "rollback": "Revert the [gate] table in governance/governance.toml (mode_repo to warn, remove mode_breadth and breadth_roots), revert governance_gate.py, hooks.py, builders.py, documents.py, test_hooks.py, the AGENTS.md paragraph, and the PostToolUse Bash entry in .claude/settings.json, then run make governance-sync to regenerate read-surface.json without the breadth section. Interim protection: GOVERNANCE_GATE=warn or off neutralizes enforcement immediately without any file change.",
+  "schema_version": 1,
+  "security_impact": "Strengthening only: the repo read surface moves from warn to deny and a new breadth surface denies unscoped discovery sweeps, so no permission is broadened and no policy weakened - the direction the self-governance rules require of automation. The unlock marker is intent-based session state under .cache/, records only the first matching command line, and can only unlock breadth, never corpus or repo. The gate remains steering, not a security boundary: it fails open visibly and GOVERNANCE_GATE (user-set, outside agent reach) still overrides all surfaces.",
+  "summary": "Read-gate hardening: breadth rule with context-first unlock; repo surface warn to deny",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

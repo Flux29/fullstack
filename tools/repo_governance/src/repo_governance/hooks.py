@@ -71,7 +71,8 @@ def _gate_health(ctx: Context) -> str:
         return f"gate: degraded (selftest failed: {error}) - reads are ungated; run `make governance-sync`"
     if status.get("gate") == "healthy":
         modes = status.get("modes", {})
-        return f"gate: healthy (corpus={modes.get('corpus', '?')}, repo={modes.get('repo', '?')})"
+        rendered = ", ".join(f"{key}={value}" for key, value in sorted(modes.items())) or "modes unknown"
+        return f"gate: healthy ({rendered})"
     if status.get("gate") == "off":
         return "gate: off (GOVERNANCE_GATE=off set by the user)"
     return f"gate: degraded ({status.get('reason', 'unknown')}) - reads are ungated; run `make governance-sync`"

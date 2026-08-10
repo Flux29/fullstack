@@ -7,9 +7,16 @@ certainty and fails open — visibly — on everything else.
 Decision ladder (a deny requires every rung):
   the event parses -> the artifact loads and its schema_version is supported -> the
   target resolves inside the repository -> the target is confidently outside the allowed
-  repo surface, or is a bulk enumeration rooted in a gated corpus root.
+  repo surface, is a bulk enumeration rooted in a gated corpus root, or is a discovery
+  sweep rooted at a breadth root before any scoped governance query ran this session.
 Anything less: allow, record a reason-coded degraded entry in the session state dir, and
-surface it once per reason via systemMessage. The session-context and stop-check hooks
+surface it once per reason via systemMessage.
+
+The breadth surface enforces navigation, not access: a Glob/Grep rooted at the repository
+root or a bare top-level directory is exhaustive search where a `governance context` or
+`governance impact` query would answer from the compiled map. One scoped query this
+session — recorded by the `--record-context` PostToolUse entrypoint below — unlocks broad
+search; a search rooted inside a component directory is never breadth-gated. The session-context and stop-check hooks
 report accumulated degradations, so a broken gate is announced, never silent.
 
 Modes come from the artifact's `default_modes`, overridden per session by the
@@ -41,6 +48,13 @@ REGISTER_INSTEAD = (
     ".governance.json annotation or add it to the [gate] always_allow list in governance/governance.toml, "
     "then `make governance-sync`."
 )
+CONSULT_INSTEAD = (
+    "Navigate by the map, not by exhaustive search: `make governance-context PATHS=... TASK=...` returns "
+    "the component map and blast radius; `make governance-impact PATHS=...` returns callers and dependents "
+    "from the import graph. One scoped query this session unlocks broad search, or root this search inside "
+    "a component directory now."
+)
+CONTEXT_QUERY = re.compile(r"governance[-\s]+(context|impact)\b")
 
 
 def _rel(path_text: str) -> str | None:
@@ -82,6 +96,13 @@ class Surface:
         self.modes = dict(document["default_modes"])
         corpus = document["corpus"]
         repo = document["repo"]
+        # Absent on artifacts synced before the breadth surface existed: the rule simply
+        # stays inert rather than degrading the whole gate.
+        breadth = document.get("breadth") or {}
+        self.breadth_roots = {
+            "" if folded == "." else folded
+            for folded in (_fold(str(root)).rstrip("/") for root in breadth.get("roots", ()))
+        }
         self.gated_roots = [_fold(root) for root in corpus["gated_roots"]]
         self.bounded = [_fold(item) for item in corpus["bounded_surfaces"]]
         self.exact = {_fold(item) for item in repo["exact_files"]}
@@ -149,6 +170,9 @@ class SessionState:
             self._store(name, document)
         return True
 
+    def seen_any(self, name: str) -> bool:
+        return bool(self._load(name))
+
 
 def _respond(decision: str | None = None, reason: str = "", system_message: str = "") -> None:
     output: dict = {}
@@ -199,7 +223,29 @@ def selftest() -> None:
         raise SystemExit(1) from None
 
 
+def record_context() -> None:
+    """PostToolUse on Bash: remember that a scoped governance query ran this session.
+
+    The breadth surface unlocks on this marker. Recording is intent-based, not
+    success-based — a malformed query still shows the map was consulted, and inspecting
+    tool_response shapes across harness versions is exactly the brittleness the gate's
+    fail-open philosophy avoids. Every failure here is swallowed: a broken marker only
+    means breadth stays locked, never that a session breaks."""
+    try:
+        event = json.load(sys.stdin)
+        command = str((event.get("tool_input") or {}).get("command") or "")
+        if CONTEXT_QUERY.search(command):
+            state = SessionState(str(event.get("session_id") or "unknown"))
+            state.first_occurrence("context.json", "query", command[:200])
+    except Exception:
+        pass
+    print("{}")
+
+
 def main() -> None:
+    if "--record-context" in sys.argv[1:]:
+        record_context()
+        return
     if "--selftest" in sys.argv[1:]:
         selftest()
         return
@@ -278,6 +324,20 @@ def main() -> None:
                     rel,
                     f"bulk enumeration under {gated} sweeps the governance corpus",
                     QUERY_INSTEAD,
+                )
+                return
+            breadth_mode = env_mode or str(surface.modes.get("breadth", "warn"))
+            if (
+                _fold(rel).rstrip("/") in surface.breadth_roots
+                and not state.seen_any("context.json")
+            ):
+                _verdict(
+                    state,
+                    breadth_mode,
+                    "breadth",
+                    rel or ".",
+                    f"discovery sweep rooted at {rel or 'the repository root'} before any scoped governance query",
+                    CONSULT_INSTEAD,
                 )
                 return
             if surface.repo_allows_root(rel):

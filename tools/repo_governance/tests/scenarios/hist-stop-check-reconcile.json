@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "hist-stop-check-reconcile",
+  "kind": "historical",
+  "title": "stop-check: reconcile the touched log against git state before blocking",
+  "description": "The kernel's canonical false-positive fix: the Stop hook blocked on files already committed in governed commits, because the touched log outlives commits. Only still-dirty touched paths block now. gitutil gained toplevel() so porcelain answers are trusted only for the root they describe.",
+  "source_change_record": "2026-08-08-stop-check-reconcile-the-touched-log-against-git-state-before-bl",
+  "change": {
+    "paths": [
+      "tools/repo_governance/src/repo_governance/gitutil.py",
+      "tools/repo_governance/src/repo_governance/hooks.py",
+      "tools/repo_governance/tests/test_hooks.py"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "governance-kernel"
+    ],
+    "validators": [
+      "governance-check",
+      "governance-selftest"
+    ],
+    "proxy_routes": [],
+    "context_documents": [],
+    "policies": [
+      "material-changes-are-recorded"
+    ],
+    "findings": []
+  },
+  "notes": "Seeded from the change record. This is the corpus's false-positive exemplar: the class of miss the phase-6 exit criterion ('without unacceptable false positives') is measured against. The expected sets are identical in shape to hist-governance-sampler deliberately - two kernel changes should produce the same selection, and divergence between them under a future ranking change is itself a signal."
+}

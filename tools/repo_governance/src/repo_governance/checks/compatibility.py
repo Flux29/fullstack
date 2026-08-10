@@ -138,6 +138,56 @@ def check_migration_graph(scope: CheckScope) -> list[Issue]:
     return issues
 
 
+def check_orm_migration_pairing(scope: CheckScope) -> list[Issue]:
+    """A change-set touching SQLAlchemy models also touches an Alembic revision.
+
+    Deliberately a file-path pairing heuristic, and deliberately advisory: it false-positives
+    on comment-only model edits and false-negatives when a schema change ships beside any
+    unrelated migration. That noise profile is exactly why the rule's promotion criterion
+    demands symbol-level detection — this implementation does NOT satisfy
+    ``promotion_criteria`` and must never be promoted to blocking in this form; promoting a
+    heuristic teaches people to commit empty migrations to silence it.
+
+    Operates only on a change-set (working tree, plus the ``--since`` range in CI). A
+    full-tree run has no change-set and emits nothing.
+    """
+    from repo_governance.checks.process import _change_set
+
+    changed, known = _change_set(scope)
+    if not known:
+        return [
+            Issue(
+                message="Could not determine what changed; the model-migration pairing was not evaluated.",
+                path="backend/app/db/models/",
+                evidence="git was unavailable or this is not a repository.",
+                repair="Run the check inside a git working tree.",
+            )
+        ]
+
+    models_changed = [
+        path for path in changed if path.startswith("backend/app/db/models/") and path.endswith(".py")
+    ]
+    if not models_changed:
+        return []
+    if any(path.startswith("backend/alembic/versions/") for path in changed):
+        return []
+
+    return [
+        Issue(
+            message="SQLAlchemy models changed with no Alembic revision in the same change-set.",
+            path=models_changed[0],
+            evidence=(
+                f"Model files changed: {', '.join(models_changed)}. "
+                "No backend/alembic/versions/ change accompanies them."
+            ),
+            repair=(
+                "Generate a revision (uv run --directory backend alembic revision --autogenerate) or, "
+                "for a change that provably needs none, say so in the change record."
+            ),
+        )
+    ]
+
+
 def check_redis_allocations(scope: CheckScope) -> list[Issue]:
     """Each Redis logical database has exactly one declared purpose."""
     manifest = scope.ctx.paths.generated_manifests / "data-stores.json"

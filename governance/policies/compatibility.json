@@ -30,8 +30,8 @@
       "statement": "A change to a SQLAlchemy model is accompanied by an Alembic revision.",
       "rationale": "A model change without a migration works locally and fails on every other environment.",
       "maturity": "advisory",
-      "check_impl": "phase-6",
-      "promotion_criteria": "The symbol graph exists so model changes can be detected precisely rather than by file path.",
+      "check_impl": "checks.compatibility.check_orm_migration_pairing",
+      "promotion_criteria": "The symbol graph exists so model changes can be detected precisely rather than by file path. The current check is deliberately a file-path pairing heuristic that does not satisfy this criterion: it stays advisory in this form, however clean its record.",
       "exceptions_allowed": true,
       "exception_refs": []
     },

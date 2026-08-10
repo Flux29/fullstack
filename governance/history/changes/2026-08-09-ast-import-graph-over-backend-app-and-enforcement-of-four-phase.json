@@ -1,0 +1,60 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Four rules move from check_impl phase-6 to real checks: layering-routes-services-repositories, forbidden-dependency-not-taken, thick-domains-expose-a-facade (checks/graph.py over the new AST import graph), orm-changes-have-migrations (file-path pairing in checks/compatibility.py)",
+    "governance check now reports 14 real advisory facade findings: email facade bypassed by auth.py and user.py; services/rag has 11 external deep importers and no facade at all, including the core/config.py layering inversion",
+    "Mutate-red-revert evidence: a route importing app.repositories (health.py), a service deep-importing email.providers (contact.py), and a model edit without a migration (models/user.py) each fired the advisory finding with file and line, and each cleared on revert; forbidden-dependency cannot go red on the real tree with Python-only edges, so its red evidence is the synthetic selftest test_forbidden_dependency_check_flags_edge_into_forbidden_component"
+  ],
+  "compatibility_impact": "Additive. Four advisory rules now produce findings where they produced deferral notices; only blocking maturity fails checks, so CI exit codes are unchanged. The deferred count in check output and the Stop-hook message drops from 19 to 15.",
+  "date": "2026-08-09",
+  "files_changed": [
+    "governance/policies/architecture.json",
+    "governance/policies/compatibility.json",
+    "tools/repo_governance/src/repo_governance/checks/__init__.py",
+    "tools/repo_governance/src/repo_governance/checks/compatibility.py",
+    "tools/repo_governance/src/repo_governance/checks/graph.py",
+    "tools/repo_governance/src/repo_governance/extractors/imports.py",
+    "tools/repo_governance/tests/scenario_replay.py",
+    "tools/repo_governance/tests/test_graph_checks.py",
+    "tools/repo_governance/tests/test_import_graph.py",
+    "tools/repo_governance/tests/test_scenarios.py"
+  ],
+  "follow_up": [
+    "Fix backend/alembic/env.py to import all model modules (planned as the next governed change in this slice)",
+    "Feed bounded graph slices into impact and context, recapture scenario goldens as .after.json, and close the phase-6 exit criterion comparison",
+    "Consider promoting the three graph rules per their promotion criteria after a clean observation window; the facade rule needs the rag findings dispositioned (facade added, or exceptions recorded) before it can run clean"
+  ],
+  "id": "2026-08-09-ast-import-graph-over-backend-app-and-enforcement-of-four-phase",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "FINDING (latent tooling hazard): backend/alembic/env.py imports only 9 of 12 model modules - conversation_share, user_slash_command, and mcp_connection are missing from Base.metadata at autogenerate time, so alembic revision --autogenerate would propose DROP TABLE for their three tables. The pairing heuristic does not protect against this; follow-up fix planned in this slice.",
+    "The orm-changes-have-migrations check is a file-path pairing heuristic that does NOT satisfy the rule promotion criterion (symbol-level detection): it false-positives on comment-only model edits and false-negatives when a schema change ships beside any unrelated migration. It must never be promoted to blocking in this form; the policy promotion_criteria now says so explicitly.",
+    "Graph scope is backend/app Python imports only: TypeScript, cross-language, and Compose edges are not modeled, backend/cli sits outside the graph, and app.commands has dynamic imports the graph reports as an unknown rather than as edges. The forbidden-dependency pass is vacuous today because no declared forbidden pair is Python-expressible inside backend/app."
+  ],
+  "manifests_changed": [],
+  "reason": "Four advisory rules have carried check_impl phase-6 since inception awaiting the import graph; evaluation record 2026-08-09-phase-6-growth-trigger-preempted authorizes building the trimmed slice now, and the scenario corpus with pre-graph baselines is in place to judge it",
+  "risks": [],
+  "rollback": "Revert the commit: the four check_impl values return to phase-6, the extractor and checks are deleted, and the deferred count returns to 19. No generated manifest depends on the graph.",
+  "schema_version": 1,
+  "security_impact": "None. Read-only AST parsing that never imports application code; check_no_application_imports continues to police the tool itself.",
+  "summary": "AST import graph over backend/app and enforcement of four phase-6 rules",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "169 tests - 13 import-graph extractor tests incl. namespace packages, relative imports, TYPE_CHECKING/deferred classification, dynamic-site recording, parse-error-as-unknown; 15 check tests incl. mutate-red fixtures per rule and property-pinned real-tree assertions",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "36 checks run, 15 deferred (was 19); layering and forbidden-dependency clean on the real tree; facade reports email 2 bypasses + rag missing-facade with 11 deep importers",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

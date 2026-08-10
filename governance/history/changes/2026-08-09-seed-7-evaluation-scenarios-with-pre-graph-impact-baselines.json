@@ -1,0 +1,50 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None to existing behavior. New test modules and goldens; the replay harness calls analyse_impact in-process and pins its current answers, so any future impact change must either match the goldens or update them deliberately.",
+  "date": "2026-08-09",
+  "files_changed": [
+    "tools/repo_governance/tests/golden/impact-baselines/",
+    "tools/repo_governance/tests/scenario_contract.py",
+    "tools/repo_governance/tests/scenario_replay.py",
+    "tools/repo_governance/tests/scenarios/README.md",
+    "tools/repo_governance/tests/scenarios/add-route-and-proxy.json",
+    "tools/repo_governance/tests/scenarios/hist-governance-sampler.json",
+    "tools/repo_governance/tests/scenarios/hist-new-chat-new-conversation.json",
+    "tools/repo_governance/tests/scenarios/hist-stop-check-reconcile.json",
+    "tools/repo_governance/tests/scenarios/introduce-dependency-cycle.json",
+    "tools/repo_governance/tests/scenarios/move-governed-subsystem.json",
+    "tools/repo_governance/tests/scenarios/rename-env-var.json",
+    "tools/repo_governance/tests/test_scenarios.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-09-seed-7-evaluation-scenarios-with-pre-graph-impact-baselines",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "The phase-6 exit criterion is a before/after comparison on the evaluation scenarios; the before side must be captured while impact is still purely manifest-driven, and the scenarios README contract has had no instances since inception",
+  "risks": [],
+  "rollback": "Revert the commit; scenarios, harness, and goldens are self-contained under tools/repo_governance/tests/.",
+  "schema_version": 1,
+  "security_impact": "None. Test-side scenario declarations and committed baseline snapshots of impact output; no runtime code changed, no secrets, component and validator names only.",
+  "summary": "Seed 7 evaluation scenarios with pre-graph impact baselines",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

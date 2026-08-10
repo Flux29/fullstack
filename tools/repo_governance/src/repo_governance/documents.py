@@ -262,17 +262,26 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
         "$id": "fullstack-governance:internal/read-surface/v1",
         "type": "object",
         "additionalProperties": False,
-        "required": ["schema_version", "provenance", "default_modes", "corpus", "repo"],
+        "required": ["schema_version", "provenance", "default_modes", "breadth", "corpus", "repo"],
         "properties": {
             "schema_version": {"const": 1},
             "provenance": _PROVENANCE,
             "default_modes": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["corpus", "repo"],
+                "required": ["breadth", "corpus", "repo"],
                 "properties": {
+                    "breadth": {"enum": ["off", "warn", "deny"]},
                     "corpus": {"enum": ["off", "warn", "deny"]},
                     "repo": {"enum": ["off", "warn", "deny"]},
+                },
+            },
+            "breadth": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["roots"],
+                "properties": {
+                    "roots": {"type": "array", "items": {"type": "string"}},
                 },
             },
             "corpus": {

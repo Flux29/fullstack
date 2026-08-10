@@ -27,9 +27,22 @@ protected_paths = [
 # governance/manifests/generated/read-surface.json. The PreToolUse hook script reads that
 # artifact, never this file. The gate is steering, not a security boundary: it fails open
 # on any uncertainty and denies only on positive evidence. Modes: off | warn | deny.
-# The GOVERNANCE_GATE environment variable (user-set, outside agent reach) overrides both.
+# The GOVERNANCE_GATE environment variable (user-set, outside agent reach) overrides all.
 mode_corpus = "deny"
-mode_repo = "warn"
+mode_repo = "deny"
+mode_breadth = "deny"
+# Discovery sweeps: a Glob/Grep whose enumeration root is one of these is navigation by
+# exhaustive search rather than by the map. Denied until one scoped `governance context`
+# or `governance impact` query has been recorded this session (the PostToolUse marker);
+# a search rooted inside a component directory is never breadth-gated.
+breadth_roots = [
+  ".",
+  "backend",
+  "backend/app",
+  "frontend",
+  "frontend/src",
+  "tools",
+]
 # Bulk enumeration (Glob/Grep) under these roots is answered by queries, not reads:
 # `governance context | impact | explain`. Reads of one named file stay allowed.
 corpus_gated_roots = [

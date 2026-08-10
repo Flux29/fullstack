@@ -25,7 +25,8 @@ from repo_governance.io_atomic import canonical_json
 SYNTHETIC_SURFACE = {
     "schema_version": 1,
     "provenance": {"method": "extracted", "extractor_version": "1.0.0"},
-    "default_modes": {"corpus": "warn", "repo": "warn"},
+    "default_modes": {"breadth": "deny", "corpus": "warn", "repo": "warn"},
+    "breadth": {"roots": [".", "backend"]},
     "corpus": {
         "gated_roots": ["governance/history/", "governance/manifests/"],
         "bounded_surfaces": ["governance/catalog.json", "governance/schemas/"],
@@ -187,6 +188,88 @@ def test_literal_bracket_segments_match_as_prefixes_not_charclasses(gate, monkey
     assert "systemMessage" not in output
 
 
+# --- the breadth surface: navigate by the map, then search ----------------------------
+
+
+def _record_context(module, monkeypatch, command: str, session: str = "s1") -> None:
+    event = {"session_id": session, "tool_name": "Bash", "tool_input": {"command": command}}
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(event)))
+    monkeypatch.setattr(sys, "argv", ["governance_gate.py", "--record-context"])
+    module.main()
+
+
+def test_a_repo_root_sweep_is_denied_before_any_scoped_query(gate, monkeypatch, capsys) -> None:
+    output = _run_gate(gate, monkeypatch, capsys, _grep("."))
+    assert _decision(output) == "deny"
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert "discovery sweep" in reason
+    assert "governance-context" in reason
+
+
+def test_a_top_level_sweep_is_denied_before_any_scoped_query(gate, monkeypatch, capsys) -> None:
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _decision(output) == "deny"
+    assert "governance-impact" in output["hookSpecificOutput"]["permissionDecisionReason"]
+
+
+def test_a_component_scoped_search_is_never_breadth_gated(gate, monkeypatch, capsys) -> None:
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend/app"))
+    assert _decision(output) == "allow"
+    assert "systemMessage" not in output
+
+
+def test_one_scoped_query_unlocks_broad_search_for_the_session(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "make governance-context PATHS=backend/app TASK=fix")
+    capsys.readouterr()
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _decision(output) == "allow"
+
+
+def test_the_unlock_is_per_session_not_global(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "make governance-context PATHS=backend TASK=x", session="s1")
+    capsys.readouterr()
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend", session="s2"))
+    assert _decision(output) == "deny"
+
+
+def test_an_impact_query_also_unlocks(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "uv run --project tools/repo_governance governance impact --paths x")
+    capsys.readouterr()
+    output = _run_gate(gate, monkeypatch, capsys, _grep(".", session="s1"))
+    assert _decision(output) == "allow"
+
+
+def test_unrelated_bash_commands_do_not_unlock(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "git status && make lint")
+    capsys.readouterr()
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _decision(output) == "deny"
+
+
+def test_record_context_swallows_malformed_events(gate, monkeypatch, capsys) -> None:
+    monkeypatch.setattr(sys, "stdin", io.StringIO("not json"))
+    monkeypatch.setattr(sys, "argv", ["governance_gate.py", "--record-context"])
+    gate.main()
+    assert json.loads(capsys.readouterr().out) == {}
+
+
+def test_a_pre_breadth_artifact_leaves_the_rule_inert_not_degraded(gate, monkeypatch, capsys) -> None:
+    """An artifact synced before the breadth surface existed lacks the section entirely;
+    the gate must not brick or degrade — the rule simply does not fire until re-sync."""
+    surface = {key: value for key, value in SYNTHETIC_SURFACE.items() if key != "breadth"}
+    surface["default_modes"] = {"corpus": "warn", "repo": "warn"}
+    Path(gate.ARTIFACT_PATH).write_text(canonical_json(surface), encoding="utf-8")
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _decision(output) == "allow"
+    assert "systemMessage" not in output
+
+
+def test_breadth_respects_the_env_override(gate, monkeypatch, capsys) -> None:
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"), mode="warn")
+    assert _decision(output) == "allow"
+    assert "discovery sweep" in output.get("systemMessage", "")
+
+
 # --- fail-open: everything between the rungs degrades to a visible allow --------------
 
 
@@ -235,7 +318,7 @@ def test_selftest_reports_healthy_then_degraded(gate, monkeypatch, capsys) -> No
     gate.selftest()
     healthy = json.loads(capsys.readouterr().out)
     assert healthy["gate"] == "healthy"
-    assert healthy["modes"] == {"corpus": "warn", "repo": "warn"}
+    assert healthy["modes"] == {"breadth": "deny", "corpus": "warn", "repo": "warn"}
 
     Path(gate.ARTIFACT_PATH).unlink()
     with pytest.raises(SystemExit) as excinfo:
@@ -411,7 +494,9 @@ def test_bracketed_ownership_globs_compile_to_prefixes(real_context: Context) ->
     prefixes = surface["repo"]["dir_prefixes"]
     assert "frontend/src/app/[locale]/(dashboard)/chat/" in prefixes
     assert all(not prefix.endswith("**") for prefix in prefixes)
-    assert surface["default_modes"] == {"corpus": "deny", "repo": "warn"}
+    assert surface["default_modes"] == {"breadth": "deny", "corpus": "deny", "repo": "deny"}
+    assert "." in surface["breadth"]["roots"]
+    assert "backend" in surface["breadth"]["roots"]
 
 
 def test_declared_but_absent_catalog_paths_stay_out_of_the_surface(real_context: Context) -> None:

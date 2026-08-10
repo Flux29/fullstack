@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 34)
+## Recent changes (latest 20 of 35)
 
+- **2026-08-10** — Read-gate hardening: breadth rule with context-first unlock; repo surface warn to deny
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-10-read-gate-hardening-breadth-rule-with-context-first-unlock-repo.json`
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-08** — Phase 4: read-surface coverage verifier, CI gate smoke, corpus deny flip
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-08-phase-4-read-surface-coverage-verifier-ci-gate-smoke-corpus-deny.json`
-- **2026-08-08** — Hook-enforced governance: read-surface artifact, gate scripts, session and stop hooks
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-08-hook-enforced-governance-read-surface-artifact-gate-scripts-sess.json`
 
 ## Decisions (5)
 

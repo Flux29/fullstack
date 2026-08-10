@@ -54,7 +54,8 @@ consolidation, dead-code deletion → **`refactor-governed`**. Its contract is a
 and untouched tests.
 
 **Yes — something is wrong and should behave differently.** → **`fix-issue`** inside
-`gov-change`, regression test first. If the cause is not yet understood, run
+`gov-change`, regression test first. A symptom from a **running deployment** starts at
+**`prod-debug`** (Logfire traces before code); a cause not yet understood locally runs
 `engineering:debug` before `fix-issue`.
 
 **Yes — new capability.** Route by surface:
@@ -62,10 +63,12 @@ and untouched tests.
 | Surface | Skill |
 | --- | --- |
 | Agent tool / PydanticAI toolset | `agent-tool` → validator `agent-evals` |
+| MCP server, per-user connection, OAuth, catalog | `mcp-connection` + `security-review` |
 | Taskiq job, schedule, webhook, email | `background-task` |
 | Next.js page, view, store, i18n | `frontend-feature` |
 | DB schema, column, index, backfill | `alembic-migration` → validator `migrations` |
 | Tests for existing code | `pytest-suite`, planned with `engineering:testing-strategy` |
+| End-to-end proof of a user flow | `e2e-playwright` → validator `playwright` |
 | Large multi-layer feature | `engineering:system-design` → `feature-dev:feature-dev`, then `review` |
 
 ## Q6 — Is it infrastructure, config, or governance itself?
@@ -75,7 +78,7 @@ and untouched tests.
 | New or renamed env var | edit source → `governance-sync` regenerates `ENV_VARS.md` (never hand-edit) → `compose-check` |
 | Compose / profile / service | `gov-change` → `compose-check` → `preflight-ports`, `preflight-volumes` → `compose-check-prod` |
 | Curated manifest, exception, ADR | `gov-change`; generated manifests are rebuilt, never edited |
-| Template upgrade | `make upgrade-dry-run` → `engineering:architecture` → `make upgrade` → full validator sweep |
+| Template upgrade | `template-upgrade` (dry-run → classify against ownership provenance → sweep) |
 | CLAUDE.md, hooks, skills | `gov-change` + `claude-md-management:claude-md-improver` / `hookify:hookify` / `skill-creator` |
 
 ## Cross-cutting passes
@@ -86,7 +89,8 @@ These attach to a branch above rather than replacing it:
   user-supplied input reaching a query.
 - `simplify` then `review` — the standard tail of every code-touching branch.
 - `engineering:code-review` — a second, adversarial pass when the change is risky.
-- `commit-commands:commit` — **after** `governance-change-finish`, never before.
+- `ship` — the close of every branch: commit **after** `governance-change-finish`,
+  push, and the PR flow when asked. It carries the single-branch rules.
 
 ## Composition rules
 

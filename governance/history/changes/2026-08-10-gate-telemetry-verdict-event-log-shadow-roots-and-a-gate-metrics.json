@@ -1,0 +1,59 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "read-surface.json breadth section gains shadow_roots and the internal schema requires it, so a pre-change artifact fails validation until governance-sync regenerates - the standard stale-manifest repair. The gate tolerates artifacts without the key (empty shadow set). events.jsonl is a new additive session-state file; sessions predating it are reported as without-telemetry by gate-metrics, never guessed at. No application code or HTTP contract changes.",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".claude/hooks/governance_gate.py",
+    "Makefile",
+    "governance/governance.toml",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/hooks.py",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [
+    "Phase 1: offline scenario harness (off/warn/deny arms) per the efficacy design; promote or demote roots only from gate-metrics evidence via evaluation records in governance/history/evaluations/."
+  ],
+  "id": "2026-08-10-gate-telemetry-verdict-event-log-shadow-roots-and-a-gate-metrics",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Telemetry only accumulates in sessions started after the settings snapshot includes the recorder; the metrics denominator grows as old sessions age out."
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The breadth gate shipped enforcing but blind: deny verdicts leave no session-state trace, so deny rates per root, compliance after a denial, sweep decomposition, and marker-before-denial habits are all unmeasurable, and the [gate] roots list can only be tuned by guesswork. An ordered per-session event log, would-fire logging for candidate shadow roots that never deny, and an aggregation command turn tuning into evidence while keeping every loosening decision on the human side of the kernel ratchet.",
+  "risks": [],
+  "rollback": "Revert governance.toml breadth_shadow_roots, the gate script telemetry appends, builders.py, documents.py, hooks.py gate_metrics_report, the cli.py gate-metrics command, the Makefile target, and the test additions, then make governance-sync. Residual events.jsonl files in .cache are inert gitignored data; delete .cache/repo-governance/hooks/*/events.jsonl to purge. GOVERNANCE_GATE=off disables both enforcement and telemetry immediately without file changes.",
+  "schema_version": 1,
+  "security_impact": "None additional. Telemetry records only repo-relative paths, verdict decisions, and the first 200 characters of governance query command lines, all inside the existing gitignored session-state cache; no file contents, no values. Shadow roots never deny, so no permission narrows or broadens at runtime; promoting a shadow root to enforcement remains a governed kernel change. gate-metrics is read-only over the cache.",
+  "summary": "Gate telemetry: verdict event log, shadow roots, and a gate-metrics aggregation command",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "212 tests including 8 new telemetry and aggregation cases",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run post-finish, see record follow-up",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

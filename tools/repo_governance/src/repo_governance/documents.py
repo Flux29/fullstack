@@ -279,9 +279,10 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
             "breadth": {
                 "type": "object",
                 "additionalProperties": False,
-                "required": ["roots"],
+                "required": ["roots", "shadow_roots"],
                 "properties": {
                     "roots": {"type": "array", "items": {"type": "string"}},
+                    "shadow_roots": {"type": "array", "items": {"type": "string"}},
                 },
             },
             "corpus": {

@@ -37,6 +37,12 @@ ARTIFACT_PATH = os.path.join(REPO_ROOT, "governance", "manifests", "generated", 
 STATE_ROOT = os.path.join(REPO_ROOT, ".cache", "repo-governance", "hooks")
 SUPPORTED_SCHEMA_VERSION = 1
 STATE_ENTRY_CAP = 500
+# The ordered per-session telemetry that `governance gate-metrics` aggregates: every
+# enumeration verdict (allows included — decomposition detection needs them), shadow-root
+# would-fires, non-allow read verdicts, and the unlock event. Appends stop at the byte cap
+# so a pathological session degrades to truncated telemetry, never to slow reads.
+EVENTS_NAME = "events.jsonl"
+EVENTS_BYTE_CAP = 262_144
 
 QUERY_INSTEAD = (
     "The governance corpus is queried, not bulk-read: `make governance-context PATHS=... TASK=...`, "
@@ -102,6 +108,10 @@ class Surface:
         self.breadth_roots = {
             "" if folded == "." else folded
             for folded in (_fold(str(root)).rstrip("/") for root in breadth.get("roots", ()))
+        }
+        self.shadow_roots = {
+            "" if folded == "." else folded
+            for folded in (_fold(str(root)).rstrip("/") for root in breadth.get("shadow_roots", ()))
         }
         self.gated_roots = [_fold(root) for root in corpus["gated_roots"]]
         self.bounded = [_fold(item) for item in corpus["bounded_surfaces"]]
@@ -173,6 +183,18 @@ class SessionState:
     def seen_any(self, name: str) -> bool:
         return bool(self._load(name))
 
+    def append(self, name: str, record: dict) -> None:
+        """Append one telemetry line, capped by file size, swallowing every failure."""
+        try:
+            os.makedirs(self.directory, exist_ok=True)
+            path = os.path.join(self.directory, name)
+            if os.path.exists(path) and os.path.getsize(path) >= EVENTS_BYTE_CAP:
+                return
+            with open(path, "a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record) + "\n")
+        except Exception:
+            pass
+
 
 def _respond(decision: str | None = None, reason: str = "", system_message: str = "") -> None:
     output: dict = {}
@@ -236,7 +258,8 @@ def record_context() -> None:
         command = str((event.get("tool_input") or {}).get("command") or "")
         if CONTEXT_QUERY.search(command):
             state = SessionState(str(event.get("session_id") or "unknown"))
-            state.first_occurrence("context.json", "query", command[:200])
+            if state.first_occurrence("context.json", "query", command[:200]):
+                state.append(EVENTS_NAME, {"kind": "unlock"})
     except Exception:
         pass
     print("{}")
@@ -288,6 +311,7 @@ def main() -> None:
             if rel is None or _fold(rel).startswith("governance/") or surface.repo_allows_file(rel):
                 _respond("allow")
                 return
+            state.append(EVENTS_NAME, {"kind": "read", "path": rel, "decision": repo_mode})
             _verdict(state, repo_mode, "repo", rel, f"{rel} is outside the governed read surface", REGISTER_INSTEAD)
             return
 
@@ -311,12 +335,15 @@ def main() -> None:
                 if _fold(rel).startswith("governance/") or surface.repo_allows_file(rel):
                     _respond("allow")
                     return
+                state.append(EVENTS_NAME, {"kind": "read", "path": rel, "decision": repo_mode})
                 _verdict(
                     state, repo_mode, "repo", rel, f"{rel} is outside the governed read surface", REGISTER_INSTEAD
                 )
                 return
+            display = rel or "."
             gated = surface.corpus_gate_for(rel)
             if gated:
+                state.append(EVENTS_NAME, {"kind": "enum", "root": display, "surface": "corpus", "decision": corpus_mode})
                 _verdict(
                     state,
                     corpus_mode,
@@ -327,22 +354,30 @@ def main() -> None:
                 )
                 return
             breadth_mode = env_mode or str(surface.modes.get("breadth", "warn"))
-            if (
-                _fold(rel).rstrip("/") in surface.breadth_roots
-                and not state.seen_any("context.json")
-            ):
+            folded_root = _fold(rel).rstrip("/")
+            unlocked = state.seen_any("context.json")
+            if folded_root in surface.breadth_roots and not unlocked:
+                state.append(
+                    EVENTS_NAME, {"kind": "enum", "root": display, "surface": "breadth", "decision": breadth_mode}
+                )
                 _verdict(
                     state,
                     breadth_mode,
                     "breadth",
-                    rel or ".",
+                    display,
                     f"discovery sweep rooted at {rel or 'the repository root'} before any scoped governance query",
                     CONSULT_INSTEAD,
                 )
                 return
+            # Shadow candidates mirror enforcement semantics (pre-unlock only) but never
+            # alter the verdict: they exist purely as would-fire evidence for tuning.
+            if folded_root in surface.shadow_roots and not unlocked:
+                state.append(EVENTS_NAME, {"kind": "shadow", "root": display})
             if surface.repo_allows_root(rel):
+                state.append(EVENTS_NAME, {"kind": "enum", "root": display, "decision": "allow"})
                 _respond("allow")
                 return
+            state.append(EVENTS_NAME, {"kind": "enum", "root": display, "surface": "repo", "decision": repo_mode})
             _verdict(state, repo_mode, "repo", rel, f"{rel}/ is outside the governed read surface", REGISTER_INSTEAD)
             return
 

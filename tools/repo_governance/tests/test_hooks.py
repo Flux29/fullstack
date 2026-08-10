@@ -26,7 +26,7 @@ SYNTHETIC_SURFACE = {
     "schema_version": 1,
     "provenance": {"method": "extracted", "extractor_version": "1.0.0"},
     "default_modes": {"breadth": "deny", "corpus": "warn", "repo": "warn"},
-    "breadth": {"roots": [".", "backend"]},
+    "breadth": {"roots": [".", "backend"], "shadow_roots": [".claude"]},
     "corpus": {
         "gated_roots": ["governance/history/", "governance/manifests/"],
         "bounded_surfaces": ["governance/catalog.json", "governance/schemas/"],
@@ -270,6 +270,107 @@ def test_breadth_respects_the_env_override(gate, monkeypatch, capsys) -> None:
     assert "discovery sweep" in output.get("systemMessage", "")
 
 
+# --- telemetry: the ordered event log gate-metrics aggregates -------------------------
+
+
+def _events(module, session: str = "s1") -> list[dict]:
+    path = Path(module.STATE_ROOT) / session / "events.jsonl"
+    if not path.is_file():
+        return []
+    return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
+
+
+def test_a_breadth_denial_is_logged_as_an_event(gate, monkeypatch, capsys) -> None:
+    _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _events(gate) == [{"kind": "enum", "root": "backend", "surface": "breadth", "decision": "deny"}]
+
+
+def test_allowed_enumerations_are_logged_for_decomposition_detection(gate, monkeypatch, capsys) -> None:
+    _run_gate(gate, monkeypatch, capsys, _grep("backend/app"))
+    assert _events(gate) == [{"kind": "enum", "root": "backend/app", "decision": "allow"}]
+
+
+def test_the_unlock_event_is_logged_once_not_per_query(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "make governance-context PATHS=a TASK=b")
+    _record_context(gate, monkeypatch, "make governance-impact PATHS=a")
+    capsys.readouterr()
+    assert _events(gate) == [{"kind": "unlock"}]
+
+
+def test_a_shadow_root_logs_would_fire_but_still_allows(gate, monkeypatch, capsys) -> None:
+    output = _run_gate(gate, monkeypatch, capsys, _grep(".claude"))
+    assert _decision(output) == "allow"
+    assert "systemMessage" not in output
+    assert _events(gate) == [
+        {"kind": "shadow", "root": ".claude"},
+        {"kind": "enum", "root": ".claude", "decision": "allow"},
+    ]
+
+
+def test_shadow_logging_stops_after_unlock_to_mirror_enforcement(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "make governance-context PATHS=a TASK=b")
+    capsys.readouterr()
+    _run_gate(gate, monkeypatch, capsys, _grep(".claude"))
+    kinds = [event["kind"] for event in _events(gate)]
+    assert "shadow" not in kinds
+
+
+def test_the_event_log_respects_the_byte_cap(gate, monkeypatch, capsys) -> None:
+    monkeypatch.setattr(gate, "EVENTS_BYTE_CAP", 1)
+    _run_gate(gate, monkeypatch, capsys, _grep("backend/app"))
+    _run_gate(gate, monkeypatch, capsys, _grep("backend/app"))
+    assert len(_events(gate)) == 1  # the first append lands, the cap stops the second
+
+
+# --- gate-metrics: aggregation over synthetic session state ---------------------------
+
+
+def _write_session_events(root: Path, session: str, events: list[dict]) -> None:
+    directory = root / session
+    directory.mkdir(parents=True, exist_ok=True)
+    lines = "".join(json.dumps(event) + "\n" for event in events)
+    (directory / "events.jsonl").write_text(lines, encoding="utf-8")
+
+
+def test_gate_metrics_aggregates_compliance_decomposition_and_map_first(minimal_repo: Path) -> None:
+    from repo_governance.hooks import gate_metrics_report
+
+    ctx = Context.discover(minimal_repo)
+    hooks_root = ctx.paths.cache / "hooks"
+    deny = {"kind": "enum", "root": "backend", "surface": "breadth", "decision": "deny"}
+    scoped = {"kind": "enum", "root": "backend/app/api", "decision": "allow"}
+    # A: denied, complied, swept after unlock — compliant, not decomposed.
+    _write_session_events(hooks_root, "a", [deny, {"kind": "unlock"}, scoped, scoped, scoped])
+    # B: denied, never unlocked, simulated the sweep with scoped searches — decomposed.
+    _write_session_events(hooks_root, "b", [deny, scoped, scoped, scoped])
+    # C: queried the map before ever tripping the gate — the convergence signal.
+    _write_session_events(hooks_root, "c", [{"kind": "unlock"}, scoped])
+    # D: a shadow would-fire and a pre-telemetry session directory.
+    _write_session_events(hooks_root, "d", [{"kind": "shadow", "root": "backend/app/services"}])
+    (hooks_root / "e").mkdir(parents=True, exist_ok=True)
+
+    report = gate_metrics_report(ctx)
+
+    assert report["sessions"]["with_telemetry"] == 4
+    assert report["sessions"]["without_telemetry"] == 1
+    assert report["breadth"]["deny_counts_by_root"] == {"backend": 2}
+    assert report["breadth"]["sessions_with_denials"] == 2
+    assert report["breadth"]["complied_after_denial"] == 1
+    assert report["breadth"]["never_unlocked"] == 1
+    assert report["breadth"]["median_events_to_unlock"] == 0
+    assert report["breadth"]["decomposed_sessions"] == 1
+    assert report["breadth"]["map_first_sessions"] == 1
+    assert report["shadow_would_fire_by_root"] == {"backend/app/services": 1}
+
+
+def test_gate_metrics_is_empty_calm_when_no_state_exists(minimal_repo: Path) -> None:
+    from repo_governance.hooks import gate_metrics_report
+
+    report = gate_metrics_report(Context.discover(minimal_repo))
+    assert report["sessions"] == {"with_telemetry": 0, "without_telemetry": 0, "degraded": 0}
+    assert report["breadth"]["sessions_with_denials"] == 0
+
+
 # --- fail-open: everything between the rungs degrades to a visible allow --------------
 
 
@@ -497,6 +598,7 @@ def test_bracketed_ownership_globs_compile_to_prefixes(real_context: Context) ->
     assert surface["default_modes"] == {"breadth": "deny", "corpus": "deny", "repo": "deny"}
     assert "." in surface["breadth"]["roots"]
     assert "backend" in surface["breadth"]["roots"]
+    assert "backend/app/services" in surface["breadth"]["shadow_roots"]
 
 
 def test_declared_but_absent_catalog_paths_stay_out_of_the_surface(real_context: Context) -> None:

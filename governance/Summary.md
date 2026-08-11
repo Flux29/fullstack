@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 56)
+## Recent changes (latest 20 of 57)
 
+- **2026-08-11** — Build the services/rag facade and migrate callers to it
+  - Components: agent-operating-surface, agents, backend-api, rag
+  - Record: `governance/history/changes/2026-08-11-build-the-services-rag-facade-and-migrate-callers-to-it.json`
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-route-sessions-to-pick-workflow-and-teach-explore-delegating-ski.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Add the prod-debug skill: observability-first debugging through Logfire
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-prod-debug-skill-observability-first-debugging-through-l.json`
-- **2026-08-10** — Add the mcp-connection skill and route the five new skills in pick-workflow
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-add-the-mcp-connection-skill-and-route-the-five-new-skills-in-pi.json`
 
 ## Decisions (5)
 

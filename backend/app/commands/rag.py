@@ -24,14 +24,18 @@ from app.commands import command, error, info, success, warning
 from app.core.config import settings as app_settings
 from app.db.session import get_db_context
 from app.schemas.sync_source import SyncSourceCreate
-from app.services.rag.config import DocumentExtensions, RAGSettings
-from app.services.rag.documents import DocumentProcessor
-from app.services.rag.embeddings import get_embedding_service
-from app.services.rag.ingestion import IngestionService
-from app.services.rag.retrieval import RetrievalService
-from app.services.rag.sources.google_drive import GoogleDriveSource
-from app.services.rag.sources.s3 import S3Source
-from app.services.rag.vectorstore import BaseVectorStore, PgVectorStore
+from app.services.rag import (
+    BaseVectorStore,
+    DocumentExtensions,
+    DocumentProcessor,
+    GoogleDriveSource,
+    IngestionService,
+    PgVectorStore,
+    RAGSettings,
+    RetrievalService,
+    S3Source,
+    get_embedding_service,
+)
 from app.services.rag_document import RAGDocumentService
 from app.services.rag_sync import RAGSyncService
 from app.services.sync_source import SyncSourceService

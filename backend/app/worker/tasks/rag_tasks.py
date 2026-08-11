@@ -14,13 +14,15 @@ from app.worker.taskiq_app import broker
 from app.core.config import settings
 from app.db.session import get_worker_db_context
 from app.repositories import sync_source as sync_source_repo
-from app.services.rag.config import DocumentExtensions
-from app.services.rag.connectors import CONNECTOR_REGISTRY
-from app.services.rag.documents import DocumentProcessor
-from app.services.rag.embeddings import get_embedding_service
-from app.services.rag.ingestion import IngestionService
+from app.services.rag import (
+    CONNECTOR_REGISTRY,
+    DocumentExtensions,
+    DocumentProcessor,
+    IngestionService,
+    PgVectorStore,
+    get_embedding_service,
+)
 from app.services.sync_source import SyncSourceService
-from app.services.rag.vectorstore import PgVectorStore as VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,7 @@ def _build_ingestion_service() -> IngestionService:
         return _ingestion_service
     rag_settings = settings.rag
     embed_service = get_embedding_service(rag_settings)
-    vector_store = VectorStore(settings=rag_settings, embedding_service=embed_service)
+    vector_store = PgVectorStore(settings=rag_settings, embedding_service=embed_service)
     processor = DocumentProcessor(settings=rag_settings)
     _ingestion_service = IngestionService(processor=processor, vector_store=vector_store)
     return _ingestion_service

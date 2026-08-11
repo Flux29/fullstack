@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import settings
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.db.models.rag_document import RAGDocument
-from app.services.rag.config import get_supported_formats
+from app.services.rag import get_supported_formats
 from app.repositories import rag_document_repo
 from app.schemas.rag import RAGIngestResponse, RAGTrackedDocumentItem, RAGTrackedDocumentList
 from app.services.file_storage import get_file_storage

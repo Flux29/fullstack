@@ -28,7 +28,7 @@ _chat_docling_parser: Any = None
 def _get_chat_docling_parser() -> Any:
     global _chat_docling_parser
     if _chat_docling_parser is None:
-        from app.services.rag.documents import DoclingServeParser
+        from app.services.rag import DoclingServeParser
 
         pdf = settings.rag.pdf_parser
         _chat_docling_parser = DoclingServeParser(

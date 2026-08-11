@@ -1,23 +1,23 @@
 """RAG tool for agent knowledge base search."""
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from app.core.config import settings
 from app.core.exceptions import ExternalServiceError
-from app.services.rag.embeddings import get_embedding_service
-from app.services.rag.retrieval import RetrievalService
-from app.services.rag.vectorstore import PgVectorStore
+from app.services.rag import (
+    BaseRetrievalService,
+    PgVectorStore,
+    RetrievalService,
+    get_embedding_service,
+)
 
 logger = logging.getLogger(__name__)
 
-if TYPE_CHECKING:
-    from app.services.rag.retrieval import BaseRetrievalService
-
-_retrieval_service: "BaseRetrievalService | None" = None
+_retrieval_service: BaseRetrievalService | None = None
 
 
-def get_retrieval_service() -> "BaseRetrievalService":
+def get_retrieval_service() -> BaseRetrievalService:
     """Get or create retrieval service singleton."""
     global _retrieval_service
     if _retrieval_service is not None:

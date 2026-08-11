@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
-import { BackendApiError, backendFetch, COOKIE_SECURE } from "@/lib/server-api";
+import { setAuthCookies } from "@/lib/auth-cookies";
+import { BackendApiError, backendFetch } from "@/lib/server-api";
 
 interface TokenResponse {
   access_token: string;
@@ -26,19 +27,9 @@ export async function POST(request: NextRequest) {
       message: "Sign-in successful",
     });
 
-    response.cookies.set("access_token", data.access_token, {
-      httpOnly: true,
-      secure: COOKIE_SECURE,
-      sameSite: "lax",
-      maxAge: 60 * 15,
-      path: "/",
-    });
-    response.cookies.set("refresh_token", data.refresh_token, {
-      httpOnly: true,
-      secure: COOKIE_SECURE,
-      sameSite: "lax",
-      maxAge: 60 * 60 * 24 * 7,
-      path: "/",
+    setAuthCookies(response, {
+      accessToken: data.access_token,
+      refreshToken: data.refresh_token,
     });
     return response;
   } catch (error) {

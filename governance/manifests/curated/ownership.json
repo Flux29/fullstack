@@ -197,6 +197,55 @@
       "status": "locally-diverged",
       "on_upgrade": "classify-conflict",
       "reason": "Extended with the proxy-hop contract check and frontend conventions; the shipped version reviewed only the backend."
+    },
+    {
+      "path": "Makefile",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "PowerShell-first operational entry point carrying the governance targets, the compose file-stack matrix, and the preflight probes. The template ships a generic bash Makefile; resolved in favour of local at the v0.2.19 upgrade."
+    },
+    {
+      "path": "docker-compose.frontend.yml",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Thin compatibility override that layers onto the base compose matrix (profiles, service-egress, localhost bind, COOKIE_SECURE=false). The template ships a standalone host-network variant that would break the matrix; resolved local at v0.2.19."
+    },
+    {
+      "path": "docker-compose.prod.yml",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Hardened production overlay: pinned traefik digest, required-secret guards, localhost-bound dashboard, password-carrying Redis URLs, edge profile. Template variant is the older generic; resolved local at v0.2.19."
+    },
+    {
+      "path": "backend/app/main.py",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Carries the shared embedding/reranker singleton lifecycle (async warmup, close hooks, docling parser shutdown) and the fastapi-pagination signature shim. Template variant constructs per-instance services; resolved local at v0.2.19."
+    },
+    {
+      "path": "backend/app/api/deps.py",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Pairs with main.py: DI reuses the warmed singleton embedder/reranker. Resolved local at v0.2.19."
+    },
+    {
+      "path": "backend/app/services/agent_session.py",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Carries the deferred-tool approval flow and Google loadout routing the agents component declares as invariants. The template variant predates both and would delete the approval gate; always resolve in favour of local."
+    },
+    {
+      "path": "README.md",
+      "origin": "generator",
+      "status": "locally-diverged",
+      "on_upgrade": "classify-conflict",
+      "reason": "Kept local at v0.2.19 (Traefik deployment path, accurate Vercel env list ported from upstream). The template variant documents an nginx flow this repository does not ship."
     }
   ],
   "internal_schemas": [

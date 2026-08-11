@@ -30,7 +30,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.post("/login", response_model=Token)
+@router.post(
+    "/login",
+    response_model=Token,
+)
 async def login(
     request: Request,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -52,7 +55,11 @@ async def login(
     return Token(access_token=access_token, refresh_token=refresh_token)
 
 
-@router.post("/register", response_model=UserRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/register",
+    response_model=UserRead,
+    status_code=status.HTTP_201_CREATED,
+)
 async def register(
     user_in: UserCreate,
     user_service: UserSvc,
@@ -110,7 +117,10 @@ async def get_current_user_info(current_user: CurrentUser) -> Any:
     return current_user
 
 
-@router.post("/password-reset/request", response_model=PasswordResetResponse)
+@router.post(
+    "/password-reset/request",
+    response_model=PasswordResetResponse,
+)
 async def request_password_reset(
     body: PasswordResetRequest,
     user_service: UserSvc,
@@ -145,7 +155,10 @@ async def confirm_password_reset(
     return PasswordResetConfirmResponse()
 
 
-@router.post("/magic-link/request", response_model=PasswordResetResponse)
+@router.post(
+    "/magic-link/request",
+    response_model=PasswordResetResponse,
+)
 async def request_magic_link(
     body: MagicLinkRequest,
     user_service: UserSvc,

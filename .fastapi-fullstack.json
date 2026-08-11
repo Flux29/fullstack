@@ -1,12 +1,12 @@
 {
   "template": "https://github.com/vstorm-co/full-stack-ai-agent-template",
-  "template_ref": "0.2.17",
-  "package_version": "0.2.17",
+  "template_ref": "0.2.19",
+  "package_version": "0.2.19",
   "generator_name": "fastapi-fullstack",
   "generator_version": "0.2.17",
   "generated_at": "2026-07-31T17:23:40.171144+00:00",
   "commit": null,
-  "context_hash": "sha256:a5e06fa76d2daa119a5c4845273a5d2f27e14d64e2e9845b4cb9abf5567dd6b9",
+  "context_hash": "sha256:166647a73c2eb4b339e58501a487afe4e7bb235861b7e10118a569e4fbf0bbb0",
   "context": {
     "generator_name": "fastapi-fullstack",
     "generator_version": "0.2.17",
@@ -210,6 +210,7 @@
     "enable_comparison_pages": true,
     "enable_affiliate_program": true,
     "enable_status_badge": true,
-    "enable_storybook": false
+    "enable_storybook": false,
+    "brand_color_hue": "250"
   }
 }

@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 55)
+## Recent changes (latest 20 of 56)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -106,6 +106,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Bring the three commands into the governance era
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-bring-the-three-commands-into-the-governance-era.json`
+- **2026-08-10** — Apply template upgrade v0.2.17 to v0.2.19
+  - Components: backend-api, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-10-apply-template-upgrade-v0-2-17-to-v0-2-19.json`
 - **2026-08-10** — Align the five template-era skills with governance reality
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-align-the-five-template-era-skills-with-governance-reality.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Add the mcp-connection skill and route the five new skills in pick-workflow
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-mcp-connection-skill-and-route-the-five-new-skills-in-pi.json`
-- **2026-08-10** — Add the e2e-playwright skill: end-to-end testing conventions and when the stack is worth it
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-add-the-e2e-playwright-skill-end-to-end-testing-conventions-and.json`
 
 ## Decisions (5)
 

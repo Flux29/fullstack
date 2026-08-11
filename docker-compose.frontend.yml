@@ -5,3 +5,8 @@ services:
     profiles: []
     ports:
       - "127.0.0.1:3000:3000"
+    environment:
+      # This stack serves plain http on localhost; WebKit discards Secure
+      # cookies over http, which silently unauthenticates Safari. The base
+      # (TLS-fronted) stacks keep the production default.
+      COOKIE_SECURE: "false"

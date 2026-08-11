@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 52)
+## Recent changes (latest 20 of 53)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -118,12 +118,12 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Add the e2e-playwright skill: end-to-end testing conventions and when the stack is worth it
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-e2e-playwright-skill-end-to-end-testing-conventions-and.json`
+- **2026-08-10** — Add a COOKIE_SECURE override so the dev-stack frontend works in WebKit
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-10-add-a-cookie-secure-override-so-the-dev-stack-frontend-works-in.json`
 - **2026-08-09** — Test coverage for the sync-source service flow
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-09-test-coverage-for-the-sync-source-service-flow.json`
-- **2026-08-09** — Seed 7 evaluation scenarios with pre-graph impact baselines
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-09-seed-7-evaluation-scenarios-with-pre-graph-impact-baselines.json`
 
 ## Decisions (5)
 

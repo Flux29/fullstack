@@ -1,0 +1,74 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Auth cookies honor a COOKIE_SECURE runtime override, single-sourced in server-api.ts and consumed by all six auth handlers; the dev-stack frontend sets it false, so WebKit browsers stay authenticated over http localhost",
+    "Net-negative in the handlers: thirteen duplicated inline expressions replaced by one constant"
+  ],
+  "compatibility_impact": "Same variable name and semantics as the pending upstream template release, so the future upgrade converges on this instead of conflicting",
+  "date": "2026-08-10",
+  "files_changed": [
+    "ENV_VARS.md",
+    "docker-compose.frontend.yml",
+    "frontend/src/app/api/auth/login/route.ts",
+    "frontend/src/app/api/auth/logout/route.ts",
+    "frontend/src/app/api/auth/magic-link/verify/route.ts",
+    "frontend/src/app/api/auth/me/route.ts",
+    "frontend/src/app/api/auth/oauth-callback/route.ts",
+    "frontend/src/app/api/auth/refresh/route.ts",
+    "frontend/src/lib/server-api.ts",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "follow_up": [
+    "Next fix-issue candidates in order: auth.spec:96 (all browsers), mobile home/nav cluster, webkit auth:25"
+  ],
+  "id": "2026-08-10-add-a-cookie-secure-override-so-the-dev-stack-frontend-works-in",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Remaining 16 e2e failures are separate causes: auth.spec:96 user-menu drift on all browsers, a mobile-viewport home/nav cluster, firefox flake, webkit invalid-credentials timing - each is its own session"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "reason": "The containerized frontend runs a production build, so auth cookies are always Secure while the dev stack serves plain http on localhost - WebKit discards Secure cookies over http, silently unauthenticating Safari and Mobile Safari and failing 14 e2e tests; the fix adopts the COOKIE_SECURE env override the upstream template also introduces, so the pending upgrade converges rather than conflicts",
+  "risks": [],
+  "rollback": "git revert of the single commit, rebuild the frontend image",
+  "schema_version": 1,
+  "security_impact": "Cookies stay Secure by default in production; COOKIE_SECURE=false is set only in the localhost dev override that already binds plain http on 127.0.0.1 - no production surface weakened",
+  "summary": "Add a COOKIE_SECURE override so the dev-stack frontend works in WebKit",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "lint 0 errors, types clean, vitest 23/23",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0 across the file-stack matrix",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "the targeted cluster cleared - all webkit and Mobile Safari chat failures gone; suite moved 29 failed/132 passed to 16 failed/144 passed",
+      "id": "playwright-full",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

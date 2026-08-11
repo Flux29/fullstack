@@ -394,6 +394,24 @@
     },
     {
       "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:frontend",
+        "frontend:frontend/src/lib/server-api.ts"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "COOKIE_SECURE",
+      "required": false,
+      "surface": "frontend",
+      "type": null
+    },
+    {
+      "classification": [
         "runtime"
       ],
       "consumed_by": [],
@@ -1834,8 +1852,7 @@
       "consumed_by": [
         "compose:frontend",
         "frontend:frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
-        "frontend:frontend/src/app/api/auth/login/route.ts",
-        "frontend:frontend/src/app/api/auth/logout/route.ts"
+        "frontend:frontend/src/lib/server-api.ts"
       ],
       "declared_in": [
         "docker-compose.yml"

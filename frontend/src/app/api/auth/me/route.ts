@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, COOKIE_SECURE } from "@/lib/server-api";
 import type { User } from "@/types";
 
 const ACCESS_MAXAGE = 60 * 15; // 15 min
@@ -8,7 +8,7 @@ const REFRESH_MAXAGE = 60 * 60 * 24 * 7; // 7 days
 const cookieOpts = (maxAge: number) =>
   ({
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: COOKIE_SECURE,
     sameSite: "lax" as const,
     maxAge,
     path: "/",

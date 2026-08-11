@@ -181,6 +181,14 @@ update = "sync"
 read_when = "Planning a change that spans the proxy hop, or checking what a page actually touches."
 
 [[catalog]]
+path = "governance/views/definitions.json"
+kind = "manifest-curated"
+description = "The bounded views governance visualize can render: sources, focus semantics, and node budgets."
+authority = "curated"
+update = "manual"
+read_when = "Adding or reshaping a view, or checking what governance visualize can draw."
+
+[[catalog]]
 path = "governance/graph/reports/hotspots.json"
 kind = "manifest-generated"
 description = "Structural centrality rankings per language view, and components whose declared invariants lack test coverage ranked by how central their code is. Churn analysis is cache-only."

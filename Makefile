@@ -216,6 +216,9 @@ governance-summary:
 governance-gate-metrics:
 	$(GOVERNANCE) gate-metrics $(ARGS)
 
+governance-visualize:
+	$(GOVERNANCE) visualize $(VIEW) $(ARGS)
+
 governance-skills-check:
 	$(GOVERNANCE) skills-check $(ARGS)
 

@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 67)
+## Recent changes (latest 20 of 68)
 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
@@ -91,6 +91,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Build the services/rag facade and migrate callers to it
   - Components: agent-operating-surface, agents, backend-api, rag
   - Record: `governance/history/changes/2026-08-11-build-the-services-rag-facade-and-migrate-callers-to-it.json`
+- **2026-08-11** — Build the bounded views and un-defer governance visualize
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-build-the-bounded-views-and-un-defer-governance-visualize.json`
 - **2026-08-11** — Add the TypeScript module graph
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-add-the-typescript-module-graph.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Give the user-menu trigger an accessible name
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-10-give-the-user-menu-trigger-an-accessible-name.json`
-- **2026-08-10** — Gate telemetry: verdict event log, shadow roots, and a gate-metrics aggregation command
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-10-gate-telemetry-verdict-event-log-shadow-roots-and-a-gate-metrics.json`
 
 ## Decisions (5)
 

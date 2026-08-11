@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 57)
+## Recent changes (latest 20 of 58)
 
+- **2026-08-11** — Update governance selftests to the post-facade tree
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-update-governance-selftests-to-the-post-facade-tree.json`
 - **2026-08-11** — Build the services/rag facade and migrate callers to it
   - Components: agent-operating-surface, agents, backend-api, rag
   - Record: `governance/history/changes/2026-08-11-build-the-services-rag-facade-and-migrate-callers-to-it.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Add the ship skill: governed close-out to commit, push, and PR
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-ship-skill-governed-close-out-to-commit-push-and-pr.json`
-- **2026-08-10** — Add the prod-debug skill: observability-first debugging through Logfire
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-add-the-prod-debug-skill-observability-first-debugging-through-l.json`
 
 ## Decisions (5)
 

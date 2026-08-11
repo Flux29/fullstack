@@ -181,11 +181,13 @@ def test_facade_check_skips_importer_covered_by_active_exception(minimal_repo: P
     assert any("no facade" in issue.message for issue in issues)
 
 
-def test_facade_check_on_real_tree_reports_rag_missing_facade(real_context: Context) -> None:
+def test_facade_check_on_real_tree_accepts_rag_and_reports_email_bypass(real_context: Context) -> None:
+    """The ratchet moved on 2026-08-11: services/rag ships its facade and every caller
+    imports through it, so a rag finding here means a regression, not a known gap."""
     issues = check_thick_domain_facades(CheckScope(ctx=real_context))
-    assert any(
-        issue.path == "backend/app/services/rag" and "no facade" in issue.message for issue in issues
-    ), "services/rag has no __init__.py facade; the check must say so"
+    assert not any(issue.path == "backend/app/services/rag" for issue in issues), (
+        "services/rag ships a facade and all callers import through it; a finding here is a regression"
+    )
     assert any("'email'" in issue.message for issue in issues), (
         "the email facade is bypassed (auth.py, user.py); the check must report at least one"
     )

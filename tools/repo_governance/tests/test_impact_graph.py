@@ -16,13 +16,12 @@ from repo_governance.renderers.context import analyse_impact, render_context
 
 
 def test_analyse_impact_expands_backend_seed_with_reverse_importers(real_context: Context) -> None:
+    # Since the 2026-08-11 facade, external callers import the rag package, not
+    # config.py directly - its reverse importers are now the pipeline sub-modules.
     result = analyse_impact(real_context, ["backend/app/services/rag/config.py"])
     assert result.graph_files, "rag config has direct importers; the graph must surface them"
-    assert "backend/app/api/routes/v1/rag.py" in result.graph_files
-    assert "backend-api" in result.components, (
-        "the rag route and core/config.py import rag.config, so backend-api belongs in the "
-        "radius - the recall gap the manifest-only baseline missed"
-    )
+    assert "backend/app/services/rag/vectorstore.py" in result.graph_files
+    assert "rag" in result.components
     assert any(note.startswith("Import graph:") for note in result.notes)
 
 

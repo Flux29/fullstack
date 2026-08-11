@@ -58,6 +58,7 @@
     "backend-lint",
     "backend-unit",
     "frontend-test",
+    "governance-check",
     "migrations",
     "preflight-volumes"
   ]

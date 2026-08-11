@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "id": "change-nextjs-api-consumer",
+  "kind": "synthetic",
+  "title": "Change a Next.js API consumer: the blast radius crosses the proxy",
+  "description": "The file upload client changes shape. Everything that imports it can break, the two proxy handlers it calls are in the chain, and the backend files route is the other end of the contract - a radius that stops at the language boundary reports this as frontend-only and misses the backend surface the change exercises.",
+  "change": {
+    "paths": [
+      "frontend/src/lib/file-api.ts"
+    ],
+    "depth": 1
+  },
+  "expected": {
+    "components": [
+      "frontend-app",
+      "chat-frontend",
+      "backend-api"
+    ],
+    "validators": [
+      "frontend-test",
+      "backend-unit",
+      "governance-check"
+    ],
+    "proxy_routes": [
+      "frontend/src/app/api/files/[id]/route.ts",
+      "frontend/src/app/api/files/upload/route.ts"
+    ],
+    "context_documents": [
+      ".claude/rules/frontend.md"
+    ],
+    "policies": [
+      "api-changes-reach-the-proxy"
+    ],
+    "findings": []
+  },
+  "notes": "The blueprint's evaluation-scenario list names this case; it was unauthored until the phase-6 exit measurement showed the corpus had no frontend-seeded scenario at all, so the cross-language chain had nothing to prove itself on. Expected components are what a reviewer would name: the owning feature, the chat surface that imports the client, and the backend that serves the called routes. The data components the configuration join adds are conservatism, priced as precision."
+}

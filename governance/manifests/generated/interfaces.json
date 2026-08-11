@@ -648,7 +648,7 @@
     {
       "backend_targets": [
         {
-          "path_template": "/api/v1/admin/conversations${qs"
+          "path_template": "/api/v1/admin/conversations"
         }
       ],
       "file": "frontend/src/app/api/admin/conversations/route.ts",
@@ -661,7 +661,7 @@
     {
       "backend_targets": [
         {
-          "path_template": "/api/v1/admin/conversations/users${qs"
+          "path_template": "/api/v1/admin/conversations/users"
         }
       ],
       "file": "frontend/src/app/api/admin/conversations/users/route.ts",
@@ -754,7 +754,7 @@
     {
       "backend_targets": [
         {
-          "path_template": "/api/v1/admin/users${qs"
+          "path_template": "/api/v1/admin/users"
         }
       ],
       "file": "frontend/src/app/api/admin/users/route.ts",
@@ -1002,9 +1002,6 @@
       "backend_targets": [
         {
           "path_template": "/api/v1/conversations"
-        },
-        {
-          "path_template": "/api/v1/conversations${qs"
         }
       ],
       "file": "frontend/src/app/api/conversations/route.ts",
@@ -1031,7 +1028,7 @@
     {
       "backend_targets": [
         {
-          "path_template": "/api/v1/conversations/tool-stats${qs"
+          "path_template": "/api/v1/conversations/tool-stats"
         }
       ],
       "file": "frontend/src/app/api/conversations/tool-stats/route.ts",
@@ -1044,7 +1041,7 @@
     {
       "backend_targets": [
         {
-          "path_template": "/api/v1/files/{param}${qs"
+          "path_template": "/api/v1/files/{param}"
         }
       ],
       "file": "frontend/src/app/api/files/[id]/route.ts",
@@ -1339,7 +1336,7 @@
     {
       "backend_targets": [
         {
-          "path_template": "/api/v1/rag/collections/{param}/ingest${replace"
+          "path_template": "/api/v1/rag/collections/{param}/ingest"
         }
       ],
       "file": "frontend/src/app/api/v1/rag/collections/[name]/ingest/route.ts",

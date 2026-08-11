@@ -142,6 +142,23 @@ def _include_prefixes(ctx: Context, unknowns: list[str]) -> dict[str, str]:
     return prefixes
 
 
+def _own_router_prefix(tree: ast.Module) -> str:
+    """The prefix declared on the module's own ``router = APIRouter(prefix=...)``."""
+    for node in tree.body:
+        if not (isinstance(node, ast.Assign) and isinstance(node.value, ast.Call)):
+            continue
+        if not any(isinstance(t, ast.Name) and t.id == "router" for t in node.targets):
+            continue
+        func = node.value.func
+        name = getattr(func, "id", None) or getattr(func, "attr", None)
+        if name != "APIRouter":
+            continue
+        for keyword in node.value.keywords:
+            if keyword.arg == "prefix" and isinstance(keyword.value, ast.Constant):
+                return str(keyword.value.value)
+    return ""
+
+
 def _extract_routes(ctx: Context, unknowns: list[str]) -> list[ApiRoute]:
     routes_root = ctx.repo_root / ROUTES_DIR
     backend_root = ctx.repo_root / "backend"
@@ -161,7 +178,10 @@ def _extract_routes(ctx: Context, unknowns: list[str]) -> list[ApiRoute]:
                 f"{relative_posix(path, ctx.repo_root)}: not included by the v1 registry; "
                 "its route paths stay router-relative"
             )
-        prefix = prefixes.get(path.stem, "")
+        # FastAPI concatenates both prefixes: include_router(prefix=P) wrapping
+        # APIRouter(prefix=Q) mounts at P + Q. files.py carries its whole prefix on the
+        # router itself and none in the registry.
+        prefix = prefixes.get(path.stem, "") + _own_router_prefix(tree)
         base = f"/api/v1{prefix}" if in_v1 else prefix
 
         for node in ast.walk(tree):

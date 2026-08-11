@@ -13,6 +13,7 @@ backend-only when it also breaks the page that calls it.
 from __future__ import annotations
 
 import fnmatch
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -64,8 +65,8 @@ class Impact:
     findings: list[str] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     unassigned: list[str] = field(default_factory=list)
-    #: Files that import the changed backend modules, from the AST import graph. The
-    #: file-level blast radius the component globs cannot express.
+    #: Files that import the changed modules, from the import graphs of both languages.
+    #: The file-level blast radius the component globs cannot express.
     graph_files: list[str] = field(default_factory=list)
 
 
@@ -128,6 +129,118 @@ def _expand_with_import_graph(ctx: Context, paths: list[str]) -> tuple[list[str]
     return sorted({*paths, *graph_files}), graph_files, notes
 
 
+_TEMPLATE_PARAM = re.compile(r"\{[^}]*\}")
+
+
+def _normalize_template(path: str) -> str:
+    """Parameter segments compare equal whatever their name: `/api/files/{fileId}` and
+    `/api/files/{param}` are the same route."""
+    return _TEMPLATE_PARAM.sub("{}", path.rstrip("/"))
+
+
+def _expand_with_site_chain(ctx: Context, paths: list[str]) -> tuple[list[str], list[str], list[str]]:
+    """Walk touched frontend code to the backend surface it calls through the proxy.
+
+    Chain: touched modules (plus what they import, two waves — the page's client, the
+    client's shared pieces) → the `/api/` paths that code calls → the proxy handlers whose
+    route matches → their backend path templates → the FastAPI route modules those name.
+    Returns ``(extra_paths, ts_files, notes)`` where extra_paths seed the component and
+    Python expansions and ts_files are the frontend review surface (reverse importers).
+
+    Same conservative contract as the Python expansion: no frontend seeds or a missing
+    manifest means the caller's radius stands unchanged, and hubs are noted, not expanded.
+    """
+    try:
+        from repo_governance.extractors.imports import RUNTIME_KINDS
+        from repo_governance.extractors.ts_imports import called_api_paths, get_ts_import_graph
+
+        graph = get_ts_import_graph(ctx)
+    except Exception as error:  # noqa: BLE001 - the fallback IS the contract here
+        return [], [], [f"TypeScript graph unavailable ({error}); the frontend chain is not followed."]
+
+    seeds = {module for path in paths if (module := graph.module_for_path(path)) is not None}
+    if not seeds:
+        return [], [], []
+
+    notes: list[str] = []
+    hubs = {
+        module: count
+        for module in sorted(seeds)
+        if (count := len(graph.importers_of(module))) > GRAPH_HUB_IMPORTER_LIMIT
+    }
+    for module, count in hubs.items():
+        notes.append(
+            f"{module} is a hub with {count} direct importers; file-level expansion is "
+            "suppressed for it - the manifest-declared blast radius stands."
+        )
+
+    ts_files: list[str] = []
+    expansion_seeds = seeds - set(hubs)
+    if expansion_seeds:
+        importers, truncated = graph.reverse_closure(
+            expansion_seeds, max_depth=GRAPH_EXPANSION_DEPTH, max_nodes=GRAPH_EXPANSION_MAX_NODES
+        )
+        ts_files = sorted(importers)
+        notes.append(f"TypeScript graph: {len(ts_files)} module(s) import the changed frontend modules.")
+        if truncated:
+            notes.append(
+                f"Frontend reverse closure truncated at {GRAPH_EXPANSION_MAX_NODES} modules; "
+                "the radius beyond the bound is unknown."
+            )
+
+    # The touched code and what it calls through, two import waves deep — the page's API
+    # client, then the client's shared pieces. Reverse importers are deliberately not
+    # sources of called paths: they break when the seed changes, but their *other* calls
+    # are not part of this change's chain.
+    calling = set(seeds)
+    frontier = set(seeds)
+    for _ in range(2):
+        frontier = {
+            edge.dst for edge in graph.edges if edge.src in frontier and edge.kind in RUNTIME_KINDS
+        } - calling
+        calling |= frontier
+
+    called = called_api_paths(ctx, sorted(calling))
+    if not called:
+        return [], ts_files, notes
+
+    interfaces_path = ctx.paths.generated_manifests / "interfaces.json"
+    if not interfaces_path.is_file():
+        notes.append("interfaces.json missing; called API paths could not be joined to the proxy layer.")
+        return [], ts_files, notes
+
+    called_normalized = {_normalize_template(path) for path in called}
+    handler_files: set[str] = set()
+    backend_templates: set[str] = set()
+    for route in read_json(interfaces_path).get("proxy_routes", []):
+        if _normalize_template(route.get("frontend_path", "")) in called_normalized:
+            handler_files.add(route["file"])
+            for target in route.get("backend_targets", []):
+                backend_templates.add(_normalize_template(target.get("path_template", "")))
+
+    route_module_paths: set[str] = set()
+    if backend_templates:
+        try:
+            from repo_governance.extractors.imports import get_import_graph
+            from repo_governance.extractors.relations import get_relations
+
+            python = get_import_graph(ctx)
+            for api_route in get_relations(ctx).api_routes:
+                if _normalize_template(api_route.path) in backend_templates:
+                    module_path = python.path_for_module(api_route.module)
+                    if module_path:
+                        route_module_paths.add(module_path)
+        except Exception as error:  # noqa: BLE001 - same fallback contract
+            notes.append(f"Relation extraction unavailable ({error}); the chain stops at the proxy handlers.")
+
+    if handler_files:
+        notes.append(
+            f"Site chain: {len(called)} called API path(s) -> {len(handler_files)} proxy "
+            f"handler(s) -> {len(route_module_paths)} backend route module(s)."
+        )
+    return sorted({*ts_files, *handler_files, *route_module_paths}), ts_files, notes
+
+
 def _components(ctx: Context) -> list[dict[str, Any]]:
     path = ctx.paths.effective_repository
     if not path.is_file():
@@ -153,10 +266,16 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
 
     # File-level expansion runs before component mapping, so a service-only change whose
     # importers include route files reaches backend-api (and from there the proxy join)
-    # even though no component declares that edge.
+    # even though no component declares that edge. The site chain does the same in the
+    # other direction: a frontend change reaches the backend route modules it calls
+    # through the proxy, so their components and validators enter the radius.
     expanded, graph_files, graph_notes = _expand_with_import_graph(ctx, paths)
-    result.graph_files = graph_files
+    site_extra, ts_files, site_notes = _expand_with_site_chain(ctx, paths)
+    if site_extra:
+        expanded = sorted({*expanded, *site_extra})
+    result.graph_files = sorted({*graph_files, *ts_files})
     result.notes.extend(graph_notes)
+    result.notes.extend(site_notes)
 
     seeds: set[str] = set()
     for path in expanded:
@@ -246,6 +365,10 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
 
     if any(path.startswith("docker-compose") or path == "Makefile" for path in paths):
         result.validators = sorted({*result.validators, "compose-check"})
+
+    # The envelope runs the full check on every governed change; an impact answer that
+    # omits it claims a validator holiday that does not exist.
+    result.validators = sorted({*result.validators, "governance-check"})
 
     return result
 

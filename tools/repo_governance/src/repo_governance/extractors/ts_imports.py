@@ -209,6 +209,33 @@ def summarize_uncertainty(graph: ImportGraph) -> dict[str, float | int]:
     }
 
 
+#: A full frontend API path literal — `fetch("/api/files/upload")` and friends.
+API_PATH_LITERAL = re.compile(r"[`\"'](/api/[^`\"'\s?]+)")
+#: A bare resource path handed to the shared client, which prefixes `/api` at runtime:
+#: `apiClient.get("/conversations")`.
+API_CLIENT_CALL = re.compile(r"\bapiClient\.(?:get|post|put|patch|delete)\s*(?:<[^>]*>)?\s*\(\s*[`\"'](/[^`\"'\s?]+)")
+_INTERPOLATION = re.compile(r"\$\{[^}]*\}")
+
+
+def called_api_paths(ctx: Context, modules: list[str]) -> list[str]:
+    """The frontend API paths the given modules call, template-normalized.
+
+    Regex over exactly the named files, so the cost is bounded by the caller's module set.
+    Unreadable files contribute nothing here — the import graph already reported them.
+    """
+    paths: set[str] = set()
+    for module in modules:
+        try:
+            text = (ctx.repo_root / module).read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for match in API_PATH_LITERAL.finditer(text):
+            paths.add(_INTERPOLATION.sub("{param}", match.group(1)).rstrip("/"))
+        for match in API_CLIENT_CALL.finditer(text):
+            paths.add("/api" + _INTERPOLATION.sub("{param}", match.group(1)).rstrip("/"))
+    return sorted(paths)
+
+
 _MEMO: dict[str, ImportGraph] = {}
 
 

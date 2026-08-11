@@ -1,0 +1,57 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The route-consumer slice of no-orphaned-surfaces now runs: no-broken-site-chains fires advisory on the four pages calling nine paths nothing serves. The agent surface names governance-visualize. The phase-7 exit record is written and accepted, and the build-decision record is flipped to acted-on - the blueprint phases 6 and 7 are complete."
+  ],
+  "compatibility_impact": "None. One new advisory rule; no schema, contract, or generated shape changed.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "AGENTS.md",
+    "governance/history/evaluations/2026-08-11-phase-6-7-build-decision-and-baseline.json",
+    "governance/history/evaluations/2026-08-11-phase-7-exit-measurement.json",
+    "governance/policies/architecture.json",
+    "tools/repo_governance/src/repo_governance/checks/__init__.py",
+    "tools/repo_governance/src/repo_governance/checks/graph.py"
+  ],
+  "follow_up": [
+    "Debt-sweep candidates now standing in committed reports: 23 orphan modules, 2 cycles, 4 broken-chain pages, and the EMAIL_PROVIDER catch-all selection bug."
+  ],
+  "id": "2026-08-11-wire-the-broken-chain-rule-surface-visualize-and-measure-the-pha",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Component precision transfers once more as an open thread; the exit record names ranking-weighted component selection as the candidate lever with its own future measurement."
+  ],
+  "manifests_changed": [],
+  "reason": "Phase 7 built analysis that fires nowhere: boundaries.json records four pages calling endpoints nothing serves but no rule reports them, the agent surface does not mention the visualize command so agents cannot find it, and the phase has no exit measurement - this closes all three and flips the build-decision record to acted-on now that both phases have exit records",
+  "risks": [
+    "Three advisory rule families now fire on every full check (cycles, orphans, broken chains); if the findings sit unfixed long enough to become wallpaper, the debt sweep should burn them down or the rules should carry exceptions."
+  ],
+  "rollback": "git revert of the single commit; the build-decision record returns to open, which would then be false - revert only with the exit records.",
+  "schema_version": 1,
+  "security_impact": "None. The broken-chain rule reports dead call paths; the AGENTS.md row surfaces an existing read-only command.",
+  "summary": "Wire the broken-chain rule, surface visualize, and measure the phase-7 exit",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "312 passed in 146s",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves including the new AGENTS.md visualize row",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check; the new broken-chain rule fires 4 advisory findings on the current tree by design",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": 1,
+  "id": "2026-08-11-phase-7-exit-measurement",
+  "date": "2026-08-11",
+  "kind": "impact-quality",
+  "summary": "Phase 7 exit judged against its criterion - do the views and rankings explain real dependencies and review risk better than a directory tree, without becoming merge gates. Accepted: each artifact surfaced something the tree cannot show and at least one thing nobody had recorded, every new rule is advisory, and no ranking gates anything. The transferred component-precision problem is informed but not solved, stated as the open thread.",
+  "observation": "What the phase-7 artifacts show that a directory tree cannot: the betweenness ranking names app.api.deps the top bridge - the DI seam every route-to-service path crosses, invisible in a tree listing and exactly where a reviewer should look hardest; the risk join ranks rag first because the highest-centrality component carries the dimension-contract gap (migration CHECK point untested without a live database); the site report exposes four pages calling nine API paths that nothing serves - among them a billing endpoint for a disabled feature, legacy /api/kb and /api/orgs trees, and a password-change path with no handler - failures only a runtime 404 would otherwise reveal; and the boundaries report shows ten pages consuming the WebSocket exception where the exception record implies one chat surface. Judged against a real change record (2026-08-11-build-the-services-rag-facade-and-migrate-callers-to-it): the architecture view with focus rag draws the facade's neighborhood, the pagerank table ranks app.services.rag the second import hub, and the hist-new-chat scenario's WS note names the consumer - together a reviewer sees why that refactor deserved its blast radius without reading the diff. Nothing gates: all four graph rules (cycles, orphans, broken chains, plus the pre-existing facade rule) are advisory, rankings appear in no check, and the visualize output is gitignored review material. Component precision on the scenario corpus remains 0.35-0.38; the rankings inform review depth but were deliberately not wired into impact scoring this phase.",
+  "evidence": [
+    {
+      "source": "governance/graph/reports/hotspots.json and boundaries.json at commit 7a7ba73",
+      "detail": "Rankings: app.core.config 0.0827, app.services.rag 0.0792 (pagerank); app.api.deps, app.repositories, app.api.routes.v1 (betweenness). Risk: rag max-centrality 0.0792 with one gapped invariant; mcp-user-connections with two uncovered. Boundaries: 42 pages, 23 with API chains, 4 with broken chains, 10 WS-exception consumers."
+    },
+    {
+      "source": "governance visualize site, verified in the browser",
+      "detail": "Self-contained HTML, no scripts, no external requests (pinned by test); pages, proxy handlers, and backend modules in columns with the WS bypass drawn as its own edge; truncation drawn on the page when a budget trims."
+    },
+    {
+      "source": "scenario suite",
+      "detail": "312 governance selftests pass including the recall ratchet; the corpus gained the blueprint-listed change-a-nextjs-api-consumer scenario in phase 6 and no phase-7 change regressed any golden."
+    }
+  ],
+  "proposed_action": "Phase 7 is accepted and the plan is complete. Open threads, in owner-decision order: (1) the four broken-chain pages and 23 orphan modules are debt-sweep material, now enforced advisory by no-broken-site-chains and no-orphaned-surfaces; (2) component precision transfers once more - the candidate lever is ranking-weighted component selection in impact, which should arrive with its own before/after measurement; (3) promotion of any graph rule past advisory follows the maturity ladder with the promotion criteria already written into each rule.",
+  "status": "acted-on",
+  "initiated_by": {
+    "kind": "agent",
+    "ref": "phase-7 exit gate, sessions 7.1-7.4 of the owner-approved plan"
+  },
+  "trigger_ref": "phase-7 exit criterion: visualizations and rankings explain real dependencies and review risk better than a directory tree without becoming merge gates by default",
+  "component_refs": ["governance-kernel"],
+  "related_change_records": [
+    "2026-08-11-join-the-site-graph-and-report-chain-coverage",
+    "2026-08-11-add-ranking-and-risk-analysis-over-the-joined-graph",
+    "2026-08-11-build-the-bounded-views-and-un-defer-governance-visualize"
+  ],
+  "tool_version": "1.0.0"
+}

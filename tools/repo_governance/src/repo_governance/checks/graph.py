@@ -199,6 +199,33 @@ def check_orphans(scope: CheckScope) -> list[Issue]:
     return issues
 
 
+def check_broken_site_chains(scope: CheckScope) -> list[Issue]:
+    """No page calls an API path that nothing serves.
+
+    The route-consumer slice of no-orphaned-surfaces, from the other side: an orphaned
+    route has no caller, a broken chain has no servant. Both are dead surface wearing a
+    live interface.
+    """
+    from repo_governance.graph.site import build_site_chains
+
+    issues: list[Issue] = []
+    for chain in build_site_chains(scope.ctx):
+        if not chain.unmatched_paths:
+            continue
+        issues.append(
+            Issue(
+                message=f"Page {chain.route} calls {len(chain.unmatched_paths)} API path(s) that nothing serves.",
+                path=chain.file,
+                evidence=", ".join(chain.unmatched_paths),
+                repair=(
+                    "Delete the dead call, add the missing proxy handler or backend route, "
+                    "or fix the path."
+                ),
+            )
+        )
+    return issues
+
+
 def check_thick_domain_facades(scope: CheckScope) -> list[Issue]:
     """A thick service subpackage is imported only through its package root.
 

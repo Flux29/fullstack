@@ -5,7 +5,7 @@ from datetime import datetime
 from enum import StrEnum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy import Boolean, DateTime, Integer, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -42,6 +42,12 @@ class User(Base, TimestampMixin):
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     onboarding_completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    # Bumped every time a magic link is redeemed. Each link carries the epoch
+    # in force when it was issued, so redeeming one invalidates every
+    # outstanding link for this user — a JWT can't be revoked any other way.
+    magic_link_epoch: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0", default=0
     )
     oauth_provider: Mapped[str | None] = mapped_column(String(32), nullable=True, index=True)
     oauth_id: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)

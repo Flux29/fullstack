@@ -1,0 +1,117 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Template manifest at v0.2.19. 31 conflicts resolved: 21 upstream (auth hardening set, cookie-helper handlers, docs and env examples), 8 local (Makefile, both compose overlays, main.py, deps.py, agent_session.py, README, ENV_VARS regenerated), plus targeted merges (README Vercel env list, migration rechain)",
+    "Local COOKIE_SECURE constant deleted in favour of upstream auth-cookies.ts - the convergence predicted when we implemented it",
+    "Eight new generator_provenance records so the next upgrade classifies the locally-kept files instantly"
+  ],
+  "compatibility_impact": "create_password_reset_token and create_magic_link_token gained required args - all callers updated in the same commit. Migration renumbered 0027 to 0028 and rechained onto 0027_embedding_cache to keep the recorded single head. fastapi-pagination capped below 0.15.16 by upstream auto-merge; local main.py shim retained and self-guarding. Dead env vars BACKEND_WS_URL and NEXT_PUBLIC_AUTH_ENABLED removed from examples and README",
+  "date": "2026-08-10",
+  "files_changed": [
+    ".fastapi-fullstack.json",
+    "ENV_VARS.md",
+    "README.md",
+    "backend/alembic/versions/0027_user_magic_link_epoch.py",
+    "backend/alembic/versions/0028_user_magic_link_epoch.py",
+    "backend/app/admin.py",
+    "backend/app/api/routes/v1/auth.py",
+    "backend/app/api/versioning.py",
+    "backend/app/clients/redis.py",
+    "backend/app/core/crypto.py",
+    "backend/app/core/csrf.py",
+    "backend/app/core/security.py",
+    "backend/app/db/models/user.py",
+    "backend/app/schemas/webhook.py",
+    "backend/app/services/sync_source.py",
+    "backend/app/services/user.py",
+    "backend/pyproject.toml",
+    "backend/tests/test_security.py",
+    "backend/tests/test_services.py",
+    "backend/uv.lock",
+    "docs/deploy.md",
+    "docs/permissions.md",
+    "frontend/.env.example",
+    "frontend/README.md",
+    "frontend/src/app/api/auth/login/route.ts",
+    "frontend/src/app/api/auth/logout/route.ts",
+    "frontend/src/app/api/auth/magic-link/verify/route.ts",
+    "frontend/src/app/api/auth/me/route.ts",
+    "frontend/src/app/api/auth/oauth-callback/route.ts",
+    "frontend/src/app/api/auth/refresh/route.ts",
+    "frontend/src/lib/auth-cookies.test.ts",
+    "frontend/src/lib/auth-cookies.ts",
+    "frontend/src/lib/server-api.ts",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "follow_up": [
+    "Upstream removed core/rate_limit.py; if rate limiting is ever wanted here, regenerate with the feature or port services/rate_limit deliberately"
+  ],
+  "id": "2026-08-10-apply-template-upgrade-v0-2-17-to-v0-2-19",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The template-upgrade skill back half is now validated for real; the residual e2e failures are the pre-existing firefox flake, unchanged by this session"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "reason": "The upstream release hardens the auth surface this repo just patched around - single-use magic links bound to a user epoch, actually-enforced rate limits on credential endpoints, and the same COOKIE_SECURE override we implemented locally - staying on 0.2.17 means maintaining private forks of fixes upstream now ships",
+  "risks": [],
+  "rollback": "git checkout -f main; git branch -D template-upgrade/v0.2.19; rm .fastapi-fullstack.json.pending - the undo line the tool itself printed; database rollback is alembic downgrade -1",
+  "schema_version": 1,
+  "security_impact": "Positive: password-reset tokens now bind to the password hash epoch and magic links to a per-user epoch, making both single-use; admin panel requires is_app_admin and is_active explicitly. Rate limiting is NOT active - this plan was not generated with the rate-limiting feature; recorded so nobody assumes the upstream release notes apply",
+  "summary": "Apply template upgrade v0.2.17 to v0.2.19",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "23 pre-existing ty warnings, 0 errors",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "479 passed 13 skipped, including upstream single-use-token suites",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "6 files 29 tests including the new auth-cookies suite; types clean",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0 with the locally-kept compose matrix",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "applied in the app container - 0027_embedding_cache to 0028_user_magic_link_epoch, single head, column verified in information_schema",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 findings",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "153 tests",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "162 passed 4 failed against the upgraded stack - identical to the pre-upgrade baseline (known firefox scatter + intermittent webkit straggler); no new failure pattern, no 429s",
+      "id": "playwright-full",
+      "result": "pass"
+    }
+  ]
+}

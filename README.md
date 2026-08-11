@@ -278,8 +278,9 @@ cd frontend && npx vercel --prod
 Set in the Vercel dashboard:
 
 - `BACKEND_URL` = `https://api.your-domain.com`
-- `BACKEND_WS_URL` = `wss://api.your-domain.com`
-- `NEXT_PUBLIC_AUTH_ENABLED` = `true`
+- `NEXT_PUBLIC_API_URL` = `https://api.your-domain.com`
+- `NEXT_PUBLIC_WS_URL` = `wss://api.your-domain.com`
+- `NEXT_PUBLIC_SITE_URL` = `https://your-domain.com`
 - `NEXT_PUBLIC_RAG_ENABLED` = `true`
 
 ### Backend → your server

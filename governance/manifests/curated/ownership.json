@@ -270,6 +270,10 @@
       "reason": "Same: an analysis report, validated kernel-internally to keep the committed schema set at twelve."
     },
     {
+      "path": "governance/graph/reports/boundaries.json",
+      "reason": "Same: the site chain-coverage report, validated kernel-internally."
+    },
+    {
       "path": "governance/manifests/curated/ownership.json",
       "reason": "Same: no blueprint schema exists for the ownership rules themselves."
     },

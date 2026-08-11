@@ -50,6 +50,14 @@
     },
     {
       "authority": "generated",
+      "description": "Per-page chain coverage: which pages reach the backend through which proxy handlers, which chains are broken, and where the WebSocket exception is consumed.",
+      "kind": "manifest-generated",
+      "path": "governance/graph/reports/boundaries.json",
+      "read_when": "Planning a change that spans the proxy hop, or checking what a page actually touches.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
       "description": "Dependency cycles per language, each classified import-time or deferred-import.",
       "kind": "manifest-generated",
       "path": "governance/graph/reports/cycles.json",

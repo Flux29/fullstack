@@ -215,6 +215,23 @@ API_PATH_LITERAL = re.compile(r"[`\"'](/api/[^`\"'\s?]+)")
 #: `apiClient.get("/conversations")`.
 API_CLIENT_CALL = re.compile(r"\bapiClient\.(?:get|post|put|patch|delete)\s*(?:<[^>]*>)?\s*\(\s*[`\"'](/[^`\"'\s?]+)")
 _INTERPOLATION = re.compile(r"\$\{[^}]*\}")
+_TEMPLATE_PARAM = re.compile(r"\{[^}]*\}")
+
+
+def normalize_template(path: str) -> str:
+    """Parameter segments compare equal whatever their name: `/api/files/{fileId}` and
+    `/api/files/{param}` are the same route."""
+    return _TEMPLATE_PARAM.sub("{}", path.rstrip("/"))
+
+
+def _normalize_called(raw: str) -> str:
+    """A path-position interpolation (preceded by `/`) is a parameter; one glued to a
+    word (`documents${qs}`) is query assembly and ends the path."""
+    path = _PATH_INTERPOLATION.sub("/{param}", raw).split("${")[0].split("$")[0]
+    return path.rstrip("/")
+
+
+_PATH_INTERPOLATION = re.compile(r"/\$\{[^}]*\}")
 
 
 def called_api_paths(ctx: Context, modules: list[str]) -> list[str]:
@@ -230,9 +247,9 @@ def called_api_paths(ctx: Context, modules: list[str]) -> list[str]:
         except (OSError, UnicodeDecodeError):
             continue
         for match in API_PATH_LITERAL.finditer(text):
-            paths.add(_INTERPOLATION.sub("{param}", match.group(1)).rstrip("/"))
+            paths.add(_normalize_called(match.group(1)))
         for match in API_CLIENT_CALL.finditer(text):
-            paths.add("/api" + _INTERPOLATION.sub("{param}", match.group(1)).rstrip("/"))
+            paths.add("/api" + _normalize_called(match.group(1)))
     return sorted(paths)
 
 

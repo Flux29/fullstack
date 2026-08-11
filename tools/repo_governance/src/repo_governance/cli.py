@@ -407,14 +407,26 @@ def snapshot_mcp_connections(
 
 @main.command()
 @click.argument("view")
-@click.option("--focus", help="Node or component to centre the view on.")
+@click.option("--focus", help="Node, component, route, or path to centre the view on.")
 def visualize(view: str, focus: str | None) -> None:
-    """Render a bounded view of the repository graph."""
-    _deferred(
-        "visualize",
-        "Phase 7",
-        "reviewers or agents demonstrably misjudge a dependency that a bounded view would have shown.",
-    )
+    """Render a bounded view of the repository graph to artifacts/governance/.
+
+    The output is a self-contained HTML page generated from a graph slice, never from the
+    whole graph; truncation is drawn on the page. artifacts/ is gitignored — these are
+    review aids, not committed documents.
+    """
+    from repo_governance.renderers.visualizations import ViewError, load_definitions, write_view
+
+    ctx = _context()
+    try:
+        relative = write_view(ctx, view, focus)
+    except ViewError as exc:
+        views = load_definitions(ctx)
+        raise click.ClickException(
+            str(exc) + "\n\nViews:\n" + "\n".join(f"  {v['id']:<14} {v['description']}" for v in views.values())
+        ) from exc
+    click.echo(f"Wrote {relative}")
+    click.echo("Open it in a browser; regenerate rather than edit.")
 
 
 @main.command()

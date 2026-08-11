@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "description": "The bounded views governance visualize can render. Each is generated from a graph slice, never from the whole graph, and truncation is always visible in the output.",
+  "views": [
+    {
+      "id": "architecture",
+      "title": "Component architecture",
+      "description": "Components and their declared dependencies, grouped frontend / application / data-and-infrastructure.",
+      "focus": "Optional component id: restricts the view to the component and its direct neighbors.",
+      "sources": ["governance/manifests/effective/repository.json"],
+      "node_budget": 60
+    },
+    {
+      "id": "site",
+      "title": "Site map",
+      "description": "Pages joined to the proxy handlers and backend route modules they reach, with the WebSocket exception drawn as its own edge.",
+      "focus": "Optional page route (for example /chat): renders that page's chain alone.",
+      "sources": ["governance/graph/reports/boundaries.json"],
+      "node_budget": 150
+    },
+    {
+      "id": "impact",
+      "title": "Change impact",
+      "description": "The blast radius of a change: touched path, reverse importers, components, proxy handlers, and the validators that prove it.",
+      "focus": "Required repo-relative path the change touches.",
+      "sources": ["governance/manifests/effective/repository.json", "governance/manifests/generated/interfaces.json"],
+      "node_budget": 100
+    },
+    {
+      "id": "configuration",
+      "title": "Configuration flow",
+      "description": "Environment variables and the components that consume them.",
+      "focus": "Optional variable name or component id: restricts to that name and its neighbors.",
+      "sources": ["governance/manifests/generated/configuration.json", "governance/manifests/effective/repository.json"],
+      "node_budget": 120
+    },
+    {
+      "id": "migration",
+      "title": "Migration graph",
+      "description": "The Alembic revision chain in order, branches and merges visible, heads marked.",
+      "focus": "None.",
+      "sources": ["backend/alembic/versions/"],
+      "node_budget": 80
+    },
+    {
+      "id": "security",
+      "title": "Agent and MCP permission map",
+      "description": "The agent, its tool sources, and the gate each source does or does not pass through, with the standing security findings attached.",
+      "focus": "None.",
+      "sources": ["governance/manifests/generated/ai-runtime.json", "governance/Summary.md"],
+      "node_budget": 80
+    }
+  ]
+}

@@ -52,6 +52,7 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/graph/reports/orphans.json", "graph-orphans"),
     ("governance/graph/reports/boundaries.json", "graph-boundaries"),
     ("governance/graph/reports/hotspots.json", "graph-hotspots"),
+    ("governance/views/definitions.json", "views"),
 )
 
 _SLUG = {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"}
@@ -414,6 +415,35 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
             },
             "limitations": {"type": "array", "items": {"type": "string"}},
             "tool_version": {"type": "string"},
+        },
+    },
+    "views": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/views/v1",
+        "description": "The bounded views governance visualize can render.",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["schema_version", "views"],
+        "properties": {
+            "schema_version": {"const": 1},
+            "description": {"type": "string"},
+            "views": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["id", "title", "description", "focus", "sources", "node_budget"],
+                    "properties": {
+                        "id": _SLUG,
+                        "title": {"type": "string", "minLength": 1},
+                        "description": {"type": "string", "minLength": 1},
+                        "focus": {"type": "string", "minLength": 1},
+                        "sources": {"type": "array", "items": {"type": "string"}},
+                        "node_budget": {"type": "integer", "minimum": 10},
+                    },
+                },
+            },
         },
     },
     "graph-cycles": {

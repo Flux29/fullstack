@@ -255,6 +255,14 @@
       "path": "governance/validators.json",
       "read_when": "Selecting what to run to prove a change works, or adding a new validator.",
       "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "The bounded views governance visualize can render: sources, focus semantics, and node budgets.",
+      "kind": "manifest-curated",
+      "path": "governance/views/definitions.json",
+      "read_when": "Adding or reshaping a view, or checking what governance visualize can draw.",
+      "update": "manual"
     }
   ],
   "provenance": {

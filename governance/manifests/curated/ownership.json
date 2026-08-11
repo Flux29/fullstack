@@ -100,6 +100,7 @@
     "governance/manifests/curated/",
     "governance/graph/node-types.json",
     "governance/graph/edge-types.json",
+    "governance/views/definitions.json",
     "governance/history/decisions/ADR-*.md",
     "governance/history/evaluations/",
     "**/.governance.json",
@@ -276,6 +277,10 @@
     {
       "path": "governance/graph/reports/hotspots.json",
       "reason": "Same: the centrality and risk report, validated kernel-internally."
+    },
+    {
+      "path": "governance/views/definitions.json",
+      "reason": "Same: the view definitions are curated configuration for the visualizers, with no blueprint schema."
     },
     {
       "path": "governance/manifests/curated/ownership.json",

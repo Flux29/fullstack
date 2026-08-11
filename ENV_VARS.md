@@ -203,9 +203,8 @@ appears here or in any other governance artifact.
 | Variable | Required | Default | Class | Description |
 | --- | --- | --- | --- | --- |
 | `BACKEND_URL` | no | `http://localhost:8100` | `runtime` | Backend API URL (server-side only - not exposed to browser) |
-| `BACKEND_WS_URL` | no | `ws://localhost:8100` | `runtime` | WebSocket URL for real-time features |
-| `NEXT_PUBLIC_AUTH_ENABLED` | no | `true` | `build-arg` | Authentication (set to true when JWT or OAuth is enabled) |
-| `NEXT_PUBLIC_API_URL` | no | `http://localhost:8100` | `build-arg` | Public API URL for OAuth redirects (exposed to browser) |
+| `NEXT_PUBLIC_WS_URL` | no | `ws://localhost:8100` | `build-arg` | WebSocket URL for the chat stream. Read by the BROWSER, so it must be an address the browser can reach (not a Docker service name), and because NEXT_PUBLIC_* is inlined at build time it has to be set before `bun run build` — in Docker that means a build arg, see docker-compose.frontend.yml. |
+| `NEXT_PUBLIC_API_URL` | no | `http://localhost:8100` | `build-arg` | Public API URL, exposed to the browser (OAuth redirects, links to the API docs). Same build-time rule as NEXT_PUBLIC_WS_URL above. |
 | `NEXT_PUBLIC_RAG_ENABLED` | no | `true` | `build-arg`, `runtime` | RAG (Retrieval Augmented Generation) |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | no | `https://logfire-api.pydantic.dev` | `runtime` | Logfire/OpenTelemetry (server-side instrumentation) Get your write token from: https://logfire.pydantic.dev |
 | `OTEL_EXPORTER_OTLP_HEADERS` | no | *(secret — never recorded)* | `runtime`, `secret` | — |
@@ -220,6 +219,7 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `AI_FRAMEWORK` | no | `pydantic_ai` | `runtime` | — |
 | `AI_TEMPERATURE` | no | `0.7` | `runtime` | — |
 | `API_V1_STR` | no | `/api/v1` | `runtime` | — |
+| `BACKEND_WS_URL` | no | — | `runtime` | — |
 | `CACHE_DIR` | no | — | `compose-only` | — |
 | `CODE_EXECUTION_MAX_MEMORY_MB` | no | `256` | `runtime` | — |
 | `CONCURRENT` | no | — | `compose-only` | — |
@@ -261,10 +261,10 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `MEDIA_DIR` | no | `./media` | `runtime` | — |
 | `MINIO_ROOT_PASSWORD` | no | *(secret — never recorded)* | `compose-only`, `secret` | — |
 | `MINIO_ROOT_USER` | no | *(secret — never recorded)* | `compose-only`, `secret` | — |
+| `NEXT_PUBLIC_AUTH_ENABLED` | no | — | `build-arg` | — |
 | `NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB` | no | — | `build-arg` | — |
 | `NEXT_PUBLIC_OAUTH_PROVIDERS` | no | — | `build-arg` | — |
 | `NEXT_PUBLIC_SITE_URL` | no | — | `build-arg`, `runtime` | — |
-| `NEXT_PUBLIC_WS_URL` | no | — | `build-arg` | — |
 | `NODE_ENV` | no | — | `compose-only` | — |
 | `NVIDIA_VISIBLE_DEVICES` | no | — | `compose-only` | — |
 | `PGWEB_DATABASE_URL` | no | — | `compose-only` | — |

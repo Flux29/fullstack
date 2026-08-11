@@ -13,6 +13,7 @@ from app.core.security import (
     create_magic_link_token,
     create_password_reset_token,
     get_password_hash,
+    password_epoch,
     verify_password,
     verify_special_token,
 )
@@ -96,7 +97,14 @@ class UserService:
         return AdminUserList(items=items, total=total)
 
     async def register(self, user_in: UserCreate) -> User:
-        """The first user to register is auto-promoted to app-admin — no separate CLI step needed."""
+        """Create a local password account.
+
+        The first user to register is auto-promoted to app-admin — no separate
+        CLI step needed. That convenience is a land-grab on a public
+        deployment, so the window matters: whoever registers first owns the
+        app. Set ``FIRST_ADMIN_EMAIL`` (or run ``cmd create-app-admin``) and
+        register before exposing the API publicly.
+        """
         existing = await user_repo.get_by_email(self.db, user_in.email)
         if existing:
             raise AlreadyExistsError(
@@ -233,7 +241,9 @@ class UserService:
         user = await user_repo.get_by_email(self.db, email)
         if user is None or not user.is_active:
             return None
-        token = create_password_reset_token(subject=str(user.id))
+        token = create_password_reset_token(
+            subject=str(user.id), current_password_hash=user.hashed_password
+        )
         return user, token
 
     async def confirm_password_reset(self, token: str, new_password: str) -> User:
@@ -248,6 +258,11 @@ class UserService:
         user = await self.get_by_id(user_id)
         if not user.is_active:
             raise AuthenticationError(message="Account is disabled")
+
+        # Single use: the token is bound to the password hash it was issued
+        # against, so a link that has already been redeemed no longer matches.
+        if payload.get("pwe") != password_epoch(user.hashed_password):
+            raise AuthenticationError(message="Reset link is invalid or has expired")
 
         await user_repo.update(
             self.db,
@@ -264,11 +279,18 @@ class UserService:
         user = await user_repo.get_by_email(self.db, email)
         if user is None or not user.is_active:
             return None
-        token = create_magic_link_token(subject=str(user.id))
+        token = create_magic_link_token(
+            subject=str(user.id), magic_link_epoch=user.magic_link_epoch
+        )
         return user, token
 
     async def consume_magic_link_token(self, token: str) -> User:
-        """Caller is responsible for minting access/refresh tokens for the returned user."""
+        """Redeem a sign-in link exactly once.
+
+        Caller is responsible for minting access/refresh tokens for the returned
+        user. Bumping the epoch here is what makes the link single-use, so this
+        must run before the caller issues any credential.
+        """
         payload = verify_special_token(token, expected_type="magic_link")
         if payload is None or "sub" not in payload:
             raise AuthenticationError(message="Magic link is invalid or has expired")
@@ -280,4 +302,14 @@ class UserService:
         user = await self.get_by_id(user_id)
         if not user.is_active:
             raise AuthenticationError(message="Account is disabled")
+
+        if payload.get("mle") != user.magic_link_epoch:
+            raise AuthenticationError(message="Magic link is invalid or has expired")
+
+        # Invalidates this link and every other one outstanding for the user.
+        await user_repo.update(
+            self.db,
+            db_user=user,
+            update_data={"magic_link_epoch": user.magic_link_epoch + 1},
+        )
         return user

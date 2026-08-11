@@ -1,0 +1,53 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The backend relation layer is extracted: 108 fully qualified API routes with module attribution, 5 Taskiq tasks, 15 ORM models with table names, 98 test-to-module TESTS edges, and the 6-product 88-tool Google registry - all with zero unknowns on the real tree."
+  ],
+  "compatibility_impact": "None. New extractor with no callers outside its tests; no generated output changed and sync moved zero bytes.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "tools/repo_governance/src/repo_governance/extractors/relations.py",
+    "tools/repo_governance/tests/test_relations.py"
+  ],
+  "follow_up": [
+    "Session 6.4 stores the three extraction layers in the SQLite cache and adds cycle and orphan analysis over them."
+  ],
+  "id": "2026-08-11-extract-route-task-model-test-and-tool-relations",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "ROUTES_TO by direct import yields only 5 edges because routes reach services through app.api.deps dependency injection; the transitive route-to-service chain already exists in the import graph, so impact analysis is not blinded by this."
+  ],
+  "manifests_changed": [],
+  "reason": "The graph knows modules and imports but not what the modules are: impact cannot tell a route module from a task module, the site join in 7.1 has no api-route nodes to land on, and Google tools are registry rows no import edge will ever reveal; this extracts the relation layer the vocabulary already declares",
+  "risks": [
+    "Route prefixes are resolved through the v1 registry only; a router included elsewhere keeps a router-relative path and is recorded as an unknown rather than misnamed."
+  ],
+  "rollback": "git revert of the single commit; nothing consumes the extractor yet.",
+  "schema_version": 1,
+  "security_impact": "None. Read-only AST extraction; the Google registry is read as a table of tool names and descriptions, never values or credentials, and per-user MCP tools remain runtime-evidence only per the vocabulary.",
+  "summary": "Extract route, task, model, test, and tool relations",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "258 passed in 112s, includes 14 new relation tests",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

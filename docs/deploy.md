@@ -32,6 +32,41 @@ curl http://localhost:8100/api/v1/health
 # Frontend: http://localhost:3000
 ```
 
+
+### Serving from a host that isn't localhost
+
+The defaults assume the browser runs on the Docker host. Opening the app from
+another machine (a LAN IP, a staging box, a tunnel) needs two things set, and
+both fail in a way that looks like something else:
+
+```bash
+# In the .env next to docker-compose.prod.yml
+PUBLIC_HOST=10.0.0.5     # an address the BROWSER can reach
+COOKIE_SECURE=false      # ONLY if you serve over plain http:// (see below)
+```
+
+```bash
+# NEXT_PUBLIC_* is inlined into the bundle, so this needs a real rebuild
+docker compose -f docker-compose.prod.yml build --no-cache frontend
+docker compose -f docker-compose.prod.yml up -d frontend
+```
+
+1. **`NEXT_PUBLIC_*` is baked in at build time.** Next.js inlines those values
+   into the JavaScript the browser downloads, so a runtime env var cannot change
+   them — `docker-compose.prod.yml` passes them as `build:` args instead. Miss
+   this and the chat socket dials `ws://localhost:8100` from
+   the visitor's own machine and the input stays disabled ("Offline").
+2. **The auth cookies are `Secure` in production, and a browser silently drops a
+   `Secure` cookie that arrives over `http://`.** Login looks like it worked (the
+   user comes back in the response body) and then every request carrying no
+   cookie answers 401, `/api/auth/me` included, so the token never refreshes.
+   TLS is the real fix; `COOKIE_SECURE=false` is the escape hatch for a trusted
+   network.
+
+Reaching the backend matters too: the chat socket is opened by the browser
+directly against `NEXT_PUBLIC_WS_URL`, so either publish the backend port or
+route `/api/v1/ws` through your proxy with the `Upgrade` headers set.
+
 ### Reverse proxy
 Traefik labels in `docker-compose.yml` route based on `Host()`. Set `DOMAIN` env var, then point your DNS at the host. ACME / Let's Encrypt configured via labels — uncomment in `docker-compose.yml` and set `ACME_EMAIL`.
 
@@ -75,7 +110,9 @@ cd frontend
 vercel
 ```
 
-Set `BACKEND_URL` and `NEXT_PUBLIC_API_URL` env vars in Vercel dashboard pointing to your backend host.
+Set `BACKEND_URL`, `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_WS_URL` (`wss://…`) and
+`NEXT_PUBLIC_SITE_URL` in the Vercel dashboard, pointing at your backend host,
+then redeploy — the `NEXT_PUBLIC_*` ones are only picked up by a fresh build.
 
 
 ---

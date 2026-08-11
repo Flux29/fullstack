@@ -262,15 +262,13 @@
         "frontend-app"
       ],
       "declared_in": [
-        "frontend/.env.example",
         "docker-compose.yml"
       ],
-      "default": "ws://localhost:8100",
-      "default_class": "literal",
-      "description": "WebSocket URL for real-time features",
+      "default": null,
+      "default_class": "none",
       "name": "BACKEND_WS_URL",
       "required": false,
-      "surface": "frontend",
+      "surface": "compose",
       "type": null
     },
     {
@@ -397,8 +395,7 @@
         "compose-only"
       ],
       "consumed_by": [
-        "compose:frontend",
-        "frontend:frontend/src/lib/server-api.ts"
+        "compose:frontend"
       ],
       "declared_in": [
         "docker-compose.yml"
@@ -407,7 +404,7 @@
       "default_class": "none",
       "name": "COOKIE_SECURE",
       "required": false,
-      "surface": "frontend",
+      "surface": "compose",
       "type": null
     },
     {
@@ -1723,7 +1720,7 @@
       ],
       "default": "http://localhost:8100",
       "default_class": "literal",
-      "description": "Public API URL for OAuth redirects (exposed to browser)",
+      "description": "Public API URL, exposed to the browser (OAuth redirects, links to the API docs). Same build-time rule as NEXT_PUBLIC_WS_URL above.",
       "name": "NEXT_PUBLIC_API_URL",
       "required": false,
       "surface": "frontend",
@@ -1736,12 +1733,9 @@
       "consumed_by": [
         "frontend-app"
       ],
-      "declared_in": [
-        "frontend/.env.example"
-      ],
-      "default": "true",
-      "default_class": "literal",
-      "description": "Authentication (set to true when JWT or OAuth is enabled)",
+      "declared_in": [],
+      "default": null,
+      "default_class": "none",
       "name": "NEXT_PUBLIC_AUTH_ENABLED",
       "required": false,
       "surface": "frontend",
@@ -1836,10 +1830,12 @@
         "frontend:frontend/src/lib/constants.ts"
       ],
       "declared_in": [
+        "frontend/.env.example",
         "docker-compose.yml"
       ],
-      "default": null,
-      "default_class": "none",
+      "default": "ws://localhost:8100",
+      "default_class": "literal",
+      "description": "WebSocket URL for the chat stream. Read by the BROWSER, so it must be an address the browser can reach (not a Docker service name), and because NEXT_PUBLIC_* is inlined at build time it has to be set before `bun run build` — in Docker that means a build arg, see docker-compose.frontend.yml.",
       "name": "NEXT_PUBLIC_WS_URL",
       "required": false,
       "surface": "frontend",
@@ -1851,8 +1847,7 @@
       ],
       "consumed_by": [
         "compose:frontend",
-        "frontend:frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
-        "frontend:frontend/src/lib/server-api.ts"
+        "frontend:frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx"
       ],
       "declared_in": [
         "docker-compose.yml"

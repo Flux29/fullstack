@@ -6,18 +6,6 @@
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
-/**
- * Whether auth cookies are set with the Secure attribute. Production builds
- * default it on, but a production build served over plain http (the dev-stack
- * container on localhost) needs COOKIE_SECURE=false: WebKit discards Secure
- * cookies on http, so login appears to succeed and every request after it is
- * unauthenticated. Same variable name and semantics as the upstream template.
- */
-export const COOKIE_SECURE =
-  process.env.COOKIE_SECURE != null
-    ? process.env.COOKIE_SECURE !== "false"
-    : process.env.NODE_ENV === "production";
-
 export class BackendApiError extends Error {
   constructor(
     public status: number,

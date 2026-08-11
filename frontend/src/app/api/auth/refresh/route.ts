@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, COOKIE_SECURE } from "@/lib/server-api";
 import type { RefreshTokenResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
 
     response.cookies.set("access_token", data.access_token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: COOKIE_SECURE,
       sameSite: "lax",
       maxAge: 60 * 15, // 15 minutes
       path: "/",
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     if (data.refresh_token) {
       response.cookies.set("refresh_token", data.refresh_token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: COOKIE_SECURE,
         sameSite: "lax",
         maxAge: 60 * 60 * 24 * 7, // 7 days
         path: "/",
@@ -46,14 +46,14 @@ export async function POST(request: NextRequest) {
 
       response.cookies.set("access_token", "", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: COOKIE_SECURE,
         sameSite: "lax",
         maxAge: 0,
         path: "/",
       });
       response.cookies.set("refresh_token", "", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: COOKIE_SECURE,
         sameSite: "lax",
         maxAge: 0,
         path: "/",

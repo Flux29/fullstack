@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, COOKIE_SECURE } from "@/lib/server-api";
 
 interface OAuthCallbackBody {
   access_token: string;
@@ -24,17 +24,16 @@ export async function POST(request: NextRequest) {
       message: "Sign-in successful",
     });
 
-    const isProd = process.env.NODE_ENV === "production";
     response.cookies.set("access_token", body.access_token, {
       httpOnly: true,
-      secure: isProd,
+      secure: COOKIE_SECURE,
       sameSite: "lax",
       maxAge: 60 * 15,
       path: "/",
     });
     response.cookies.set("refresh_token", body.refresh_token, {
       httpOnly: true,
-      secure: isProd,
+      secure: COOKIE_SECURE,
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 7,
       path: "/",

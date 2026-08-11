@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "2026-08-11-phase-6-7-build-decision-and-baseline",
+  "date": "2026-08-11",
+  "kind": "growth-trigger",
+  "summary": "The repo owner directed finishing blueprint phases 6 and 7; this record captures that decision and the measured impact-analysis baseline both phases' exit criteria will be judged against. One of the two phase-6 trigger symptoms is independently observed in the data: impact sets are precise about almost nothing (mean validator precision 0.49) while recall stays high, which is exactly the over-selection symptom the blueprint names.",
+  "observation": "Replaying the 7 committed evaluation scenarios through analyse_impact at baseline commit 8aec8ed gives mean precision/recall by field: components 0.35/0.96, validators 0.49/0.93, proxy_routes 0.79/1.0, context_documents 1.0/1.0, findings 0.71/1.0. Two scenarios show genuine recall misses, not just over-selection: hist-new-chat-new-conversation misses half its expected validators (recall 0.5, precision 0.14) because the manifest-level expansion cannot follow the frontend-to-backend chain, and move-governed-subsystem misses a component (recall 0.75). rename-env-var leaves docker-compose.yml unassigned, so its radius is knowingly incomplete. The second phase-6 trigger symptom - context token budgets blown by over-inclusive slices - is NOT observed: mean briefing size is 1509 tokens against a 6000 budget (max 2881). The phase-7 trigger (a dependency misjudged that a bounded view would have shown) has no independent observation; for phase 7 this record rests on the owner decision alone. Note: scenario_contract.py's docstring says twelve committed scenarios; seven exist.",
+  "evidence": [
+    {
+      "source": "scenario replay (scenario_replay.score_scenario over all committed scenarios, baseline commit 8aec8ed)",
+      "detail": "Per-scenario worst cases: introduce-dependency-cycle components precision 0.20; rename-env-var components precision 0.20 with docker-compose.yml unassigned; hist-new-chat-new-conversation validators 0.14 precision / 0.50 recall, proxy_routes precision 0.0, findings precision 0.0, and the largest briefing except one (2382 tokens); move-governed-subsystem components 0.27 precision / 0.75 recall, briefing 2881 tokens. Full per-scenario table reproducible via scenario_replay.score_scenario; goldens under tests/golden/impact-baselines/ pin the impact answers this baseline was scored from."
+    },
+    {
+      "source": "pytest -k scenario (tools/repo_governance/tests)",
+      "detail": "33 tests pass at baseline: the scenario corpus is schema-valid and the replay answers match the committed goldens, so the numbers above measure the system, not a broken harness. Token estimate method: len(briefing) // CHARS_PER_TOKEN (4), the same estimator render_context budgets with."
+    },
+    {
+      "source": "owner directive",
+      "detail": "The repo owner reviewed a nine-session plan to finish phases 6 and 7 (sessions 6.0-6.5, 7.1-7.4) and approved it on 2026-08-11, ahead of a spontaneously observed phase-7 symptom. The blueprint requires the trigger decision to be recorded as an evaluation before build work starts; this record is that decision. Decisions baked into the plan: TypeScript extraction stays regex-first with a recorded unknown-rate metric, and ranking algorithms use networkx pinned in the tools project."
+    }
+  ],
+  "proposed_action": "Build phases 6 and 7 as governed sessions, smallest coherent change each: commit the graph vocabulary and unreserve graph-model.schema.json; add the TypeScript module graph; extract route/task/model/test/tool relations; add the SQLite graph cache with cycle and orphan reports; feed the cross-language chain into impact and context, then re-measure against this baseline (phase-6 exit record); join the site graph, add ranking and risk algorithms, un-defer governance visualize, and wire advisory policies, then measure phase 7's exit. Phase 6 is accepted only if precision improves on these scenarios without new recall misses; the two known recall misses above are the specific defects the cross-language expansion must fix. All new finding classes enter advisory.",
+  "status": "open",
+  "initiated_by": {
+    "kind": "user",
+    "ref": "owner directive to finish blueprint phases 6-7, 2026-08-11"
+  },
+  "trigger_ref": "phase-6: kernel impact sets measurably too coarse (validators over-selected on repeated changes); phase-7: owner decision ahead of symptom",
+  "component_refs": ["governance-kernel"],
+  "tool_version": "1.0.0"
+}

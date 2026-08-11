@@ -1,0 +1,624 @@
+{
+  "pages": [
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/(auth)/forgot-password/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/password-reset/request/route.ts"
+      ],
+      "route": "/forgot-password"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/(auth)/login/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/password-reset/request/route.ts"
+      ],
+      "route": "/login"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(auth)/magic-link-sent/page.tsx",
+      "route": "/magic-link-sent"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/(auth)/register/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/password-reset/request/route.ts"
+      ],
+      "route": "/register"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/(auth)/reset-password/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/password-reset/confirm/route.ts"
+      ],
+      "route": "/reset-password"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/conversations/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/demo/route.ts",
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/users/avatar/[userId]/route.ts"
+      ],
+      "route": "/admin/conversations",
+      "server_calls": [
+        "/api/v1/me/slash-commands"
+      ],
+      "websocket": true
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_stats",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/stats/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/me/route.ts"
+      ],
+      "route": "/admin"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_ratings",
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/ratings/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/ratings/export/route.ts",
+        "frontend/src/app/api/admin/ratings/route.ts",
+        "frontend/src/app/api/admin/ratings/summary/route.ts",
+        "frontend/src/app/api/auth/me/route.ts"
+      ],
+      "route": "/admin/ratings"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.health"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/system/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/health/route.ts"
+      ],
+      "route": "/admin/system",
+      "unmatched_paths": [
+        "/api/health/ready"
+      ]
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/admin/users/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/users/avatar/[userId]/route.ts"
+      ],
+      "route": "/admin/users",
+      "server_calls": [
+        "/api/v1/me/slash-commands"
+      ],
+      "websocket": true
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.agent",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.files",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/chat/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/[messageId]/rate/route.ts",
+        "frontend/src/app/api/files/[id]/route.ts",
+        "frontend/src/app/api/files/upload/route.ts",
+        "frontend/src/app/api/users/avatar/[userId]/route.ts",
+        "frontend/src/app/api/v1/agent/models/route.ts"
+      ],
+      "route": "/chat",
+      "server_calls": [
+        "/api/v1/me/slash-commands"
+      ],
+      "websocket": true
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.health",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.rag",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/dashboard/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/health/route.ts",
+        "frontend/src/app/api/users/me/route.ts",
+        "frontend/src/app/api/v1/rag/documents/[docId]/download/route.ts",
+        "frontend/src/app/api/v1/rag/documents/[docId]/route.ts",
+        "frontend/src/app/api/v1/rag/documents/route.ts",
+        "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
+        "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
+        "frontend/src/app/api/v1/rag/sync/local/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/trigger/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/route.ts"
+      ],
+      "route": "/dashboard",
+      "server_calls": [
+        "/api/v1/me/slash-commands",
+        "/api/v1/rag/sync/logs"
+      ],
+      "unmatched_paths": [
+        "/api/billing/me/credits/transactions",
+        "/api/kb/{param}/documents/{param}/download",
+        "/api/kb/{param}/sync-sources/{param}/logs",
+        "/api/orgs/{param}/integrations/{param}/logs",
+        "/api/v1/rag/sync/sources/{param}/clone"
+      ],
+      "websocket": true
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/dev/components/page.tsx",
+      "route": "/dev/components"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/profile/page.tsx",
+      "route": "/profile"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.rag"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/rag/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/v1/rag/documents/[docId]/download/route.ts",
+        "frontend/src/app/api/v1/rag/documents/[docId]/route.ts",
+        "frontend/src/app/api/v1/rag/documents/route.ts",
+        "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
+        "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
+        "frontend/src/app/api/v1/rag/sync/local/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/trigger/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/route.ts"
+      ],
+      "route": "/rag",
+      "server_calls": [
+        "/api/v1/me/slash-commands",
+        "/api/v1/rag/sync/logs"
+      ],
+      "unmatched_paths": [
+        "/api/kb/{param}/documents/{param}/download",
+        "/api/kb/{param}/sync-sources/{param}/logs",
+        "/api/orgs/{param}/integrations/{param}/logs",
+        "/api/v1/rag/sync/sources/{param}/clone"
+      ],
+      "websocket": true
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.sessions"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/account/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/sessions/route.ts"
+      ],
+      "route": "/settings/account",
+      "server_calls": [
+        "/api/v1/me/slash-commands"
+      ],
+      "unmatched_paths": [
+        "/api/auth/password/change",
+        "/api/users/{param}"
+      ],
+      "websocket": true
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/appearance/page.tsx",
+      "route": "/settings/appearance"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/integrations/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts"
+      ],
+      "route": "/settings/integrations",
+      "websocket": true
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/notifications/page.tsx",
+      "route": "/settings/notifications"
+    },
+    {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/page.tsx",
+      "route": "/settings"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.me_slash_commands",
+        "app.api.routes.v1.sessions",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/profile/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/sessions/[id]/route.ts",
+        "frontend/src/app/api/sessions/route.ts",
+        "frontend/src/app/api/users/avatar/[userId]/route.ts",
+        "frontend/src/app/api/users/me/avatar/route.ts",
+        "frontend/src/app/api/users/me/route.ts"
+      ],
+      "route": "/settings/profile",
+      "server_calls": [
+        "/api/v1/me/slash-commands"
+      ],
+      "websocket": true
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/slash-commands/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts"
+      ],
+      "route": "/settings/slash-commands",
+      "websocket": true
+    },
+    {
+      "file": "frontend/src/app/[locale]/about/page.tsx",
+      "route": "/about"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/auth/callback/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/oauth-callback/route.ts"
+      ],
+      "route": "/auth/callback"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/auth/magic-link/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/me/route.ts"
+      ],
+      "route": "/auth/magic-link"
+    },
+    {
+      "file": "frontend/src/app/[locale]/blog/[slug]/page.tsx",
+      "route": "/blog/{slug}"
+    },
+    {
+      "file": "frontend/src/app/[locale]/blog/page.tsx",
+      "route": "/blog"
+    },
+    {
+      "file": "frontend/src/app/[locale]/changelog/page.tsx",
+      "route": "/changelog"
+    },
+    {
+      "file": "frontend/src/app/[locale]/community/page.tsx",
+      "route": "/community"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.contact"
+      ],
+      "file": "frontend/src/app/[locale]/contact/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/contact/route.ts"
+      ],
+      "route": "/contact"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.files",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/demo/[id]/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/conversations/[id]/messages/[messageId]/rate/route.ts",
+        "frontend/src/app/api/files/[id]/route.ts",
+        "frontend/src/app/api/files/upload/route.ts",
+        "frontend/src/app/api/users/avatar/[userId]/route.ts"
+      ],
+      "route": "/demo/{id}"
+    },
+    {
+      "file": "frontend/src/app/[locale]/demo/page.tsx",
+      "route": "/demo"
+    },
+    {
+      "file": "frontend/src/app/[locale]/help/page.tsx",
+      "route": "/help"
+    },
+    {
+      "file": "frontend/src/app/[locale]/legal/cookies/page.tsx",
+      "route": "/legal/cookies"
+    },
+    {
+      "file": "frontend/src/app/[locale]/legal/privacy/page.tsx",
+      "route": "/legal/privacy"
+    },
+    {
+      "file": "frontend/src/app/[locale]/legal/terms/page.tsx",
+      "route": "/legal/terms"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations",
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/onboarding/[step]/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts",
+        "frontend/src/app/api/users/me/route.ts"
+      ],
+      "route": "/onboarding/{step}",
+      "websocket": true
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.users"
+      ],
+      "file": "frontend/src/app/[locale]/onboarding/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/users/me/route.ts"
+      ],
+      "route": "/onboarding"
+    },
+    {
+      "file": "frontend/src/app/[locale]/page.tsx",
+      "route": "/"
+    },
+    {
+      "backend_modules": [
+        "app.api.routes.v1.auth"
+      ],
+      "file": "frontend/src/app/[locale]/pricing/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/auth/me/route.ts"
+      ],
+      "route": "/pricing"
+    },
+    {
+      "file": "frontend/src/app/[locale]/security/page.tsx",
+      "route": "/security"
+    },
+    {
+      "file": "frontend/src/app/[locale]/shared/[token]/page.tsx",
+      "route": "/shared/{token}"
+    }
+  ],
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      "backend/app/api/routes/",
+      "frontend/src/app/",
+      "governance/manifests/generated/interfaces.json"
+    ]
+  },
+  "schema_version": 1,
+  "summary": {
+    "pages": 42,
+    "pages_with_api_chains": 23,
+    "pages_with_broken_chains": 4,
+    "websocket_exception_pages": 10
+  }
+}

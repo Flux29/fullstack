@@ -13,7 +13,6 @@ backend-only when it also breaks the page that calls it.
 from __future__ import annotations
 
 import fnmatch
-import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -129,15 +128,6 @@ def _expand_with_import_graph(ctx: Context, paths: list[str]) -> tuple[list[str]
     return sorted({*paths, *graph_files}), graph_files, notes
 
 
-_TEMPLATE_PARAM = re.compile(r"\{[^}]*\}")
-
-
-def _normalize_template(path: str) -> str:
-    """Parameter segments compare equal whatever their name: `/api/files/{fileId}` and
-    `/api/files/{param}` are the same route."""
-    return _TEMPLATE_PARAM.sub("{}", path.rstrip("/"))
-
-
 def _expand_with_site_chain(ctx: Context, paths: list[str]) -> tuple[list[str], list[str], list[str]]:
     """Walk touched frontend code to the backend surface it calls through the proxy.
 
@@ -152,7 +142,11 @@ def _expand_with_site_chain(ctx: Context, paths: list[str]) -> tuple[list[str], 
     """
     try:
         from repo_governance.extractors.imports import RUNTIME_KINDS
-        from repo_governance.extractors.ts_imports import called_api_paths, get_ts_import_graph
+        from repo_governance.extractors.ts_imports import (
+            called_api_paths,
+            get_ts_import_graph,
+            normalize_template,
+        )
 
         graph = get_ts_import_graph(ctx)
     except Exception as error:  # noqa: BLE001 - the fallback IS the contract here
@@ -209,14 +203,14 @@ def _expand_with_site_chain(ctx: Context, paths: list[str]) -> tuple[list[str], 
         notes.append("interfaces.json missing; called API paths could not be joined to the proxy layer.")
         return [], ts_files, notes
 
-    called_normalized = {_normalize_template(path) for path in called}
+    called_normalized = {normalize_template(path) for path in called}
     handler_files: set[str] = set()
     backend_templates: set[str] = set()
     for route in read_json(interfaces_path).get("proxy_routes", []):
-        if _normalize_template(route.get("frontend_path", "")) in called_normalized:
+        if normalize_template(route.get("frontend_path", "")) in called_normalized:
             handler_files.add(route["file"])
             for target in route.get("backend_targets", []):
-                backend_templates.add(_normalize_template(target.get("path_template", "")))
+                backend_templates.add(normalize_template(target.get("path_template", "")))
 
     route_module_paths: set[str] = set()
     if backend_templates:
@@ -226,7 +220,7 @@ def _expand_with_site_chain(ctx: Context, paths: list[str]) -> tuple[list[str], 
 
             python = get_import_graph(ctx)
             for api_route in get_relations(ctx).api_routes:
-                if _normalize_template(api_route.path) in backend_templates:
+                if normalize_template(api_route.path) in backend_templates:
                     module_path = python.path_for_module(api_route.module)
                     if module_path:
                         route_module_paths.add(module_path)

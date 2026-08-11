@@ -173,6 +173,14 @@ update = "sync"
 read_when = "An orphan finding fires, or when hunting dead code during a debt sweep."
 
 [[catalog]]
+path = "governance/graph/reports/boundaries.json"
+kind = "manifest-generated"
+description = "Per-page chain coverage: which pages reach the backend through which proxy handlers, which chains are broken, and where the WebSocket exception is consumed."
+authority = "generated"
+update = "sync"
+read_when = "Planning a change that spans the proxy hop, or checking what a page actually touches."
+
+[[catalog]]
 path = "governance/manifests/generated/components.json"
 kind = "manifest-generated"
 description = "Every component, compiled from directory annotations and curated declarations."

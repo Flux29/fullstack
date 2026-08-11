@@ -102,6 +102,7 @@
       "governance/governance.toml",
       "governance/graph/edge-types.json",
       "governance/graph/node-types.json",
+      "governance/graph/reports/boundaries.json",
       "governance/graph/reports/cycles.json",
       "governance/graph/reports/orphans.json",
       "governance/manifests/curated/architectural-intent.json",

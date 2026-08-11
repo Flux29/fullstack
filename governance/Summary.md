@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 65)
+## Recent changes (latest 20 of 66)
 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Make the read gate's feedback loop close itself
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-11-make-the-read-gate-s-feedback-loop-close-itself.json`
+- **2026-08-11** — Join the site graph and report chain coverage
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-join-the-site-graph-and-report-chain-coverage.json`
 - **2026-08-11** — Follow the site chain in impact analysis and measure the phase-6 exit
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-follow-the-site-chain-in-impact-analysis-and-measure-the-phase-6.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Fix the born-broken Gmail assertion in the integrations e2e spec
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-10-fix-the-born-broken-gmail-assertion-in-the-integrations-e2e-spec.json`
-- **2026-08-10** — Extract the new-file gate to a script covering NotebookEdit and sanctioned dirs; widen the permissions allowlist
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-extract-the-new-file-gate-to-a-script-covering-notebookedit-and.json`
 
 ## Decisions (5)
 

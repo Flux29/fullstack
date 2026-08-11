@@ -50,6 +50,7 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/history/evaluations/*.json", "evaluations"),
     ("governance/graph/reports/cycles.json", "graph-cycles"),
     ("governance/graph/reports/orphans.json", "graph-orphans"),
+    ("governance/graph/reports/boundaries.json", "graph-boundaries"),
 )
 
 _SLUG = {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"}
@@ -440,6 +441,51 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
                     },
                 },
             }
+        },
+    },
+    "graph-boundaries": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/graph-boundaries/v1",
+        "description": "Per-page chain coverage: page to proxy to backend, broken chains, and WS-exception consumers.",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["schema_version", "provenance", "summary", "pages"],
+        "properties": {
+            "schema_version": {"const": 1},
+            "provenance": _PROVENANCE,
+            "summary": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": [
+                    "pages",
+                    "pages_with_api_chains",
+                    "pages_with_broken_chains",
+                    "websocket_exception_pages",
+                ],
+                "properties": {
+                    "pages": {"type": "integer", "minimum": 0},
+                    "pages_with_api_chains": {"type": "integer", "minimum": 0},
+                    "pages_with_broken_chains": {"type": "integer", "minimum": 0},
+                    "websocket_exception_pages": {"type": "integer", "minimum": 0},
+                },
+            },
+            "pages": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["route", "file"],
+                    "properties": {
+                        "route": {"type": "string"},
+                        "file": {"type": "string"},
+                        "proxy_handlers": {"type": "array", "items": {"type": "string"}},
+                        "backend_modules": {"type": "array", "items": {"type": "string"}},
+                        "server_calls": {"type": "array", "items": {"type": "string"}},
+                        "unmatched_paths": {"type": "array", "items": {"type": "string"}},
+                        "websocket": {"const": True},
+                    },
+                },
+            },
         },
     },
     "graph-orphans": {

@@ -1,0 +1,67 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The site graph is a committed queryable artifact: 42 pages joined page-to-proxy-to-backend, 23 with API chains, 10 consuming the WebSocket exception, and 4 pages with genuinely broken chains - calls into the void at /api/billing (feature disabled), legacy /api/kb and /api/orgs paths, a rag sources clone endpoint the backend no longer serves, and a password-change path with no handler.",
+    "Called paths now classify three ways: proxied, server-side (matching a backend route directly, the server-api.ts pattern), or unmatched - the first report draft misread server-side calls as broken chains and query-assembly fragments as parameters, and both artifacts are fixed with regression tests."
+  ],
+  "compatibility_impact": "boundaries.json is a new generated report with a kernel-internal schema; called-path normalization tightened (query-assembly fragments no longer read as path parameters), which corrects rather than changes any contract.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/graph/reports/boundaries.json",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/extractors/ts_imports.py",
+    "tools/repo_governance/src/repo_governance/graph/site.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/src/repo_governance/renderers/context.py",
+    "tools/repo_governance/tests/test_site_graph.py"
+  ],
+  "follow_up": [
+    "The 4 broken-chain pages and their 9 dead call paths are debt-sweep candidates recorded in boundaries.json, not chased here.",
+    "Session 7.2 adds ranking and risk algorithms over the joined graph."
+  ],
+  "id": "2026-08-11-join-the-site-graph-and-report-chain-coverage",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Chains are static: a page calling an API through a mechanism the two regexes do not cover shows fewer chains than reality, conservative as designed."
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The chain machinery exists per-invocation inside impact analysis but no committed artifact shows which pages actually reach the backend and which chains are broken; the site join makes the page-to-backend map a queryable structure with a coverage report, the WS exception modeled rather than lost, and unmatched chains recorded as findings-in-waiting instead of silence",
+  "risks": [
+    "The WS-exception flag is text-based (modules naming the endpoint); a renamed endpoint constant would drop the flag silently until the interfaces manifest catches up."
+  ],
+  "rollback": "git revert of the single commit.",
+  "schema_version": 1,
+  "security_impact": "None. The report names routes, handler files, and module names; called paths are template-normalized literals with query assembly stripped, never values.",
+  "summary": "Join the site graph and report chain coverage",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "285 passed in 119s, includes 7 site-graph tests and the called-path normalization tests",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

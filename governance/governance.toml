@@ -141,6 +141,22 @@ update = "manual"
 read_when = "Authoring a new governance document by hand, or changing a document's shape."
 
 [[catalog]]
+path = "governance/graph/node-types.json"
+kind = "manifest-curated"
+description = "The typed node vocabulary for the repository graph. Every graph node kind an extractor may emit is declared here first."
+authority = "curated"
+update = "manual"
+read_when = "Adding a graph extractor or a new node kind; checking what the graph can represent."
+
+[[catalog]]
+path = "governance/graph/edge-types.json"
+kind = "manifest-curated"
+description = "The typed edge vocabulary for the repository graph, with the provenance fields every edge instance must carry."
+authority = "curated"
+update = "manual"
+read_when = "Adding a graph extractor or a new edge kind; checking what a graph relationship means."
+
+[[catalog]]
 path = "governance/manifests/generated/components.json"
 kind = "manifest-generated"
 description = "Every component, compiled from directory annotations and curated declarations."

@@ -100,6 +100,8 @@
       "governance/Summary.md",
       "governance/catalog.json",
       "governance/governance.toml",
+      "governance/graph/edge-types.json",
+      "governance/graph/node-types.json",
       "governance/manifests/curated/architectural-intent.json",
       "governance/manifests/curated/exceptions.json",
       "governance/manifests/curated/ownership.json",

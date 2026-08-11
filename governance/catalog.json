@@ -33,6 +33,22 @@
       "update": "manual"
     },
     {
+      "authority": "curated",
+      "description": "The typed edge vocabulary for the repository graph, with the provenance fields every edge instance must carry.",
+      "kind": "manifest-curated",
+      "path": "governance/graph/edge-types.json",
+      "read_when": "Adding a graph extractor or a new edge kind; checking what a graph relationship means.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "The typed node vocabulary for the repository graph. Every graph node kind an extractor may emit is declared here first.",
+      "kind": "manifest-curated",
+      "path": "governance/graph/node-types.json",
+      "read_when": "Adding a graph extractor or a new node kind; checking what the graph can represent.",
+      "update": "manual"
+    },
+    {
       "authority": "mixed",
       "description": "Structured change records, one per material governed change. Query by component, path, or date rather than reading the directory.",
       "kind": "history-change",

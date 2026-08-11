@@ -2,16 +2,27 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "fullstack-governance:schemas/graph-model/v1",
   "title": "Graph model",
-  "description": "The typed node and edge vocabulary for the repository graph. Reserved: the graph itself is Phase 6 work, built only in response to a named symptom — kernel impact sets measurably too coarse, or context budgets blown by over-inclusive slices. The vocabulary is committed now so Phase 6 starts from a reviewed contract rather than inventing one under pressure.",
+  "description": "The typed node and edge vocabulary for the repository graph. A document may carry node_types, edge_types, or both — the kernel bindings split the committed vocabulary into node-types.json and edge-types.json. Activated by the phase 6-7 build decision (evaluation 2026-08-11-phase-6-7-build-decision-and-baseline); the reserved form remains valid so pre-activation documents still validate.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["schema_version", "status", "node_types", "edge_types"],
+  "required": ["schema_version", "status"],
+  "anyOf": [
+    {
+      "required": ["node_types"]
+    },
+    {
+      "required": ["edge_types"]
+    }
+  ],
   "properties": {
+    "$schema": {
+      "type": "string"
+    },
     "schema_version": {
       "const": 1
     },
     "status": {
-      "const": "reserved-phase-6"
+      "enum": ["reserved-phase-6", "active"]
     },
     "growth_trigger": {
       "type": "string",

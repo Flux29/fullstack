@@ -81,6 +81,16 @@
       ]
     },
     {
+      "id": "no-broken-site-chains",
+      "statement": "No page calls an API path that neither a proxy handler nor a backend route serves.",
+      "rationale": "A call into the void fails only at runtime, on the user's screen. The site graph can see it statically, so waiting for the 404 is a choice.",
+      "maturity": "advisory",
+      "check_impl": "checks.graph.check_broken_site_chains",
+      "promotion_criteria": "The four known broken-chain pages are fixed or their calls classified, and the rule then runs clean for a release cycle.",
+      "exceptions_allowed": true,
+      "exception_refs": []
+    },
+    {
       "id": "no-dependency-cycles",
       "statement": "No strongly connected component larger than one module exists in either language's runtime import graph.",
       "rationale": "A cycle means neither side can be understood, tested, or replaced alone. One closed at module scope works only while initialization order happens to hold; one closed through deferred imports is the same coupling wearing a workaround.",

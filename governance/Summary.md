@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 68)
+## Recent changes (latest 20 of 69)
 
+- **2026-08-11** — Wire the broken-chain rule, surface visualize, and measure the phase-7 exit
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-wire-the-broken-chain-rule-surface-visualize-and-measure-the-pha.json`
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-update-governance-selftests-to-the-post-facade-tree.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Make the home e2e specs viewport-aware
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-10-make-the-home-e2e-specs-viewport-aware.json`
-- **2026-08-10** — Give the user-menu trigger an accessible name
-  - Components: frontend-app
-  - Record: `governance/history/changes/2026-08-10-give-the-user-menu-trigger-an-accessible-name.json`
 
 ## Decisions (5)
 

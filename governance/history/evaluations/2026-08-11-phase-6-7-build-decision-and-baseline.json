@@ -20,7 +20,7 @@
     }
   ],
   "proposed_action": "Build phases 6 and 7 as governed sessions, smallest coherent change each: commit the graph vocabulary and unreserve graph-model.schema.json; add the TypeScript module graph; extract route/task/model/test/tool relations; add the SQLite graph cache with cycle and orphan reports; feed the cross-language chain into impact and context, then re-measure against this baseline (phase-6 exit record); join the site graph, add ranking and risk algorithms, un-defer governance visualize, and wire advisory policies, then measure phase 7's exit. Phase 6 is accepted only if precision improves on these scenarios without new recall misses; the two known recall misses above are the specific defects the cross-language expansion must fix. All new finding classes enter advisory.",
-  "status": "open",
+  "status": "acted-on",
   "initiated_by": {
     "kind": "user",
     "ref": "owner directive to finish blueprint phases 6-7, 2026-08-11"

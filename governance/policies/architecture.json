@@ -73,12 +73,22 @@
       "statement": "Routes, configuration variables, tools, and database tables have a consumer, or a classification explaining why they do not.",
       "rationale": "Unused surface is either dead weight or an unfinished feature, and the two need opposite responses. Generator-provided but feature-disabled surfaces are neither, which is why the classification exists.",
       "maturity": "advisory",
-      "check_impl": "phase-3",
-      "promotion_criteria": "Orphan detection runs with the generator-feature whitelist and produces no false positive on the current tree.",
+      "check_impl": "checks.graph.check_orphans",
+      "promotion_criteria": "Orphan detection runs with the generator-feature whitelist and produces no false positive on the current tree. The check covers the module slice today; route and tool consumer analysis arrives with the phase-7 site join.",
       "exceptions_allowed": true,
       "exception_refs": [
         "billing-generator-feature-disabled"
       ]
+    },
+    {
+      "id": "no-dependency-cycles",
+      "statement": "No strongly connected component larger than one module exists in either language's runtime import graph.",
+      "rationale": "A cycle means neither side can be understood, tested, or replaced alone. One closed at module scope works only while initialization order happens to hold; one closed through deferred imports is the same coupling wearing a workaround.",
+      "maturity": "advisory",
+      "check_impl": "checks.graph.check_dependency_cycles",
+      "promotion_criteria": "The known cycles on the current tree are either broken or recorded as deliberate in an ADR, and the rule then runs clean for a full release cycle.",
+      "exceptions_allowed": true,
+      "exception_refs": []
     },
     {
       "id": "thick-domains-expose-a-facade",

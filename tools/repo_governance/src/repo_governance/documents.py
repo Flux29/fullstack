@@ -48,6 +48,8 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/manifests/generated/read-surface.json", "read-surface"),
     ("governance/manifests/effective/repository.json", "effective"),
     ("governance/history/evaluations/*.json", "evaluations"),
+    ("governance/graph/reports/cycles.json", "graph-cycles"),
+    ("governance/graph/reports/orphans.json", "graph-orphans"),
 )
 
 _SLUG = {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"}
@@ -410,6 +412,62 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
             },
             "limitations": {"type": "array", "items": {"type": "string"}},
             "tool_version": {"type": "string"},
+        },
+    },
+    "graph-cycles": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/graph-cycles/v1",
+        "description": "Dependency cycles per language, each classified import-time or deferred-import.",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["schema_version", "provenance", "python", "typescript"],
+        "properties": {
+            "schema_version": {"const": 1},
+            "provenance": _PROVENANCE,
+            "python": {"$ref": "#/$defs/cycles"},
+            "typescript": {"$ref": "#/$defs/cycles"},
+        },
+        "$defs": {
+            "cycles": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["modules", "import_time"],
+                    "properties": {
+                        "modules": {"type": "array", "minItems": 2, "items": {"type": "string"}},
+                        "import_time": {"type": "boolean"},
+                    },
+                },
+            }
+        },
+    },
+    "graph-orphans": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/graph-orphans/v1",
+        "description": "Modules with no importer and no explaining classification, plus what each exclusion class absorbed.",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["schema_version", "provenance", "python", "typescript"],
+        "properties": {
+            "schema_version": {"const": 1},
+            "provenance": _PROVENANCE,
+            "python": {"$ref": "#/$defs/side"},
+            "typescript": {"$ref": "#/$defs/side"},
+        },
+        "$defs": {
+            "side": {
+                "type": "object",
+                "additionalProperties": False,
+                "required": ["orphans", "excluded"],
+                "properties": {
+                    "orphans": {"type": "array", "items": {"type": "string"}},
+                    "excluded": {
+                        "type": "object",
+                        "additionalProperties": {"type": "integer", "minimum": 0},
+                    },
+                },
+            }
         },
     },
 }

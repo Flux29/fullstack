@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 63)
+## Recent changes (latest 20 of 64)
 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-update-governance-selftests-to-the-post-facade-tree.json`
+- **2026-08-11** — Store the graph in SQLite and report cycles and orphans
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-store-the-graph-in-sqlite-and-report-cycles-and-orphans.json`
 - **2026-08-11** — Record the phase 6-7 build decision and impact baseline
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-record-the-phase-6-7-build-decision-and-impact-baseline.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Deny the MCP filesystem writer tools inside the repository
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-deny-the-mcp-filesystem-writer-tools-inside-the-repository.json`
-- **2026-08-10** — Correct .claude rules to match the code they describe
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-correct-claude-rules-to-match-the-code-they-describe.json`
 
 ## Decisions (5)
 

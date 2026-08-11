@@ -136,6 +136,69 @@ def _thick_domains(scope: CheckScope) -> list[str]:
     )
 
 
+def check_dependency_cycles(scope: CheckScope) -> list[Issue]:
+    """No strongly connected component larger than one module, in either language.
+
+    A cycle closed only through deferred imports is a coupling smell; one closed at module
+    scope also works only while initialization order happens to hold — the issue says
+    which it found.
+    """
+    from repo_governance.graph.queries import build_cycles_report
+
+    report = build_cycles_report(scope.ctx)
+    issues: list[Issue] = []
+    for language in ("python", "typescript"):
+        for entry in report[language]:
+            severity = "import-time" if entry["import_time"] else "deferred-import"
+            issues.append(
+                Issue(
+                    message=(
+                        f"{len(entry['modules'])} {language} modules form a dependency cycle "
+                        f"({severity})."
+                    ),
+                    path="governance/graph/reports/cycles.json",
+                    evidence=" <-> ".join(entry["modules"]),
+                    repair=(
+                        "Break the cycle by moving the shared piece down, or record the coupling "
+                        "as deliberate in an ADR."
+                    ),
+                )
+            )
+    return issues
+
+
+def check_orphans(scope: CheckScope) -> list[Issue]:
+    """Every module has an importer or a classification explaining why it does not.
+
+    Scope honesty: this is the module slice of the no-orphaned-surfaces rule. Routes and
+    tools gain consumer analysis with the phase-7 site join; unconsumed configuration is
+    already surfaced by the configuration extractor.
+    """
+    from repo_governance.graph.queries import build_orphans_report
+
+    report = build_orphans_report(scope.ctx)
+    issues: list[Issue] = []
+    for language in ("python", "typescript"):
+        orphans = report[language]["orphans"]
+        if not orphans:
+            continue
+        issues.append(
+            Issue(
+                message=(
+                    f"{len(orphans)} {language} module(s) have no importer and no "
+                    "classification that explains it."
+                ),
+                path="governance/graph/reports/orphans.json",
+                evidence=", ".join(orphans),
+                repair=(
+                    "Delete the dead module, wire the unfinished feature, or classify it "
+                    "(component entrypoint, feature-disabled, dynamic subtree)."
+                ),
+            )
+        )
+    return issues
+
+
 def check_thick_domain_facades(scope: CheckScope) -> list[Issue]:
     """A thick service subpackage is imported only through its package root.
 

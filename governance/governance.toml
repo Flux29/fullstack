@@ -157,6 +157,22 @@ update = "manual"
 read_when = "Adding a graph extractor or a new edge kind; checking what a graph relationship means."
 
 [[catalog]]
+path = "governance/graph/reports/cycles.json"
+kind = "manifest-generated"
+description = "Dependency cycles per language, each classified import-time or deferred-import."
+authority = "generated"
+update = "sync"
+read_when = "A cycle finding fires, or before restructuring modules that import each other."
+
+[[catalog]]
+path = "governance/graph/reports/orphans.json"
+kind = "manifest-generated"
+description = "Modules with no importer and no explaining classification, plus counts of what each exclusion class absorbed."
+authority = "generated"
+update = "sync"
+read_when = "An orphan finding fires, or when hunting dead code during a debt sweep."
+
+[[catalog]]
 path = "governance/manifests/generated/components.json"
 kind = "manifest-generated"
 description = "Every component, compiled from directory annotations and curated declarations."

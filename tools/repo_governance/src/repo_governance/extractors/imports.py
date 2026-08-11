@@ -45,6 +45,9 @@ _DYNAMIC_IMPORT_CALLS = {
     ("pkgutil", "iter_modules"),
     ("pkgutil", "walk_packages"),
 }
+#: The same callables when imported bare (`from importlib import import_module`); the rag
+#: facade's PEP 562 lazy exports call this form and went undetected until phase 6.
+_DYNAMIC_IMPORT_NAMES = frozenset({"__import__", "import_module", "iter_modules", "walk_packages"})
 
 
 @dataclass(frozen=True, order=True)
@@ -153,7 +156,7 @@ def _is_type_checking_test(test: ast.expr) -> bool:
 
 def _is_dynamic_import_call(node: ast.Call) -> bool:
     func = node.func
-    if isinstance(func, ast.Name) and func.id == "__import__":
+    if isinstance(func, ast.Name) and func.id in _DYNAMIC_IMPORT_NAMES:
         return True
     if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
         return (func.value.id, func.attr) in _DYNAMIC_IMPORT_CALLS

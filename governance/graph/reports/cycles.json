@@ -1,0 +1,33 @@
+{
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      "backend/app/",
+      "frontend/src/"
+    ]
+  },
+  "python": [
+    {
+      "import_time": true,
+      "modules": [
+        "app.services.rag.connectors",
+        "app.services.rag.connectors.google_drive",
+        "app.services.rag.connectors.s3"
+      ]
+    },
+    {
+      "import_time": true,
+      "modules": [
+        "app.services.rag_document",
+        "app.services.rag_sync",
+        "app.services.sync_source",
+        "app.worker.taskiq_app",
+        "app.worker.tasks.rag_tasks",
+        "app.worker.tasks.schedules"
+      ]
+    }
+  ],
+  "schema_version": 1,
+  "typescript": []
+}

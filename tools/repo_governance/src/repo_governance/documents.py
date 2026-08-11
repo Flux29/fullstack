@@ -51,6 +51,7 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/graph/reports/cycles.json", "graph-cycles"),
     ("governance/graph/reports/orphans.json", "graph-orphans"),
     ("governance/graph/reports/boundaries.json", "graph-boundaries"),
+    ("governance/graph/reports/hotspots.json", "graph-hotspots"),
 )
 
 _SLUG = {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"}
@@ -486,6 +487,59 @@ INTERNAL_SCHEMAS: dict[str, dict[str, Any]] = {
                     },
                 },
             },
+        },
+    },
+    "graph-hotspots": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "$id": "fullstack-governance:internal/graph-hotspots/v1",
+        "description": "Structural centrality per typed view plus the invariant-coverage risk join. Churn is cache-only by design.",
+        "type": "object",
+        "additionalProperties": False,
+        "required": ["schema_version", "provenance", "views", "risk"],
+        "properties": {
+            "schema_version": {"const": 1},
+            "provenance": _PROVENANCE,
+            "views": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["pagerank", "betweenness"],
+                    "properties": {
+                        "pagerank": {"$ref": "#/$defs/ranking"},
+                        "betweenness": {"$ref": "#/$defs/ranking"},
+                    },
+                },
+            },
+            "risk": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["component", "invariants", "uncovered", "gaps", "max_module_centrality"],
+                    "properties": {
+                        "component": {"type": "string"},
+                        "invariants": {"type": "integer", "minimum": 0},
+                        "uncovered": {"type": "array", "items": {"type": "string"}},
+                        "gaps": {"type": "array", "items": {"type": "string"}},
+                        "max_module_centrality": {"type": "number", "minimum": 0},
+                    },
+                },
+            },
+        },
+        "$defs": {
+            "ranking": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "required": ["id", "score"],
+                    "properties": {
+                        "id": {"type": "string"},
+                        "score": {"type": "number", "minimum": 0},
+                    },
+                },
+            }
         },
     },
     "graph-orphans": {

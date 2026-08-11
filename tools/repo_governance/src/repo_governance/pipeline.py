@@ -22,6 +22,7 @@ READ_SURFACE_PATH = "governance/manifests/generated/read-surface.json"
 CYCLES_REPORT_PATH = "governance/graph/reports/cycles.json"
 ORPHANS_REPORT_PATH = "governance/graph/reports/orphans.json"
 BOUNDARIES_REPORT_PATH = "governance/graph/reports/boundaries.json"
+HOTSPOTS_REPORT_PATH = "governance/graph/reports/hotspots.json"
 DECISION_INDEX_PATH = "governance/history/decisions/index.json"
 SUMMARY_PATH = "governance/Summary.md"
 ENV_VARS_PATH = "ENV_VARS.md"
@@ -111,9 +112,12 @@ def render_all(ctx: Context) -> dict[str, str]:
     from repo_governance.graph.queries import build_cycles_report, build_orphans_report
     from repo_governance.graph.site import build_boundaries_report
 
+    from repo_governance.graph.algorithms import build_hotspots_report
+
     outputs[CYCLES_REPORT_PATH] = canonical_json(build_cycles_report(ctx))
     outputs[ORPHANS_REPORT_PATH] = canonical_json(build_orphans_report(ctx))
     outputs[BOUNDARIES_REPORT_PATH] = canonical_json(build_boundaries_report(ctx))
+    outputs[HOTSPOTS_REPORT_PATH] = canonical_json(build_hotspots_report(ctx))
 
     # Summary summarizes other generated documents. They are handed to it directly rather
     # than read back from disk, so a first sync of a clean checkout produces the final bytes.

@@ -274,6 +274,10 @@
       "reason": "Same: the site chain-coverage report, validated kernel-internally."
     },
     {
+      "path": "governance/graph/reports/hotspots.json",
+      "reason": "Same: the centrality and risk report, validated kernel-internally."
+    },
+    {
       "path": "governance/manifests/curated/ownership.json",
       "reason": "Same: no blueprint schema exists for the ownership rules themselves."
     },

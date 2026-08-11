@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 66)
+## Recent changes (latest 20 of 67)
 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
@@ -94,6 +94,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Add the TypeScript module graph
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-add-the-typescript-module-graph.json`
+- **2026-08-11** — Add ranking and risk analysis over the joined graph
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-add-ranking-and-risk-analysis-over-the-joined-graph.json`
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-route-sessions-to-pick-workflow-and-teach-explore-delegating-ski.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Gate telemetry: verdict event log, shadow roots, and a gate-metrics aggregation command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-gate-telemetry-verdict-event-log-shadow-roots-and-a-gate-metrics.json`
-- **2026-08-10** — Fix the born-broken Gmail assertion in the integrations e2e spec
-  - Components: frontend-app
-  - Record: `governance/history/changes/2026-08-10-fix-the-born-broken-gmail-assertion-in-the-integrations-e2e-spec.json`
 
 ## Decisions (5)
 

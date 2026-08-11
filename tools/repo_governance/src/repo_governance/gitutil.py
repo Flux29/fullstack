@@ -121,6 +121,25 @@ def toplevel(root: Path) -> Path | None:
     return Path(output.strip()).resolve()
 
 
+def churn_counts(root: Path, *, max_commits: int = 500) -> dict[str, int] | None:
+    """Commits-touching-file counts over the last `max_commits`, or None if unknown.
+
+    Bounded and history-volatile by nature: every new commit shifts the counts, which is
+    why churn-derived analysis lives in the cache and never in a committed report.
+    """
+    if toplevel(root) != root.resolve():
+        return None  # A directory nested in some other repository gets that repo's log.
+    output = _run(["log", f"-{max_commits}", "--name-only", "--format="], root)
+    if output is None:
+        return None
+    counts: dict[str, int] = {}
+    for line in output.splitlines():
+        path = line.strip()
+        if path:
+            counts[path] = counts.get(path, 0) + 1
+    return counts
+
+
 def is_clean(root: Path) -> bool | None:
     changes = working_tree_changes(root)
     if changes is None:

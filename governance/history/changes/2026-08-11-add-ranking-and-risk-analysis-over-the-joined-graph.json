@@ -1,0 +1,68 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "hotspots.json commits structural centrality per language view and the centrality-times-invariant-coverage risk join: the rankings surface the real architecture (app.core.config and the rag facade as import hubs, app.api.deps as the top bridge) and the risk table puts rag first - highest-centrality component with an invariant gap (the migration CHECK point of the dimension contract).",
+    "Churn-times-centrality is deliberately cache-only, rebuilt by governance scan: a committed churn report would drift on every commit because its input is the history itself. churn_counts also refuses to answer for a directory nested inside another repository, closing the toplevel caveat gitutil already documented."
+  ],
+  "compatibility_impact": "New dependency networkx pinned in the tools lockfile, used for betweenness only - PageRank is implemented in-module by power iteration because networkx 3.x delegates it to scipy, a numeric stack this tool does not need. New generated report with kernel-internal schema.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/graph/reports/hotspots.json",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/pyproject.toml",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/gitutil.py",
+    "tools/repo_governance/src/repo_governance/graph/algorithms.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/tests/test_algorithms.py",
+    "tools/repo_governance/uv.lock"
+  ],
+  "follow_up": [
+    "Session 7.3 builds the visualizers over these rankings and un-defers governance visualize."
+  ],
+  "id": "2026-08-11-add-ranking-and-risk-analysis-over-the-joined-graph",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Personalized PageRank is implemented and tested but not yet consumed; session 7.3 wires it into the focused views. The site view is not ranked separately - its chains are few enough to read whole in boundaries.json."
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "Reviews still judge importance by directory intuition: nothing ranks which modules are load-bearing, which bridges hold subsystems together, or which central code lacks invariant coverage, and the phase-6 exit transferred component precision as the open measurement target that ranking is meant to inform; this adds PageRank, betweenness, and centrality-times-coverage risk as advisory, deterministic, committed analysis",
+  "risks": [
+    "PageRank determinism rests on sorted iteration and 4-decimal rounding; a float-ordering surprise on another platform would show up as report drift in CI, which is the detection mechanism working."
+  ],
+  "rollback": "git revert of the single commit; uv sync --project tools/repo_governance restores the environment without networkx.",
+  "schema_version": 1,
+  "security_impact": "None. Rankings name modules and components; churn reads commit metadata only, never contents.",
+  "summary": "Add ranking and risk analysis over the joined graph",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "296 passed in 120s, includes 10 algorithm tests",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -102,6 +102,21 @@ def test_build_graph_records_dynamic_import_sites_without_fabricating_edges(mini
 
     graph = _graph(minimal_repo)
     assert graph.dynamic_import_sites == ("app.commands",)
+
+
+def test_bare_import_module_call_is_a_dynamic_site(minimal_repo: Path) -> None:
+    """`from importlib import import_module` then a bare call — the rag facade's PEP 562
+    form, which the attribute-only detector missed until phase 6."""
+    _write(
+        minimal_repo,
+        "backend/app/services/rag/__init__.py",
+        "from importlib import import_module\n"
+        "def __getattr__(name):\n"
+        "    return import_module(f'app.services.rag.{name}')\n",
+    )
+
+    graph = _graph(minimal_repo)
+    assert graph.dynamic_import_sites == ("app.services.rag",)
     assert not any(edge.src == "app.commands" for edge in graph.edges)
     assert graph.unresolved == ()
 
@@ -185,4 +200,6 @@ def test_real_tree_graph_resolves_all_absolute_app_imports(real_context: Context
     a finding about the tree (or the resolver), never a reason to relax the assertion."""
     graph = build_import_graph(real_context)
     assert graph.unresolved == ()
-    assert graph.dynamic_import_sites == ("app.commands",)
+    # app.commands discovers via pkgutil; app.services.rag lazy-loads via PEP 562 —
+    # the bare-name import_module form the detector learned in phase 6.
+    assert graph.dynamic_import_sites == ("app.commands", "app.services.rag")

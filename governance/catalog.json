@@ -49,6 +49,22 @@
       "update": "manual"
     },
     {
+      "authority": "generated",
+      "description": "Dependency cycles per language, each classified import-time or deferred-import.",
+      "kind": "manifest-generated",
+      "path": "governance/graph/reports/cycles.json",
+      "read_when": "A cycle finding fires, or before restructuring modules that import each other.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
+      "description": "Modules with no importer and no explaining classification, plus counts of what each exclusion class absorbed.",
+      "kind": "manifest-generated",
+      "path": "governance/graph/reports/orphans.json",
+      "read_when": "An orphan finding fires, or when hunting dead code during a debt sweep.",
+      "update": "sync"
+    },
+    {
       "authority": "mixed",
       "description": "Structured change records, one per material governed change. Query by component, path, or date rather than reading the directory.",
       "kind": "history-change",

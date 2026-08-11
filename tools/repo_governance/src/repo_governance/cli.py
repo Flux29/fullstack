@@ -211,17 +211,21 @@ def preflight(skip_docker: bool, with_model: bool) -> None:
 
 @main.command()
 def scan() -> None:
-    """Parse the authoritative sources and write generated candidates to the cache.
-
-    A preview: it never touches the repository. In this milestone there is no graph cache
-    to rebuild, so scan produces exactly what sync would write and reports the difference.
-    """
+    """Parse the authoritative sources, rebuild the graph cache, and write generated
+    candidates to the cache. A preview: it never touches the repository."""
     ctx = _context()
     candidates = ctx.paths.cache / "candidates"
 
     outputs = render_all(ctx)
     for relative_path, content in sorted(outputs.items()):
         write_text_atomic(candidates / relative_path, content)
+
+    from repo_governance.graph.queries import assemble
+    from repo_governance.graph.storage import build_sqlite
+
+    data = assemble(ctx)
+    cache = build_sqlite(ctx, data)
+    click.echo(f"Graph cache: {len(data.nodes)} nodes, {len(data.edges)} edges -> {cache}")
 
     drift = compare_generated(ctx)
     click.echo(f"Rendered {len(outputs)} generated files to {candidates}.")

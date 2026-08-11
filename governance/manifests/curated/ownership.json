@@ -55,6 +55,12 @@
       "repair": "make governance-sync"
     },
     {
+      "path": "governance/graph/reports/",
+      "regenerable": true,
+      "source": "The joined graph: Python and TypeScript import extractors plus the relation extractor",
+      "repair": "make governance-sync"
+    },
+    {
       "path": "ENV_VARS.md",
       "regenerable": true,
       "source": "governance/manifests/generated/configuration.json",
@@ -254,6 +260,14 @@
     {
       "path": "governance/validators.json",
       "reason": "The blueprint's schema set is exactly twelve files and does not include one for the validator registry. Validating it against a kernel-internal schema keeps the committed set at twelve while still refusing a malformed registry."
+    },
+    {
+      "path": "governance/graph/reports/cycles.json",
+      "reason": "Graph analysis reports are not in the blueprint's twelve; the graph-model schema covers the vocabulary, not the analyses over it."
+    },
+    {
+      "path": "governance/graph/reports/orphans.json",
+      "reason": "Same: an analysis report, validated kernel-internally to keep the committed schema set at twelve."
     },
     {
       "path": "governance/manifests/curated/ownership.json",

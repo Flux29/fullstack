@@ -1,0 +1,57 @@
+{
+  "provenance": {
+    "extractor_version": "1.0.0",
+    "method": "extracted",
+    "sources": [
+      ".fastapi-fullstack.json",
+      "backend/app/",
+      "frontend/src/",
+      "governance/manifests/effective/repository.json"
+    ]
+  },
+  "python": {
+    "excluded": {
+      "dynamic-subtree": 4,
+      "entrypoint": 3,
+      "feature-disabled": 0,
+      "package-root": 12
+    },
+    "orphans": [
+      "app.agents.tools.research",
+      "app.api.versioning",
+      "app.core.csrf",
+      "app.services.email.providers.resend",
+      "app.services.email.providers.smtp"
+    ]
+  },
+  "schema_version": 1,
+  "typescript": {
+    "excluded": {
+      "ambient-types": 1,
+      "entrypoint": 0,
+      "feature-disabled": 0,
+      "framework-invoked": 128,
+      "test-module": 6
+    },
+    "orphans": [
+      "frontend/src/components/admin/admin-nav.tsx",
+      "frontend/src/components/brand-override.tsx",
+      "frontend/src/components/chat/map-message.tsx",
+      "frontend/src/components/dashboard/page-hero.tsx",
+      "frontend/src/components/dashboard/usage-timeline.tsx",
+      "frontend/src/components/icons/google-icon.tsx",
+      "frontend/src/components/layout/breadcrumb.tsx",
+      "frontend/src/components/layout/landing-nav.tsx",
+      "frontend/src/components/marketing/code-preview.tsx",
+      "frontend/src/components/marketing/feature-glyph.tsx",
+      "frontend/src/components/marketing/feature-section.tsx",
+      "frontend/src/components/marketing/highlight.tsx",
+      "frontend/src/components/marketing/testimonial-carousel.tsx",
+      "frontend/src/components/rag/sync-source-logs.tsx",
+      "frontend/src/components/settings/brand-color-picker.tsx",
+      "frontend/src/components/settings/settings-nav.tsx",
+      "frontend/src/components/ui/radio-group.tsx",
+      "frontend/src/components/ui/scroll-area.tsx"
+    ]
+  }
+}

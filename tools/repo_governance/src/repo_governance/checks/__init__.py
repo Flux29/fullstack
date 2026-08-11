@@ -85,6 +85,8 @@ def _registry() -> dict[str, tuple[CheckFunction, bool]]:
         "checks.graph.check_layering": (graph.check_layering, False),
         "checks.graph.check_forbidden_dependencies": (graph.check_forbidden_dependencies, False),
         "checks.graph.check_thick_domain_facades": (graph.check_thick_domain_facades, False),
+        "checks.graph.check_dependency_cycles": (graph.check_dependency_cycles, False),
+        "checks.graph.check_orphans": (graph.check_orphans, False),
         "checks.compatibility.check_orm_migration_pairing": (compatibility.check_orm_migration_pairing, True),
         "checks.architecture.check_healthchecks": (architecture.check_healthchecks, False),
         "checks.architecture.check_proxy_coverage": (architecture.check_proxy_coverage, False),

@@ -1,0 +1,50 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "home.spec uses the isMobile fixture to open the collapsed marketing menu before asserting nav and sign-in visibility, matching the responsive design instead of fighting it"
+  ],
+  "compatibility_impact": "None - desktop assertions unchanged; mobile projects now exercise the menu open path, which is closer to what a real mobile user does",
+  "date": "2026-08-10",
+  "files_changed": [
+    "frontend/e2e/home.spec.ts"
+  ],
+  "follow_up": [
+    "If firefox flake matters, options are fewer parallel workers locally or firefox-specific retries - both are e2e-config decisions, not app fixes"
+  ],
+  "id": "2026-08-10-make-the-home-e2e-specs-viewport-aware",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Residual: 2 firefox failures that move between different tests on every run, one with a Playwright-internal browser-context crash - nondeterministic browser flake under 5-project parallel load, not a fixed app or spec defect"
+  ],
+  "manifests_changed": [],
+  "reason": "The marketing nav and sign-in link collapse behind the Open menu button on mobile viewports by design, but home.spec asserts them as always-visible desktop furniture - so four Mobile Chrome and Mobile Safari tests fail against a correctly responsive page",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - test-only change",
+  "summary": "Make the home e2e specs viewport-aware",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "home.spec 22/22 on Mobile Chrome, Mobile Safari, chromium",
+      "id": "playwright-targeted",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "suite moved 10 failed/156 passed to 2 failed/164 passed; the mobile home/nav cluster and the webkit invalid-credentials straggler both cleared",
+      "id": "playwright-full",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

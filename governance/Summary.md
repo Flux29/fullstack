@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 54)
+## Recent changes (latest 20 of 55)
 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
@@ -82,6 +82,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Promote skills-check to blocking and wire it into CI
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-10-promote-skills-check-to-blocking-and-wire-it-into-ci.json`
+- **2026-08-10** — Make the home e2e specs viewport-aware
+  - Components: frontend-app
+  - Record: `governance/history/changes/2026-08-10-make-the-home-e2e-specs-viewport-aware.json`
 - **2026-08-10** — Give the user-menu trigger an accessible name
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-10-give-the-user-menu-trigger-an-accessible-name.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Add the e2e-playwright skill: end-to-end testing conventions and when the stack is worth it
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-add-the-e2e-playwright-skill-end-to-end-testing-conventions-and.json`
-- **2026-08-10** — Add a COOKIE_SECURE override so the dev-stack frontend works in WebKit
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-10-add-a-cookie-secure-override-so-the-dev-stack-frontend-works-in.json`
 
 ## Decisions (5)
 

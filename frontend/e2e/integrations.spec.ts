@@ -7,7 +7,7 @@ test.describe("Google integrations", () => {
     await page.goto("/settings/integrations");
 
     await expect(page.getByRole("heading", { name: "Integrations" })).toBeVisible();
-    await expect(page.getByText("identify the connected mailbox", { exact: false })).toBeVisible();
+    await expect(page.getByText("send approved messages", { exact: false })).toBeVisible();
     await expect(page.getByText("standard Calendar API", { exact: false })).toBeVisible();
     await expect(page.getByText("standard Drive API", { exact: false })).toBeVisible();
     await expect(page.getByText("standard Docs API", { exact: false })).toBeVisible();

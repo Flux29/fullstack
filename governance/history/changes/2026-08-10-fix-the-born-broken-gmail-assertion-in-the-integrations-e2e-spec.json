@@ -1,0 +1,50 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The one born-broken assertion was masking seven correct assertions behind it; the integrations spec now passes on all browsers"
+  ],
+  "compatibility_impact": "None - the spec now asserts shipped copy (send approved messages) instead of copy that never existed",
+  "date": "2026-08-10",
+  "files_changed": [
+    "frontend/e2e/integrations.spec.ts"
+  ],
+  "follow_up": [
+    "Remaining 29 e2e failures: auth.spec:96 user-menu (all browsers), MCP OAuth callback spec (chromium+firefox), webkit/Mobile Safari chat cluster, mobile home/nav cluster - next fix-issue sessions"
+  ],
+  "id": "2026-08-10-fix-the-born-broken-gmail-assertion-in-the-integrations-e2e-spec",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The regression test IS the previously-failing spec itself; no new test was needed"
+  ],
+  "manifests_changed": [],
+  "reason": "integrations.spec.ts asserts Gmail card copy ('identify the connected mailbox') that never existed in any shipped commit - the expectation was authored against draft copy rewritten to the approval-flow language in the same commit that introduced the test - so the spec fails on every browser against a correct page",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - one e2e assertion string",
+  "summary": "Fix the born-broken Gmail assertion in the integrations e2e spec",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "integrations.spec 3/3 on chromium after the fix",
+      "id": "playwright-targeted",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "integrations.spec absent from all five browsers failure lists; suite moved 33 failed/128 passed to 29 failed/132 passed - remaining failures are the separate webkit/mobile clusters",
+      "id": "playwright-full",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

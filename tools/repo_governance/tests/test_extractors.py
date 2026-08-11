@@ -18,6 +18,20 @@ from repo_governance.extractors.python_ast import extract_frozenset_members, ext
 FIXTURES = Path(__file__).parent / "fixtures"
 
 
+# ----------------------------------------------------------------- backend path templates
+
+
+def test_nested_template_query_fragment_never_reaches_the_path_template() -> None:
+    """`${qs ? `?${qs}` : ""}` truncates the regex capture mid-interpolation; the
+    unterminated `${qs` tail is query assembly and must not survive normalization —
+    it broke the site-chain join for every parameterized files route."""
+    from repo_governance.extractors.typescript_ast import _normalize_backend_path
+
+    assert _normalize_backend_path("/api/v1/files/${fileId}${qs") == "/api/v1/files/{param}"
+    assert _normalize_backend_path("/api/v1/files/${fileId}?${qs}") == "/api/v1/files/{param}"
+    assert _normalize_backend_path("/api/v1/rag/search") == "/api/v1/rag/search"
+
+
 # --------------------------------------------------------------------------- env templates
 
 

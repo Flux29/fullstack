@@ -61,6 +61,7 @@
     "backend-unit",
     "compose-check",
     "frontend-test",
+    "governance-check",
     "migrations",
     "preflight-volumes"
   ]

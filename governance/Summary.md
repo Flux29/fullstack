@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 64)
+## Recent changes (latest 20 of 65)
 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Make the read gate's feedback loop close itself
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-11-make-the-read-gate-s-feedback-loop-close-itself.json`
+- **2026-08-11** — Follow the site chain in impact analysis and measure the phase-6 exit
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-follow-the-site-chain-in-impact-analysis-and-measure-the-phase-6.json`
 - **2026-08-11** — Extract route, task, model, test, and tool relations
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-extract-route-task-model-test-and-tool-relations.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Extract the new-file gate to a script covering NotebookEdit and sanctioned dirs; widen the permissions allowlist
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-10-extract-the-new-file-gate-to-a-script-covering-notebookedit-and.json`
-- **2026-08-10** — Deny the MCP filesystem writer tools inside the repository
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-deny-the-mcp-filesystem-writer-tools-inside-the-repository.json`
 
 ## Decisions (5)
 

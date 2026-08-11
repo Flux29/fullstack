@@ -45,17 +45,23 @@
   ],
   "findings": [],
   "graph_files": [
-    "backend/app/api/deps.py",
-    "backend/app/commands/seed.py",
-    "backend/app/repositories/__init__.py"
+    "frontend/src/components/chat/chat-input.tsx",
+    "frontend/src/components/chat/file-preview-panel.tsx",
+    "frontend/src/components/chat/message-item.tsx"
   ],
   "notes": [
-    "Import graph: 3 module(s) import the changed backend modules (depth <= 1).",
+    "TypeScript graph: 3 module(s) import the changed frontend modules.",
+    "Site chain: 2 called API path(s) -> 2 proxy handler(s) -> 1 backend route module(s).",
     "The chat WebSocket bypasses the proxy layer; see the ws-chat-bypasses-proxy exception. Its consumer is chat-frontend."
   ],
-  "proxy_routes": [],
+  "proxy_routes": [
+    "frontend/src/app/api/files/[id]/route.ts",
+    "frontend/src/app/api/files/upload/route.ts"
+  ],
   "seeds": [
-    "backend-api"
+    "backend-api",
+    "chat-frontend",
+    "frontend-app"
   ],
   "unassigned": [],
   "validators": [

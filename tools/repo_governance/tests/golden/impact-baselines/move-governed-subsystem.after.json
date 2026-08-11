@@ -91,6 +91,7 @@
     "backend-unit",
     "compose-check",
     "frontend-test",
+    "governance-check",
     "preflight-model",
     "preflight-volumes",
     "rag-docker-integration"

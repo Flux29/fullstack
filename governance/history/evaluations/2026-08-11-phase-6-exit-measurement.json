@@ -1,0 +1,34 @@
+{
+  "schema_version": 1,
+  "id": "2026-08-11-phase-6-exit-measurement",
+  "date": "2026-08-11",
+  "kind": "impact-quality",
+  "summary": "Phase 6 exit measured against the 2026-08-11 baseline: validator recall is now perfect across the corpus (0.93 to 1.0) at a 0.03 precision cost that is a true statement rather than noise, the cross-language chain closes the corpus's frontend blindness completely on the scenario built to test it, and component precision - the trigger symptom - is honestly unmoved and carries forward as the open problem for phase 7 ranking.",
+  "observation": "On the seven shared scenarios, after the phase-6 sessions: validators precision/recall 0.46/1.0 (baseline 0.49/0.93 - the recall miss on hist-new-chat-new-conversation is gone because impact now always includes governance-check, which the envelope runs on every governed change; the 0.03 precision dip prices two scenarios that did not list it), components 0.35/0.96 (unchanged - over-selection comes from the manifest-level configuration-sharing join and declared-dependency BFS, which no phase-6 session altered), proxy_routes 0.79/1.0, findings 0.71/1.0, mean briefing 1512 tokens (baseline 1509). The new frontend-seeded scenario change-nextjs-api-consumer - the blueprint's 'change a Next.js API consumer' case, unauthored until now, meaning the corpus could not exercise the cross-language chain at all - scores components 0.6/1.0, validators 0.5/1.0, proxy_routes 1.0/1.0 against a before-golden (captured from pre-session code in a worktree at commit 60756bf) of 0.67, 0.33, and 0.0 recall respectively: the manifest-only answer saw a client change as frontend-only with no proxy handlers and no backend validators. Measurement also exposed and fixed two extraction defects: route paths dropped the module-level APIRouter prefix (files.py routes read /api/v1/upload instead of /api/v1/files/upload), and a nested template literal left an unterminated ${qs fragment in the committed interfaces manifest. Both now carry regression tests.",
+  "evidence": [
+    {
+      "source": "scenario replay, same instrument and method as the baseline record",
+      "detail": "Same-corpus means computed over the seven baseline scenarios only, so the new scenario cannot inflate the comparison. Per-scenario worst case moved: hist-new-chat-new-conversation validators 0.14/0.50 to 0.25/1.0. move-governed-subsystem components recall stays 0.75: its miss is an ownership-glob gap, not a graph gap. CI now holds the ratchet: test_replay_recall_never_regresses_from_before_to_after fails any change whose graph-aware answer loses something the manifest-only answer had.",
+      "ref": "2026-08-11-phase-6-7-build-decision-and-baseline"
+    },
+    {
+      "source": "governance impact --paths frontend/src/lib/file-api.ts",
+      "detail": "Live demonstration of the chain: 2 called API paths -> 2 proxy handlers -> 1 backend route module; backend-api and its validators enter the radius of a frontend-only path list. Before this session the same invocation returned frontend components and frontend-test alone."
+    }
+  ],
+  "proposed_action": "Phase 6 is accepted: validator and context selection measurably improved on the corpus without a material false-positive cost, and the exit criterion's ratchet is enforced in CI. The unmoved component precision (0.35) transfers to phase 7 as its first measurement target - the ranking and view work should either improve the component-level answer or demonstrate why manifest conservatism is the right floor. The 23 named orphans, 2 cycles, and the move-governed-subsystem ownership gap remain debt-sweep candidates outside this plan.",
+  "status": "acted-on",
+  "initiated_by": {
+    "kind": "agent",
+    "ref": "phase-6 exit gate, sessions 6.0-6.5 of the owner-approved plan"
+  },
+  "trigger_ref": "phase-6 exit criterion: impact analysis improves validator and context selection on the evaluation scenarios without unacceptable false positives",
+  "component_refs": ["governance-kernel"],
+  "related_change_records": [
+    "2026-08-11-commit-the-graph-vocabulary-and-activate-the-graph-model-schema",
+    "2026-08-11-add-the-typescript-module-graph",
+    "2026-08-11-extract-route-task-model-test-and-tool-relations",
+    "2026-08-11-store-the-graph-in-sqlite-and-report-cycles-and-orphans"
+  ],
+  "tool_version": "1.0.0"
+}

@@ -1,0 +1,71 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Impact analysis follows the site chain: a touched frontend module expands through the TypeScript closure to its called API paths, the matching proxy handlers, and the backend route modules they front - demonstrated live on file-api.ts where backend-api and backend-unit now enter a frontend-only radius.",
+    "Corpus-wide validator recall is 1.0 (was 0.93); the blueprint-listed change-a-nextjs-api-consumer scenario now exists with both goldens, and its before side proves the blindness: 0.0 proxy recall, 0.33 validator recall pre-chain.",
+    "Two extraction defects the measurement exposed are fixed with regression tests: module-level APIRouter prefixes concatenate with registry prefixes, and nested-template query fragments no longer leak into path templates."
+  ],
+  "compatibility_impact": "interfaces.json backend templates lost the spurious unterminated-interpolation fragments (a fidelity fix to generated output); impact answers now always include governance-check, which widens two scenario answers truthfully. The scenario goldens were re-captured; the CI recall ratchet compares after against before and held.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "governance/history/evaluations/2026-08-11-phase-6-exit-measurement.json",
+    "governance/manifests/generated/interfaces.json",
+    "tools/repo_governance/src/repo_governance/extractors/relations.py",
+    "tools/repo_governance/src/repo_governance/extractors/ts_imports.py",
+    "tools/repo_governance/src/repo_governance/extractors/typescript_ast.py",
+    "tools/repo_governance/src/repo_governance/renderers/context.py",
+    "tools/repo_governance/tests/golden/impact-baselines/add-route-and-proxy.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/change-nextjs-api-consumer.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/change-nextjs-api-consumer.before.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-new-chat-new-conversation.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/introduce-dependency-cycle.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/move-governed-subsystem.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/rename-env-var.after.json",
+    "tools/repo_governance/tests/scenarios/change-nextjs-api-consumer.json",
+    "tools/repo_governance/tests/test_extractors.py",
+    "tools/repo_governance/tests/test_relations.py"
+  ],
+  "follow_up": [
+    "Phase 6 exit record written and accepted (2026-08-11-phase-6-exit-measurement); phase 7 starts with the site graph join in session 7.1."
+  ],
+  "id": "2026-08-11-follow-the-site-chain-in-impact-analysis-and-measure-the-phase-6",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Component precision is unchanged at 0.35; the exit record transfers it to phase 7 as the first measurement target. move-governed-subsystem components recall 0.75 is an ownership-glob gap, out of scope here."
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "reason": "The baseline showed impact analysis blind past the language boundary: hist-new-chat-new-conversation misses half its expected validators because a frontend change never reaches the backend surface it calls through the proxy; this walks touched frontend code to its called API paths, through the proxy handlers, into the backend route modules, then measures the scenario suite against the 6.0 baseline as the phase-6 exit criterion requires",
+  "risks": [
+    "The called-path regexes cover full /api literals and apiClient calls; a new client mechanism (a different wrapper, a computed path) yields no chain and the radius quietly stays frontend-only - conservative, but worth a note when a new client shape lands."
+  ],
+  "rollback": "git revert of the single commit, which also restores the prior goldens and the before-only corpus.",
+  "schema_version": 1,
+  "security_impact": "None. Impact analysis reads more of what is already extracted; called API paths are template-normalized literals, never values.",
+  "summary": "Follow the site chain in impact analysis and measure the phase-6 exit",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "277 passed in 117s, includes the two extraction regression tests and the recall ratchet over updated goldens",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

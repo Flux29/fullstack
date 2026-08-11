@@ -76,7 +76,9 @@ def _route_from_directory(parts: tuple[str, ...]) -> str:
 
 
 def _normalize_backend_path(raw: str) -> str:
-    path = INTERPOLATION.sub("{param}", raw).split("?")[0].rstrip("/")
+    # A nested template (`${qs ? `?${qs}` : ""}`) truncates the capture mid-interpolation;
+    # the unterminated `${...` tail is query assembly, never a path segment.
+    path = INTERPOLATION.sub("{param}", raw).split("?")[0].split("${")[0].rstrip("/")
     return path or "/"
 
 

@@ -133,12 +133,29 @@ def test_unparseable_file_is_an_unknown_not_an_absence(minimal_repo: Path) -> No
     assert any("broken.py" in entry for entry in relations.unknowns)
 
 
+def test_router_own_prefix_concatenates_with_registry_prefix(minimal_repo: Path) -> None:
+    """FastAPI mounts at include-prefix + router-prefix; files.py carries its whole
+    prefix on the router itself, which extraction misread until the site-chain join
+    produced zero backend matches for it."""
+    _write(minimal_repo, f"{V1}/__init__.py", "v1_router.include_router(files.router, tags=[\"files\"])\n")
+    _write(
+        minimal_repo,
+        f"{V1}/files.py",
+        'router = APIRouter(prefix="/files")\n@router.post("/upload")\nasync def upload(): ...\n',
+    )
+
+    relations = _relations(minimal_repo)
+    assert [(r.method, r.path) for r in relations.api_routes] == [("POST", "/api/v1/files/upload")]
+
+
 def test_real_tree_routes_are_fully_qualified(real_context: Context) -> None:
     relations = build_relations(real_context)
     assert len(relations.api_routes) > 30
     assert all(route.path.startswith("/api/v1") for route in relations.api_routes), [
         route for route in relations.api_routes if not route.path.startswith("/api/v1")
     ]
+    paths = {route.path for route in relations.api_routes}
+    assert "/api/v1/files/upload" in paths, "the module-level router prefix was dropped"
 
 
 def test_real_tree_knows_the_task_model_and_tool_surfaces(real_context: Context) -> None:

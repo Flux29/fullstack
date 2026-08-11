@@ -220,12 +220,22 @@ def scan() -> None:
     for relative_path, content in sorted(outputs.items()):
         write_text_atomic(candidates / relative_path, content)
 
+    from repo_governance.graph.algorithms import build_churn_report
     from repo_governance.graph.queries import assemble
     from repo_governance.graph.storage import build_sqlite
+    from repo_governance.io_atomic import canonical_json
 
     data = assemble(ctx)
     cache = build_sqlite(ctx, data)
     click.echo(f"Graph cache: {len(data.nodes)} nodes, {len(data.edges)} edges -> {cache}")
+
+    churn = build_churn_report(ctx)
+    churn_path = ctx.paths.cache / "churn-hotspots.json"
+    write_text_atomic(churn_path, canonical_json(churn))
+    if churn.get("status") == "ok":
+        click.echo(f"Churn hotspots (cache-only, history-volatile): {churn_path}")
+    else:
+        click.echo(f"Churn hotspots unknown: {churn.get('reason')}")
 
     drift = compare_generated(ctx)
     click.echo(f"Rendered {len(outputs)} generated files to {candidates}.")

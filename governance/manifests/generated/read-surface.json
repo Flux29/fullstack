@@ -104,6 +104,7 @@
       "governance/graph/node-types.json",
       "governance/graph/reports/boundaries.json",
       "governance/graph/reports/cycles.json",
+      "governance/graph/reports/hotspots.json",
       "governance/graph/reports/orphans.json",
       "governance/manifests/curated/architectural-intent.json",
       "governance/manifests/curated/exceptions.json",

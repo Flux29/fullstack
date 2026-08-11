@@ -181,6 +181,14 @@ update = "sync"
 read_when = "Planning a change that spans the proxy hop, or checking what a page actually touches."
 
 [[catalog]]
+path = "governance/graph/reports/hotspots.json"
+kind = "manifest-generated"
+description = "Structural centrality rankings per language view, and components whose declared invariants lack test coverage ranked by how central their code is. Churn analysis is cache-only."
+authority = "generated"
+update = "sync"
+read_when = "Judging review depth for a change, or picking where missing invariant tests hurt most."
+
+[[catalog]]
 path = "governance/manifests/generated/components.json"
 kind = "manifest-generated"
 description = "Every component, compiled from directory annotations and curated declarations."

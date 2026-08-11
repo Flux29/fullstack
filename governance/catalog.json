@@ -66,6 +66,14 @@
     },
     {
       "authority": "generated",
+      "description": "Structural centrality rankings per language view, and components whose declared invariants lack test coverage ranked by how central their code is. Churn analysis is cache-only.",
+      "kind": "manifest-generated",
+      "path": "governance/graph/reports/hotspots.json",
+      "read_when": "Judging review depth for a change, or picking where missing invariant tests hurt most.",
+      "update": "sync"
+    },
+    {
+      "authority": "generated",
       "description": "Modules with no importer and no explaining classification, plus counts of what each exclusion class absorbed.",
       "kind": "manifest-generated",
       "path": "governance/graph/reports/orphans.json",

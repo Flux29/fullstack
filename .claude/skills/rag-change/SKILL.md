@@ -40,12 +40,12 @@ Every retrieval result you gather afterwards is meaningless.
 
 ## 3. Change
 
-Class A/B — edit inside `backend/app/services/rag/`. The package has **no facade yet**:
-today's callers (`main.py`, `deps.py`, the worker, the CLI) import sub-modules directly,
-and the `thick-domains-expose-a-facade` policy rule tracks that as advisory findings.
-Do not deepen the divergence — new callers import the narrowest existing module, and
-building the facade is a logged debt item for a `refactor-governed` session, not a side
-quest of this change.
+Class A/B — edit inside `backend/app/services/rag/`. Callers import through the package
+facade (`__init__.py`, lazy PEP 562 re-exports): `main.py`, `deps.py`, the worker, and the
+CLI all import from `app.services.rag`, and the `thick-domains-expose-a-facade` policy rule
+tracks any deep import as an advisory finding. A new public name is added to the facade's
+`__all__` and export map in the same change; the facade must stay free of import-time side
+effects — never give it a module-scope import of a pipeline sub-module.
 
 Class C — implement in `backend/app/services/rag/connectors/` following the existing Google
 Drive and S3 connectors, register it in the connector registry, and expose its config fields.

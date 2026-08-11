@@ -1,0 +1,88 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "agents",
+    "backend-api",
+    "rag"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "services/rag ships its facade: 97-line lazy __init__ and zero deep imports remain outside the package across the 14 migrated callers, so thick-domains-expose-a-facade now holds for rag",
+    "architecture.md, rag-change, and refactor-governed updated from the missing-facade honesty notes to the shipped-facade reality"
+  ],
+  "compatibility_impact": "None - sub-module paths remain importable; the facade adds a public path via lazy PEP 562 re-exports with no import-time side effects, so worker and CLI import weight is unchanged",
+  "date": "2026-08-11",
+  "files_changed": [
+    ".claude/rules/architecture.md",
+    ".claude/skills/rag-change/SKILL.md",
+    ".claude/skills/refactor-governed/SKILL.md",
+    "backend/app/agents/tools/rag_tool.py",
+    "backend/app/api/deps.py",
+    "backend/app/api/routes/v1/rag.py",
+    "backend/app/commands/rag.py",
+    "backend/app/core/config.py",
+    "backend/app/main.py",
+    "backend/app/services/file_upload.py",
+    "backend/app/services/rag/__init__.py",
+    "backend/app/services/rag_document.py",
+    "backend/app/services/sync_source.py",
+    "backend/app/worker/taskiq_app.py",
+    "backend/app/worker/tasks/rag_tasks.py"
+  ],
+  "follow_up": [
+    "Small session: repoint the two email deep-importers at the email facade"
+  ],
+  "id": "2026-08-11-build-the-services-rag-facade-and-migrate-callers-to-it",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Net +99 lines: the facade itself is the justified addition, caller churn is net +2",
+    "The two legacy email deep-importers (auth.py, services/user.py) remain out of scope - one-reason rule"
+  ],
+  "manifests_changed": [],
+  "reason": "The thick-domain rule promises routes and workers import a facade re-exported from the package __init__.py, but backend/app/services/rag/ has no top-level facade and ~25 import sites across main.py, api/deps.py, worker, commands, and sync_source reach into sub-modules directly - each tracked as an advisory finding by thick-domains-expose-a-facade. This change adds the facade (email/ shape, no import-time side effects) and repoints every caller so the rule holds for rag.",
+  "risks": [],
+  "rollback": "git revert of the single commit",
+  "schema_version": 1,
+  "security_impact": "None - import restructuring only; no auth, secret, or exposure surface touched",
+  "summary": "Build the services/rag facade and migrate callers to it",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "ruff clean, ty at the 23-diagnostic pre-existing baseline, exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "479 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "10 passed - parser, embeddings, reranker, cache fingerprint",
+      "id": "rag-docker-integration",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 findings after the rule and skill updates",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "29 vitest passed",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipping, database publishes no host port in this stack",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

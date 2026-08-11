@@ -393,7 +393,7 @@ class Settings(BaseSettings):
 
 
 # Rebuild Settings to resolve RAGSettings forward reference
-from app.services.rag.config import (
+from app.services.rag import (
     DocumentParser,
     EmbeddingsConfig,
     PdfParser,

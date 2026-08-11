@@ -31,7 +31,7 @@ async def startup(_state: TaskiqState) -> None:
 
 @broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)
 async def shutdown(_state: TaskiqState) -> None:
-    from app.services.rag.embeddings import close_embedding_service
+    from app.services.rag import close_embedding_service
     from app.worker.tasks.rag_tasks import close_rag_task_resources
 
     await close_rag_task_resources()

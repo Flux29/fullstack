@@ -347,16 +347,16 @@ from typing import Any
 from fastapi import Request
 
 from app.core.config import settings
-from app.services.rag.embeddings import (
+from app.services.rag import (
+    BaseVectorStore,
+    DocumentProcessor,
     EmbeddingService,
+    IngestionService,
+    PgVectorStore,
+    RetrievalService,
     get_embedding_service as get_shared_embedder,
+    get_rerank_service,
 )
-from app.services.rag.ingestion import IngestionService
-from app.services.rag.documents import DocumentProcessor
-from app.services.rag.retrieval import RetrievalService
-from app.services.rag.vectorstore import PgVectorStore
-from app.services.rag.vectorstore import BaseVectorStore
-from app.services.rag.reranker import get_rerank_service
 
 
 def get_embedding_service(request: Request) -> EmbeddingService:

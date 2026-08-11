@@ -84,17 +84,17 @@ Services come in two shapes — choose based on whether the domain owns infrastr
 
 ```
 app/services/email/            app/services/rag/
-├── __init__.py  # facade      ├── config.py      ├── embeddings.py
-├── service.py                 ├── documents.py   ├── embedding_cache.py
-├── templates.py               ├── ingestion.py   ├── vectorstore.py
-├── exceptions.py              ├── retrieval.py   ├── reranker.py
-└── providers/                 ├── connectors/    └── sources/
-    ├── base.py, log.py,      (no facade yet — see below)
+├── __init__.py  # facade      ├── __init__.py  # facade (lazy re-exports)
+├── service.py                 ├── config.py      ├── embeddings.py
+├── templates.py               ├── documents.py   ├── embedding_cache.py
+├── exceptions.py              ├── ingestion.py   ├── vectorstore.py
+└── providers/                 ├── retrieval.py   ├── reranker.py
+    ├── base.py, log.py,       └── connectors/, sources/
     └── resend.py, smtp.py
 ```
 
 Rules for thick subpackages:
-- Public API: a facade re-exported from `__init__.py`; routes/workers import the facade, not sub-modules. **Status, honestly:** `email/` ships the facade; `rag/` has no facade yet and its callers import sub-modules directly. The `thick-domains-expose-a-facade` policy rule tracks divergence as advisory findings, and building the rag facade is a logged debt item — a *new* thick domain must ship its facade from the start.
+- Public API: a facade re-exported from `__init__.py`; routes/workers import the facade, not sub-modules. **Status, honestly:** both `email/` and `rag/` ship the facade (rag's re-exports lazily, so importing it stays free of import-time side effects); two email callers (`api/routes/v1/auth.py`, `services/user.py`) still deep-import `email.service` for `get_email_service`, which the email facade does not yet export — migrating them needs that export first, and the `thick-domains-expose-a-facade` policy rule tracks both as advisory findings. A *new* thick domain must ship its facade from the start.
 - Domain-specific exceptions live in the subpackage and inherit from `core/exceptions.py` base classes.
 - Top-level `app/` is reserved for framework concerns (`api/`, `core/`, `db/`, `repositories/`, `schemas/`, `services/`, `worker/`, `agents/`, `commands/`, `clients/`). No new top-level domain packages.
 

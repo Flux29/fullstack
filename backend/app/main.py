@@ -27,16 +27,14 @@ from app.core.middleware import RequestIDMiddleware
 from app.db.todo_pool import close_todo_pool, init_todo_pool
 from app.core.cache import setup_cache
 from app.clients.redis import RedisClient
-from app.services.rag.embeddings import (
+from app.services.rag import (
+    BaseVectorStore,
     EmbeddingService,
-    close_embedding_service,
-    get_embedding_service,
-)
-from app.services.rag.vectorstore import PgVectorStore
-from app.services.rag.vectorstore import BaseVectorStore
-from app.services.rag.reranker import (
+    PgVectorStore,
     RerankService,
+    close_embedding_service,
     close_rerank_service,
+    get_embedding_service,
     get_rerank_service,
 )
 from app.services.file_upload import close_chat_docling_parser

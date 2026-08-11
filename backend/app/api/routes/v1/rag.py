@@ -50,7 +50,7 @@ from app.schemas.sync_source import (
     SyncSourceRead,
     SyncSourceUpdate,
 )
-from app.services.rag.config import get_supported_formats
+from app.services.rag import get_supported_formats
 
 router = APIRouter()
 

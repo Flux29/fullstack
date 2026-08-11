@@ -12,7 +12,7 @@ from app.core.crypto import decrypt_value, encrypt_value, is_encrypted
 from app.core.exceptions import BadRequestError, NotFoundError
 from app.db.models.sync_log import SyncLog
 from app.db.models.sync_source import SyncSource
-from app.services.rag.connectors import CONNECTOR_REGISTRY
+from app.services.rag import CONNECTOR_REGISTRY
 from app.repositories import sync_log as sync_log_repo
 from app.repositories import sync_source as sync_source_repo
 from app.schemas.sync_source import (

@@ -26,7 +26,7 @@
     ]
   },
   "default_modes": {
-    "breadth": "deny",
+    "breadth": "warn",
     "corpus": "deny",
     "repo": "deny"
   },

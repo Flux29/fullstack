@@ -30,7 +30,11 @@ protected_paths = [
 # The GOVERNANCE_GATE environment variable (user-set, outside agent reach) overrides all.
 mode_corpus = "deny"
 mode_repo = "deny"
-mode_breadth = "deny"
+# Warn, not deny, since 2026-08-11: telemetry showed a session eating 7 denials with
+# zero unlocks and routing around the gate - the denials cost agent turns without
+# producing the navigation behavior. Warn keeps the telemetry and the nudge; the
+# GOVERNANCE_GATE env var can still force deny per session.
+mode_breadth = "warn"
 # Discovery sweeps: a Glob/Grep whose enumeration root is one of these is navigation by
 # exhaustive search rather than by the map. Denied until one scoped `governance context`
 # or `governance impact` query has been recorded this session (the PostToolUse marker);

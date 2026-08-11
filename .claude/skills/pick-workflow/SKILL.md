@@ -102,11 +102,13 @@ These attach to a branch above rather than replacing it:
   subagents, and add a ⏸ `/context` checkpoint before the close of any chain longer than four
   skills. `/context` and `/compact` are terminal commands — a skill cannot invoke them, so the
   checkpoint has to be handed to the user explicitly.
-- **Unlock the read gate before delegating readers.** The gate denies Glob/Grep rooted at
-  the repo root or a bare top-level directory until one scoped `make governance-context`
-  or `governance-impact` query has run in the session — and it gates subagents too. Run
-  the scoped query *first*, then spawn `Explore`, and put component directories (not
-  repo-root globs) in the subagent's prompt so its searches stay inside allowed roots.
+- **Unlock the read gate before delegating readers.** Glob/Grep rooted at the repo root
+  or a bare top-level directory draws a gate warning until a scoped
+  `make governance-context` / `governance-impact` query — or the
+  `make governance-change-start` you likely already ran — has registered this session,
+  and the gate covers subagents too. Open the envelope or run the scoped query *first*,
+  then spawn `Explore`, and put component directories (not repo-root globs) in the
+  subagent's prompt so its searches stay inside allowed roots.
 
 ## When two branches both fit
 

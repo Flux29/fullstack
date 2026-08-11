@@ -14,10 +14,12 @@ surface it once per reason via systemMessage.
 
 The breadth surface enforces navigation, not access: a Glob/Grep rooted at the repository
 root or a bare top-level directory is exhaustive search where a `governance context` or
-`governance impact` query would answer from the compiled map. One scoped query this
-session — recorded by the `--record-context` PostToolUse entrypoint below — unlocks broad
-search; a search rooted inside a component directory is never breadth-gated. The session-context and stop-check hooks
-report accumulated degradations, so a broken gate is announced, never silent.
+`governance impact` query would answer from the compiled map. One scoped query — or a
+`governance change start`, since an opened envelope has already declared its scope — is
+recorded by the `--record-context` PostToolUse entrypoint below and unlocks broad search
+for the session; a search rooted inside a component directory is never breadth-gated.
+The session-context and stop-check hooks report accumulated degradations, so a broken
+gate is announced, never silent.
 
 Modes come from the artifact's `default_modes`, overridden per session by the
 GOVERNANCE_GATE environment variable (off|warn|deny) — set by the user, outside agent
@@ -55,12 +57,12 @@ REGISTER_INSTEAD = (
     "then `make governance-sync`."
 )
 CONSULT_INSTEAD = (
-    "Navigate by the map, not by exhaustive search: `make governance-context PATHS=... TASK=...` returns "
-    "the component map and blast radius; `make governance-impact PATHS=...` returns callers and dependents "
-    "from the import graph. One scoped query this session unlocks broad search, or root this search inside "
-    "a component directory now."
+    'Run now: `make governance-context PATHS="{root}" TASK="<one line>"` — one scoped query unlocks broad '
+    "search for this session (an already-run `make governance-change-start` unlocks it too, and "
+    "`make governance-impact PATHS=...` answers callers and dependents straight from the import graph). "
+    "Or root this search inside a component directory."
 )
-CONTEXT_QUERY = re.compile(r"governance[-\s]+(context|impact)\b")
+CONTEXT_QUERY = re.compile(r"governance[-\s]+(context|impact|change[-\s]+start)\b")
 
 
 def _rel(path_text: str) -> str | None:
@@ -248,7 +250,10 @@ def selftest() -> None:
 def record_context() -> None:
     """PostToolUse on Bash: remember that a scoped governance query ran this session.
 
-    The breadth surface unlocks on this marker. Recording is intent-based, not
+    The breadth surface unlocks on this marker. A `change start` counts alongside
+    `context`/`impact`: an opened envelope has already declared its scope, and demanding
+    a second incantation cost a real session seven denials with zero unlocks (evaluation
+    2026-08-10-agent-surface-audit-loop, follow-up). Recording is intent-based, not
     success-based — a malformed query still shows the map was consulted, and inspecting
     tool_response shapes across harness versions is exactly the brittleness the gate's
     fail-open philosophy avoids. Every failure here is swallowed: a broken marker only
@@ -366,7 +371,7 @@ def main() -> None:
                     "breadth",
                     display,
                     f"discovery sweep rooted at {rel or 'the repository root'} before any scoped governance query",
-                    CONSULT_INSTEAD,
+                    CONSULT_INSTEAD.format(root=rel or "."),
                 )
                 return
             # Shadow candidates mirror enforcement semantics (pre-unlock only) but never

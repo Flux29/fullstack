@@ -239,6 +239,29 @@ def test_an_impact_query_also_unlocks(gate, monkeypatch, capsys) -> None:
     assert _decision(output) == "allow"
 
 
+def test_a_change_session_start_also_unlocks(gate, monkeypatch, capsys) -> None:
+    """An opened envelope has already declared its scope - demanding a second
+    incantation cost a real session seven denials with zero unlocks."""
+    _record_context(gate, monkeypatch, 'make governance-change-start SUMMARY="x" REASON="y"')
+    capsys.readouterr()
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _decision(output) == "allow"
+
+
+def test_the_cli_change_start_form_also_unlocks(gate, monkeypatch, capsys) -> None:
+    _record_context(gate, monkeypatch, "uv run --project tools/repo_governance governance change start --summary a --reason b")
+    capsys.readouterr()
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    assert _decision(output) == "allow"
+
+
+def test_a_breadth_verdict_names_the_exact_unlock_command(gate, monkeypatch, capsys) -> None:
+    output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
+    reason = output["hookSpecificOutput"]["permissionDecisionReason"]
+    assert 'make governance-context PATHS="backend"' in reason
+    assert "governance-change-start" in reason
+
+
 def test_unrelated_bash_commands_do_not_unlock(gate, monkeypatch, capsys) -> None:
     _record_context(gate, monkeypatch, "git status && make lint")
     capsys.readouterr()
@@ -606,7 +629,8 @@ def test_bracketed_ownership_globs_compile_to_prefixes(real_context: Context) ->
     prefixes = surface["repo"]["dir_prefixes"]
     assert "frontend/src/app/[locale]/(dashboard)/chat/" in prefixes
     assert all(not prefix.endswith("**") for prefix in prefixes)
-    assert surface["default_modes"] == {"breadth": "deny", "corpus": "deny", "repo": "deny"}
+    # breadth dropped to warn on 2026-08-11: denials cost turns without producing unlocks.
+    assert surface["default_modes"] == {"breadth": "warn", "corpus": "deny", "repo": "deny"}
     assert "." in surface["breadth"]["roots"]
     assert "backend" in surface["breadth"]["roots"]
     assert "backend/app/services" in surface["breadth"]["shadow_roots"]

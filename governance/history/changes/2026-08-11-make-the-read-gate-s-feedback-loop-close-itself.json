@@ -1,0 +1,65 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "An opened change envelope now unlocks broad search - the second incantation is gone; the breadth message carries a ready-to-run command with the denied root filled in; breadth denials became warnings"
+  ],
+  "compatibility_impact": "None - the unlock regex widened (change-start now matches); nothing that unlocked before stops unlocking",
+  "date": "2026-08-11",
+  "files_changed": [
+    ".claude/hooks/governance_gate.py",
+    ".claude/skills/debt-sweep/SKILL.md",
+    ".claude/skills/pick-workflow/SKILL.md",
+    ".claude/skills/refactor-governed/SKILL.md",
+    "AGENTS.md",
+    "governance/governance.toml",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/tests/test_hooks.py"
+  ],
+  "follow_up": [
+    "Watch gate-metrics over the next sessions: warn-with-unlock-ignored trending up would argue for reverting breadth to deny"
+  ],
+  "id": "2026-08-11-make-the-read-gate-s-feedback-loop-close-itself",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Warn-mode nudges depend on the agent reading systemMessages; gate-metrics remains the check on whether the nudge lands"
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "Telemetry from the facade session shows 7 breadth denials, zero unlocks, and no context.json - the agent opened a change session, never ran the unlocking query, and routed around the gate by reading impact data instead, so the deny message failed its one job; an opened envelope already declares scope and should count as the unlock, the message should carry the exact command, and breadth drops to warn so a missed unlock costs a warning, not turns",
+  "risks": [],
+  "rollback": "git revert of the single commit, then make governance-sync",
+  "schema_version": 1,
+  "security_impact": "Breadth mode weakening is deliberate and recorded: warn keeps telemetry and the nudge while corpus and repo stay deny; the per-session GOVERNANCE_GATE env override can restore deny",
+  "summary": "Make the read gate's feedback loop close itself",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "full suite green including four new gate tests (change-start unlock make and CLI forms, exact-command message) and the mode-triple assertion updated to the new posture",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "against the real artifact - warn mode allows with warning carrying PATHS=backend and naming change-start; change-start unlock silences it; GOVERNANCE_GATE=deny still denies with the exact command and unlocks after change-start",
+      "id": "gate-live-e2e",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 findings after the AGENTS.md and three skill wording updates",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

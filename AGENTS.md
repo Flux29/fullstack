@@ -88,11 +88,11 @@ Non-obvious rules that are easy to violate:
   `Read|Glob|Grep` (a stdlib script reading the sync-generated
   `governance/manifests/generated/read-surface.json`) blocks bulk enumeration of
   `governance/history/` and `governance/manifests/` — query those instead — blocks reads
-  outside the governed surface, and blocks discovery sweeps (Glob/Grep rooted at the
-  repository root or a bare top-level directory) until one scoped `governance context` or
-  `governance impact` query has run in the session; navigate by the map, then search.
-  Reading one named file is always allowed, as is any search rooted inside a component
-  directory. A `Stop` hook
+  outside the governed surface, and warns on discovery sweeps (Glob/Grep rooted at the
+  repository root or a bare top-level directory) until one scoped `governance context` /
+  `governance impact` query or a `governance change start` has run in the session;
+  navigate by the map, then search. Reading one named file is always allowed, as is any
+  search rooted inside a component directory. A `Stop` hook
   blocks turn-end with exact repair commands while touched files lack a change session or
   record, or generated files are stale. Modes are set in the `[gate]` table of
   `governance/governance.toml`; the `GOVERNANCE_GATE` environment variable (`off|warn|deny`,

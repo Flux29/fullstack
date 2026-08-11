@@ -62,11 +62,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 67 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 59)
+## Recent changes (latest 20 of 60)
 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-update-governance-selftests-to-the-post-facade-tree.json`
+- **2026-08-11** — Record the phase 6-7 build decision and impact baseline
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-record-the-phase-6-7-build-decision-and-impact-baseline.json`
 - **2026-08-11** — Make the read gate's feedback loop close itself
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-11-make-the-read-gate-s-feedback-loop-close-itself.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Align the five template-era skills with governance reality
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-align-the-five-template-era-skills-with-governance-reality.json`
-- **2026-08-10** — Add the template-upgrade skill: governed template upgrades driven by provenance records
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-10-add-the-template-upgrade-skill-governed-template-upgrades-driven.json`
 
 ## Decisions (5)
 

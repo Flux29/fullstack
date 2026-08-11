@@ -1,0 +1,54 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The phases 6-7 build decision and the measured impact baseline are now a governed evaluation record; both phases exit criteria will be judged against it."
+  ],
+  "compatibility_impact": "None. No schema, contract, or generated output changed; governance-sync produced zero byte changes.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "governance/history/evaluations/2026-08-11-phase-6-7-build-decision-and-baseline.json"
+  ],
+  "follow_up": [
+    "Sessions 6.1 through 7.4 per the approved plan; phase-6 exit measurement must show precision gains without new recall misses.",
+    "Pre-existing advisory drift seen at close and not caused here: migration head 0028_user_magic_link_epoch vs expected 0027_embedding_cache, plus two email-facade deep imports in auth.py and user.py."
+  ],
+  "id": "2026-08-11-record-the-phase-6-7-build-decision-and-impact-baseline",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "No code changed; the two recall misses the baseline exposes stay unfixed until session 6.5.",
+    "Baseline covers the 7 committed scenarios; the scenario_contract.py docstring claims twelve, which is doc drift not fixed here."
+  ],
+  "manifests_changed": [],
+  "reason": "Blueprint phases 6-7 build only after a trigger is recorded as an evaluation; the owner directed the build ahead of a spontaneous symptom, and without a recorded decision plus a measured baseline the exit criteria would be judged against nothing",
+  "risks": [
+    "Phase-7 build proceeds on owner decision alone; if the visualizations prove unhelpful the exit record must say so rather than justify the build retroactively."
+  ],
+  "rollback": "git revert of the single commit; the record has no side effects and nothing else references it yet.",
+  "schema_version": 1,
+  "security_impact": "None. The change adds one evaluation record; no code, configuration, or permission changed.",
+  "summary": "Record the phase 6-7 build decision and impact baseline",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "228 passed in 112s",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check; 4 pre-existing advisories noted in follow-up",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

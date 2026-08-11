@@ -1,0 +1,57 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The user-menu trigger now has an accessible name (User menu / Menu uzytkownika via next-intl), fixing both the screen-reader announcement and the all-browser e2e failure"
+  ],
+  "compatibility_impact": "None - additive accessible name; no selector or route changed",
+  "date": "2026-08-10",
+  "files_changed": [
+    "frontend/messages/en.json",
+    "frontend/messages/pl.json",
+    "frontend/src/components/layout/header.tsx"
+  ],
+  "follow_up": [
+    "Next: mobile home/nav cluster, then webkit auth:25, then firefox flake triage"
+  ],
+  "id": "2026-08-10-give-the-user-menu-trigger-an-accessible-name",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Remaining 10 e2e failures: mobile home/nav cluster (4), webkit+Mobile Safari invalid-credentials (2), firefox flake scatter (4) - separate sessions"
+  ],
+  "manifests_changed": [],
+  "reason": "The authenticated header's user-menu button has no aria-label, so its accessible name is whatever avatar initials render - screen readers announce two meaningless letters, and the e2e user-menu spec fails on every browser because no name matches profile, account, or user",
+  "risks": [],
+  "rollback": "git revert of the single commit, rebuild the frontend image",
+  "schema_version": 1,
+  "security_impact": "None - an aria-label and two locale strings",
+  "summary": "Give the user-menu trigger an accessible name",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "types clean, vitest 23/23",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "auth.spec 22/23 on chromium+webkit, the one remaining failure is the pre-existing webkit invalid-credentials straggler",
+      "id": "playwright-targeted",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "auth:96 cleared on all five browsers; suite moved 16 failed/144 passed to 10 failed/156 passed and did-not-run dropped 6 to 0 as the serial chain unblocked",
+      "id": "playwright-full",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

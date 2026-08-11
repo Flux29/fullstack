@@ -69,6 +69,7 @@
     "register": "Register",
     "logout": "Log out",
     "toggleMenu": "Toggle menu",
+    "userMenu": "User menu",
     "navigate": "Navigate",
     "apiDocs": "API documentation",
     "responseRatings": "Response ratings",

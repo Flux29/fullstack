@@ -6,8 +6,13 @@ test.describe("Home Page", () => {
     await expect(page).toHaveTitle(/fullstack/i);
   });
 
-  test("should have navigation elements", async ({ page }) => {
+  test("should have navigation elements", async ({ page, isMobile }) => {
     await page.goto("/");
+
+    // The marketing nav collapses behind the menu button on mobile viewports.
+    if (isMobile) {
+      await page.getByRole("button", { name: "Open menu" }).click();
+    }
 
     // Check for main navigation elements
     const nav = page.getByRole("navigation");
@@ -28,10 +33,15 @@ test.describe("Home Page", () => {
 });
 
 test.describe("Navigation", () => {
-  test("unauthenticated user should see login link", async ({ page }) => {
+  test("unauthenticated user should see login link", async ({ page, isMobile }) => {
     // Clear any stored auth state
     await page.context().clearCookies();
     await page.goto("/");
+
+    // On mobile the sign-in link lives inside the collapsed menu.
+    if (isMobile) {
+      await page.getByRole("button", { name: "Open menu" }).click();
+    }
 
     // Should have login/sign in link
     const loginLink = page.getByRole("link", { name: /log in|sign in|login/i });

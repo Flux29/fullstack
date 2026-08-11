@@ -1,0 +1,54 @@
+{
+  "$schema": "../schemas/graph-model.schema.json",
+  "schema_version": 1,
+  "status": "active",
+  "growth_trigger": "Recorded as evaluation 2026-08-11-phase-6-7-build-decision-and-baseline: validator over-selection observed (mean precision 0.49) plus the owner decision to finish phases 6-7.",
+  "edge_types": [
+    {
+      "id": "IMPORTS",
+      "description": "A module-scope import: executed at import time, unconditionally. A runtime dependency.",
+      "directed": true
+    },
+    {
+      "id": "IMPORTS_TYPE_ONLY",
+      "description": "An import inside if TYPE_CHECKING (or a type-only TS import) — a typing reference, never a runtime call path.",
+      "directed": true
+    },
+    {
+      "id": "IMPORTS_DEFERRED",
+      "description": "A function-local or dynamic import — a runtime call path that is lazy, usually a cycle-breaker.",
+      "directed": true
+    },
+    {
+      "id": "ROUTES_TO",
+      "description": "An API route dispatches into a service or handler module.",
+      "directed": true
+    },
+    {
+      "id": "PROXIES_TO",
+      "description": "A Next.js proxy route handler forwards to a backend path template. The mandatory hop; the chat WebSocket is the one documented edge that bypasses it.",
+      "directed": true
+    },
+    {
+      "id": "TESTS",
+      "description": "A test module exercises a module, route, or contract.",
+      "directed": true
+    },
+    {
+      "id": "CONFIGURES",
+      "description": "An environment variable configures a component or module that consumes it.",
+      "directed": true
+    },
+    {
+      "id": "INVOKES_TOOL",
+      "description": "An agent or executor invokes a tool. Per-user MCP tool edges carry provenance database and enter only as runtime evidence.",
+      "directed": true
+    },
+    {
+      "id": "READS_FROM",
+      "description": "A module or service reads from a data store, bucket, cache, or external provider.",
+      "directed": true
+    }
+  ],
+  "provenance_required": ["method", "confidence"]
+}

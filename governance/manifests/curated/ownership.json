@@ -92,6 +92,8 @@
     "governance/schemas/",
     "governance/policies/",
     "governance/manifests/curated/",
+    "governance/graph/node-types.json",
+    "governance/graph/edge-types.json",
     "governance/history/decisions/ADR-*.md",
     "governance/history/evaluations/",
     "**/.governance.json",

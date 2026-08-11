@@ -45,6 +45,42 @@ def test_each_internal_schema_is_valid(key: str) -> None:
     Draft202012Validator.check_schema(INTERNAL_SCHEMAS[key])
 
 
+def test_graph_model_reserved_form_still_validates(real_context: Context) -> None:
+    """Pre-activation graph-model documents carried both arrays and the reserved status;
+    they must stay valid so the phase-6 activation is a widening, not a migration."""
+    schema = read_json(real_context.paths.schemas / "graph-model.schema.json")
+    Draft202012Validator(schema).validate(
+        {
+            "schema_version": 1,
+            "status": "reserved-phase-6",
+            "node_types": [{"id": "python-module", "description": "a module"}],
+            "edge_types": [{"id": "IMPORTS", "description": "an import", "directed": True}],
+        }
+    )
+
+
+def test_graph_model_split_documents_validate_but_neither_array_is_refused(real_context: Context) -> None:
+    """The committed vocabulary splits into node-types.json and edge-types.json; each side
+    is valid alone, and a document carrying neither array is a schema violation."""
+    from jsonschema.exceptions import ValidationError
+
+    schema = read_json(real_context.paths.schemas / "graph-model.schema.json")
+    validator = Draft202012Validator(schema)
+    validator.validate(
+        {"schema_version": 1, "status": "active", "node_types": [{"id": "page", "description": "a page"}]}
+    )
+    validator.validate(
+        {
+            "schema_version": 1,
+            "status": "active",
+            "edge_types": [{"id": "PROXIES_TO", "description": "the proxy hop", "directed": True}],
+            "provenance_required": ["method", "confidence"],
+        }
+    )
+    with pytest.raises(ValidationError):
+        validator.validate({"schema_version": 1, "status": "active"})
+
+
 def test_every_governed_document_has_a_schema(real_context: Context) -> None:
     unbound = [
         relative_posix(path, real_context.repo_root)

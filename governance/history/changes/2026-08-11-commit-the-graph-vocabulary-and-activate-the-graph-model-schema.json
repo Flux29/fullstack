@@ -1,0 +1,61 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The typed graph vocabulary is now a committed reviewed contract: 11 node types and 9 edge types with required edge provenance fields, catalogued and schema-validated; extractors in sessions 6.2-6.4 emit only declared kinds."
+  ],
+  "compatibility_impact": "graph-model.schema.json widened, not broken: the reserved form still validates (pinned by a dedicated test) and no committed document used the old strict shape. Kernel bindings for the node-types and edge-types split were already committed and are now satisfied.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/graph/",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/schemas/graph-model.schema.json",
+    "tools/repo_governance/tests/test_schemas.py"
+  ],
+  "follow_up": [
+    "Stop-hook caught the vocabulary documents carrying a $schema key the schema did not declare; fixed by mirroring the local-governance schema convention. Consider a lint that every schema with additionalProperties false declares $schema."
+  ],
+  "id": "2026-08-11-commit-the-graph-vocabulary-and-activate-the-graph-model-schema",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Vocabulary only - no extractor emits the new kinds yet; the import graph continues to emit its original three edge kinds."
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "Phase 6 needs the typed node and edge vocabulary as reviewed instances, but graph-model.schema.json was reserved and required both arrays in one document while the kernel bindings expect a node-types and edge-types split; the schema now admits the split and the vocabulary the import graph already conforms to is committed",
+  "risks": [
+    "The vocabulary is declared ahead of most extractors; kinds that prove wrong in 6.2-6.4 must be revised there rather than worked around."
+  ],
+  "rollback": "git revert of the single commit; removes the two vocabulary files, restores the reserved schema, and drops the catalog, read-surface, and ownership entries with it.",
+  "schema_version": 1,
+  "security_impact": "None. The vocabulary declares graph kinds; no permission, exposure, or code path changed. The tool node type states that per-user MCP edges stay runtime-evidence only, matching existing policy.",
+  "summary": "Commit the graph vocabulary and activate the graph-model schema",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "full suite exit 0; test_schemas re-run 27 passed against the final schema",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "post-record full check",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

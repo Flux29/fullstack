@@ -19,9 +19,7 @@
     "orphans": [
       "app.agents.tools.research",
       "app.api.versioning",
-      "app.core.csrf",
-      "app.services.email.providers.resend",
-      "app.services.email.providers.smtp"
+      "app.core.csrf"
     ]
   },
   "schema_version": 1,

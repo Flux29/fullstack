@@ -324,6 +324,12 @@ class Settings(BaseSettings):
     EMAIL_FROM_NAME: str = "fullstack"
     EMAIL_REPLY_TO: str | None = None
     LOG_PROVIDER_WRITE_TO_DISK: bool = False
+    RESEND_API_KEY: str | None = None
+    SMTP_HOST: str | None = None
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_USE_TLS: bool = True
 
     CORS_ORIGINS: list[str] = [
         "http://localhost:3000",

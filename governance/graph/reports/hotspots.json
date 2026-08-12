@@ -16,7 +16,7 @@
         "Embedding dimension agrees across all five contract points"
       ],
       "invariants": 2,
-      "max_module_centrality": 0.0792,
+      "max_module_centrality": 0.0788,
       "uncovered": []
     },
     {
@@ -72,7 +72,7 @@
       "betweenness": [
         {
           "id": "app.api.deps",
-          "score": 0.0618
+          "score": 0.0632
         },
         {
           "id": "app.repositories",
@@ -80,7 +80,11 @@
         },
         {
           "id": "app.api.routes.v1",
-          "score": 0.0126
+          "score": 0.0128
+        },
+        {
+          "id": "app.services.user",
+          "score": 0.0098
         },
         {
           "id": "app.services.mcp_connection",
@@ -91,8 +95,8 @@
           "score": 0.0083
         },
         {
-          "id": "app.services.user",
-          "score": 0.0082
+          "id": "app.services.email.service",
+          "score": 0.0072
         },
         {
           "id": "app.services.rag_document",
@@ -107,19 +111,15 @@
           "score": 0.0056
         },
         {
-          "id": "app.services.email.service",
-          "score": 0.0052
-        },
-        {
           "id": "app.agents.google_loadout",
           "score": 0.0039
         },
         {
-          "id": "app.agents.assistant",
-          "score": 0.0038
+          "id": "app.api.router",
+          "score": 0.0039
         },
         {
-          "id": "app.api.router",
+          "id": "app.agents.assistant",
           "score": 0.0038
         },
         {
@@ -135,6 +135,10 @@
           "score": 0.0033
         },
         {
+          "id": "app.services.email",
+          "score": 0.0032
+        },
+        {
           "id": "app.agents.google_workspace_api",
           "score": 0.003
         },
@@ -145,20 +149,16 @@
         {
           "id": "app.services.agent_session",
           "score": 0.0027
-        },
-        {
-          "id": "app.services.user_slash_command",
-          "score": 0.0026
         }
       ],
       "pagerank": [
         {
           "id": "app.core.config",
-          "score": 0.0827
+          "score": 0.0823
         },
         {
           "id": "app.services.rag",
-          "score": 0.0792
+          "score": 0.0788
         },
         {
           "id": "app.db.base",
@@ -178,7 +178,7 @@
         },
         {
           "id": "app.services.email.providers.base",
-          "score": 0.0118
+          "score": 0.0121
         },
         {
           "id": "app.db.models.user",
@@ -186,7 +186,7 @@
         },
         {
           "id": "app.worker.tasks.rag_tasks",
-          "score": 0.0093
+          "score": 0.0092
         },
         {
           "id": "app.db.models.conversation",

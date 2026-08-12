@@ -272,6 +272,12 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `RAG_ENABLE_IMAGE_DESCRIPTION` | no | `true` | `runtime` | — |
 | `REDIS_URL` | no | *(derived)* | `computed` | — |
 | `REFRESH_TOKEN_EXPIRE_MINUTES` | no | — | `runtime` | — |
+| `RESEND_API_KEY` | no | — | `runtime` | — |
+| `SMTP_HOST` | no | — | `runtime` | — |
+| `SMTP_PASSWORD` | no | `` | `runtime` | — |
+| `SMTP_PORT` | no | `587` | `runtime` | — |
+| `SMTP_USERNAME` | no | `` | `runtime` | — |
+| `SMTP_USE_TLS` | no | `true` | `runtime` | — |
 | `STORAGE_SOFT_LIMIT_BYTES` | no | — | `runtime` | — |
 | `TIMEOUT` | no | — | `compose-only` | — |
 | `TOKEN` | no | — | `compose-only` | — |

@@ -5,9 +5,14 @@ from uuid import uuid4
 
 import pytest
 
+from app.core.config import settings
 from app.core.exceptions import AlreadyExistsError, AuthenticationError, NotFoundError
 from app.core.security import get_password_hash
 from app.schemas.user import UserCreate, UserUpdate
+from app.services.email import get_email_provider
+from app.services.email.providers.log import LogProvider
+from app.services.email.providers.resend import ResendProvider
+from app.services.email.providers.smtp import SMTPProvider
 from app.services.user import UserService
 
 
@@ -29,6 +34,59 @@ class MockUser:
         self.hashed_password = hashed_password
         self.is_active = is_active
         self.role = role
+
+
+class TestEmailProviderSelection:
+    """get_email_provider must honor EMAIL_PROVIDER, not silently hand back the log provider."""
+
+    def test_default_log_selects_log_provider(self, monkeypatch):
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "log")
+        assert isinstance(get_email_provider(), LogProvider)
+
+    def test_resend_with_api_key_selects_resend_provider(self, monkeypatch):
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "resend")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", "re_test_key", raising=False)
+        assert isinstance(get_email_provider(), ResendProvider)
+
+    def test_smtp_with_host_selects_smtp_provider(self, monkeypatch):
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "smtp")
+        monkeypatch.setattr(settings, "SMTP_HOST", "mail.example.com", raising=False)
+        monkeypatch.setattr(settings, "SMTP_PORT", 2525, raising=False)
+        monkeypatch.setattr(settings, "SMTP_USERNAME", "mailer", raising=False)
+        monkeypatch.setattr(settings, "SMTP_PASSWORD", "secret", raising=False)
+        monkeypatch.setattr(settings, "SMTP_USE_TLS", False, raising=False)
+
+        provider = get_email_provider()
+
+        assert isinstance(provider, SMTPProvider)
+        assert provider.host == "mail.example.com"
+        assert provider.port == 2525
+        assert provider.username == "mailer"
+        assert provider.password == "secret"
+        assert provider.use_tls is False
+
+    def test_resend_without_api_key_warns_and_falls_back_to_log(self, monkeypatch, caplog):
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "resend")
+        monkeypatch.setattr(settings, "RESEND_API_KEY", None, raising=False)
+        with caplog.at_level("WARNING"):
+            provider = get_email_provider()
+        assert isinstance(provider, LogProvider)
+        assert any("RESEND_API_KEY" in r.message for r in caplog.records)
+
+    def test_smtp_without_host_warns_and_falls_back_to_log(self, monkeypatch, caplog):
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "smtp")
+        monkeypatch.setattr(settings, "SMTP_HOST", None, raising=False)
+        with caplog.at_level("WARNING"):
+            provider = get_email_provider()
+        assert isinstance(provider, LogProvider)
+        assert any("SMTP_HOST" in r.message for r in caplog.records)
+
+    def test_unknown_provider_warns_and_falls_back_to_log(self, monkeypatch, caplog):
+        monkeypatch.setattr(settings, "EMAIL_PROVIDER", "carrier-pigeon")
+        with caplog.at_level("WARNING"):
+            provider = get_email_provider()
+        assert isinstance(provider, LogProvider)
+        assert any("carrier-pigeon" in r.message for r in caplog.records)
 
 
 class TestUserServicePostgresql:

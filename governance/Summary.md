@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 74)
+## Recent changes (latest 20 of 75)
 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
@@ -103,6 +103,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Delete the legacy /api/kb and /api/orgs RAG fetchers and the orphaned sync-source-logs component
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-delete-the-legacy-api-kb-and-api-orgs-rag-fetchers-and-the-orpha.json`
+- **2026-08-11** — Delete fifteen orphaned frontend components, keeping the shadcn library stock
+  - Components: chat-frontend, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-11-delete-fifteen-orphaned-frontend-components-keeping-the-shadcn-l.json`
 - **2026-08-11** — Commit the graph vocabulary and activate the graph-model schema
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-commit-the-graph-vocabulary-and-activate-the-graph-model-schema.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-route-sessions-to-pick-workflow-and-teach-explore-delegating-ski.json`
-- **2026-08-10** — Register .claude as a governed component with an advisory reference checker
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-10-register-claude-as-a-governed-component-with-an-advisory-referen.json`
 
 ## Decisions (5)
 

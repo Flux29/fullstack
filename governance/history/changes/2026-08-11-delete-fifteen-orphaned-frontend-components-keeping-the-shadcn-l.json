@@ -1,0 +1,60 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "chat-frontend",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Sixteen orphaned components deleted: the fifteen classified in orphans.json plus chat/map-leaflet.tsx, which map-message.tsx's deletion would otherwise have orphaned (it was its only importer)",
+    "The frontend orphans list in orphans.json now holds only the two deliberate keeps: ui/radio-group.tsx and ui/scroll-area.tsx (shadcn library stock)"
+  ],
+  "compatibility_impact": "None: every deleted file had zero importers, verified by grep over absolute and relative import specifiers before deletion. The marketing set (code-preview, feature-glyph, feature-section, highlight, testimonial-carousel) is generator-provenance surface; a future template upgrade may reintroduce it as a conflict to classify against ownership.json",
+  "date": "2026-08-11",
+  "files_changed": [
+    "frontend/src/components/admin/admin-nav.tsx",
+    "frontend/src/components/brand-override.tsx",
+    "frontend/src/components/chat/map-leaflet.tsx",
+    "frontend/src/components/chat/map-message.tsx",
+    "frontend/src/components/dashboard/page-hero.tsx",
+    "frontend/src/components/dashboard/segmented-control.tsx",
+    "frontend/src/components/icons/google-icon.tsx",
+    "frontend/src/components/layout/breadcrumb.tsx",
+    "frontend/src/components/layout/landing-nav.tsx",
+    "frontend/src/components/marketing/code-preview.tsx",
+    "frontend/src/components/marketing/feature-glyph.tsx",
+    "frontend/src/components/marketing/feature-section.tsx",
+    "frontend/src/components/marketing/highlight.tsx",
+    "frontend/src/components/marketing/testimonial-carousel.tsx",
+    "frontend/src/components/settings/brand-color-picker.tsx",
+    "frontend/src/components/settings/settings-nav.tsx",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [
+    "Remove leaflet, react-leaflet, and @types/leaflet from frontend/package.json and refresh bun.lock when a network-tolerant window allows"
+  ],
+  "id": "2026-08-11-delete-fifteen-orphaned-frontend-components-keeping-the-shadcn-l",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The leaflet, react-leaflet, and @types/leaflet packages are now unused but remain in package.json - bun remove stalled on dependency resolution and was deferred rather than blocking the session; they are inert since no module imports them"
+  ],
+  "manifests_changed": [],
+  "reason": "orphans.json lists seventeen frontend components with no importer and no explaining classification; fifteen are abandoned feature surface (marketing set, superseded navs, one-off dashboard and settings pieces) that inflates the orphan report and invites accidental reuse of stale patterns; radio-group.tsx and scroll-area.tsx stay because they are shadcn/ui library stock, kept by design for future primitives",
+  "risks": [],
+  "rollback": "Revert the commit; all sixteen components return unchanged",
+  "schema_version": 1,
+  "security_impact": "None - deleted components were unreachable from any route; no auth, data, or network surface changed",
+  "summary": "Delete fifteen orphaned frontend components, keeping the shadcn library stock",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "lint, type-check, vitest 29 passed after deleting 16 components",
+      "id": "frontend-test",
+      "result": "pass"
+    }
+  ]
+}

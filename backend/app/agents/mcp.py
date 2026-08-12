@@ -184,8 +184,17 @@ def _make_toolset(spec: McpServerSpec) -> Any:
     same tool name can't collide (pydantic-ai raises on duplicates). The
     allowlist filter runs before prefixing, so it compares against the
     unprefixed names the user picked in the UI.
+
+    Every MCP tool is marked ``defer_loading`` — its schema stays out of the
+    model request until the auto-injected tool-search capability reveals it.
+    A handful of connected servers otherwise puts >100 schemas (~40k input
+    tokens) on every request whether or not the turn touches them; deferred,
+    the model sees one ``search_tools`` entry and pulls in only the tools a
+    turn actually needs. Capability is unchanged: discovery costs one search
+    round-trip the first time a server is used in a run.
     """
     from pydantic_ai.mcp import MCPToolset
+    from pydantic_ai.toolsets import DeferredLoadingToolset
 
     server: Any = MCPToolset(
         spec.url,
@@ -196,7 +205,7 @@ def _make_toolset(spec: McpServerSpec) -> Any:
     if spec.allowed_tools is not None:
         allowed = set(spec.allowed_tools)
         server = server.filtered(lambda _ctx, tool: tool.name in allowed)
-    return server.prefixed(_tool_prefix(spec.name))
+    return DeferredLoadingToolset(server.prefixed(_tool_prefix(spec.name)))
 
 
 def _dedupe_by_prefix(specs: list[McpServerSpec]) -> list[McpServerSpec]:

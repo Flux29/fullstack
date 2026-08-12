@@ -64,11 +64,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 78)
+## Recent changes (latest 20 of 79)
 
 - **2026-08-12** — Update the recorded migration head expectation to 0028_user_magic_link_epoch
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-12-update-the-recorded-migration-head-expectation-to-0028-user-magi.json`
+- **2026-08-12** — Reduce agent token consumption via deferred MCP tool loading and OpenRouter prompt caching
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-12-reduce-agent-token-consumption-via-deferred-mcp-tool-loading-and.json`
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-wire-the-missing-clone-route-for-rag-sync-sources-schema-and-ser.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Build the services/rag facade and migrate callers to it
   - Components: agent-operating-surface, agents, backend-api, rag
   - Record: `governance/history/changes/2026-08-11-build-the-services-rag-facade-and-migrate-callers-to-it.json`
-- **2026-08-11** — Build the bounded views and un-defer governance visualize
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-build-the-bounded-views-and-un-defer-governance-visualize.json`
 
 ## Decisions (5)
 

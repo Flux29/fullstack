@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 73)
+## Recent changes (latest 20 of 74)
 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
@@ -97,6 +97,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Extract route, task, model, test, and tool relations
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-extract-route-task-model-test-and-tool-relations.json`
+- **2026-08-11** — Delete three never-wired backend modules: agents/tools/research.py, api/versioning.py, core/csrf.py
+  - Components: agents, backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-11-delete-three-never-wired-backend-modules-agents-tools-research-p.json`
 - **2026-08-11** — Delete the legacy /api/kb and /api/orgs RAG fetchers and the orphaned sync-source-logs component
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-delete-the-legacy-api-kb-and-api-orgs-rag-fetchers-and-the-orpha.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Register .claude as a governed component with an advisory reference checker
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-register-claude-as-a-governed-component-with-an-advisory-referen.json`
-- **2026-08-10** — Record the validation sweep results for the agent surface
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-10-record-the-validation-sweep-results-for-the-agent-surface.json`
 
 ## Decisions (5)
 

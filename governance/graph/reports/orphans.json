@@ -16,11 +16,7 @@
       "feature-disabled": 0,
       "package-root": 12
     },
-    "orphans": [
-      "app.agents.tools.research",
-      "app.api.versioning",
-      "app.core.csrf"
-    ]
+    "orphans": []
   },
   "schema_version": 1,
   "typescript": {

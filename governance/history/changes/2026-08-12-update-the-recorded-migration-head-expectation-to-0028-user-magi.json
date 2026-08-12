@@ -1,0 +1,33 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "Positive. The migration-graph-is-connected check compared head_expected 0027_embedding_cache against the live alembic graph whose single head is 0028_user_magic_link_epoch (added as a linear child of 0027 by the v0.2.17-to-v0.2.19 template upgrade, commit 43db621); recording the intended head clears the standing advisory so future unexpected heads are signal again. No database object changes: the 0028 revision itself shipped earlier.",
+  "date": "2026-08-12",
+  "files_changed": [
+    "governance/Summary.md",
+    "governance/manifests/generated/data-stores.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-12-update-the-recorded-migration-head-expectation-to-0028-user-magi",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [
+    "governance/manifests/generated/data-stores.json"
+  ],
+  "reason": "Commit 43db621 (template upgrade v0.2.17 to v0.2.19) added alembic revision 0028_user_magic_link_epoch as a linear child of 0027_embedding_cache but did not update the reviewed-baseline migrations block in data-stores.json, so migration-graph-is-connected reports the intended new head as an advisory mismatch; the expectation is stale, the head is correct",
+  "risks": [],
+  "rollback": "Revert the commit; head_expected and heads_observed return to 0027_embedding_cache and the advisory reappears.",
+  "schema_version": 1,
+  "security_impact": "None. The change updates a recorded expectation inside the reviewed-baseline migrations block of a governance manifest; no application code, schema, or policy changed, and no permission or exposure widened.",
+  "summary": "Update the recorded migration head expectation to 0028_user_magic_link_epoch",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

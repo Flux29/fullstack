@@ -60,12 +60,15 @@ Current state, what is unresolved, and recent material history. This is not the 
 ## Active contracts
 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
-- **Migration head** — 0027_embedding_cache
+- **Migration head** — 0028_user_magic_link_epoch
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 77)
+## Recent changes (latest 20 of 78)
 
+- **2026-08-12** — Update the recorded migration head expectation to 0028_user_magic_link_epoch
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-12-update-the-recorded-migration-head-expectation-to-0028-user-magi.json`
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-wire-the-missing-clone-route-for-rag-sync-sources-schema-and-ser.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Build the bounded views and un-defer governance visualize
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-build-the-bounded-views-and-un-defer-governance-visualize.json`
-- **2026-08-11** — Add the TypeScript module graph
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-add-the-typescript-module-graph.json`
 
 ## Decisions (5)
 

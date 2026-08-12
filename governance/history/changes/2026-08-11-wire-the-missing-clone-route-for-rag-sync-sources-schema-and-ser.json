@@ -1,0 +1,73 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "OpenAPI under /api/v1",
+    "Proxy routes under /api"
+  ],
+  "behavioral_effects": [
+    "POST /api/v1/rag/sync/sources/{id}/clone now returns 201 with the cloned source instead of 404",
+    "The site-chain break for /clone on the /rag and /dashboard pages is closed; boundaries.json unmatched_paths shrank by one per page"
+  ],
+  "compatibility_impact": "Additive: new endpoint and proxy handler; no existing contract changed. OpenAPI under /api/v1 gains one route",
+  "date": "2026-08-11",
+  "files_changed": [
+    "backend/app/api/routes/v1/rag.py",
+    "backend/tests/api/test_rag_sync_sources.py",
+    "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/clone/",
+    "governance/Summary.md",
+    "governance/graph/reports/boundaries.json",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json",
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "follow_up": [
+    "Wire orgIntegrations and onClone into frontend/src/app/[locale]/(dashboard)/rag/page.tsx so the wizard clone mode is actually usable"
+  ],
+  "id": "2026-08-11-wire-the-missing-clone-route-for-rag-sync-sources-schema-and-ser",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The rag page still renders SyncSourceWizard without orgIntegrations or onClone, so the clone UI remains unreachable from the browser; cloneSyncSource in rag-api.ts still has no caller"
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "reason": "The sync-source wizard's clone mode POSTs /api/v1/rag/sync/sources/{id}/clone but no backend route serves it, so every clone attempt 404s; SyncSourceClone schema, SyncSourceService.clone_source, and its tests all exist and create_sync_source's docstring promises cloning - the route layer and proxy handler were simply never wired",
+  "risks": [],
+  "rollback": "Revert the commit; endpoint disappears again and the wizard clone POST returns to 404. No data migration involved",
+  "schema_version": 1,
+  "security_impact": "New POST /api/v1/rag/sync/sources/{id}/clone is admin-gated (CurrentAdmin) like every other sync-source route; credentials are decrypted and re-encrypted inside the existing tested service path, never exposed in the response (masked)",
+  "summary": "Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "480 passed 13 skipped; regression test test_clone_returns_201_and_passes_id_and_payload failed 404 before the route, passes 201 after",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check, vitest 29 passed",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped, no reachable database; session adds no schema change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+import { NextRequest, NextResponse } from "next/server";
+import { backendFetch, BackendApiError } from "@/lib/server-api";
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ sourceId: string }> },
+) {
+  try {
+    const { sourceId } = await params;
+    const body = await request.json();
+    const accessToken = request.cookies.get("access_token")?.value;
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+
+    const data = await backendFetch(`/api/v1/rag/sync/sources/${sourceId}/clone`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+    });
+    return NextResponse.json(data, { status: 201 });
+  } catch (error) {
+    if (error instanceof BackendApiError) {
+      return NextResponse.json({ detail: error.message }, { status: error.status });
+    }
+    return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
+  }
+}

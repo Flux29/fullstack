@@ -45,6 +45,7 @@ from app.schemas.rag import (
 )
 from app.schemas.sync_source import (
     ConnectorList,
+    SyncSourceClone,
     SyncSourceCreate,
     SyncSourceList,
     SyncSourceRead,
@@ -332,6 +333,21 @@ async def create_sync_source(
     that can later be cloned into one or more knowledge bases.
     """
     return await sync_source_svc.create_source(data)
+
+
+@router.post(
+    "/sync/sources/{source_id}/clone",
+    response_model=SyncSourceRead,
+    status_code=status.HTTP_201_CREATED,
+)
+async def clone_sync_source(
+    source_id: str,
+    data: SyncSourceClone,
+    sync_source_svc: SyncSourceSvc,
+    _: CurrentAdmin,
+) -> Any:
+    """Clone an org-level integration into a knowledge base as an independent source."""
+    return await sync_source_svc.clone_source(source_id, data)
 
 
 @router.patch("/sync/sources/{source_id}", response_model=SyncSourceRead)

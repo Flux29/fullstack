@@ -103,6 +103,19 @@
       "component_refs": ["frontend-app"]
     },
     {
+      "id": "wishlist-calls-fail-gracefully",
+      "statement": "The settings/account page POSTs /api/auth/password/change and the admin/system page GETs /api/health/ready; neither endpoint exists yet, and both pages handle the failure gracefully by design.",
+      "reason": "Both calls are documented wishlist surface rather than regressions: the account page catches the failure and tells the user password change requires backend wiring, and the system page probes /health/ready with a catch-to-null and labels it a backend wishlist item in its own UI copy. Counting them as broken chains on every sweep buries real breaks; recording them as accepted keeps the rule's signal clean while the wish stays visible here.",
+      "scope": [
+        "frontend/src/app/[locale]/(dashboard)/settings/account/page.tsx calls /api/auth/password/change",
+        "frontend/src/app/[locale]/(dashboard)/admin/system/page.tsx calls /api/health/ready"
+      ],
+      "status": "active",
+      "review_trigger": "The backend lands a password-change endpoint or a per-service /health/ready; wire the page for real and retire this exception.",
+      "policy_refs": ["no-broken-site-chains"],
+      "component_refs": ["frontend-app"]
+    },
+    {
       "id": "coverage-floors-are-ratchets",
       "statement": "Coverage thresholds are set at measured levels — 54 percent on the backend and single digits to seventeen percent on the frontend — rather than at an aspirational target.",
       "reason": "The generator shipped 100 percent thresholds against roughly 55 percent and 4 percent actuals, so the gate had never passed and every CI run failed on it. A floor at the measured level catches regressions immediately, which is what a gate is for. It is a ratchet: raise it when real tests are added, never lower it to make a red build green.",

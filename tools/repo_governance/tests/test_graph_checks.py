@@ -16,6 +16,7 @@ import pytest
 from repo_governance.checks import CheckScope
 from repo_governance.checks.compatibility import check_orm_migration_pairing
 from repo_governance.checks.graph import (
+    check_broken_site_chains,
     check_forbidden_dependencies,
     check_layering,
     check_thick_domain_facades,
@@ -191,6 +192,60 @@ def test_facade_check_on_real_tree_accepts_rag_and_reports_email_bypass(real_con
     assert any("'email'" in issue.message for issue in issues), (
         "the email facade is bypassed (auth.py, user.py); the check must report at least one"
     )
+
+
+# --- broken site chains ------------------------------------------------------------------
+
+
+def test_broken_chain_exception_excuses_the_call_not_the_page(minimal_repo: Path) -> None:
+    """One classified wishlist call must not silence an unclassified break on the same page."""
+    _write(
+        minimal_repo,
+        "frontend/tsconfig.json",
+        json.dumps({"compilerOptions": {"paths": {"@/*": ["./src/*"]}}}),
+    )
+    _write(
+        minimal_repo,
+        "frontend/src/app/[locale]/settings/page.tsx",
+        'await fetch("/api/auth/password/change");\nawait fetch("/api/users/1");\n',
+    )
+    _write(
+        minimal_repo,
+        "governance/manifests/generated/interfaces.json",
+        json.dumps(
+            {
+                "proxy_routes": [],
+                "frontend_pages": [
+                    {"route": "/settings", "file": "frontend/src/app/[locale]/settings/page.tsx"}
+                ],
+                "websocket": {"endpoint": "/api/v1/ws/agent"},
+            }
+        ),
+    )
+    _write(
+        minimal_repo,
+        "governance/manifests/curated/exceptions.json",
+        json.dumps(
+            {
+                "schema_version": 1,
+                "exceptions": [
+                    {
+                        "id": "wishlist-call-accepted",
+                        "statement": "The settings page's password call is wishlist surface.",
+                        "reason": "test fixture",
+                        "scope": [
+                            "frontend/src/app/[locale]/settings/page.tsx calls /api/auth/password/change"
+                        ],
+                        "status": "active",
+                    }
+                ],
+            }
+        ),
+    )
+
+    issues = check_broken_site_chains(_scope(minimal_repo))
+    assert len(issues) == 1
+    assert issues[0].evidence == "/api/users/1"
 
 
 # --- ORM migration pairing ---------------------------------------------------------------

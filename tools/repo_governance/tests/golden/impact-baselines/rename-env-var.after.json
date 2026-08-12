@@ -46,7 +46,7 @@
   "findings": [],
   "graph_files": [],
   "notes": [
-    "app.core.config is a hub with 48 direct importers; file-level expansion is suppressed for it because the radius would be the whole application - the manifest-declared blast radius stands.",
+    "app.core.config is a hub with 47 direct importers; file-level expansion is suppressed for it because the radius would be the whole application - the manifest-declared blast radius stands.",
     "The chat WebSocket bypasses the proxy layer; see the ws-chat-bypasses-proxy exception. Its consumer is chat-frontend."
   ],
   "proxy_routes": [],

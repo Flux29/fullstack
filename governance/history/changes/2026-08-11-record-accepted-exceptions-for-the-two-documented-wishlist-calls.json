@@ -1,0 +1,63 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Proxy routes under /api"
+  ],
+  "behavioral_effects": [
+    "The wishlist-calls-fail-gracefully exception is recorded and wired: /api/auth/password/change (settings/account) and /api/health/ready (admin/system) no longer count as broken chains",
+    "An exception excuses a single call, not a page: one classified wishlist call cannot silence an unclassified break on the same page"
+  ],
+  "compatibility_impact": "The no-broken-site-chains check now consumes accepted exceptions per call, matching the convention its sibling checks already use; existing exceptions are unaffected because none carried a matching scope string before",
+  "date": "2026-08-11",
+  "files_changed": [
+    "governance/Summary.md",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json",
+    "governance/policies/architecture.json",
+    "tools/repo_governance/src/repo_governance/checks/graph.py",
+    "tools/repo_governance/tests/golden/impact-baselines/rename-env-var.after.json",
+    "tools/repo_governance/tests/test_graph_checks.py",
+    "tools/repo_governance/tests/test_graph_queries.py"
+  ],
+  "follow_up": [
+    "Classify or fix the /api/users/{param} call on settings/account: either wire the delete-account endpoint through the proxy or record its own reviewed exception",
+    "Retire the exception when the backend lands a password-change endpoint or a per-service /health/ready"
+  ],
+  "id": "2026-08-11-record-accepted-exceptions-for-the-two-documented-wishlist-calls",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The /settings/account page also calls DELETE /api/users/{id} (account self-deletion), which nothing serves and which was not in the sweep's verified classification - it remains counted as a broken chain, deliberately unexcepted"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json"
+  ],
+  "reason": "The settings/account page calls /api/auth/password/change and the admin/system page calls /api/health/ready; both endpoints do not exist yet, both pages handle the failure gracefully by design, and both calls are documented wishlist surface - without a scoped accepted exception the no-broken-site-chains rule counts them as defects on every sweep, burying real breaks",
+  "risks": [],
+  "rollback": "Revert the commit: the exception entry, the rule's exception_ref, the check wiring, and the test all disappear together and the two wishlist calls are counted again",
+  "schema_version": 1,
+  "security_impact": "None - the exception excuses two calls that already failed gracefully; no endpoint, auth, or data path changed. The check change cannot widen an exception's reach: scope strings name one page-file plus one path each",
+  "summary": "Record accepted exceptions for the two documented wishlist calls so no-broken-site-chains stops counting them",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "169 tests; new test test_broken_chain_exception_excuses_the_call_not_the_page pins the per-call semantics; two stale real-tree pins updated (orphan set emptied by items 5-6, rename-env-var golden importer count 48 to 47 after csrf.py deletion)",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "no-broken-site-chains no longer counts the two excepted calls; /settings/account still reports /api/users/{param}, which is deliberately not excepted",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

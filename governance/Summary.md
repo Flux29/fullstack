@@ -34,7 +34,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **env-example-unknown-consumers** (low) — Three variables remain genuinely unread: OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS all appear in backend/.env.example with no Settings field and no Compose consumer. Setting any of them has no effect and produces no warning, because Settings uses extra="ignore". Now surfaced automatically by the configuration extractor rather than depending on someone noticing.
   - Disposition: app-fix-required
 
-## Accepted exceptions (9)
+## Accepted exceptions (10)
 
 - **alembic-numbering-gaps-accepted** — Migration filenames are not contiguously numbered: 0017 and 0019 through 0021 do not exist, and 0004_5 is interleaved.
   - Revisit when: The revision graph itself becomes disconnected or grows an unexpected head.
@@ -52,6 +52,8 @@ Current state, what is unresolved, and recent material history. This is not the 
   - Revisit when: A queue stall goes unnoticed in an environment where nobody is watching Redis.
 - **trivy-advisory-deliberate** — The Trivy image scan in CI runs with exit-code 0 and can never fail the build.
   - Revisit when: Promotion criteria in the trivy-image-scan rule are met, or a vulnerability ships that the scan reported and nobody read.
+- **wishlist-calls-fail-gracefully** — The settings/account page POSTs /api/auth/password/change and the admin/system page GETs /api/health/ready; neither endpoint exists yet, and both pages handle the failure gracefully by design.
+  - Revisit when: The backend lands a password-change endpoint or a per-service /health/ready; wire the page for real and retire this exception.
 - **ws-chat-bypasses-proxy** — The chat WebSocket connects from the browser to the backend origin directly, bypassing the Next.js proxy layer that every REST call goes through.
   - Revisit when: A second direct browser-to-backend edge is proposed, at which point this stops being an exception and becomes a pattern needing a policy.
 
@@ -62,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 75)
+## Recent changes (latest 20 of 76)
 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
@@ -82,6 +84,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Record the phase 6-7 build decision and impact baseline
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-record-the-phase-6-7-build-decision-and-impact-baseline.json`
+- **2026-08-11** — Record accepted exceptions for the two documented wishlist calls so no-broken-site-chains stops counting them
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-11-record-accepted-exceptions-for-the-two-documented-wishlist-calls.json`
 - **2026-08-11** — Make the read gate's feedback loop close itself
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-11-make-the-read-gate-s-feedback-loop-close-itself.json`
@@ -121,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Add ranking and risk analysis over the joined graph
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-add-ranking-and-risk-analysis-over-the-joined-graph.json`
-- **2026-08-10** — Route sessions to pick-workflow and teach Explore-delegating skills the read gate
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-10-route-sessions-to-pick-workflow-and-teach-explore-delegating-ski.json`
 
 ## Decisions (5)
 

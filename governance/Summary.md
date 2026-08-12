@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 76)
+## Recent changes (latest 20 of 77)
 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
@@ -78,6 +78,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Store the graph in SQLite and report cycles and orphans
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-store-the-graph-in-sqlite-and-report-cycles-and-orphans.json`
+- **2026-08-11** — Remove unused leaflet, react-leaflet, and @types/leaflet from frontend dependencies
+  - Components: frontend-app
+  - Record: `governance/history/changes/2026-08-11-remove-unused-leaflet-react-leaflet-and-types-leaflet-from-front.json`
 - **2026-08-11** — Remove the disabled-billing credit calls from the live dashboard
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-remove-the-disabled-billing-credit-calls-from-the-live-dashboard.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Add the TypeScript module graph
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-add-the-typescript-module-graph.json`
-- **2026-08-11** — Add ranking and risk analysis over the joined graph
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-add-ranking-and-risk-analysis-over-the-joined-graph.json`
 
 ## Decisions (5)
 

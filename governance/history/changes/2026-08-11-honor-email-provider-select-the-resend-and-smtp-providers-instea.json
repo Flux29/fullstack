@@ -1,0 +1,78 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "email",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "OpenAPI under /api/v1"
+  ],
+  "behavioral_effects": [
+    "EMAIL_PROVIDER=resend with RESEND_API_KEY selects ResendProvider; EMAIL_PROVIDER=smtp with SMTP_HOST selects SMTPProvider with host, port, credentials, and TLS from settings",
+    "Missing credentials or unknown provider values fall back to the log provider with a logged warning instead of silently",
+    "LOG_PROVIDER_WRITE_TO_DISK, previously read but never passed, now reaches LogProvider - same config-read-but-not-honored defect in the same function"
+  ],
+  "compatibility_impact": "Behavioral: environments that already set EMAIL_PROVIDER=resend or smtp were silently getting the log provider and will start actually sending mail on deploy of this change. Unknown provider values now log a warning instead of silently degrading. New deps resend and aiosmtplib added to backend",
+  "date": "2026-08-11",
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/.env.example",
+    "backend/app/core/config.py",
+    "backend/app/services/email/__init__.py",
+    "backend/pyproject.toml",
+    "backend/tests/test_services.py",
+    "backend/uv.lock",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "follow_up": [
+    "Curate the secret classification for RESEND_API_KEY and SMTP_PASSWORD when the phase-3 secret-classification-is-curated rule is enforced"
+  ],
+  "id": "2026-08-11-honor-email-provider-select-the-resend-and-smtp-providers-instea",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "No live send was tested against Resend or an SMTP server; selection and construction are unit-tested, delivery is not"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "reason": "get_email_provider matches 'case log | _' so EMAIL_PROVIDER=resend or smtp silently receives the log provider and no mail is ever sent despite the resend and smtp provider modules existing; the config is read but never honored",
+  "risks": [
+    "Environments with EMAIL_PROVIDER set will begin real mail delivery; operators must verify the value before deploying"
+  ],
+  "rollback": "Revert the commit and run uv sync in backend to drop the two new packages; provider selection returns to always-log",
+  "schema_version": 1,
+  "security_impact": "Two new secret-bearing settings (RESEND_API_KEY, SMTP_PASSWORD) join the backend config; they default to unset, are never logged, and .env.example carries placeholders only. The generated configuration manifest classifies them runtime pending the phase-3 curated secret classification",
+  "summary": "Honor EMAIL_PROVIDER: select the resend and smtp providers instead of silently falling back to log",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "after ruff format on the new match statement",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "486 passed 13 skipped; TestEmailProviderSelection 6 tests failed before the fix (5 failed, log-only passed) and all pass after",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped, no reachable database; no schema change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

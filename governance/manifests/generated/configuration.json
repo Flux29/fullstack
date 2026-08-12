@@ -2465,6 +2465,21 @@
     },
     {
       "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "RESEND_API_KEY",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
         "runtime",
         "secret"
       ],
@@ -2691,6 +2706,81 @@
       "required": false,
       "surface": "backend",
       "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SMTP_HOST",
+      "required": false,
+      "surface": "backend",
+      "type": "str | None"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "SMTP_PASSWORD",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "587",
+      "default_class": "literal",
+      "name": "SMTP_PORT",
+      "required": false,
+      "surface": "backend",
+      "type": "int"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "SMTP_USERNAME",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "true",
+      "default_class": "literal",
+      "name": "SMTP_USE_TLS",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
     },
     {
       "classification": [

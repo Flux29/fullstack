@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 72)
+## Recent changes (latest 20 of 73)
 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
@@ -88,6 +88,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Join the site graph and report chain coverage
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-join-the-site-graph-and-report-chain-coverage.json`
+- **2026-08-11** — Honor EMAIL_PROVIDER: select the resend and smtp providers instead of silently falling back to log
+  - Components: backend-api, email, governance-kernel
+  - Record: `governance/history/changes/2026-08-11-honor-email-provider-select-the-resend-and-smtp-providers-instea.json`
 - **2026-08-11** — Follow the site chain in impact analysis and measure the phase-6 exit
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-follow-the-site-chain-in-impact-analysis-and-measure-the-phase-6.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Record the validation sweep results for the agent surface
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-record-the-validation-sweep-results-for-the-agent-surface.json`
-- **2026-08-10** — Record the evaluation-and-audit loop for the agent surface
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-10-record-the-evaluation-and-audit-loop-for-the-agent-surface.json`
 
 ## Decisions (5)
 

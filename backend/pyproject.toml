@@ -73,6 +73,8 @@ dependencies = [
     "subagents-pydantic-ai>=0.2.7",
     "summarization-pydantic-ai>=0.1.7",
     "cryptography>=44.0.0",
+    "resend>=2.35.0",
+    "aiosmtplib>=5.1.2",
 ]
 
 # PEP 735 dependency group — installed by `uv sync` / `uv sync --dev` and

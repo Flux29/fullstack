@@ -19,8 +19,8 @@
         "sources": ["backend/alembic/versions/"],
         "extractor_version": "1.0.0"
       },
-      "head_expected": ["0027_embedding_cache"],
-      "heads_observed": ["0027_embedding_cache"],
+      "head_expected": ["0028_user_magic_link_epoch"],
+      "heads_observed": ["0028_user_magic_link_epoch"],
       "revisions": [],
       "accepted_history_ref": "alembic-numbering-gaps-accepted"
     },

@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 80)
+## Recent changes (latest 20 of 81)
 
 - **2026-08-12** — Update the recorded migration head expectation to 0028_user_magic_link_epoch
   - Components: governance-kernel
@@ -72,6 +72,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-12** — Reduce agent token consumption via deferred MCP tool loading and OpenRouter prompt caching
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-12-reduce-agent-token-consumption-via-deferred-mcp-tool-loading-and.json`
+- **2026-08-12** — Persist MCP tool discovery across chat turns via conversation-scoped replay in the agent session
+  - Components: agents, backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-12-persist-mcp-tool-discovery-across-chat-turns-via-conversation-sc.json`
 - **2026-08-12** — Cache per-turn MCP liveness probe results with a TTL to cut chat-turn latency
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-12-cache-per-turn-mcp-liveness-probe-results-with-a-ttl-to-cut-chat.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Delete fifteen orphaned frontend components, keeping the shadcn library stock
   - Components: chat-frontend, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-delete-fifteen-orphaned-frontend-components-keeping-the-shadcn-l.json`
-- **2026-08-11** — Commit the graph vocabulary and activate the graph-model schema
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-commit-the-graph-vocabulary-and-activate-the-graph-model-schema.json`
 
 ## Decisions (5)
 

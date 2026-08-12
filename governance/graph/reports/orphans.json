@@ -47,7 +47,6 @@
       "frontend/src/components/marketing/feature-section.tsx",
       "frontend/src/components/marketing/highlight.tsx",
       "frontend/src/components/marketing/testimonial-carousel.tsx",
-      "frontend/src/components/rag/sync-source-logs.tsx",
       "frontend/src/components/settings/brand-color-picker.tsx",
       "frontend/src/components/settings/settings-nav.tsx",
       "frontend/src/components/ui/radio-group.tsx",

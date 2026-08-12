@@ -1,0 +1,64 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Proxy routes under /api"
+  ],
+  "behavioral_effects": [
+    "168 lines deleted, 0 added: downloadKBDocument, listKBSyncSourceLogs, listOrgIntegrationLogs removed from rag-api.ts (43 lines) and orphaned sync-source-logs.tsx removed (125 lines)",
+    "boundaries.json pages_with_broken_chains dropped 4 to 3; the /rag page has no unmatched paths left; sync-source-logs.tsx left orphans.json"
+  ],
+  "compatibility_impact": "None externally: the deleted fetchers had zero callers and their /api/kb, /api/orgs proxy paths never existed, so no working call site is affected",
+  "date": "2026-08-11",
+  "files_changed": [
+    "frontend/src/components/rag/sync-source-logs.tsx",
+    "frontend/src/lib/rag-api.ts",
+    "governance/graph/reports/boundaries.json",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-11-delete-the-legacy-api-kb-and-api-orgs-rag-fetchers-and-the-orpha",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The remaining broken chain (/api/billing/me/credits/transactions on /dashboard) is deliberately out of scope - it is the next debt item"
+  ],
+  "manifests_changed": [],
+  "reason": "frontend/src/lib/rag-api.ts still carries fetchers targeting /api/kb/ and /api/orgs/ proxy paths that no longer exist, and sync-source-logs.tsx consumes them with zero importers; the working /api/v1/rag paths in the same file superseded them, so the legacy surface is dead weight that boundaries.json counts as broken chains",
+  "risks": [],
+  "rollback": "Revert the commit; the dead fetchers and orphaned component return exactly as they were",
+  "schema_version": 1,
+  "security_impact": "None - pure deletion of dead client fetchers that targeted nonexistent proxy paths; no auth or data path changed",
+  "summary": "Delete the legacy /api/kb and /api/orgs RAG fetchers and the orphaned sync-source-logs component",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "lint, type-check, vitest 29 passed after the deletions",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "480 passed 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped, no reachable database; frontend-only change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

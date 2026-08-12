@@ -114,16 +114,18 @@ def test_real_tree_cycles_are_the_two_known_ones(real_context: Context) -> None:
 
 
 def test_real_tree_orphans_are_the_verified_set_not_the_classified_ones(real_context: Context) -> None:
+    """The ratchet moved on 2026-08-11: the debt sweep deleted every verified python orphan
+    (the research shim went, the email providers got real match arms) and every verified
+    typescript orphan except the shadcn library stock, which stays by design."""
     report = build_orphans_report(real_context)
     python = set(report["python"]["orphans"])
-    assert "app.agents.tools.research" in python  # A re-export shim nothing imports.
-    assert "app.services.email.providers.resend" in python  # Unreachable: the provider match has a catch-all.
-    assert "app.main" not in python  # Component entrypoint.
-    assert "app.commands.seed" not in python  # Dynamic subtree (pkgutil discovery).
-    assert "app.services.rag.ingestion" not in python  # Entrypoint behind the lazy facade.
+    assert python == set()
 
     typescript = set(report["typescript"]["orphans"])
-    assert "frontend/src/components/admin/admin-nav.tsx" in typescript
+    assert typescript == {
+        "frontend/src/components/ui/radio-group.tsx",
+        "frontend/src/components/ui/scroll-area.tsx",
+    }
     assert not any(module.endswith("/page.tsx") for module in typescript)
 
 

@@ -205,18 +205,28 @@ def check_broken_site_chains(scope: CheckScope) -> list[Issue]:
     The route-consumer slice of no-orphaned-surfaces, from the other side: an orphaned
     route has no caller, a broken chain has no servant. Both are dead surface wearing a
     live interface.
+
+    An accepted exception excuses a single call, not a page: its scope entry is the
+    literal string ``<page file> calls <api path>``, so one classified wishlist call
+    cannot silence an unclassified break on the same page.
     """
     from repo_governance.graph.site import build_site_chains
 
+    exception_scopes = _active_exception_scopes(scope)
     issues: list[Issue] = []
     for chain in build_site_chains(scope.ctx):
-        if not chain.unmatched_paths:
+        unexcused = [
+            path
+            for path in chain.unmatched_paths
+            if not _excused(f"{chain.file} calls {path}", exception_scopes)
+        ]
+        if not unexcused:
             continue
         issues.append(
             Issue(
-                message=f"Page {chain.route} calls {len(chain.unmatched_paths)} API path(s) that nothing serves.",
+                message=f"Page {chain.route} calls {len(unexcused)} API path(s) that nothing serves.",
                 path=chain.file,
-                evidence=", ".join(chain.unmatched_paths),
+                evidence=", ".join(unexcused),
                 repair=(
                     "Delete the dead call, add the missing proxy handler or backend route, "
                     "or fix the path."

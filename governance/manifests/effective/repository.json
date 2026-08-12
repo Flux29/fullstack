@@ -395,6 +395,7 @@
       "exceptions": [
         "coverage-floors-are-ratchets",
         "playwright-not-in-ci",
+        "wishlist-calls-fail-gracefully",
         "ws-chat-bypasses-proxy"
       ],
       "forbidden_dependencies": [
@@ -765,6 +766,7 @@
     "profile-gated-services-without-healthchecks",
     "taskiq-healthchecks-disabled",
     "trivy-advisory-deliberate",
+    "wishlist-calls-fail-gracefully",
     "ws-chat-bypasses-proxy"
   ],
   "provenance": {

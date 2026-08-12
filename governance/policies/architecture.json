@@ -88,7 +88,9 @@
       "check_impl": "checks.graph.check_broken_site_chains",
       "promotion_criteria": "The four known broken-chain pages are fixed or their calls classified, and the rule then runs clean for a release cycle.",
       "exceptions_allowed": true,
-      "exception_refs": []
+      "exception_refs": [
+        "wishlist-calls-fail-gracefully"
+      ]
     },
     {
       "id": "no-dependency-cycles",

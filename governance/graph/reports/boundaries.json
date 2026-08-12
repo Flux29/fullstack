@@ -234,9 +234,6 @@
         "/api/v1/me/slash-commands",
         "/api/v1/rag/sync/logs"
       ],
-      "unmatched_paths": [
-        "/api/billing/me/credits/transactions"
-      ],
       "websocket": true
     },
     {
@@ -610,7 +607,7 @@
   "summary": {
     "pages": 42,
     "pages_with_api_chains": 23,
-    "pages_with_broken_chains": 3,
+    "pages_with_broken_chains": 2,
     "websocket_exception_pages": 10
   }
 }

@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 71)
+## Recent changes (latest 20 of 72)
 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Store the graph in SQLite and report cycles and orphans
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-store-the-graph-in-sqlite-and-report-cycles-and-orphans.json`
+- **2026-08-11** — Remove the disabled-billing credit calls from the live dashboard
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-11-remove-the-disabled-billing-credit-calls-from-the-live-dashboard.json`
 - **2026-08-11** — Record the phase 6-7 build decision and impact baseline
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-record-the-phase-6-7-build-decision-and-impact-baseline.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-10** — Record the evaluation-and-audit loop for the agent surface
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-10-record-the-evaluation-and-audit-loop-for-the-agent-surface.json`
-- **2026-08-10** — Read-gate hardening: breadth rule with context-first unlock; repo surface warn to deny
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-10-read-gate-hardening-breadth-rule-with-context-first-unlock-repo.json`
 
 ## Decisions (5)
 

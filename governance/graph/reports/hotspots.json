@@ -16,7 +16,7 @@
         "Embedding dimension agrees across all five contract points"
       ],
       "invariants": 2,
-      "max_module_centrality": 0.0788,
+      "max_module_centrality": 0.0772,
       "uncovered": []
     },
     {
@@ -72,71 +72,71 @@
       "betweenness": [
         {
           "id": "app.api.deps",
-          "score": 0.0632
+          "score": 0.0657
         },
         {
           "id": "app.repositories",
-          "score": 0.0215
+          "score": 0.0223
         },
         {
           "id": "app.api.routes.v1",
-          "score": 0.0128
+          "score": 0.0133
         },
         {
           "id": "app.services.user",
-          "score": 0.0098
+          "score": 0.0102
         },
         {
           "id": "app.services.mcp_connection",
-          "score": 0.0094
+          "score": 0.0098
         },
         {
           "id": "app.worker.tasks.rag_tasks",
-          "score": 0.0083
+          "score": 0.0087
         },
         {
           "id": "app.services.email.service",
-          "score": 0.0072
+          "score": 0.0075
         },
         {
           "id": "app.services.rag_document",
-          "score": 0.0067
+          "score": 0.007
         },
         {
           "id": "app.services.sync_source",
-          "score": 0.0067
+          "score": 0.007
         },
         {
           "id": "app.services.rag_sync",
-          "score": 0.0056
-        },
-        {
-          "id": "app.agents.google_loadout",
-          "score": 0.0039
+          "score": 0.0058
         },
         {
           "id": "app.api.router",
-          "score": 0.0039
-        },
-        {
-          "id": "app.agents.assistant",
-          "score": 0.0038
+          "score": 0.0041
         },
         {
           "id": "app.services.message_rating",
-          "score": 0.0036
+          "score": 0.0037
         },
         {
           "id": "app.services.webhook",
-          "score": 0.0035
+          "score": 0.0037
         },
         {
-          "id": "app.agents.google_apis.products",
-          "score": 0.0033
+          "id": "app.agents.google_loadout",
+          "score": 0.0036
         },
         {
           "id": "app.services.email",
-          "score": 0.0032
+          "score": 0.0033
+        },
+        {
+          "id": "app.agents.assistant",
+          "score": 0.0031
+        },
+        {
+          "id": "app.agents.google_apis.products",
+          "score": 0.0031
         },
         {
           "id": "app.agents.google_workspace_api",
@@ -144,93 +144,93 @@
         },
         {
           "id": "app.api.routes.v1.agent",
-          "score": 0.0027
+          "score": 0.0028
         },
         {
           "id": "app.services.agent_session",
-          "score": 0.0027
+          "score": 0.0028
         }
       ],
       "pagerank": [
         {
           "id": "app.core.config",
-          "score": 0.0823
-        },
-        {
-          "id": "app.services.rag",
-          "score": 0.0788
+          "score": 0.0801
         },
         {
           "id": "app.db.base",
-          "score": 0.076
+          "score": 0.0775
+        },
+        {
+          "id": "app.services.rag",
+          "score": 0.0772
         },
         {
           "id": "app.schemas.base",
-          "score": 0.0603
+          "score": 0.0614
         },
         {
           "id": "app.core.exceptions",
-          "score": 0.0227
+          "score": 0.0231
         },
         {
           "id": "app.api.deps",
-          "score": 0.0194
+          "score": 0.0198
         },
         {
           "id": "app.services.email.providers.base",
-          "score": 0.0121
+          "score": 0.0123
         },
         {
           "id": "app.db.models.user",
-          "score": 0.0114
+          "score": 0.0116
         },
         {
           "id": "app.worker.tasks.rag_tasks",
-          "score": 0.0092
+          "score": 0.0094
         },
         {
           "id": "app.db.models.conversation",
-          "score": 0.0091
+          "score": 0.0093
         },
         {
           "id": "app.repositories",
-          "score": 0.0085
-        },
-        {
-          "id": "app.clients.redis",
-          "score": 0.0082
+          "score": 0.0086
         },
         {
           "id": "app.db.session",
-          "score": 0.0082
+          "score": 0.0084
+        },
+        {
+          "id": "app.clients.redis",
+          "score": 0.0083
         },
         {
           "id": "app.commands",
-          "score": 0.008
+          "score": 0.0081
         },
         {
           "id": "app.agents.google_apis.products",
-          "score": 0.0079
+          "score": 0.008
         },
         {
           "id": "app.schemas.user",
-          "score": 0.0078
+          "score": 0.008
         },
         {
           "id": "app.db.models.chat_file",
-          "score": 0.0076
+          "score": 0.0078
         },
         {
           "id": "app.services.rag.connectors",
-          "score": 0.0076
+          "score": 0.0078
         },
         {
           "id": "app.db.models.session",
-          "score": 0.0074
+          "score": 0.0076
         },
         {
           "id": "app.api.routes.v1",
-          "score": 0.0073
+          "score": 0.0074
         }
       ]
     },

@@ -1,0 +1,72 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "307 lines of never-executed generator-provided code deleted; the Python orphans list in orphans.json is now empty"
+  ],
+  "compatibility_impact": "None: all three modules had zero importers; versioning.py's URL scheme was never adopted (the /api/v1 prefix is hardcoded in route registration)",
+  "date": "2026-08-11",
+  "files_changed": [
+    "backend/app/agents/tools/research.py",
+    "backend/app/api/versioning.py",
+    "backend/app/core/csrf.py",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-11-delete-three-never-wired-backend-modules-agents-tools-research-p",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "This does not add CSRF protection anywhere - it removes the illusion of it; the Bearer-token reliance is now recorded instead of implied"
+  ],
+  "manifests_changed": [],
+  "reason": "Three generator-provided modules were never adopted: research.py is a re-export shim with zero importers, and the versioning and CSRF middleware were never registered in main.py; they are dead surface the orphans report carries and readers mistake for active defenses - in particular csrf.py suggests a cookie-CSRF layer that does not actually protect anything, while the app's real defense is Bearer-token auth",
+  "risks": [],
+  "rollback": "Revert the commit; the three modules return unchanged. They are also recoverable from the fastapi-fullstack template, their original provenance",
+  "schema_version": 1,
+  "security_impact": "Deleting core/csrf.py removes no active defense: the middleware was never registered in main.py, so no request was ever CSRF-checked by it. Deliberately stated: this application relies on Bearer-token authentication in the Authorization header rather than cookie-based sessions, so cookie-CSRF middleware defends a surface the app does not expose. If cookie-session auth is ever introduced, CSRF defense must be re-evaluated then",
+  "summary": "Delete three never-wired backend modules: agents/tools/research.py, api/versioning.py, core/csrf.py",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "486 passed 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped, no reachable database; no schema change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

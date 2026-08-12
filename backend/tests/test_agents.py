@@ -11,19 +11,29 @@ from pydantic_ai import FunctionToolCallEvent, FunctionToolResultEvent
 from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
+    NativeToolSearchReturnPart,
     RetryPromptPart,
     SystemPromptPart,
     TextPart,
     ToolCallPart,
+    ToolSearchCallPart,
+    ToolSearchReturnPart,
     UserPromptPart,
 )
 from pydantic_ai.models.test import TestModel
 from pydantic_ai.tools import DeferredToolRequests, ToolApproved, ToolDenied
+from pydantic_ai.toolsets._tool_search import parse_discovered_tools
 
 from app.agents.assistant import AssistantAgent, Deps, get_agent
 from app.agents.prompts import get_system_prompt_with_rag
 from app.agents.utils import get_current_datetime
-from app.services.agent import build_message_history, load_conversation_history, persist_user_turn
+from app.services.agent import (
+    append_discovery_replay,
+    build_message_history,
+    discovered_tool_names,
+    load_conversation_history,
+    persist_user_turn,
+)
 from app.services.agent_session import AgentSession
 
 
@@ -378,7 +388,9 @@ class TestPersistedConversationHistory:
         ]
 
         captured: dict = {}
-        agent_run = SimpleNamespace(result=SimpleNamespace(output="new answer"))
+        agent_run = SimpleNamespace(
+            result=SimpleNamespace(output="new answer", new_messages=lambda: [])
+        )
 
         @contextlib.asynccontextmanager
         async def fake_iter(user_input, **kwargs):
@@ -495,7 +507,9 @@ class TestPersistedConversationHistory:
             yield MagicMock()
 
         captured: dict = {}
-        agent_run = SimpleNamespace(result=SimpleNamespace(output="answer"))
+        agent_run = SimpleNamespace(
+            result=SimpleNamespace(output="answer", new_messages=lambda: [])
+        )
 
         @contextlib.asynccontextmanager
         async def fake_iter(user_input, **kwargs):
@@ -525,3 +539,155 @@ class TestPersistedConversationHistory:
         assert captured["message_history"] == []
         event_names = [call.args[1] for call in send_event.await_args_list]
         assert "conversation_created" in event_names
+
+
+class TestDiscoveryReplay:
+    """The replay helpers that make MCP tool discovery survive the Postgres rebuild."""
+
+    def test_appends_the_exchange_pydantic_ai_parses_back(self):
+        """The contract seam: pydantic-ai derives discovered tools from the history
+        it is handed, so the replay is only real if its own parser reads it back."""
+        history: list = []
+        append_discovery_replay(history, ("github_get_me", "logfire_query_run"))
+        assert [type(message) for message in history] == [ModelResponse, ModelRequest]
+        assert isinstance(history[0].parts[0], ToolSearchCallPart)
+        assert isinstance(history[1].parts[0], ToolSearchReturnPart)
+        assert history[0].parts[0].tool_call_id == history[1].parts[0].tool_call_id
+        assert parse_discovered_tools(history) == {"github_get_me", "logfire_query_run"}
+
+    def test_same_names_replay_byte_identically(self):
+        """The exchange participates in the provider prompt-cache prefix — an
+        unchanged discovery set must serialize to the same bytes every turn."""
+        first: list = []
+        second: list = []
+        append_discovery_replay(first, ("github_get_me",))
+        append_discovery_replay(second, ("github_get_me",))
+        assert first[0].parts[0].tool_call_id == second[0].parts[0].tool_call_id
+        assert first[0].parts[0].args == second[0].parts[0].args
+        assert first[1].parts[0].content == second[1].parts[0].content
+
+    def test_no_names_appends_nothing(self):
+        history: list = []
+        append_discovery_replay(history, ())
+        assert history == []
+
+    def test_discovered_tool_names_reads_both_part_shapes(self):
+        """Local search_tools returns and provider-native results both count."""
+        messages = [
+            ModelRequest(
+                parts=[
+                    ToolSearchReturnPart(
+                        content={"discovered_tools": [{"name": "local_tool"}]},
+                        tool_call_id="c1",
+                    )
+                ]
+            ),
+            ModelResponse(
+                parts=[
+                    NativeToolSearchReturnPart(
+                        content={"discovered_tools": [{"name": "native_tool"}]},
+                        tool_call_id="c2",
+                    )
+                ]
+            ),
+            ModelRequest(parts=[UserPromptPart(content="unrelated")]),
+        ]
+        assert discovered_tool_names(messages) == {"local_tool", "native_tool"}
+
+
+class TestDiscoveryPersistsAcrossTurns:
+    """Turn two must reveal turn one's MCP tools without a search round-trip."""
+
+    @pytest.mark.anyio
+    async def test_second_turn_replays_and_a_dead_server_drops_out(self):
+        """Turn 1 discovers github_get_me via search_tools; the persisted history is
+        plain text, so turn 2 only knows it through the session's discovery log. The
+        replayed exchange must sit after the rebuilt history (cache prefix stays
+        stable) and vanish the moment the server stops being attached."""
+        conversation_id = str(uuid4())
+        user = SimpleNamespace(id=uuid4())
+        session = AgentSession(MagicMock(), user)
+        session._stream_agent_run = AsyncMock()
+        session._google_loadout_for_turn = MagicMock(return_value=MagicMock())
+
+        attached = {"github_get_me", "github_search_issues"}
+
+        async def fake_build_toolsets(user_id, loadout=None, discoveries=None):
+            discoveries.attach(attached)
+            return []
+
+        discovery_exchange = [
+            ModelResponse(
+                parts=[ToolSearchCallPart(args={"queries": ["github user"]}, tool_call_id="c1")]
+            ),
+            ModelRequest(
+                parts=[
+                    ToolSearchReturnPart(
+                        content={"discovered_tools": [{"name": "github_get_me"}]},
+                        tool_call_id="c1",
+                    )
+                ]
+            ),
+        ]
+        results = iter(
+            [
+                SimpleNamespace(output="found you", new_messages=lambda: discovery_exchange),
+                SimpleNamespace(output="again", new_messages=lambda: []),
+                SimpleNamespace(output="gone", new_messages=lambda: []),
+            ]
+        )
+        histories: list = []
+
+        @contextlib.asynccontextmanager
+        async def fake_iter(user_input, **kwargs):
+            histories.append(kwargs["message_history"])
+            yield SimpleNamespace(result=next(results))
+
+        assistant = MagicMock()
+        assistant.agent.iter = fake_iter
+        assistant.model_name = "test-model"
+        loaded = [
+            {"role": "user", "content": "who am I on github?"},
+            {"role": "assistant", "content": "found you"},
+        ]
+
+        with (
+            patch(
+                "app.services.agent_session.load_conversation_history",
+                AsyncMock(side_effect=lambda *args, **kwargs: list(loaded)),
+            ),
+            patch(
+                "app.services.agent_session.persist_user_turn",
+                AsyncMock(return_value=(conversation_id, False, None)),
+            ),
+            patch(
+                "app.services.agent_session.persist_assistant_turn",
+                AsyncMock(return_value="m"),
+            ),
+            patch("app.services.agent_session.send_event", AsyncMock(return_value=True)),
+            patch("app.services.agent_session.build_toolsets_for_user", fake_build_toolsets),
+            patch("app.services.agent_session.get_agent", return_value=assistant),
+        ):
+            await session.process_message(
+                {"message": "who am I on github?", "conversation_id": conversation_id}
+            )
+            await session.process_message(
+                {"message": "and my open issues?", "conversation_id": conversation_id}
+            )
+            # The server disappears: nothing attached, nothing may replay.
+            attached.clear()
+            await session.process_message(
+                {"message": "one more thing", "conversation_id": conversation_id}
+            )
+
+        # Turn 1: nothing discovered yet, so the model saw plain history only.
+        assert parse_discovered_tools(histories[0]) == set()
+        # Turn 2: the discovery is replayed after the rebuilt plain-text history,
+        # and pydantic-ai's own parser reads it back.
+        second = histories[1]
+        assert parse_discovered_tools(second) == {"github_get_me"}
+        assert isinstance(second[-2].parts[0], ToolSearchCallPart)
+        assert isinstance(second[-1].parts[0], ToolSearchReturnPart)
+        assert [type(message) for message in second[:-2]] == [ModelRequest, ModelResponse]
+        # Turn 3: the server is gone — its tools must not leak into the history.
+        assert parse_discovered_tools(histories[2]) == set()

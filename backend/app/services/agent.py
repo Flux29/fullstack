@@ -3,6 +3,7 @@
 Houses framework-agnostic helpers used by every WebSocket agent route:
   - ``AgentConnectionManager`` + ``send_event`` — WebSocket fan-out
   - ``build_message_history`` — convert dicts to provider-native messages
+  - ``append_discovery_replay`` / ``discovered_tool_names`` — sticky MCP tool discovery
   - ``load_conversation_history`` — restore persisted turns for a resumed chat
   - ``persist_user_turn`` / ``persist_assistant_turn`` — DB persistence
   - ``resolve_kb_collections`` — Teams+RAG collection lookup
@@ -11,8 +12,10 @@ Houses framework-agnostic helpers used by every WebSocket agent route:
 Framework-specific concerns (multimodal input, streaming events) stay in the route.
 """
 
+import hashlib
 import json
 import logging
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from typing import Any
 from uuid import UUID
@@ -21,8 +24,11 @@ from fastapi import WebSocket, WebSocketDisconnect
 from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
+    NativeToolSearchReturnPart,
     SystemPromptPart,
     TextPart,
+    ToolSearchCallPart,
+    ToolSearchReturnPart,
     UserPromptPart,
 )
 
@@ -93,6 +99,68 @@ def build_message_history(history: list[dict[str, str]]) -> list[ModelRequest | 
             model_history.append(ModelRequest(parts=[SystemPromptPart(content=msg["content"])]))
 
     return model_history
+
+
+def append_discovery_replay(
+    model_history: list[ModelRequest | ModelResponse], tool_names: Sequence[str]
+) -> None:
+    """Reveal previously discovered deferred tools by replaying a search exchange.
+
+    Within a run, tool-search discovery state lives in the message history as
+    typed parts — but persisted history is plain user/assistant text, so by the
+    next turn that state is gone and pydantic-ai (which re-derives discovered
+    tools from the history it is handed) makes the model re-pay a
+    ``search_tools`` round-trip for tools the conversation already used. This
+    appends the same synthetic exchange shape ``ToolSearch`` itself uses for
+    capability loads, which that parser reads back, so the schemas are visible
+    on the first model request.
+
+    Appended *after* the rebuilt history: prior turns stay byte-identical, so
+    the provider prompt-cache prefix is preserved. The call id is a digest of
+    the (already sorted) names, so an unchanged discovery set replays
+    identically across turns.
+    """
+    if not tool_names:
+        return
+    digest = hashlib.blake2s(
+        "\x00".join(tool_names).encode(), digest_size=8, usedforsecurity=False
+    ).hexdigest()
+    call_id = f"discovery_replay_{digest}"
+    model_history.append(
+        ModelResponse(
+            parts=[
+                ToolSearchCallPart(
+                    args={"queries": ["tools used earlier in this conversation"]},
+                    tool_call_id=call_id,
+                )
+            ]
+        )
+    )
+    model_history.append(
+        ModelRequest(
+            parts=[
+                ToolSearchReturnPart(
+                    content={"discovered_tools": [{"name": name} for name in tool_names]},
+                    tool_call_id=call_id,
+                )
+            ]
+        )
+    )
+
+
+def discovered_tool_names(messages: Sequence[Any]) -> set[str]:
+    """Tool names a tool-search revealed anywhere in *messages*.
+
+    Covers both execution paths: the local ``search_tools`` return
+    (``ToolSearchReturnPart`` on a request) and the provider-native result
+    (``NativeToolSearchReturnPart`` on a response).
+    """
+    names: set[str] = set()
+    for message in messages:
+        for part in getattr(message, "parts", ()):
+            if isinstance(part, NativeToolSearchReturnPart | ToolSearchReturnPart):
+                names.update(match["name"] for match in part.content["discovered_tools"])
+    return names
 
 
 async def load_conversation_history(

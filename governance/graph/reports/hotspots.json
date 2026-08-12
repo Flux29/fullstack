@@ -72,7 +72,7 @@
       "betweenness": [
         {
           "id": "app.api.deps",
-          "score": 0.0657
+          "score": 0.0656
         },
         {
           "id": "app.repositories",
@@ -88,7 +88,7 @@
         },
         {
           "id": "app.services.mcp_connection",
-          "score": 0.0098
+          "score": 0.0097
         },
         {
           "id": "app.worker.tasks.rag_tasks",
@@ -119,11 +119,11 @@
           "score": 0.0037
         },
         {
-          "id": "app.services.webhook",
-          "score": 0.0037
+          "id": "app.agents.google_loadout",
+          "score": 0.0036
         },
         {
-          "id": "app.agents.google_loadout",
+          "id": "app.services.webhook",
           "score": 0.0036
         },
         {
@@ -144,11 +144,11 @@
         },
         {
           "id": "app.api.routes.v1.agent",
-          "score": 0.0028
+          "score": 0.0029
         },
         {
           "id": "app.services.agent_session",
-          "score": 0.0028
+          "score": 0.0029
         }
       ],
       "pagerank": [
@@ -158,7 +158,7 @@
         },
         {
           "id": "app.db.base",
-          "score": 0.0775
+          "score": 0.0774
         },
         {
           "id": "app.services.rag",
@@ -197,11 +197,11 @@
           "score": 0.0086
         },
         {
-          "id": "app.db.session",
-          "score": 0.0084
+          "id": "app.clients.redis",
+          "score": 0.0083
         },
         {
-          "id": "app.clients.redis",
+          "id": "app.db.session",
           "score": 0.0083
         },
         {

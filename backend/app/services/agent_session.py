@@ -32,12 +32,15 @@ from pydantic_ai.tools import (
 
 from app.agents.assistant import Deps, get_agent
 from app.agents.google_loadout import GoogleLoadout
+from app.agents.mcp import McpDiscoveries
 from app.api.deps import get_conversation_service
 from app.core.config import settings
 from app.db.models.user import User
 from app.db.session import get_db_context
 from app.services.agent import (
+    append_discovery_replay,
     build_message_history,
+    discovered_tool_names,
     load_conversation_history,
     persist_assistant_turn,
     persist_user_turn,
@@ -49,8 +52,9 @@ from app.services.research import RESEARCH_TOOL_NAMES, ResearchToolkit
 
 logger = logging.getLogger(__name__)
 
-#: Conversations whose Google loadout one socket keeps routing state for.
-_MAX_TRACKED_LOADOUTS = 16
+#: Conversations whose sticky per-chat state (Google loadout, MCP discoveries)
+#: one socket keeps.
+_MAX_TRACKED_CONVERSATIONS = 16
 
 
 class AgentSession:
@@ -81,6 +85,10 @@ class AgentSession:
         # that to Nikki" still finds Gmail. Keyed by conversation because one
         # socket can switch between chats, and the loadout must switch with it.
         self._google_loadouts: dict[str, GoogleLoadout] = {}
+        # MCP tool discoveries share the loadout's lifecycle: conversation-
+        # scoped, sticky across turns, evicted LRU when the socket visits too
+        # many chats.
+        self._mcp_discoveries: dict[str, McpDiscoveries] = {}
 
     async def handle_frame(self, data: dict[str, Any]) -> None:
         """Dispatch one incoming WebSocket frame.
@@ -214,9 +222,12 @@ class AgentSession:
             # build_toolsets_for_user gates each integration against the result.
             loadout = self._google_loadout_for_turn(user_message)
             self.deps.google_loadout = loadout
+            discoveries = self._mcp_discoveries_for_turn()
             # Rebuilt every turn so Settings → Integrations changes apply
             # immediately; unreachable/unauthorized servers are skipped there.
-            mcp_toolsets = await build_toolsets_for_user(self.user.id, loadout=loadout)
+            mcp_toolsets = await build_toolsets_for_user(
+                self.user.id, loadout=loadout, discoveries=discoveries
+            )
             assistant = get_agent(
                 model_name=data.get("model"),
                 thinking_effort=data.get("thinking_effort"),
@@ -227,6 +238,10 @@ class AgentSession:
                 context_manager_capability=ctx_manager_cap,
             )
             model_history = build_message_history(self.conversation_history)
+            # After the rebuilt history, before the new prompt: deferred MCP
+            # tools this conversation already discovered come back without a
+            # search_tools round-trip, and the cached prefix above is untouched.
+            append_discovery_replay(model_history, discoveries.replay_names())
             user_input = await self._build_multimodal_input(user_message, file_ids)
 
             collected_tool_calls: list[dict[str, Any]] = []
@@ -266,9 +281,15 @@ class AgentSession:
                 # when the turn was stopped — a product the user reached for
                 # before cancelling is still the right one to inherit.
                 loadout.end_turn([call["tool_name"] for call in collected_tool_calls])
+                # Same rule for MCP discoveries: a tool called before the stop
+                # is still worth replaying next turn.
+                discoveries.record(call["tool_name"] for call in collected_tool_calls)
 
             # Update in-memory history only after a complete agent run
             if agent_run.result is not None:
+                # Tools discovered this run (not just called) stay revealed on
+                # the next turn too.
+                discoveries.record(discovered_tool_names(agent_run.result.new_messages()))
                 self.conversation_history.append({"role": "user", "content": user_message})
                 self.conversation_history.append(
                     {"role": "assistant", "content": agent_run.result.output}
@@ -322,11 +343,29 @@ class AgentSession:
         key = self.current_conversation_id
         if key is not None:
             loadout = self._google_loadouts.pop(key, None) or loadout
-            if len(self._google_loadouts) >= _MAX_TRACKED_LOADOUTS:
+            if len(self._google_loadouts) >= _MAX_TRACKED_CONVERSATIONS:
                 self._google_loadouts.pop(next(iter(self._google_loadouts)))
             self._google_loadouts[key] = loadout  # re-inserted last = most recent
         loadout.begin_turn(user_message)
         return loadout
+
+    def _mcp_discoveries_for_turn(self) -> McpDiscoveries:
+        """The MCP discovery log for this conversation.
+
+        Same lifecycle as the Google loadout above: keyed by conversation so a
+        socket switching chats switches logs, LRU-capped against the slow leak
+        of a long-lived socket, and a throwaway instance when the turn has no
+        conversation id yet.
+        """
+        discoveries = McpDiscoveries()
+        key = self.current_conversation_id
+        if key is not None:
+            discoveries = self._mcp_discoveries.pop(key, None) or discoveries
+            if len(self._mcp_discoveries) >= _MAX_TRACKED_CONVERSATIONS:
+                self._mcp_discoveries.pop(next(iter(self._mcp_discoveries)))
+            self._mcp_discoveries[key] = discoveries  # re-inserted last = most recent
+        discoveries.begin_turn()
+        return discoveries
 
     async def _ask_user(self, questions: list[dict[str, Any]]) -> list[dict[str, Any]]:
         """Pause the run: ask the client questions and block until they answer.

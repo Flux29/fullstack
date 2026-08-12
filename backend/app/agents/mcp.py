@@ -22,7 +22,8 @@ import asyncio
 import hashlib
 import logging
 import re
-from collections.abc import AsyncIterator
+from collections import OrderedDict
+from collections.abc import AsyncIterator, Iterable
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from time import monotonic
@@ -236,6 +237,87 @@ def _dedupe_by_prefix(specs: list[McpServerSpec]) -> list[McpServerSpec]:
     return unique
 
 
+#: A discovered tool drops out of the sticky set after this many turns without use.
+DISCOVERY_TTL_TURNS = 3
+#: At most this many discovered tools are replayed into a follow-up turn (least
+#: recently used evicted first).
+DISCOVERY_MAX_TOOLS = 24
+
+
+@dataclass
+class McpDiscoveries:
+    """Deferred MCP tools one conversation has already discovered.
+
+    Within a run, discovery state lives in the message history as tool-search
+    parts — but conversations are rebuilt from PostgreSQL as plain text between
+    turns, so every turn that needed an MCP tool re-paid a ``search_tools``
+    round-trip (one extra model call) for tools the conversation already used.
+    This log makes discovery conversation-sticky: names recorded here are
+    replayed into the next turn's history (``append_discovery_replay`` in
+    :mod:`app.services.agent`), where pydantic-ai's tool-search parsing reveals
+    them before the first model request.
+
+    Same lifecycle discipline as ``GoogleLoadout``: a TTL plus an LRU cap so
+    the replayed set cannot creep back toward every schema the servers
+    advertise, and an ``attached`` gate so a name from a server that is
+    unreachable or disconnected this turn is never shown to the model as a
+    callable tool.
+    """
+
+    #: Prefixed tool name -> turn it was last discovered or called.
+    sticky: OrderedDict[str, int] = field(default_factory=OrderedDict)
+    turn: int = 0
+    #: Prefixed names actually exposed by the toolsets attached this turn.
+    attached: set[str] = field(default_factory=set)
+
+    def begin_turn(self) -> None:
+        """Start a turn: forget the previous turn's attachments, age out stale names.
+
+        Eviction happens here rather than only after a turn so a name never
+        survives its own expiry turn (same reasoning as ``GoogleLoadout``).
+        """
+        self.turn += 1
+        self.attached = set()
+        self._evict_stale()
+
+    def attach(self, names: Iterable[str]) -> None:
+        """Record prefixed tool names a reachable server exposes this turn."""
+        self.attached.update(names)
+
+    def replay_names(self) -> tuple[str, ...]:
+        """Sticky names safe to replay this turn, in deterministic order.
+
+        Restricted to names attached this turn: a stale name for a server that
+        is now disconnected must not reach the model, which would otherwise
+        see — and call — a tool that no longer exists. Sorted because the
+        replayed exchange participates in the provider prompt-cache prefix, and
+        a set that reorders between turns cannot be cached.
+        """
+        return tuple(sorted(name for name in self.sticky if name in self.attached))
+
+    def record(self, names: Iterable[str]) -> None:
+        """Fold discovered-or-called names into the sticky set, refreshing recency.
+
+        Only names attached this turn are kept — anything else (Google tools,
+        research tools, a hallucinated name) is noise here. A replayed name
+        that goes a turn without being rediscovered or called is deliberately
+        not refreshed: an unused tool must age out, or one broad search would
+        pin its results in the loadout forever.
+        """
+        for name in sorted(set(names) & self.attached):
+            self.sticky.pop(name, None)
+            self.sticky[name] = self.turn
+        self._evict_stale()
+
+    def _evict_stale(self) -> None:
+        """Drop names unused for too long, then cap the set least-recently-used first."""
+        for name, last_used in list(self.sticky.items()):
+            if self.turn - last_used >= DISCOVERY_TTL_TURNS:
+                del self.sticky[name]
+        while len(self.sticky) > DISCOVERY_MAX_TOOLS:
+            self.sticky.popitem(last=False)
+
+
 @dataclass(frozen=True)
 class _ProbeVerdict:
     """One remembered probe outcome; ``tools`` is None when the probe failed."""
@@ -300,12 +382,18 @@ async def _probe_with_cache(spec: McpServerSpec) -> list[McpToolInfo] | None:
     return tools
 
 
-async def build_mcp_toolsets(specs: list[McpServerSpec]) -> list[Any]:
+async def build_mcp_toolsets(
+    specs: list[McpServerSpec], *, discoveries: McpDiscoveries | None = None
+) -> list[Any]:
     """Toolsets for every reachable server in *specs*.
 
     Fresh probes run concurrently; a server whose last probe is younger than
     its TTL is not re-probed. The GitHub read-only assertion still runs every
     turn, against the advertised tool list the probe (cached or fresh) returned.
+
+    When *discoveries* is given, the prefixed name of every tool an attached
+    server exposes is registered with it — the guarantee that a replayed
+    discovery only ever names tools that are callable this turn.
     """
     specs = _dedupe_by_prefix(specs)
     if not specs:
@@ -327,6 +415,12 @@ async def build_mcp_toolsets(specs: list[McpServerSpec]) -> list[Any]:
                     ", ".join(unsafe),
                 )
                 return None
+        if discoveries is not None:
+            allowed = None if spec.allowed_tools is None else set(spec.allowed_tools)
+            prefix = _tool_prefix(spec.name)
+            discoveries.attach(
+                f"{prefix}_{tool.name}" for tool in tools if allowed is None or tool.name in allowed
+            )
         return _make_toolset(spec)
 
     results = await asyncio.gather(*(_try(spec) for spec in specs))

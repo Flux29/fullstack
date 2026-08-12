@@ -15,6 +15,9 @@ from app.agents import mcp_oauth
 from app.agents.google_apis.products import DIRECT_GOOGLE_PRODUCTS
 from app.agents.google_workspace_api import GMAIL_API_URL, google_api_url
 from app.agents.mcp import (
+    DISCOVERY_MAX_TOOLS,
+    DISCOVERY_TTL_TURNS,
+    McpDiscoveries,
     McpProbeError,
     McpServerSpec,
     McpToolInfo,
@@ -234,6 +237,104 @@ class TestBuildMcpToolsets:
         assert len(toolsets) == 1
         assert probed == ["https://workspace.example/mcp"]
 
+    @pytest.mark.anyio
+    async def test_reachable_server_registers_prefixed_allowed_names(self, monkeypatch):
+        """The attach gate feeds off the probe: prefixed like the toolset layer,
+        filtered by the allowlist the user picked in the UI."""
+
+        async def ok_probe(url, headers=None, timeout=None):
+            return [
+                McpToolInfo(name="get_me", description=""),
+                McpToolInfo(name="create_issue", description=""),
+            ]
+
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", ok_probe)
+        discoveries = McpDiscoveries()
+        discoveries.begin_turn()
+        specs = [
+            McpServerSpec(
+                name="github-work", url="https://example.com/mcp", allowed_tools=["get_me"]
+            )
+        ]
+        await build_mcp_toolsets(specs, discoveries=discoveries)
+        assert discoveries.attached == {"github_work_get_me"}
+
+    @pytest.mark.anyio
+    async def test_unreachable_server_registers_no_names(self, monkeypatch):
+        """A dead server exposes nothing, so nothing of it may replay this turn."""
+
+        async def failing_probe(url, headers=None, timeout=None):
+            raise TimeoutError("no route")
+
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", failing_probe)
+        discoveries = McpDiscoveries()
+        discoveries.begin_turn()
+        specs = [McpServerSpec(name="dead", url="https://example.com/mcp")]
+        await build_mcp_toolsets(specs, discoveries=discoveries)
+        assert discoveries.attached == set()
+
+
+class TestMcpDiscoveries:
+    """Sticky discovery state: replay only what is attached, age out the unused."""
+
+    def test_replay_is_restricted_to_tools_attached_this_turn(self):
+        """A disconnected server's tools drop out of the replay immediately."""
+        log = McpDiscoveries()
+        log.begin_turn()
+        log.attach({"github_get_me", "logfire_query_run"})
+        log.record({"github_get_me", "logfire_query_run"})
+        log.begin_turn()
+        log.attach({"github_get_me"})  # the logfire server is gone this turn
+        assert log.replay_names() == ("github_get_me",)
+
+    def test_record_ignores_names_never_attached(self):
+        log = McpDiscoveries()
+        log.begin_turn()
+        log.attach({"github_get_me"})
+        log.record({"github_get_me", "google_gmail_send", "made_up_tool"})
+        assert set(log.sticky) == {"github_get_me"}
+
+    def test_unused_names_age_out_after_ttl(self):
+        log = McpDiscoveries()
+        log.begin_turn()
+        log.attach({"github_get_me"})
+        log.record({"github_get_me"})
+        for _ in range(DISCOVERY_TTL_TURNS):
+            log.begin_turn()
+            log.attach({"github_get_me"})
+        assert log.replay_names() == ()
+
+    def test_a_called_tool_survives_past_the_ttl(self):
+        log = McpDiscoveries()
+        log.begin_turn()
+        log.attach({"github_get_me"})
+        log.record({"github_get_me"})
+        for _ in range(DISCOVERY_TTL_TURNS * 2):
+            log.begin_turn()
+            log.attach({"github_get_me"})
+            log.record({"github_get_me"})
+        assert log.replay_names() == ("github_get_me",)
+
+    def test_cap_evicts_least_recently_used_first(self):
+        log = McpDiscoveries()
+        log.begin_turn()
+        log.attach({"old_tool"})
+        log.record({"old_tool"})
+        log.begin_turn()
+        fresh = {f"srv_tool_{i:02d}" for i in range(DISCOVERY_MAX_TOOLS)}
+        log.attach(fresh)
+        log.record(fresh)
+        assert "old_tool" not in log.sticky
+        assert len(log.sticky) == DISCOVERY_MAX_TOOLS
+
+    def test_replay_order_is_deterministic(self):
+        """The replay participates in the prompt-cache prefix — same set, same bytes."""
+        log = McpDiscoveries()
+        log.begin_turn()
+        log.attach({"b_tool", "a_tool", "c_tool"})
+        log.record({"c_tool", "a_tool", "b_tool"})
+        assert log.replay_names() == ("a_tool", "b_tool", "c_tool")
+
 
 class TestProbeCache:
     """A server proves liveness once per TTL window, not once per chat turn."""
@@ -415,7 +516,9 @@ class TestToolsetsForUser:
         monkeypatch.setattr(mcp_connection_service, "get_db_context", _no_db)
         seen: list[list[McpServerSpec]] = []
 
-        async def fake_build(specs: list[McpServerSpec]) -> list[str]:
+        async def fake_build(
+            specs: list[McpServerSpec], *, discoveries: McpDiscoveries | None = None
+        ) -> list[str]:
             seen.append(specs)
             return ["toolset"]
 

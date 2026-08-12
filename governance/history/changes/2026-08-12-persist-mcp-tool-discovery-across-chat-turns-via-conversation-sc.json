@@ -1,0 +1,82 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "WS /api/v1/ws/agent"
+  ],
+  "behavioral_effects": [
+    "A conversation's second and later turns expose previously discovered MCP tools on the first model request instead of re-paying a search_tools round-trip (one extra model call) per turn",
+    "Discovered-tool state is sticky per conversation: refreshed when discovered or called, aged out after 3 unused turns, capped at 24 tools LRU-first, LRU-capped at 16 conversations per socket"
+  ],
+  "compatibility_impact": "None. build_mcp_toolsets and build_toolsets_for_user gained an optional keyword-only 'discoveries' parameter (default None keeps prior behaviour for channel traffic and direct callers). The replayed exchange uses the same ToolSearchCallPart/ToolSearchReturnPart shape pydantic-ai's ToolSearch capability already emits, appended after the rebuilt history so the OpenRouter prompt-cache prefix of prior turns is unchanged.",
+  "date": "2026-08-12",
+  "files_changed": [
+    "backend/app/agents/mcp.py",
+    "backend/app/services/agent.py",
+    "backend/app/services/agent_session.py",
+    "backend/app/services/mcp_connection.py",
+    "backend/tests/test_agents.py",
+    "backend/tests/test_mcp_connections.py",
+    "governance/graph/reports/hotspots.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-12-persist-mcp-tool-discovery-across-chat-turns-via-conversation-sc",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Discovery folded from a cancelled turn covers only tools actually called before the stop; discovered-but-uncalled tools from a cancelled run are re-searched next turn",
+    "State is per WebSocket session: a reconnect or second tab starts with an empty discovery log until tools are used again",
+    "Native-path discoveries (NativeToolSearchReturnPart) are read but untested against a live native-tool-search provider; this deployment uses the local search_tools path via OpenRouter"
+  ],
+  "manifests_changed": [],
+  "reason": "Discovered MCP tool state lives only in ToolSearchCall/ToolSearchReturn parts of the in-memory pydantic-ai message history, but agent_session rebuilds history from Postgres as plain text each turn, so every turn that needs an MCP tool re-pays a search_tools round-trip (one extra model call); tracking discovered names per conversation and replaying them as a synthetic tool-search exchange makes discovery sticky without destabilizing the OpenRouter prompt-cache prefix",
+  "risks": [
+    "Replayed-but-unused tool schemas cost input tokens until their TTL expires (bounded at 24 tools)",
+    "A server dying within MCP_PROBE_TTL_SECS can have names replayed until the cached probe verdict expires — same staleness window the toolset attachment itself already had"
+  ],
+  "rollback": "git revert of the single commit. No schema, config, or persisted-data changes; the discovery state is in-memory per WebSocket session and disappears on restart, so nothing outlives the code.",
+  "schema_version": 1,
+  "security_impact": "Reviewed via security-review pass: no new findings. Replay serializes only MCP tool names already model-visible via search_tools, validated against the set attached this turn (probe + read-only assertion + allowlist), so a disconnected server's names cannot reach the model. State is per-WebSocket, keyed by ownership-checked conversation ids — no cross-user or cross-conversation path. The three standing MCP findings (approval-gating asymmetry, no connection-time SSRF revalidation, URL-embedded credentials unencrypted) are neither narrowed nor widened: revealing a schema removes a search round-trip, not an approval control, and approval-gated Google toolsets do not participate in discovery replay.",
+  "summary": "Persist MCP tool discovery across chat turns via conversation-scoped replay in the agent session",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint clean; 22 pre-existing ty warnings in untouched files",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "505 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed, 4 skipped (self-skipping live cases)",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ran with tests/test_google_workspace_evals.py batch; self-skipping cases skipped",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "29 vitest tests passed, lint and type-check clean",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

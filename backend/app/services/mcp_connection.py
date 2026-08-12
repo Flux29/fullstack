@@ -33,6 +33,7 @@ from app.agents.google_workspace_api import (
     probe_google_api,
 )
 from app.agents.mcp import (
+    McpDiscoveries,
     McpServerSpec,
     McpToolInfo,
     _tool_prefix,
@@ -441,7 +442,9 @@ class McpConnectionService:
 
 
 async def build_toolsets_for_user(
-    user_id: UUID | None, loadout: GoogleLoadout | None = None
+    user_id: UUID | None,
+    loadout: GoogleLoadout | None = None,
+    discoveries: McpDiscoveries | None = None,
 ) -> list[Any]:
     """Agent toolsets for one chat turn: static MCP_SERVERS + the user's
     enabled connections. Unreachable servers are skipped, never fatal.
@@ -454,6 +457,11 @@ async def build_toolsets_for_user(
     wrapped in a gate, so only the products this turn routed to are visible to
     the model. Without one, every connection is attached as before — the gate is
     opt-in so channel traffic and direct callers keep the old behaviour.
+
+    When *discoveries* is given, every attached MCP server registers its
+    exposed tool names with it, so previously discovered tools can be replayed
+    next turn. Google integrations don't participate — they are gated by the
+    loadout, not deferred behind tool search.
 
     Google toolsets are returned in a fixed order (canonical product order, then
     connection name) rather than the order rows come back from the database.
@@ -515,4 +523,7 @@ async def build_toolsets_for_user(
                     )
                 )
     google_toolsets.sort(key=lambda entry: entry[:2])
-    return [*(await build_mcp_toolsets(specs)), *(toolset for _, _, toolset in google_toolsets)]
+    return [
+        *(await build_mcp_toolsets(specs, discoveries=discoveries)),
+        *(toolset for _, _, toolset in google_toolsets),
+    ]

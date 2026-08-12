@@ -258,6 +258,8 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `LLM_PROVIDER` | no | `openrouter` | `runtime` | — |
 | `LOG_PROVIDER_WRITE_TO_DISK` | no | `false` | `runtime` | — |
 | `MAX_UPLOAD_SIZE_MB` | no | `50` | `runtime` | — |
+| `MCP_PROBE_FAILURE_TTL_SECS` | no | `30.0` | `runtime` | — |
+| `MCP_PROBE_TTL_SECS` | no | `300.0` | `runtime` | — |
 | `MEDIA_DIR` | no | `./media` | `runtime` | — |
 | `MINIO_ROOT_PASSWORD` | no | *(secret — never recorded)* | `compose-only`, `secret` | — |
 | `MINIO_ROOT_USER` | no | *(secret — never recorded)* | `compose-only`, `secret` | — |

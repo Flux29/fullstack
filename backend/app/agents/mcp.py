@@ -8,7 +8,9 @@ Two kinds of servers end up here as uniform :class:`McpServerSpec` entries:
 Each spec is probed with a short ``tools/list`` round-trip before the turn;
 unreachable servers are skipped (with a warning) instead of failing the chat,
 because pydantic-ai enters every toolset when the run starts and a dead
-server would otherwise abort the whole turn.
+server would otherwise abort the whole turn. Probe verdicts are TTL-cached
+per (url, auth-fingerprint) so adjacent turns don't re-pay the handshake —
+and a dead server doesn't stall every turn for the connect timeout.
 
 The transport (streamable HTTP or SSE) is inferred from each server's URL, so
 SSE-only servers such as Atlassian/Jira work alongside streamable-HTTP ones.
@@ -17,11 +19,13 @@ SSE-only servers such as Atlassian/Jira work alongside streamable-HTTP ones.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import re
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
+from time import monotonic
 from typing import Any
 
 from app.core.config import GITHUB_MCP_READ_ONLY_TOOLS, settings
@@ -232,28 +236,97 @@ def _dedupe_by_prefix(specs: list[McpServerSpec]) -> list[McpServerSpec]:
     return unique
 
 
+@dataclass(frozen=True)
+class _ProbeVerdict:
+    """One remembered probe outcome; ``tools`` is None when the probe failed."""
+
+    expires_at: float
+    tools: list[McpToolInfo] | None
+
+
+#: (url, auth-fingerprint) -> last probe outcome. Keyed by a hash of the auth
+#: headers, never the headers themselves, so no token is retained here — and
+#: so one user's expired credentials can't mark a server dead for everyone
+#: else who reaches the same URL with their own auth.
+_probe_cache: dict[tuple[str, str], _ProbeVerdict] = {}
+
+
+def clear_probe_cache() -> None:
+    """Forget every remembered probe outcome (tests; after credential changes)."""
+    _probe_cache.clear()
+
+
+def _probe_cache_key(url: str, headers: dict[str, str] | None) -> tuple[str, str]:
+    fingerprint = hashlib.sha256(
+        "\x00".join(f"{k}\x1f{v}" for k, v in sorted((headers or {}).items())).encode()
+    ).hexdigest()
+    return (url, fingerprint)
+
+
+def _remember_probe(
+    key: tuple[str, str], now: float, *, tools: list[McpToolInfo] | None, ttl: float
+) -> None:
+    for stale in [k for k, verdict in _probe_cache.items() if verdict.expires_at <= now]:
+        del _probe_cache[stale]
+    _probe_cache[key] = _ProbeVerdict(expires_at=now + ttl, tools=tools)
+
+
+async def _probe_with_cache(spec: McpServerSpec) -> list[McpToolInfo] | None:
+    """Probe *spec*'s server, reusing a verdict younger than its TTL.
+
+    Liveness barely changes between adjacent chat turns, yet the handshake was
+    paid on every one — and a dead server cost the full connect timeout every
+    turn. Success and failure are remembered for different windows: failures
+    for less, so a restarted server comes back quickly. The connection "test"
+    endpoint calls :func:`probe_mcp_server` directly and stays uncached — an
+    explicit re-check must actually check.
+    """
+    key = _probe_cache_key(spec.url, spec.headers)
+    now = monotonic()
+    cached = _probe_cache.get(key)
+    if cached is not None and now < cached.expires_at:
+        if cached.tools is None:
+            logger.debug("Skipping MCP server %r: cached probe failure", spec.name)
+        return cached.tools
+    try:
+        tools = await probe_mcp_server(spec.url, spec.headers)
+    except Exception as exc:
+        _remember_probe(key, now, tools=None, ttl=settings.MCP_PROBE_FAILURE_TTL_SECS)
+        logger.warning(
+            "Skipping MCP server %r for this turn: %s", spec.name, probe_error_message(exc)
+        )
+        return None
+    _remember_probe(key, now, tools=tools, ttl=settings.MCP_PROBE_TTL_SECS)
+    return tools
+
+
 async def build_mcp_toolsets(specs: list[McpServerSpec]) -> list[Any]:
-    """Toolsets for every reachable server in *specs* (probed concurrently)."""
+    """Toolsets for every reachable server in *specs*.
+
+    Fresh probes run concurrently; a server whose last probe is younger than
+    its TTL is not re-probed. The GitHub read-only assertion still runs every
+    turn, against the advertised tool list the probe (cached or fresh) returned.
+    """
     specs = _dedupe_by_prefix(specs)
     if not specs:
         return []
 
     async def _try(spec: McpServerSpec) -> Any | None:
-        try:
-            tools = await probe_mcp_server(spec.url, spec.headers)
-            if spec.assert_read_only:
-                advertised = {tool.name for tool in tools}
-                exposed = advertised.intersection(spec.allowed_tools or [])
-                unsafe = sorted(exposed - GITHUB_MCP_READ_ONLY_TOOLS)
-                if unsafe:
-                    raise McpProbeError(
-                        f"GitHub MCP exposed forbidden mutation tools: {', '.join(unsafe)}"
-                    )
-        except Exception as exc:
-            logger.warning(
-                "Skipping MCP server %r for this turn: %s", spec.name, probe_error_message(exc)
-            )
+        tools = await _probe_with_cache(spec)
+        if tools is None:
             return None
+        if spec.assert_read_only:
+            advertised = {tool.name for tool in tools}
+            exposed = advertised.intersection(spec.allowed_tools or [])
+            unsafe = sorted(exposed - GITHUB_MCP_READ_ONLY_TOOLS)
+            if unsafe:
+                logger.warning(
+                    "Skipping MCP server %r for this turn: "
+                    "GitHub MCP exposed forbidden mutation tools: %s",
+                    spec.name,
+                    ", ".join(unsafe),
+                )
+                return None
         return _make_toolset(spec)
 
     results = await asyncio.gather(*(_try(spec) for spec in specs))

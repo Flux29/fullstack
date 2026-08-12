@@ -1622,6 +1622,36 @@
       "classification": [
         "runtime"
       ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "30.0",
+      "default_class": "literal",
+      "name": "MCP_PROBE_FAILURE_TTL_SECS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py"
+      ],
+      "default": "300.0",
+      "default_class": "literal",
+      "name": "MCP_PROBE_TTL_SECS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
       "consumed_by": [
         "agents",
         "github-mcp"

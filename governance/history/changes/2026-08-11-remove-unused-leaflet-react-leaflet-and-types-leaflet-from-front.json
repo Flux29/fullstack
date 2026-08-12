@@ -1,0 +1,31 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. Grep over frontend/src finds no reference to leaflet in any module; the bun.lock diff is pure removals, no remaining version specifier changed, and the package.json re-ordering is bun re-sorting dependency blocks alphabetically, a formatting effect only. frontend-test (lint, type-check, vitest) passed after removal.",
+  "date": "2026-08-11",
+  "files_changed": [
+    "frontend/bun.lock",
+    "frontend/package.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-11-remove-unused-leaflet-react-leaflet-and-types-leaflet-from-front",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "The 2026-08-11 debt sweep (commit 749587b) deleted map-message.tsx and map-leaflet.tsx, the only consumers of leaflet, react-leaflet, and @types/leaflet; the packages remained in frontend/package.json only because the bun remove stalled on network resolution and was deferred, so the dependency list overstated the frontend's real surface",
+  "risks": [],
+  "rollback": "Revert the commit; package.json and bun.lock return to their pre-removal state and bun install restores the three packages.",
+  "schema_version": 1,
+  "security_impact": "None. The three packages had zero importers since commit 749587b deleted map-message.tsx and map-leaflet.tsx, their only consumers; removal shrinks the frontend dependency surface and drops the leaflet, @react-leaflet/core, and @types/geojson transitive trees from the lockfile.",
+  "summary": "Remove unused leaflet, react-leaflet, and @types/leaflet from frontend dependencies",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

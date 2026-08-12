@@ -224,6 +224,7 @@
         "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
         "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
         "frontend/src/app/api/v1/rag/sync/local/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/clone/route.ts",
         "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/route.ts",
         "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/trigger/route.ts",
         "frontend/src/app/api/v1/rag/sync/sources/route.ts"
@@ -237,8 +238,7 @@
         "/api/billing/me/credits/transactions",
         "/api/kb/{param}/documents/{param}/download",
         "/api/kb/{param}/sync-sources/{param}/logs",
-        "/api/orgs/{param}/integrations/{param}/logs",
-        "/api/v1/rag/sync/sources/{param}/clone"
+        "/api/orgs/{param}/integrations/{param}/logs"
       ],
       "websocket": true
     },
@@ -284,6 +284,7 @@
         "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
         "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
         "frontend/src/app/api/v1/rag/sync/local/route.ts",
+        "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/clone/route.ts",
         "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/route.ts",
         "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/trigger/route.ts",
         "frontend/src/app/api/v1/rag/sync/sources/route.ts"
@@ -296,8 +297,7 @@
       "unmatched_paths": [
         "/api/kb/{param}/documents/{param}/download",
         "/api/kb/{param}/sync-sources/{param}/logs",
-        "/api/orgs/{param}/integrations/{param}/logs",
-        "/api/v1/rag/sync/sources/{param}/clone"
+        "/api/orgs/{param}/integrations/{param}/logs"
       ],
       "websocket": true
     },

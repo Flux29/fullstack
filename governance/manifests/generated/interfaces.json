@@ -517,6 +517,10 @@
       },
       {
         "method": "POST",
+        "path": "/api/v1/rag/sync/sources/{source_id}/clone"
+      },
+      {
+        "method": "POST",
         "path": "/api/v1/rag/sync/sources/{source_id}/trigger"
       },
       {
@@ -604,7 +608,7 @@
         "path": "/api/v1/webhooks/{webhook_id}/test"
       }
     ],
-    "route_count": 107,
+    "route_count": 108,
     "status": "extracted"
   },
   "provenance": {
@@ -1473,6 +1477,19 @@
       ],
       "file": "frontend/src/app/api/v1/rag/sync/local/route.ts",
       "frontend_path": "/api/v1/rag/sync/local",
+      "mechanism": "backendFetch",
+      "methods": [
+        "POST"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/rag/sync/sources/{param}/clone"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/clone/route.ts",
+      "frontend_path": "/api/v1/rag/sync/sources/{sourceId}/clone",
       "mechanism": "backendFetch",
       "methods": [
         "POST"

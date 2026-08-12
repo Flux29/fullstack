@@ -207,6 +207,23 @@ class TestHttpContract:
         mock_service.delete_source.assert_awaited_once_with(str(source_id))
 
     @pytest.mark.anyio
+    async def test_clone_returns_201_and_passes_id_and_payload(self, admin_client, mock_service):
+        source = MockSyncSource(collection_name="kb-two")
+        mock_service.clone_source = AsyncMock(return_value=_read_model(source))
+        source_id = uuid4()
+
+        response = await admin_client.post(
+            f"{SOURCES_URL}/{source_id}/clone",
+            json={"collection_name": "kb-two", "name": "Docs bucket (kb-two)"},
+        )
+
+        assert response.status_code == 201
+        cloned_id, payload = mock_service.clone_source.call_args.args
+        assert cloned_id == str(source_id)
+        assert payload.collection_name == "kb-two"
+        assert payload.name == "Docs bucket (kb-two)"
+
+    @pytest.mark.anyio
     async def test_trigger_shapes_the_sync_response_from_the_log(self, admin_client, mock_service):
         sync_log = MagicMock(id=uuid4())
         mock_service.trigger_sync = AsyncMock(return_value=sync_log)

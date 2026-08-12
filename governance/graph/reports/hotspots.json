@@ -238,7 +238,7 @@
       "betweenness": [
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0182
+          "score": 0.0181
         },
         {
           "id": "frontend/src/stores/index.ts",
@@ -250,7 +250,7 @@
         },
         {
           "id": "frontend/src/lib/api-client.ts",
-          "score": 0.0044
+          "score": 0.0043
         },
         {
           "id": "frontend/src/components/chat/copy-button.tsx",
@@ -293,10 +293,6 @@
           "score": 0.0009
         },
         {
-          "id": "frontend/src/components/chat/research-replay-block.tsx",
-          "score": 0.0009
-        },
-        {
           "id": "frontend/src/components/auth/login-form.tsx",
           "score": 0.0008
         },
@@ -313,6 +309,10 @@
           "score": 0.0008
         },
         {
+          "id": "frontend/src/components/chat/research-replay-block.tsx",
+          "score": 0.0008
+        },
+        {
           "id": "frontend/src/components/demo/demo-replay.tsx",
           "score": 0.0006
         }
@@ -320,19 +320,19 @@
       "pagerank": [
         {
           "id": "frontend/src/lib/utils.ts",
-          "score": 0.1287
+          "score": 0.1284
         },
         {
           "id": "frontend/src/lib/server-api.ts",
-          "score": 0.0631
+          "score": 0.0641
         },
         {
           "id": "frontend/src/lib/constants.ts",
-          "score": 0.0392
+          "score": 0.0391
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0268
+          "score": 0.0267
         },
         {
           "id": "frontend/src/lib/api-client.ts",
@@ -340,7 +340,7 @@
         },
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0205
+          "score": 0.0204
         },
         {
           "id": "frontend/src/lib/seo.ts",
@@ -360,7 +360,7 @@
         },
         {
           "id": "frontend/src/hooks/index.ts",
-          "score": 0.008
+          "score": 0.0079
         },
         {
           "id": "frontend/src/lib/admin-auth.ts",
@@ -388,7 +388,7 @@
         },
         {
           "id": "frontend/src/components/marketing/animated-number.tsx",
-          "score": 0.0052
+          "score": 0.0051
         },
         {
           "id": "frontend/src/components/chat/markdown-content.tsx",

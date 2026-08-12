@@ -117,29 +117,6 @@ export function getDocumentDownloadUrl(docId: string): string {
   return `/api/v1/rag/documents/${docId}/download`;
 }
 
-export async function downloadKBDocument(
-  kbId: string,
-  doc: { id: string; filename: string },
-  mode: "download" | "view" = "download",
-): Promise<void> {
-  const res = await fetch(`/api/kb/${kbId}/documents/${doc.id}/download`);
-  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
-  if (mode === "view") {
-    window.open(url, "_blank", "noopener,noreferrer");
-    setTimeout(() => URL.revokeObjectURL(url), 60_000);
-  } else {
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = doc.filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-  }
-}
-
 export interface RAGTrackedDocumentList {
   items: RAGTrackedDocument[];
   total: number;
@@ -266,26 +243,6 @@ export async function listSyncLogs(collectionName?: string, limit = 20): Promise
   if (collectionName) params.set("collection_name", collectionName);
   params.set("limit", String(limit));
   return apiClient.get<RAGSyncLogList>(`/v1/rag/sync/logs?${params}`);
-}
-
-/** Fetch logs for a specific sync source under a KB. */
-export async function listKBSyncSourceLogs(
-  kbId: string,
-  sourceId: string,
-  limit = 20,
-): Promise<RAGSyncLogList> {
-  return apiClient.get<RAGSyncLogList>(`/kb/${kbId}/sync-sources/${sourceId}/logs?limit=${limit}`);
-}
-
-/** Fetch logs for a specific org integration. */
-export async function listOrgIntegrationLogs(
-  orgId: string,
-  sourceId: string,
-  limit = 20,
-): Promise<RAGSyncLogList> {
-  return apiClient.get<RAGSyncLogList>(
-    `/orgs/${orgId}/integrations/${sourceId}/logs?limit=${limit}`,
-  );
 }
 
 export async function triggerSync(

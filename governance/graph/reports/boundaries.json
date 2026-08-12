@@ -235,10 +235,7 @@
         "/api/v1/rag/sync/logs"
       ],
       "unmatched_paths": [
-        "/api/billing/me/credits/transactions",
-        "/api/kb/{param}/documents/{param}/download",
-        "/api/kb/{param}/sync-sources/{param}/logs",
-        "/api/orgs/{param}/integrations/{param}/logs"
+        "/api/billing/me/credits/transactions"
       ],
       "websocket": true
     },
@@ -293,11 +290,6 @@
       "server_calls": [
         "/api/v1/me/slash-commands",
         "/api/v1/rag/sync/logs"
-      ],
-      "unmatched_paths": [
-        "/api/kb/{param}/documents/{param}/download",
-        "/api/kb/{param}/sync-sources/{param}/logs",
-        "/api/orgs/{param}/integrations/{param}/logs"
       ],
       "websocket": true
     },
@@ -618,7 +610,7 @@
   "summary": {
     "pages": 42,
     "pages_with_api_chains": 23,
-    "pages_with_broken_chains": 4,
+    "pages_with_broken_chains": 3,
     "websocket_exception_pages": 10
   }
 }

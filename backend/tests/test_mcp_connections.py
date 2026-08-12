@@ -51,6 +51,16 @@ async def _acm(value):
     yield value
 
 
+@pytest.fixture(autouse=True)
+def _fresh_probe_cache():
+    """Probe results are TTL-cached at module level — isolate every test from it."""
+    from app.agents.mcp import clear_probe_cache
+
+    clear_probe_cache()
+    yield
+    clear_probe_cache()
+
+
 def _allow_any_url(monkeypatch) -> None:
     """Skip SSRF validation for tests that are about something else (it resolves
     DNS, so it must not run against made-up hostnames)."""
@@ -223,6 +233,65 @@ class TestBuildMcpToolsets:
         toolsets = await build_mcp_toolsets(specs)
         assert len(toolsets) == 1
         assert probed == ["https://workspace.example/mcp"]
+
+
+class TestProbeCache:
+    """A server proves liveness once per TTL window, not once per chat turn."""
+
+    @pytest.mark.anyio
+    async def test_healthy_server_is_probed_once_within_ttl(self, monkeypatch):
+        probe = AsyncMock(return_value=[McpToolInfo(name="t", description="")])
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+        specs = [McpServerSpec(name="live", url="https://example.com/mcp")]
+        first = await build_mcp_toolsets(specs)
+        second = await build_mcp_toolsets(specs)
+        assert len(first) == 1
+        assert len(second) == 1
+        probe.assert_awaited_once()
+
+    @pytest.mark.anyio
+    async def test_probe_reruns_after_ttl_expires(self, monkeypatch):
+        probe = AsyncMock(return_value=[McpToolInfo(name="t", description="")])
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+        clock = {"now": 1000.0}
+        monkeypatch.setattr("app.agents.mcp.monotonic", lambda: clock["now"])
+        specs = [McpServerSpec(name="live", url="https://example.com/mcp")]
+        await build_mcp_toolsets(specs)
+        clock["now"] += settings.MCP_PROBE_TTL_SECS + 1
+        await build_mcp_toolsets(specs)
+        assert probe.await_count == 2
+
+    @pytest.mark.anyio
+    async def test_dead_server_failure_is_negative_cached(self, monkeypatch):
+        """Repeated turns must not each stall for the connect timeout on a dead
+        server — the failure is remembered, then retried after its shorter TTL."""
+        probe = AsyncMock(side_effect=TimeoutError("no route"))
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+        clock = {"now": 1000.0}
+        monkeypatch.setattr("app.agents.mcp.monotonic", lambda: clock["now"])
+        specs = [McpServerSpec(name="dead", url="https://example.com/mcp")]
+        assert await build_mcp_toolsets(specs) == []
+        assert await build_mcp_toolsets(specs) == []
+        probe.assert_awaited_once()
+        clock["now"] += settings.MCP_PROBE_FAILURE_TTL_SECS + 1
+        assert await build_mcp_toolsets(specs) == []
+        assert probe.await_count == 2
+
+    @pytest.mark.anyio
+    async def test_cache_is_keyed_by_auth_headers(self, monkeypatch):
+        """Two users hitting the same URL with different credentials never share
+        a probe verdict — an auth failure for one must not blind the other."""
+        probe = AsyncMock(return_value=[McpToolInfo(name="t", description="")])
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+        spec_a = McpServerSpec(
+            name="a", url="https://example.com/mcp", headers={"Authorization": "Bearer one"}
+        )
+        spec_b = McpServerSpec(
+            name="b", url="https://example.com/mcp", headers={"Authorization": "Bearer two"}
+        )
+        await build_mcp_toolsets([spec_a])
+        await build_mcp_toolsets([spec_b])
+        assert probe.await_count == 2
 
 
 class TestProbeErrors:

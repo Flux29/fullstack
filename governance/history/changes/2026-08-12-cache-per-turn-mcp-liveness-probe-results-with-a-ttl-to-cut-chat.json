@@ -1,0 +1,83 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Chat turns skip the per-server MCP initialize+tools/list handshake when the last probe is younger than MCP_PROBE_TTL_SECS, removing the per-turn latency floor of the slowest configured server",
+    "A dead server stalls one turn for MCP_CONNECT_TIMEOUT_SECS, then is skipped from cache for MCP_PROBE_FAILURE_TTL_SECS instead of stalling every turn"
+  ],
+  "compatibility_impact": "None to any HTTP or WebSocket contract. Behavioural: a server that dies mid-TTL is attached for up to MCP_PROBE_TTL_SECS (300s default) and its tool calls fail visibly instead of the server being silently dropped; a recovered server reappears within MCP_PROBE_FAILURE_TTL_SECS (30s default). The connection test endpoint still probes uncached.",
+  "date": "2026-08-12",
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/app/agents/mcp.py",
+    "backend/app/core/config.py",
+    "backend/tests/test_mcp_connections.py",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "follow_up": [
+    "If a dead-mid-TTL server failing a turn shows up in practice, catch the toolset-entry failure and invalidate that cache entry"
+  ],
+  "id": "2026-08-12-cache-per-turn-mcp-liveness-probe-results-with-a-ttl-to-cut-chat",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The cache is per-process; multiple workers each probe once per window",
+    "Per-turn OAuth token refresh and DB connection listing in build_toolsets_for_user are untouched"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "reason": "build_mcp_toolsets performs a full MCP initialize+tools/list handshake against every configured server on every chat turn; a healthy server re-proves liveness it demonstrated seconds ago and a dead one stalls every turn for MCP_CONNECT_TIMEOUT_SECS. A TTL cache keyed by server URL and auth-header hash skips redundant probes while the connection test endpoint keeps probing uncached",
+  "risks": [
+    "A server that goes down mid-TTL is still attached for up to 300s; pydantic-ai entering that dead toolset at run start can fail the turn until the negative verdict replaces the stale positive one"
+  ],
+  "rollback": "git revert restores per-turn probing; the two new env vars are optional with defaults, so no deployment config change is needed either way",
+  "schema_version": 1,
+  "security_impact": "None new. The cache key holds a SHA-256 fingerprint of the auth headers, never the headers or tokens, and distinct credentials against the same URL get distinct entries, so one user's auth failure cannot mark a server dead for others. The GitHub read-only assertion still evaluates every turn against the advertised tool list, and the per-call allowed_tools filter that actually blocks mutation tools is untouched. A stale reachable verdict grants no access: real credentials are presented on every tool call. SSRF validation of connection URLs is unchanged.",
+  "summary": "Cache per-turn MCP liveness probe results with a TTL to cut chat-turn latency",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "492 passed 13 skipped, includes 4 new probe-cache regression tests",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed 4 skipped",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "tests/test_migrations.py passed",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    }
+  ]
+}

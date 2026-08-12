@@ -226,6 +226,12 @@ class Settings(BaseSettings):
     # Per-server budget for the pre-flight tools/list ping; unreachable servers
     # are skipped for the turn instead of failing the chat.
     MCP_CONNECT_TIMEOUT_SECS: float = 3.0
+    # A server that answered the liveness probe recently is not re-probed for
+    # this long. Failures are remembered for the shorter window, so a dead
+    # server neither stalls every turn for the connect timeout nor stays
+    # invisible long after it recovers.
+    MCP_PROBE_TTL_SECS: float = 300.0
+    MCP_PROBE_FAILURE_TTL_SECS: float = 30.0
 
     @field_validator("MCP_SERVERS")
     @classmethod

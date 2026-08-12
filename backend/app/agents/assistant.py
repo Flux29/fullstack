@@ -183,6 +183,15 @@ class AssistantAgent:
             model_settings["temperature"] = self.temperature
         if self.thinking_effort:
             model_settings["openai_reasoning_summary"] = "auto"  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
+        # Prompt caching via OpenRouter cache_control (5-minute TTL). The
+        # stable prefix — tool schemas + system prompt + prior turns — is by
+        # far most of every request, and an agent turn re-sends it on every
+        # tool-call round-trip, so cache reads (~0.1x) pay for the write
+        # premium (~1.25x) within a single turn. Ignored by downstream
+        # providers without explicit cache control, so safe for any model.
+        model_settings["openrouter_cache_instructions"] = True  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
+        model_settings["openrouter_cache_tool_definitions"] = True  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
+        model_settings["openrouter_cache_messages"] = True  # type: ignore[typeddict-unknown-key]  # ty: ignore[invalid-key]
         toolsets: list[Any] = []
 
         skills_dir = Path(__file__).parent.parent.parent / "skills"

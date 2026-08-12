@@ -131,18 +131,20 @@ class TestTransportSelection:
 
 
 class TestMakeToolset:
-    def test_without_allowlist_returns_prefixed_server(self):
+    def test_without_allowlist_returns_deferred_prefixed_server(self):
         from pydantic_ai.mcp import MCPToolset
-        from pydantic_ai.toolsets import PrefixedToolset
+        from pydantic_ai.toolsets import DeferredLoadingToolset, PrefixedToolset
 
         spec = McpServerSpec(name="github-work", url="https://example.com/mcp")
         toolset = _make_toolset(spec)
-        assert isinstance(toolset, PrefixedToolset)
-        assert toolset.prefix == "github_work"
-        assert isinstance(toolset.wrapped, MCPToolset)
+        assert isinstance(toolset, DeferredLoadingToolset)
+        prefixed = toolset.wrapped
+        assert isinstance(prefixed, PrefixedToolset)
+        assert prefixed.prefix == "github_work"
+        assert isinstance(prefixed.wrapped, MCPToolset)
 
     def test_with_allowlist_filters_before_prefixing(self):
-        from pydantic_ai.toolsets import FilteredToolset, PrefixedToolset
+        from pydantic_ai.toolsets import DeferredLoadingToolset, FilteredToolset, PrefixedToolset
 
         spec = McpServerSpec(
             name="github",
@@ -150,8 +152,10 @@ class TestMakeToolset:
             allowed_tools=["search_issues"],
         )
         toolset = _make_toolset(spec)
-        assert isinstance(toolset, PrefixedToolset)
-        filtered = toolset.wrapped
+        assert isinstance(toolset, DeferredLoadingToolset)
+        prefixed = toolset.wrapped
+        assert isinstance(prefixed, PrefixedToolset)
+        filtered = prefixed.wrapped
         assert isinstance(filtered, FilteredToolset)
         # The filter runs before prefixing → unprefixed names.
         allowed_tool = MagicMock()
@@ -160,6 +164,20 @@ class TestMakeToolset:
         blocked_tool.name = "delete_repo"
         assert filtered.filter_func(None, allowed_tool) is True
         assert filtered.filter_func(None, blocked_tool) is False
+
+    @pytest.mark.anyio
+    async def test_every_mcp_tool_is_marked_defer_loading(self):
+        from pydantic_ai.tools import ToolDefinition
+
+        spec = McpServerSpec(name="github", url="https://example.com/mcp")
+        toolset = _make_toolset(spec)
+        # tool_names=None means the whole server is deferred, not a subset.
+        assert toolset.tool_names is None
+        marked = await toolset.prepare_func(
+            None,
+            [ToolDefinition(name="github_search_issues"), ToolDefinition(name="github_get_me")],
+        )
+        assert all(tool_def.defer_loading for tool_def in marked)
 
 
 class TestBuildMcpToolsets:

@@ -1,0 +1,81 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "WS /api/v1/ws/agent"
+  ],
+  "behavioral_effects": [
+    "MCP server tools (docling, chrome-devtools, github, huggingface, context7, user connections) are defer-loaded: the default request drops from ~124 tool schemas (~163KB JSON, ~40k input tokens) to the core agent tools plus one search_tools entry",
+    "Every OpenRouter request opts into prompt caching for tool definitions, system instructions, and message history (5m TTL); Logfire previously showed zero cache reads at ~30-46k full-price input tokens per call"
+  ],
+  "compatibility_impact": "Model-facing request shape changes: MCP tool schemas leave the default request and a search_tools function tool appears; the model must discover MCP tools before calling them (one extra round-trip on first use per run). OpenRouter requests now carry cache_control breakpoints; ignored by downstream providers without explicit cache support. No HTTP contract, WebSocket event, or schema changes.",
+  "date": "2026-08-12",
+  "files_changed": [
+    "backend/app/agents/assistant.py",
+    "backend/app/agents/mcp.py",
+    "backend/tests/test_agents.py",
+    "backend/tests/test_mcp_connections.py"
+  ],
+  "follow_up": [
+    "Verify realized token reduction and cache_read_tokens in Logfire after the next few live chat turns"
+  ],
+  "id": "2026-08-12-reduce-agent-token-consumption-via-deferred-mcp-tool-loading-and",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Google Workspace tools keep their existing loadout gating rather than moving to tool search; the two mechanisms coexist",
+    "Per-turn MCP liveness probes (tools/list round-trip per server per turn) are a latency cost this change does not address"
+  ],
+  "manifests_changed": [],
+  "reason": "Logfire shows ~30-46k input tokens per model call with 104 of 124 tool schemas (~163KB JSON) attached to every request and zero cache reads; deferring MCP tool schemas behind pydantic-ai tool search and enabling OpenRouter cache_control cuts the per-request payload and re-bills the stable prefix at cache-read rates",
+  "risks": [
+    "Tool-discovery quality depends on keyword overlap between the model's search query and MCP tool names/descriptions; a turn that needs an obscurely named tool may need a second search",
+    "Conversation history is rebuilt from PostgreSQL as plain text, so discovered-tool state does not persist across turns; each new turn that needs MCP tools pays one search round-trip again"
+  ],
+  "rollback": "git revert of the single commit restores full-catalog tool attachment and uncached requests; no data, schema, or config migration involved",
+  "schema_version": 1,
+  "security_impact": "None new. Tool exposure narrows rather than widens: MCP tool schemas are hidden from the model until discovered via pydantic-ai tool search, while the GitHub read-only probe-time guard, per-connection allowlist filtering (applied before deferral), and credential resolution are untouched. search_tools reveals only names/descriptions of tools the user's own connections already expose. The three standing MCP findings are unaffected.",
+  "summary": "Reduce agent token consumption via deferred MCP tool loading and OpenRouter prompt caching",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint exit 0, 22 diagnostics identical to baseline",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "488 passed 13 skipped, includes new defer_loading and cache-settings tests",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "tests/test_google_workspace_evals.py 4 passed 4 skipped",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "tests/test_migrations.py passed",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "external volumes present and protected",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "29 vitest tests passed, lint and type-check clean",
+      "id": "frontend-test",
+      "result": "pass"
+    }
+  ]
+}

@@ -99,6 +99,17 @@ class TestAssistantAgent:
         assert agent1 is agent2
         mock_build_model.assert_called_once()
 
+    @patch("app.agents.assistant._build_model")
+    def test_agent_enables_openrouter_prompt_caching(self, mock_build_model):
+        """Every request opts into cache_control for tools, instructions, and messages."""
+        mock_build_model.return_value = TestModel()
+        agent = AssistantAgent()
+        model_settings = agent.agent.model_settings
+        assert model_settings is not None
+        assert model_settings.get("openrouter_cache_instructions") is True
+        assert model_settings.get("openrouter_cache_tool_definitions") is True
+        assert model_settings.get("openrouter_cache_messages") is True
+
 
 class TestGetAgent:
     """Tests for get_agent factory function."""

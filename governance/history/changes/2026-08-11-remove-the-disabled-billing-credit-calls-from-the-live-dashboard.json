@@ -1,0 +1,66 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Proxy routes under /api"
+  ],
+  "behavioral_effects": [
+    "The dashboard no longer issues a guaranteed-404 request to /api/billing/me/credits/transactions on every load",
+    "Failure of the conversations fetch in RecentActivity now surfaces the ErrorState with retry instead of being silently swallowed by Promise.allSettled into a misleading empty state",
+    "usage-timeline.tsx (orphaned) and usage-timeline-chart.tsx (its only dependent, which deletion would otherwise orphan) are deleted; boundaries.json pages_with_broken_chains dropped 3 to 2"
+  ],
+  "compatibility_impact": "Billing is generator-provenance surface from the fastapi-fullstack template: a future template upgrade may reintroduce or extend billing UI, and this deletion will surface as a conflict to classify against ownership.json at that time. No working contract changed - the removed calls always 404ed",
+  "date": "2026-08-11",
+  "files_changed": [
+    "frontend/src/components/dashboard/recent-activity.tsx",
+    "frontend/src/components/dashboard/usage-timeline-chart.tsx",
+    "frontend/src/components/dashboard/usage-timeline.tsx",
+    "governance/graph/reports/boundaries.json",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-11-remove-the-disabled-billing-credit-calls-from-the-live-dashboard",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "query-keys.ts still carries billing key definitions and constants.ts billing routes - generator-provenance definitions with no live calls, deliberately left for template-upgrade compatibility"
+  ],
+  "manifests_changed": [],
+  "reason": "frontend/src/components/dashboard/recent-activity.tsx fetches /api/billing/me/credits/transactions, a proxy path that does not exist because billing is disabled, so the dashboard issues a guaranteed-404 request on every load; usage-timeline.tsx consumes the same dead surface with zero importers",
+  "risks": [],
+  "rollback": "Revert the commit; the billing fetch and timeline components return. No state involved",
+  "schema_version": 1,
+  "security_impact": "None - removes a dead client fetch to a nonexistent proxy path; no auth or data handling changed",
+  "summary": "Remove the disabled-billing credit calls from the live dashboard",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "lint, type-check, vitest 29 passed after removals",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "480 passed 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped, no reachable database; frontend-only change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

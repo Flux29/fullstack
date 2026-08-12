@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Coins, MessageSquare, Receipt, Sparkles } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/states";
@@ -27,14 +27,6 @@ interface ConversationItem {
   updated_at?: string | null;
 }
 
-interface CreditTx {
-  id: string;
-  delta: number;
-  type: string;
-  description?: string | null;
-  created_at: string;
-}
-
 export function RecentActivity({ limit = 6 }: { limit?: number }) {
   const [items, setItems] = useState<ActivityItem[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -43,42 +35,19 @@ export function RecentActivity({ limit = 6 }: { limit?: number }) {
     setError(null);
     setItems(null);
     try {
-      const [convResp, txResp] = await Promise.allSettled([
-        apiClient.get<{ items: ConversationItem[] }>("/conversations?limit=5"),
-        apiClient.get<{ items: CreditTx[] }>("/billing/me/credits/transactions?limit=5"),
-      ]);
+      const convResp = await apiClient.get<{ items: ConversationItem[] }>("/conversations?limit=5");
 
       const events: ActivityItem[] = [];
 
-      if (convResp.status === "fulfilled") {
-        for (const c of convResp.value.items.slice(0, 4)) {
-          events.push({
-            id: `conv-${c.id}`,
-            icon: MessageSquare,
-            title: c.title?.trim() || "New conversation",
-            description: "Conversation",
-            timestamp: c.updated_at || c.created_at,
-            href: `${ROUTES.CHAT}?id=${c.id}`,
-          });
-        }
-      }
-
-      if (txResp.status === "fulfilled") {
-        for (const tx of txResp.value.items.slice(0, 4)) {
-          const isPositive = tx.delta > 0;
-          events.push({
-            id: `tx-${tx.id}`,
-            icon: isPositive ? Sparkles : tx.type === "subscription_renewal" ? Receipt : Coins,
-            title:
-              tx.description ||
-              (isPositive
-                ? `+${tx.delta.toLocaleString()} credits`
-                : `${tx.delta.toLocaleString()} credits`),
-            description: humanizeTxType(tx.type),
-            timestamp: tx.created_at,
-            accent: isPositive ? "brand" : tx.delta < 0 ? "default" : "default",
-          });
-        }
+      for (const c of convResp.items.slice(0, 4)) {
+        events.push({
+          id: `conv-${c.id}`,
+          icon: MessageSquare,
+          title: c.title?.trim() || "New conversation",
+          description: "Conversation",
+          timestamp: c.updated_at || c.created_at,
+          href: `${ROUTES.CHAT}?id=${c.id}`,
+        });
       }
 
       events.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
@@ -169,8 +138,4 @@ function ActivityRow({ item }: { item: ActivityItem }) {
     return <Link href={item.href}>{content}</Link>;
   }
   return content;
-}
-
-function humanizeTxType(t: string): string {
-  return t.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase());
 }

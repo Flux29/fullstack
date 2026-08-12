@@ -28,21 +28,6 @@
       "test-module": 6
     },
     "orphans": [
-      "frontend/src/components/admin/admin-nav.tsx",
-      "frontend/src/components/brand-override.tsx",
-      "frontend/src/components/chat/map-message.tsx",
-      "frontend/src/components/dashboard/page-hero.tsx",
-      "frontend/src/components/dashboard/segmented-control.tsx",
-      "frontend/src/components/icons/google-icon.tsx",
-      "frontend/src/components/layout/breadcrumb.tsx",
-      "frontend/src/components/layout/landing-nav.tsx",
-      "frontend/src/components/marketing/code-preview.tsx",
-      "frontend/src/components/marketing/feature-glyph.tsx",
-      "frontend/src/components/marketing/feature-section.tsx",
-      "frontend/src/components/marketing/highlight.tsx",
-      "frontend/src/components/marketing/testimonial-carousel.tsx",
-      "frontend/src/components/settings/brand-color-picker.tsx",
-      "frontend/src/components/settings/settings-nav.tsx",
       "frontend/src/components/ui/radio-group.tsx",
       "frontend/src/components/ui/scroll-area.tsx"
     ]

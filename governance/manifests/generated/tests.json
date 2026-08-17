@@ -15,9 +15,9 @@
   "coverage_floors": [
     {
       "surface": "backend",
-      "kind": "line",
-      "value": 54,
-      "basis": "Ratchet against roughly 55 percent measured in the first CI run. The generator shipped 100, which had never passed. Raise it when real tests land; never lower it to make a red build green.",
+      "kind": "combined-lines-and-branches",
+      "value": 52,
+      "basis": "Ratchet against 52.90 percent combined measured on 2026-08-17 when branch measurement was enabled (57.95 percent line-only at that moment); the earlier line-only floor of 54 was ratcheted against roughly 55 percent measured in the first CI run, and the generator shipped 100, which had never passed. Same suite, stricter metric, not a regression. Raise it when real tests land; never lower it to make a red build green.",
       "location": "backend/pyproject.toml [tool.coverage.report] fail_under"
     },
     {

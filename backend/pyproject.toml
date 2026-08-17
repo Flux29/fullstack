@@ -212,17 +212,24 @@ cache_dir = "../.cache/pytest-backend-cache"
 
 [tool.coverage.run]
 source = ["app"]
+# Branch measurement: an untested else-path or short-circuit no longer reads as
+# covered, and the reports uploaded to Codecov carry branch data. Configured here
+# rather than as a --cov-branch flag so CI and `make test-cov` cannot disagree.
+branch = true
 omit = [
     "app/main.py",
     "app/core/logfire_setup.py",
 ]
 
 [tool.coverage.report]
-# Ratcheted floor: first CI run (2026-08-05) measured ~55% actual coverage —
-# the generator's fail_under = 100 default was never met in practice. Set one
-# point under the measured value to absorb display rounding.
+# Ratcheted floor over the COMBINED lines-plus-branches metric that branch = true
+# produces. History: the first CI run (2026-08-05) measured ~55% line-only and the
+# floor was set to 54; enabling branch measurement (2026-08-17) re-measured the same
+# suite at 52.90% combined (57.95% line-only), so the floor was re-baselined to 52
+# for the new metric — a stricter measure of the same tests, not a regression.
+# Set one point under the measured value to absorb display rounding.
 # Raise this only alongside real new tests; never lower it.
-fail_under = 54
+fail_under = 52
 show_missing = true
 exclude_lines = [
     "pragma: no cover",

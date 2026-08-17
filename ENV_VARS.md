@@ -196,6 +196,19 @@ appears here or in any other governance artifact.
 | `ACME_EMAIL` | no | `admin@example.com` | `compose-only` | Let's Encrypt email for SSL certificates |
 | `REDIS_PASSWORD` | no | *(secret — never recorded)* | `runtime`, `secret` | Traefik dashboard auth (generate with: htpasswd -nb admin password) TRAEFIK_DASHBOARD_AUTH=admin:$$apr1$$... Redis password for production |
 
+### Self-hosted Codecov (Compose profile `codecov`)
+
+| Variable | Required | Default | Class | Description |
+| --- | --- | --- | --- | --- |
+| `CODECOV_COOKIE_SECRET` | no | *(secret — never recorded)* | `compose-only`, `secret` | Session cookie signing key (long random string; rotating it logs everyone out) |
+| `CODECOV_GITHUB_CLIENT_ID` | no | — | `compose-only` | GitHub OAuth App used to log in to the Codecov UI. Authorization callback URL: http://localhost:8090/login/github (dev) or https://codecov.<DOMAIN>/login/github (prod) |
+| `CODECOV_GITHUB_CLIENT_SECRET` | no | *(secret — never recorded)* | `compose-only`, `secret` | — |
+| `CODECOV_GLOBAL_UPLOAD_TOKEN` | no | *(secret — never recorded)* | `compose-only`, `secret` | Optional instance-wide upload token; CI can use it as CODECOV_TOKEN with the repo slug. Leave empty to require per-repository tokens from the Codecov UI. |
+| `CODECOV_GITHUB_WEBHOOK_SECRET` | no | *(secret — never recorded)* | `compose-only`, `secret` | Optional: secret configured on the GitHub webhook that points at /webhooks/github |
+| `CODECOV_POSTGRES_PASSWORD` | no | *(secret — never recorded)* | `compose-only`, `secret` | Codecov's own PostgreSQL + TimescaleDB (never the application database) |
+| `CODECOV_MINIO_ROOT_USER` | no | *(secret — never recorded)* | `compose-only`, `secret` | Codecov's own MinIO for report archives (never the application bucket) |
+| `CODECOV_MINIO_ROOT_PASSWORD` | no | *(secret — never recorded)* | `compose-only`, `secret` | — |
+
 ## Frontend
 
 ### General
@@ -221,6 +234,13 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `API_V1_STR` | no | `/api/v1` | `runtime` | — |
 | `BACKEND_WS_URL` | no | — | `runtime` | — |
 | `CACHE_DIR` | no | — | `compose-only` | — |
+| `CODECOV_API_HOST` | no | — | `compose-only` | — |
+| `CODECOV_BASE_HOST` | no | — | `compose-only` | — |
+| `CODECOV_DEFAULT_HOST` | no | — | `compose-only` | — |
+| `CODECOV_GATEWAY_MINIO_ENABLED` | no | — | `compose-only` | — |
+| `CODECOV_IA_HOST` | no | — | `compose-only` | — |
+| `CODECOV_MINIO_HOST` | no | — | `compose-only` | — |
+| `CODECOV_SCHEME` | no | — | `compose-only` | — |
 | `CODE_EXECUTION_MAX_MEMORY_MB` | no | `256` | `runtime` | — |
 | `CONCURRENT` | no | — | `compose-only` | — |
 | `COOKIE_SECURE` | no | — | `compose-only` | — |
@@ -247,6 +267,10 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `EMAIL_REPLY_TO` | no | — | `runtime` | — |
 | `FRONTEND_URL` | no | `http://localhost:3000` | `runtime` | — |
 | `GITHUB_READ_ONLY` | no | — | `compose-only` | — |
+| `GITHUB__CLIENT_ID` | no | — | `compose-only` | — |
+| `GITHUB__CLIENT_SECRET` | no | — | `compose-only` | — |
+| `GITHUB__GLOBAL_UPLOAD_TOKEN` | no | — | `compose-only` | — |
+| `GITHUB__WEBHOOK_SECRET` | no | — | `compose-only` | — |
 | `GOOGLE_CLIENT_ID` | no | `` | `runtime` | — |
 | `GOOGLE_CLIENT_SECRET` | no | *(secret — never recorded)* | `runtime`, `secret` | — |
 | `GOOGLE_DRIVE_CLIENT_ID` | no | `` | `deprecated-alias`, `runtime` | Alias of `GOOGLE_API_CLIENT_ID`. Removal: Remove once no deployment sets it. |
@@ -275,6 +299,17 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `REDIS_URL` | no | *(derived)* | `computed` | — |
 | `REFRESH_TOKEN_EXPIRE_MINUTES` | no | — | `runtime` | — |
 | `RESEND_API_KEY` | no | — | `runtime` | — |
+| `RUN_ENV` | no | — | `compose-only` | — |
+| `SERVICES__DATABASE_URL` | no | — | `compose-only` | — |
+| `SERVICES__MINIO__ACCESS_KEY_ID` | no | — | `compose-only` | — |
+| `SERVICES__MINIO__SECRET_ACCESS_KEY` | no | — | `compose-only` | — |
+| `SERVICES__TA_TIMESERIES_DATABASE_URL` | no | — | `compose-only` | — |
+| `SERVICES__TIMESERIES_DATABASE_URL` | no | — | `compose-only` | — |
+| `SETUP__CODECOV_API_URL` | no | — | `compose-only` | — |
+| `SETUP__CODECOV_URL` | no | — | `compose-only` | — |
+| `SETUP__HTTP__COOKIES_DOMAIN` | no | — | `compose-only` | — |
+| `SETUP__HTTP__COOKIE_SECRET` | no | — | `compose-only` | — |
+| `SETUP__HTTP__FORCE_HTTPS` | no | — | `compose-only` | — |
 | `SMTP_HOST` | no | — | `runtime` | — |
 | `SMTP_PASSWORD` | no | `` | `runtime` | — |
 | `SMTP_PORT` | no | `587` | `runtime` | — |

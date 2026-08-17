@@ -1,7 +1,8 @@
 .PHONY: help install format lint test test-cov frontend-test playwright run run-prod \
-	preflight preflight-volumes preflight-model preflight-ports preflight-edge-ports preflight-mcp compose-check \
-	dev dev-frontend dev-mcp dev-db-ui dev-all dev-down dev-logs dev-rebuild stage stage-down \
-	prod prod-down prod-logs quickstart seed bootstrap docker-clean docker-reset \
+	preflight preflight-volumes preflight-model preflight-ports preflight-edge-ports preflight-mcp \
+	preflight-codecov compose-check \
+	dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all dev-down dev-logs dev-rebuild stage stage-down \
+	prod prod-codecov prod-down prod-logs quickstart seed bootstrap docker-clean docker-reset \
 	db-migrate db-upgrade db-downgrade db-current db-history taskiq-worker taskiq-scheduler \
 	upgrade upgrade-dry-run upgrade-new-features upgrade-finalize \
 	governance-install governance-preflight governance-scan governance-sync governance-check \
@@ -25,13 +26,19 @@ preflight-model:
 	@powershell.exe -NoProfile -Command "$$body=@{model='$(RERANKER_MODEL)'; query='Which passage is about Docker?'; documents=@('Docker runs containers.','Bananas are fruit.'); top_n=1} | ConvertTo-Json -Depth 5; $$response=Invoke-RestMethod -Method Post -Uri 'http://localhost:12434/rerank' -ContentType 'application/json' -Body $$body -TimeoutSec 120; if (@($$response.results).Count -ne 1 -or $$response.results[0].index -ne 0) { throw 'Docker Model Runner reranker returned an unexpected result.' }; $$score=[double]$$response.results[0].relevance_score; if ([double]::IsNaN($$score) -or [double]::IsInfinity($$score)) { throw 'Reranker returned a non-finite score.' }; Write-Output ('Docker Model Runner reranker ready: $(RERANKER_MODEL)')"
 
 preflight-ports:
-	@powershell.exe -NoProfile -Command "$$ports=8100,5432,6379,9000,9001,5001,3000,8081,8201,8202,8203; $$busy=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object LocalPort -in $$ports; if($$busy){Write-Error ('Occupied development ports: ' + (($$busy.LocalPort | Sort-Object -Unique) -join ', ')); exit 1}"
+	@powershell.exe -NoProfile -Command "$$ports=8100,5432,6379,9000,9001,5001,3000,8081,8090,8201,8202,8203; $$busy=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object LocalPort -in $$ports; if($$busy){Write-Error ('Occupied development ports: ' + (($$busy.LocalPort | Sort-Object -Unique) -join ', ')); exit 1}"
 
 preflight-edge-ports:
 	@powershell.exe -NoProfile -Command "$$ports=80,443,8080; $$busy=Get-NetTCPConnection -State Listen -ErrorAction SilentlyContinue | Where-Object LocalPort -in $$ports; if($$busy){Write-Error ('Occupied edge ports: ' + (($$busy.LocalPort | Sort-Object -Unique) -join ', ')); exit 1}"
 
 preflight-mcp:
 	@powershell.exe -NoProfile -Command "if ('$(MCP)') { if (-not $$env:BROWSERLESS_TOKEN -or $$env:BROWSERLESS_TOKEN -eq 'change-me-before-enabling-mcp') { throw 'Set a strong BROWSERLESS_TOKEN before enabling MCP.' }; if (-not $$env:GITHUB_MCP_TOKEN) { throw 'Set GITHUB_MCP_TOKEN before enabling MCP.' } }"
+
+# Refuses to start the codecov profile while any credential still holds its placeholder.
+# Reads the shell environment (what the dev stack interpolates); prod-codecov also accepts
+# values from backend/.env, which the prod stack interpolates through --env-file.
+preflight-codecov:
+	@powershell.exe -NoProfile -Command "if ('$(CODECOV)') { $$file=@{}; if ('$(CODECOV_ENV_FILE)' -and (Test-Path '$(CODECOV_ENV_FILE)')) { Get-Content '$(CODECOV_ENV_FILE)' | ForEach-Object { if ($$_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$$') { $$file[$$Matches[1]] = $$Matches[2].Trim().Trim([char]34).Trim([char]39) } } }; foreach ($$name in 'CODECOV_COOKIE_SECRET','CODECOV_GITHUB_CLIENT_ID','CODECOV_GITHUB_CLIENT_SECRET','CODECOV_POSTGRES_PASSWORD','CODECOV_MINIO_ROOT_PASSWORD') { $$value=[Environment]::GetEnvironmentVariable($$name); if (-not $$value) { $$value=$$file[$$name] }; if (-not $$value -or $$value -like '*change-me*') { throw ('Set a real ' + $$name + ' before enabling the codecov profile.') } } }"
 
 compose-check:
 	@$(COMPOSE_BASE) config --quiet
@@ -40,7 +47,8 @@ compose-check:
 	@$(COMPOSE_DEV) --profile frontend config --quiet
 	@$(COMPOSE_DEV) --profile mcp config --quiet
 	@$(COMPOSE_DEV) --profile db-ui config --quiet
-	@$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui config --quiet
+	@$(COMPOSE_DEV) --profile codecov config --quiet
+	@$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui --profile codecov config --quiet
 	@$(MAKE) --no-print-directory compose-check-prod DOMAIN=example.invalid \
 		ACME_EMAIL=ops@example.invalid POSTGRES_PASSWORD=validation-only \
 		REDIS_PASSWORD=validation-only MINIO_ROOT_USER=validation \
@@ -48,9 +56,9 @@ compose-check:
 		GITHUB_MCP_TOKEN=validation-only
 
 compose-check-prod:
-	@$(COMPOSE_PROD) --profile frontend --profile edge --profile mcp config --quiet
+	@$(COMPOSE_PROD) --profile frontend --profile edge --profile mcp --profile codecov config --quiet
 
-preflight: preflight-volumes preflight-model preflight-ports preflight-mcp compose-check
+preflight: preflight-volumes preflight-model preflight-ports preflight-mcp preflight-codecov compose-check
 
 dev: preflight-volumes preflight-model compose-check
 	$(COMPOSE_DEV) up -d --build --wait --wait-timeout 180
@@ -67,15 +75,22 @@ dev-mcp: preflight-mcp
 dev-db-ui:
 	$(COMPOSE_DEV) --profile db-ui up -d pgweb
 
+# Self-hosted Codecov on http://localhost:8090. Export the CODECOV_* variables from
+# backend/.env.example in the shell first; the dev stack interpolates only the environment.
+dev-codecov: CODECOV=1
+dev-codecov: preflight-codecov
+	$(COMPOSE_DEV) --profile codecov up -d --wait --wait-timeout 300 codecov-gateway codecov-worker
+	@echo "Codecov: http://localhost:8090"
+
 dev-all: MCP=1
 dev-all: preflight
 	$(COMPOSE_FRONTEND) --profile mcp --profile db-ui up -d --build
 
 dev-down:
-	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui down --remove-orphans
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui --profile codecov down --remove-orphans
 
 dev-logs:
-	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui logs -f
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui --profile codecov logs -f
 
 dev-rebuild:
 	$(COMPOSE_DEV) build --no-cache app
@@ -93,11 +108,18 @@ prod: preflight-volumes preflight-edge-ports compose-check
 	$(COMPOSE_PROD) --profile frontend --profile edge up -d --build --wait --wait-timeout 180
 	$(COMPOSE_PROD) exec -T app fullstack db upgrade
 
+# Self-hosted Codecov behind Traefik at https://codecov.$(DOMAIN). Run after `make prod`;
+# credentials come from the shell or backend/.env.
+prod-codecov: CODECOV=1
+prod-codecov: CODECOV_ENV_FILE=backend/.env
+prod-codecov: preflight-codecov
+	$(COMPOSE_PROD) --profile codecov up -d --wait --wait-timeout 300 codecov-gateway codecov-worker
+
 prod-down:
-	$(COMPOSE_PROD) --profile frontend --profile edge down --remove-orphans
+	$(COMPOSE_PROD) --profile frontend --profile edge --profile codecov down --remove-orphans
 
 prod-logs:
-	$(COMPOSE_PROD) --profile frontend --profile edge logs -f
+	$(COMPOSE_PROD) --profile frontend --profile edge --profile codecov logs -f
 
 # The authoritative source-plan audit is a deliberate human gate.
 quickstart:
@@ -111,12 +133,12 @@ bootstrap: preflight dev seed
 
 # Safe cleanup: never passes -v, so all named and external data survives.
 docker-clean:
-	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui down --remove-orphans
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui --profile codecov down --remove-orphans
 
 # Explicit opt-in removes only project-managed volumes; external preservation volumes survive.
 docker-reset:
 	@powershell.exe -NoProfile -Command "if ('$(CONFIRM_DESTROY_LOCAL_DATA)' -ne '1') { throw 'Set CONFIRM_DESTROY_LOCAL_DATA=1 to remove project-managed data volumes.' }"
-	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui down -v --remove-orphans
+	$(COMPOSE_DEV) --profile frontend --profile mcp --profile db-ui --profile codecov down -v --remove-orphans
 
 install:
 	uv sync --directory backend --dev
@@ -241,8 +263,8 @@ upgrade-finalize:
 	uvx fastapi-fullstack@latest upgrade finalize $(ARGS)
 
 help:
-	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-all"
-	@echo "Lifecycle: dev-down dev-logs stage prod docker-clean (preserves data)"
+	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all"
+	@echo "Lifecycle: dev-down dev-logs stage prod prod-codecov docker-clean (preserves data)"
 	@echo "Validation: lint test frontend-test playwright"
 	@echo "Governance: governance-preflight governance-context governance-sync governance-check (see AGENTS.md)"
 	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"

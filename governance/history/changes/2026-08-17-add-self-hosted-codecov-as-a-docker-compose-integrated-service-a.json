@@ -1,0 +1,130 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "backend-api",
+    "codecov",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "HTTP on the gateway container port 8080 (loopback 8090 in dev, codecov.<DOMAIN> via Traefik in prod)"
+  ],
+  "behavioral_effects": [
+    "make dev-codecov brings up self-hosted Codecov on http://localhost:8090; make prod-codecov publishes it at https://codecov.<DOMAIN> through Traefik",
+    "CI uploads backend (coverage.xml) and frontend (lcov.info) coverage with flags backend/frontend to the self-hosted instance once CODECOV_URL and CODECOV_TOKEN are configured; nothing is uploaded to codecov.io any more"
+  ],
+  "compatibility_impact": "No application contract changes. Compose adds an optional codecov profile (off by default), a codecov-internal network, four project-managed volumes, and dev port 8090 (added to preflight-ports). CI: codecov-action v4 -> v5 pointed at vars.CODECOV_URL with secrets.CODECOV_TOKEN; both upload steps are skipped until CODECOV_URL is set (no more implicit codecov.io upload) and fail the job when configured but failing. Frontend vitest gains an lcov reporter (additive). Images pinned by digest to the latest-calver set: api/worker 26.5.18, frontend/gateway 26.4.1; upstream's 2020 MinIO pin replaced with RELEASE.2025-09-07 (Codecov's own dev compose uses minio:latest); redis 7-alpine instead of upstream 6.2.",
+  "date": "2026-08-17",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    ".gitignore",
+    "ENV_VARS.md",
+    "MANUAL_STEPS.md",
+    "Makefile",
+    "README.md",
+    "backend/.env.example",
+    "docker-compose.dev.yml",
+    "docker-compose.prod.yml",
+    "docker-compose.yml",
+    "docker/codecov/",
+    "frontend/vitest.config.ts",
+    "governance/Summary.md",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [
+    "After the operator creates the OAuth App and logs in once, perform a real coverage upload and confirm the report renders; then decide whether fail_ci_if_error should stay true",
+    "Consider curating the container-side *__SECRET keys as secret if the configuration policy starts flagging name-based secrets"
+  ],
+  "id": "2026-08-17-add-self-hosted-codecov-as-a-docker-compose-integrated-service-a",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "No end-to-end upload was performed: a real upload needs a GitHub OAuth login to sync the repository into the instance, which requires the operator's OAuth App",
+    "The GitHub App integration (PR comments and status checks) is documented but not configured; integration_id_enabled stays false",
+    "Nothing could be deleted: this is a new capability. The only reuse was the existing profile/preflight/Traefik patterns; the codecov data plane deliberately does not reuse the application's Postgres/Redis/MinIO because Codecov's schema, Redis usage, and bucket layout are upstream-defined"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "CI uploads backend coverage to codecov.io cloud and discards frontend coverage entirely, so coverage history depends on an external SaaS the deployment does not control and half the codebase has no coverage record at all; adding self-hosted Codecov as a profiled Compose service (gateway, api, worker, frontend, minio, postgres, timescale, redis) with codecov.yml wired to the pinned action url input makes coverage tracking a deployment-owned service that receives both backend and frontend reports",
+  "risks": [
+    "Behind Traefik the gateway sees plain HTTP; correct https URL generation relies on Traefik forwarding X-Forwarded-Proto and SETUP__HTTP__FORCE_HTTPS. Not proven without a real domain — the prod stack was validated by compose config only",
+    "GitHub-hosted runners must reach CODECOV_URL; a private-only deployment needs a self-hosted runner or the upload steps stay skipped",
+    "Codecov's env-var loader casts purely numeric values to int; a numeric-only CODECOV_* secret would be mis-typed"
+  ],
+  "rollback": "git revert restores compose, Makefile, CI, docs, and manifests (re-run make governance-sync). A revert does not remove the codecov_postgres_data, codecov_timescale_data, codecov_redis_data, and codecov_archive_data volumes or the fullstack_codecov-internal network if the profile was ever started; remove them with make docker-reset CONFIRM_DESTROY_LOCAL_DATA=1 or docker volume rm. It also does not undo the GitHub OAuth App, the CODECOV_URL variable, or the CODECOV_TOKEN secret created by the operator; delete those by hand.",
+  "schema_version": 1,
+  "security_impact": "New attack surface: the codecov gateway is published on loopback 8090 in dev and behind Traefik at codecov.<DOMAIN> in prod (only the gateway; data plane stays on the internal codecov-internal network). Secrets never enter the committed codecov.yml; they arrive as CATEGORY__KEY env overrides from CODECOV_* variables (curated as secret/compose-only). GITHUB__GLOBAL_UPLOAD_TOKEN and GITHUB__WEBHOOK_SECRET default to empty so neither feature is silently enabled with a well-known placeholder; make preflight-codecov refuses cookie/OAuth/DB/MinIO placeholders. Enabling the global upload token lets its holder upload for any repository on the instance. codecov-api and codecov-worker have egress (service-egress) because they call the GitHub API. Container-side keys such as SETUP__HTTP__COOKIE_SECRET are recorded compose-only, matching the existing TOKEN/PGWEB_DATABASE_URL precedent; values are never recorded.",
+  "summary": "Add self-hosted Codecov as a Docker Compose integrated service and wire coverage uploads into CI",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "all stacks and profiles including the new codecov profile resolve; prod stack validated with dummy values",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "runs inside compose-check with --profile codecov added",
+      "id": "compose-check-prod",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "redis-data and docling-models present",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "benign — dev stack running on 3000, 5001, 8100, 8201-8203; governance-check-fast substituted for the baseline (14 checks, 0 blocking, 0 advisory)",
+      "id": "preflight-ports",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "505 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff clean; 22 pre-existing ty diagnostics, none in touched files",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check, 29 vitest tests; lcov.info now emitted",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 skipped, no live database reachable from the host alembic config; no schema change in this session",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "codecov profile booted locally with test credentials: all 8 containers healthy; gateway_health 26.4.1, frontend 200 via gateway, /login/github redirects with env-supplied client_id, /upload/v4 reachable, worker connected to codecov-redis, api migrations applied, license valid (50 seats to 2030-12-25), MinIO archive bucket auto-created; UI renders in the browser at localhost:8090; test containers, volumes and network removed afterwards",
+      "id": "compose-smoke",
+      "result": "pass"
+    }
+  ]
+}

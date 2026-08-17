@@ -36,6 +36,33 @@ x-backend-depends: &backend-depends
   docling-serve:
     condition: service_healthy
 
+# Self-hosted Codecov (profile: codecov). CATEGORY__KEY variables override the mounted
+# docker/codecov/config/codecov.yml; secrets live only here, never in that file.
+x-codecov-environment: &codecov-environment
+  SETUP__CODECOV_URL: http://localhost:8090
+  SETUP__CODECOV_API_URL: http://localhost:8090
+  SETUP__HTTP__COOKIE_SECRET: ${CODECOV_COOKIE_SECRET:-change-me-before-enabling-codecov}
+  SETUP__HTTP__COOKIES_DOMAIN: localhost
+  GITHUB__CLIENT_ID: ${CODECOV_GITHUB_CLIENT_ID:-}
+  GITHUB__CLIENT_SECRET: ${CODECOV_GITHUB_CLIENT_SECRET:-}
+  GITHUB__GLOBAL_UPLOAD_TOKEN: ${CODECOV_GLOBAL_UPLOAD_TOKEN:-}
+  GITHUB__WEBHOOK_SECRET: ${CODECOV_GITHUB_WEBHOOK_SECRET:-}
+  SERVICES__DATABASE_URL: postgres://codecov:${CODECOV_POSTGRES_PASSWORD:-codecov-change-me}@codecov-postgres:5432/codecov
+  SERVICES__TIMESERIES_DATABASE_URL: postgres://codecov:${CODECOV_POSTGRES_PASSWORD:-codecov-change-me}@codecov-timescale:5432/codecov
+  SERVICES__TA_TIMESERIES_DATABASE_URL: postgres://codecov:${CODECOV_POSTGRES_PASSWORD:-codecov-change-me}@codecov-timescale:5432/codecov
+  SERVICES__MINIO__ACCESS_KEY_ID: ${CODECOV_MINIO_ROOT_USER:-codecov}
+  SERVICES__MINIO__SECRET_ACCESS_KEY: ${CODECOV_MINIO_ROOT_PASSWORD:-codecov-change-me}
+
+x-codecov-depends: &codecov-depends
+  codecov-postgres:
+    condition: service_healthy
+  codecov-timescale:
+    condition: service_healthy
+  codecov-redis:
+    condition: service_healthy
+  codecov-minio:
+    condition: service_healthy
+
 services:
   app:
     build:
@@ -337,12 +364,188 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # --- Self-hosted Codecov (profile: codecov) -------------------------------------
+  # Pinned to the latest-calver release set: api/worker 26.5.18, frontend/gateway 26.4.1.
+  # https://docs.codecov.com/docs/configuration
+  codecov-gateway:
+    profiles: ["codecov"]
+    image: codecov/self-hosted-gateway:26.4.1@sha256:24ec18b65a79658c9e2dfeec6f11cda1fd905f49776e538c706abd02baa786e4
+    environment:
+      CODECOV_GATEWAY_MINIO_ENABLED: "true"
+      # Upstream defaults resolve api/frontend/minio, which would collide with the
+      # application's own services on shared networks.
+      CODECOV_API_HOST: codecov-api
+      CODECOV_IA_HOST: codecov-api
+      CODECOV_DEFAULT_HOST: codecov-frontend
+      CODECOV_MINIO_HOST: codecov-minio
+    volumes:
+      - ./docker/codecov/config:/config:ro
+    expose:
+      - "8080"
+    networks:
+      - service-egress
+      - codecov-internal
+    depends_on:
+      codecov-api:
+        condition: service_healthy
+      codecov-frontend:
+        condition: service_healthy
+    healthcheck:
+      # HAProxy binds IPv4 only; busybox wget resolves localhost to ::1 first.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/gateway_health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    restart: unless-stopped
+
+  codecov-frontend:
+    profiles: ["codecov"]
+    image: codecov/self-hosted-frontend:26.4.1@sha256:d0177dd141a9709eaf2bf9ff5053a708865a66a1ee2037f416b5607892d25b8c
+    environment:
+      # Public host as the browser sees it; overridden to codecov.<DOMAIN> in prod.
+      CODECOV_BASE_HOST: localhost:8090
+      CODECOV_API_HOST: localhost:8090
+      CODECOV_IA_HOST: localhost:8090
+      CODECOV_SCHEME: http
+    volumes:
+      - ./docker/codecov/config:/config:ro
+    expose:
+      - "8080"
+    networks:
+      - codecov-internal
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/frontend_health"]
+      interval: 15s
+      timeout: 5s
+      start_period: 15s
+      retries: 5
+    restart: unless-stopped
+
+  codecov-api:
+    profiles: ["codecov"]
+    image: codecov/self-hosted-api:26.5.18@sha256:8a163b48d97754872e7602e6c07326880984ecd6a12b3e5db9c3e8c502edf379
+    environment: *codecov-environment
+    volumes:
+      - ./docker/codecov/config:/config:ro
+    expose:
+      - "8000"
+    networks:
+      - codecov-internal
+      - service-egress
+    depends_on: *codecov-depends
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/', timeout=5)"
+      interval: 15s
+      timeout: 5s
+      start_period: 90s
+      retries: 10
+    restart: unless-stopped
+
+  codecov-worker:
+    profiles: ["codecov"]
+    image: codecov/self-hosted-worker:26.5.18@sha256:7641fdcea37df09a43baa737156f81c592de7380759eb2a735ca698e38d48ab5
+    environment:
+      <<: *codecov-environment
+      RUN_ENV: ENTERPRISE
+    volumes:
+      - ./docker/codecov/config:/config:ro
+    networks:
+      - codecov-internal
+      - service-egress
+    depends_on:
+      <<: *codecov-depends
+      # Both images run migrations at boot; let the api finish first.
+      codecov-api:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  codecov-postgres:
+    profiles: ["codecov"]
+    image: postgres:17-alpine@sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73
+    environment:
+      POSTGRES_USER: codecov
+      POSTGRES_PASSWORD: ${CODECOV_POSTGRES_PASSWORD:-codecov-change-me}
+      POSTGRES_DB: codecov
+    volumes:
+      - codecov_postgres_data:/var/lib/postgresql/data
+    networks:
+      - codecov-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codecov -d codecov"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  codecov-timescale:
+    profiles: ["codecov"]
+    image: timescale/timescaledb:2.29.1-pg17@sha256:981e3016a2810fec47515e3828ad70ae97b84f4c9ef63d032180b54f61566fd6
+    environment:
+      POSTGRES_USER: codecov
+      POSTGRES_PASSWORD: ${CODECOV_POSTGRES_PASSWORD:-codecov-change-me}
+      POSTGRES_DB: codecov
+    volumes:
+      - codecov_timescale_data:/var/lib/postgresql/data
+    networks:
+      - codecov-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U codecov -d codecov"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  codecov-redis:
+    profiles: ["codecov"]
+    image: redis:7-alpine@sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - codecov_redis_data:/data
+    networks:
+      - codecov-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  codecov-minio:
+    profiles: ["codecov"]
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z@sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e
+    command: ["server", "/export"]
+    environment:
+      MINIO_ROOT_USER: ${CODECOV_MINIO_ROOT_USER:-codecov}
+      MINIO_ROOT_PASSWORD: ${CODECOV_MINIO_ROOT_PASSWORD:-codecov-change-me}
+    expose:
+      - "9000"
+    volumes:
+      - codecov_archive_data:/export
+    networks:
+      - codecov-internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
 networks:
   data-internal:
     driver: bridge
     internal: true
   service-egress:
     driver: bridge
+  codecov-internal:
+    driver: bridge
+    internal: true
 
 volumes:
   postgres_data:
@@ -350,6 +553,10 @@ volumes:
   media_data:
   models_cache:
   docling_mcp_cache:
+  codecov_postgres_data:
+  codecov_timescale_data:
+  codecov_redis_data:
+  codecov_archive_data:
   redis_data:
     external: true
     name: redis-data

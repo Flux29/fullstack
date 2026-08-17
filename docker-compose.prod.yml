@@ -138,5 +138,85 @@ services:
       traefik.http.services.fullstack-frontend.loadbalancer.server.port: "3000"
       traefik.docker.network: fullstack_service-egress
 
+  # Self-hosted Codecov is published only through Traefik at codecov.<DOMAIN>; the
+  # CI uploader and browsers reach it there and nowhere else.
+  codecov-gateway:
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.fullstack-codecov.rule: Host(`codecov.${DOMAIN:?DOMAIN is required}`)
+      traefik.http.routers.fullstack-codecov.entrypoints: websecure
+      traefik.http.routers.fullstack-codecov.tls.certresolver: letsencrypt
+      traefik.http.services.fullstack-codecov.loadbalancer.server.port: "8080"
+      traefik.docker.network: fullstack_service-egress
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  codecov-frontend:
+    environment:
+      CODECOV_BASE_HOST: codecov.${DOMAIN:?DOMAIN is required}
+      CODECOV_API_HOST: codecov.${DOMAIN:?DOMAIN is required}
+      CODECOV_IA_HOST: codecov.${DOMAIN:?DOMAIN is required}
+      CODECOV_SCHEME: https
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 256M
+
+  codecov-api:
+    environment:
+      SETUP__CODECOV_URL: https://codecov.${DOMAIN:?DOMAIN is required}
+      SETUP__CODECOV_API_URL: https://codecov.${DOMAIN:?DOMAIN is required}
+      SETUP__HTTP__COOKIES_DOMAIN: codecov.${DOMAIN:?DOMAIN is required}
+      SETUP__HTTP__FORCE_HTTPS: "true"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+
+  codecov-worker:
+    environment:
+      SETUP__CODECOV_URL: https://codecov.${DOMAIN:?DOMAIN is required}
+      SETUP__CODECOV_API_URL: https://codecov.${DOMAIN:?DOMAIN is required}
+      SETUP__HTTP__COOKIES_DOMAIN: codecov.${DOMAIN:?DOMAIN is required}
+      SETUP__HTTP__FORCE_HTTPS: "true"
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 2G
+
+  codecov-postgres:
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+
+  codecov-timescale:
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: 1G
+
+  codecov-redis:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
+  codecov-minio:
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+
 volumes:
   traefik_letsencrypt:

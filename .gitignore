@@ -95,6 +95,8 @@ logs/
 
 # Docker
 .docker/
+# Self-hosted Codecov: a GitHub App private key mounted into /config stays local.
+docker/codecov/config/*.pem
 
 # OS
 .DS_Store

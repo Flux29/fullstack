@@ -253,6 +253,59 @@
       ]
     },
     {
+      "allowed_dependencies": [],
+      "annotation_path": "docker/codecov/.governance.json",
+      "compose_services": [
+        "codecov-gateway",
+        "codecov-frontend",
+        "codecov-api",
+        "codecov-worker",
+        "codecov-postgres",
+        "codecov-timescale",
+        "codecov-redis",
+        "codecov-minio"
+      ],
+      "configuration_refs": [
+        "CODECOV_COOKIE_SECRET",
+        "CODECOV_GITHUB_CLIENT_ID",
+        "CODECOV_GITHUB_CLIENT_SECRET",
+        "CODECOV_GLOBAL_UPLOAD_TOKEN",
+        "CODECOV_GITHUB_WEBHOOK_SECRET",
+        "CODECOV_POSTGRES_PASSWORD",
+        "CODECOV_MINIO_ROOT_USER",
+        "CODECOV_MINIO_ROOT_PASSWORD"
+      ],
+      "declared_in": "annotation",
+      "entrypoints": [
+        "docker/codecov/config/codecov.yml"
+      ],
+      "forbidden_dependencies": [
+        "postgres-pgvector",
+        "redis",
+        "minio"
+      ],
+      "id": "codecov",
+      "invariants": [
+        "The committed codecov.yml carries no secrets. Every credential and deployment URL arrives as a CATEGORY__KEY environment variable, which the Codecov loader applies over the file; a secret in the yaml would be a secret in git",
+        "Optional under the codecov Compose profile. Its data plane (postgres, timescale, redis, minio) is confined to codecov-internal, which is an internal network with no egress; only the gateway is reachable from service-egress, and only api and worker have egress to talk to GitHub",
+        "The Codecov stack owns its own PostgreSQL, TimescaleDB, Redis, and MinIO instead of borrowing the application's. Its schema, Redis usage, and object layout are upstream-defined and would collide with the application's allocations",
+        "The gateway routes to codecov-* service names through CODECOV_*_HOST variables; the upstream defaults (api, frontend, minio) would resolve to the application's own services on shared networks",
+        "make preflight-codecov refuses to start the profile while any secret still holds its placeholder default; a placeholder cookie secret or upload token is a well-known credential",
+        "CI uploads through codecov/codecov-action with the url input pointed at this instance and are opt-in via repository configuration; without it the upload step is skipped rather than falling back to codecov.io"
+      ],
+      "kind": "infrastructure",
+      "owns": [
+        "docker/codecov/**"
+      ],
+      "public_interfaces": [
+        "HTTP on the gateway container port 8080 (loopback 8090 in dev, codecov.<DOMAIN> via Traefik in prod)"
+      ],
+      "purpose": "Self-hosted Codecov: receives backend and frontend coverage reports from CI and serves the coverage UI, so coverage history is deployment-owned rather than delegated to codecov.io",
+      "validation": [
+        "compose-check"
+      ]
+    },
+    {
       "allowed_dependencies": [
         "docling-serve"
       ],

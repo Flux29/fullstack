@@ -97,6 +97,38 @@ which continues to use `GOOGLE_DRIVE_CREDENTIALS_FILE` and a service account.
 - [ ] Keep the dashboard loopback-only and verify DB, Redis, MinIO, Browserless, and Chrome MCP have no production host publications.
 - [ ] Complete a real-domain HTTPS request after DNS and production secrets are provisioned; Compose validation alone cannot prove certificate issuance.
 
+## Self-hosted Codecov (Compose profile `codecov`)
+
+Coverage reports from CI land on a Codecov instance this deployment owns
+(`docker/codecov/`, images pinned to the latest-calver release set), reachable at
+`http://localhost:8090` in dev and `https://codecov.<DOMAIN>` behind Traefik in prod.
+Reference: https://docs.codecov.com/docs/configuration.
+
+- [ ] Create a GitHub **OAuth App** (Settings → Developer settings) with authorization
+      callback URL `http://localhost:8090/login/github` (dev) or
+      `https://codecov.<DOMAIN>/login/github` (prod). Set `CODECOV_GITHUB_CLIENT_ID` and
+      `CODECOV_GITHUB_CLIENT_SECRET`.
+- [ ] Generate long random values for `CODECOV_COOKIE_SECRET`, `CODECOV_POSTGRES_PASSWORD`,
+      and `CODECOV_MINIO_ROOT_PASSWORD`; `make preflight-codecov` refuses placeholders.
+- [ ] Put the GitHub username that owns the deployment under `setup.admins` in
+      `docker/codecov/config/codecov.yml` (currently the repository owner).
+- [ ] Dev: export the `CODECOV_*` variables in the shell and run `make dev-codecov`.
+      Prod: add them to `backend/.env`, run `make prod` then `make prod-codecov`, and point
+      `codecov.<DOMAIN>` DNS at the host.
+- [ ] Log in once at the instance with the admin account so Codecov syncs the organisation
+      and repositories; copy the repository upload token from the repo settings page (or set
+      `CODECOV_GLOBAL_UPLOAD_TOKEN` and use that with the repo slug).
+- [ ] In the GitHub repository: variable `CODECOV_URL` = the public instance URL (no trailing
+      slash) and secret `CODECOV_TOKEN` = the upload token. Both CI upload steps
+      (`backend` and `frontend` flags) are skipped until `CODECOV_URL` is set, then fail
+      the job loudly if the upload fails. GitHub-hosted runners must be able to reach the URL.
+- [ ] Optional: a GitHub App for PR comments and status checks
+      (`integration_id_enabled: true` plus `GITHUB__INTEGRATION__ID` and the private key —
+      see the comment block in `codecov.yml`), and a webhook to `/webhooks/github` signed with
+      `CODECOV_GITHUB_WEBHOOK_SECRET`.
+- [ ] Never move a secret into `codecov.yml`; it is committed. Secrets stay in the
+      environment as `CATEGORY__KEY` overrides.
+
 ## Transactional email
 
 - [ ] No external provider — emails written to stdout (`log` provider). Useful for dev only.

@@ -13,6 +13,10 @@
   "networks": [
     {
       "internal": true,
+      "name": "codecov-internal"
+    },
+    {
+      "internal": true,
       "name": "data-internal"
     },
     {
@@ -242,6 +246,508 @@
         }
       ],
       "volumes": []
+    },
+    {
+      "depends_on": [
+        "codecov-minio",
+        "codecov-postgres",
+        "codecov-redis",
+        "codecov-timescale"
+      ],
+      "env_refs": [
+        "CODECOV_COOKIE_SECRET",
+        "CODECOV_GITHUB_CLIENT_ID",
+        "CODECOV_GITHUB_CLIENT_SECRET",
+        "CODECOV_GITHUB_WEBHOOK_SECRET",
+        "CODECOV_GLOBAL_UPLOAD_TOKEN",
+        "CODECOV_MINIO_ROOT_PASSWORD",
+        "CODECOV_MINIO_ROOT_USER",
+        "CODECOV_POSTGRES_PASSWORD",
+        "DOMAIN"
+      ],
+      "expose": [
+        "8000"
+      ],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:8a163b48d97754872e7602e6c07326880984ecd6a12b3e5db9c3e8c502edf379",
+        "ref": "codecov/self-hosted-api:26.5.18"
+      },
+      "name": "codecov-api",
+      "networks": [
+        "codecov-internal",
+        "service-egress"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "./docker/codecov/config",
+          "target": "/config"
+        }
+      ]
+    },
+    {
+      "depends_on": [],
+      "env_refs": [
+        "DOMAIN"
+      ],
+      "expose": [
+        "8080"
+      ],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:d0177dd141a9709eaf2bf9ff5053a708865a66a1ee2037f416b5607892d25b8c",
+        "ref": "codecov/self-hosted-frontend:26.4.1"
+      },
+      "name": "codecov-frontend",
+      "networks": [
+        "codecov-internal"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "./docker/codecov/config",
+          "target": "/config"
+        }
+      ]
+    },
+    {
+      "depends_on": [
+        "codecov-api",
+        "codecov-frontend"
+      ],
+      "env_refs": [
+        "DOMAIN"
+      ],
+      "expose": [
+        "8080"
+      ],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:24ec18b65a79658c9e2dfeec6f11cda1fd905f49776e538c706abd02baa786e4",
+        "ref": "codecov/self-hosted-gateway:26.4.1"
+      },
+      "name": "codecov-gateway",
+      "networks": [
+        "codecov-internal",
+        "service-egress"
+      ],
+      "ports": [
+        {
+          "container_port": "8080",
+          "host_ip": "127.0.0.1",
+          "host_port": "8090",
+          "stack": "dev"
+        },
+        {
+          "container_port": "8080",
+          "host_ip": "127.0.0.1",
+          "host_port": "8090",
+          "stack": "frontend"
+        }
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "./docker/codecov/config",
+          "target": "/config"
+        }
+      ]
+    },
+    {
+      "depends_on": [],
+      "env_refs": [
+        "CODECOV_MINIO_ROOT_PASSWORD",
+        "CODECOV_MINIO_ROOT_USER"
+      ],
+      "expose": [
+        "9000"
+      ],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:14cea493d9a34af32f524e538b8346cf79f3321eff8e708c1e2960462bd8936e",
+        "ref": "minio/minio:RELEASE.2025-09-07T16-13-09Z"
+      },
+      "name": "codecov-minio",
+      "networks": [
+        "codecov-internal"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "named",
+          "name": "codecov_archive_data",
+          "target": "/export"
+        }
+      ]
+    },
+    {
+      "depends_on": [],
+      "env_refs": [
+        "CODECOV_POSTGRES_PASSWORD"
+      ],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:18cfe3ef5e6815560c98237d6216d1e5119702fb0f3894c8785dd58b8bbe5d73",
+        "ref": "postgres:17-alpine"
+      },
+      "name": "codecov-postgres",
+      "networks": [
+        "codecov-internal"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "named",
+          "name": "codecov_postgres_data",
+          "target": "/var/lib/postgresql/data"
+        }
+      ]
+    },
+    {
+      "depends_on": [],
+      "env_refs": [],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:e7723ff73d963f5cc6d9c4643ea3d989527a402a319239054e9472a7fb9219a2",
+        "ref": "redis:7-alpine"
+      },
+      "name": "codecov-redis",
+      "networks": [
+        "codecov-internal"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "named",
+          "name": "codecov_redis_data",
+          "target": "/data"
+        }
+      ]
+    },
+    {
+      "depends_on": [],
+      "env_refs": [
+        "CODECOV_POSTGRES_PASSWORD"
+      ],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:981e3016a2810fec47515e3828ad70ae97b84f4c9ef63d032180b54f61566fd6",
+        "ref": "timescale/timescaledb:2.29.1-pg17"
+      },
+      "name": "codecov-timescale",
+      "networks": [
+        "codecov-internal"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "named",
+          "name": "codecov_timescale_data",
+          "target": "/var/lib/postgresql/data"
+        }
+      ]
+    },
+    {
+      "depends_on": [
+        "codecov-api",
+        "codecov-minio",
+        "codecov-postgres",
+        "codecov-redis",
+        "codecov-timescale"
+      ],
+      "env_refs": [
+        "CODECOV_COOKIE_SECRET",
+        "CODECOV_GITHUB_CLIENT_ID",
+        "CODECOV_GITHUB_CLIENT_SECRET",
+        "CODECOV_GITHUB_WEBHOOK_SECRET",
+        "CODECOV_GLOBAL_UPLOAD_TOKEN",
+        "CODECOV_MINIO_ROOT_PASSWORD",
+        "CODECOV_MINIO_ROOT_USER",
+        "CODECOV_POSTGRES_PASSWORD",
+        "DOMAIN"
+      ],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": false
+      },
+      "image": {
+        "digest": "sha256:7641fdcea37df09a43baa737156f81c592de7380759eb2a735ca698e38d48ab5",
+        "ref": "codecov/self-hosted-worker:26.5.18"
+      },
+      "name": "codecov-worker",
+      "networks": [
+        "codecov-internal",
+        "service-egress"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "codecov"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "./docker/codecov/config",
+          "target": "/config"
+        }
+      ]
     },
     {
       "depends_on": [],
@@ -976,6 +1482,7 @@
       "make_variable": "COMPOSE_BASE",
       "profiles_always_on": [],
       "profiles_available": [
+        "codecov",
         "db-ui",
         "edge",
         "frontend",
@@ -991,6 +1498,7 @@
       "make_variable": "COMPOSE_DEV",
       "profiles_always_on": [],
       "profiles_available": [
+        "codecov",
         "db-ui",
         "edge",
         "frontend",
@@ -1009,6 +1517,7 @@
         "frontend"
       ],
       "profiles_available": [
+        "codecov",
         "db-ui",
         "edge",
         "frontend",
@@ -1024,6 +1533,7 @@
       "make_variable": "COMPOSE_PROD",
       "profiles_always_on": [],
       "profiles_available": [
+        "codecov",
         "db-ui",
         "edge",
         "frontend",
@@ -1032,6 +1542,22 @@
     }
   ],
   "volumes": [
+    {
+      "class": "named",
+      "name": "codecov_archive_data"
+    },
+    {
+      "class": "named",
+      "name": "codecov_postgres_data"
+    },
+    {
+      "class": "named",
+      "name": "codecov_redis_data"
+    },
+    {
+      "class": "named",
+      "name": "codecov_timescale_data"
+    },
     {
       "class": "named",
       "name": "docling_mcp_cache"

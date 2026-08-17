@@ -82,6 +82,7 @@ make dev-rebuild   # force-rebuild backend image (after pyproject.toml change)
 make dev-frontend  # start the Next.js container
 make dev-mcp       # start private Docling/Chrome/GitHub MCP sidecars
 make dev-db-ui     # start pgweb on loopback
+make dev-codecov   # start self-hosted Codecov on http://localhost:8090 (see MANUAL_STEPS.md)
 ```
 
 If you prefer running the backend on the host (not in Docker) — useful for breakpoints / IDE debugging:

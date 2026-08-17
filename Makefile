@@ -35,8 +35,9 @@ preflight-mcp:
 	@powershell.exe -NoProfile -Command "if ('$(MCP)') { if (-not $$env:BROWSERLESS_TOKEN -or $$env:BROWSERLESS_TOKEN -eq 'change-me-before-enabling-mcp') { throw 'Set a strong BROWSERLESS_TOKEN before enabling MCP.' }; if (-not $$env:GITHUB_MCP_TOKEN) { throw 'Set GITHUB_MCP_TOKEN before enabling MCP.' } }"
 
 # Refuses to start the codecov profile while any credential still holds its placeholder.
-# Reads the shell environment (what the dev stack interpolates); prod-codecov also accepts
-# values from backend/.env, which the prod stack interpolates through --env-file.
+# Checks the shell environment first, then CODECOV_ENV_FILE — the same precedence Compose
+# applies when it interpolates: dev-codecov points this at the root .env Compose reads by
+# default, prod-codecov at backend/.env which the prod stack passes via --env-file.
 preflight-codecov:
 	@powershell.exe -NoProfile -Command "if ('$(CODECOV)') { $$file=@{}; if ('$(CODECOV_ENV_FILE)' -and (Test-Path '$(CODECOV_ENV_FILE)')) { Get-Content '$(CODECOV_ENV_FILE)' | ForEach-Object { if ($$_ -match '^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=\s*(.*)$$') { $$file[$$Matches[1]] = $$Matches[2].Trim().Trim([char]34).Trim([char]39) } } }; foreach ($$name in 'CODECOV_COOKIE_SECRET','CODECOV_GITHUB_CLIENT_ID','CODECOV_GITHUB_CLIENT_SECRET','CODECOV_POSTGRES_PASSWORD','CODECOV_MINIO_ROOT_PASSWORD') { $$value=[Environment]::GetEnvironmentVariable($$name); if (-not $$value) { $$value=$$file[$$name] }; if (-not $$value -or $$value -like '*change-me*') { throw ('Set a real ' + $$name + ' before enabling the codecov profile.') } } }"
 
@@ -75,9 +76,11 @@ dev-mcp: preflight-mcp
 dev-db-ui:
 	$(COMPOSE_DEV) --profile db-ui up -d pgweb
 
-# Self-hosted Codecov on http://localhost:8090. Export the CODECOV_* variables from
-# backend/.env.example in the shell first; the dev stack interpolates only the environment.
+# Self-hosted Codecov on http://localhost:8090. Put the CODECOV_* variables from
+# backend/.env.example in a gitignored root .env (Compose reads it for interpolation
+# automatically) or export them in the shell; the shell wins where both are set.
 dev-codecov: CODECOV=1
+dev-codecov: CODECOV_ENV_FILE=.env
 dev-codecov: preflight-codecov
 	$(COMPOSE_DEV) --profile codecov up -d --wait --wait-timeout 300 codecov-gateway codecov-worker
 	@echo "Codecov: http://localhost:8090"

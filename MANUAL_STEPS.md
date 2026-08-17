@@ -122,10 +122,19 @@ Reference: https://docs.codecov.com/docs/configuration.
       slash) and secret `CODECOV_TOKEN` = the upload token. Both CI upload steps
       (`backend` and `frontend` flags) are skipped until `CODECOV_URL` is set, then fail
       the job loudly if the upload fails. GitHub-hosted runners must be able to reach the URL.
+- [ ] Webhooks — only once GitHub can reach the instance; a localhost-only instance receives
+      no deliveries. Set `CODECOV_GITHUB_WEBHOOK_SECRET` to a long random value **before**
+      activating a repository: Codecov creates the hook itself at activation (events `push`,
+      `pull_request`, `status`, `delete`, `public`, `repository` → `<codecov_url>/webhooks/github`)
+      and stores this secret in it, then rejects deliveries whose HMAC does not match. Empty is
+      not "verification off" — unsigned deliveries are rejected too, so an empty value yields a
+      hook that 403s every time. Changing the value later means editing or recreating the
+      `Codecov Webhook` entry under the repository's GitHub webhook settings; confirm 200s under
+      its Recent Deliveries. Coverage uploads work without any of this — webhooks only keep PR
+      comments and commit statuses prompt.
 - [ ] Optional: a GitHub App for PR comments and status checks
       (`integration_id_enabled: true` plus `GITHUB__INTEGRATION__ID` and the private key —
-      see the comment block in `codecov.yml`), and a webhook to `/webhooks/github` signed with
-      `CODECOV_GITHUB_WEBHOOK_SECRET`.
+      see the comment block in `codecov.yml`).
 - [ ] Never move a secret into `codecov.yml`; it is committed. Secrets stay in the
       environment as `CATEGORY__KEY` overrides.
 

@@ -52,6 +52,16 @@ x-codecov-environment: &codecov-environment
   SERVICES__TA_TIMESERIES_DATABASE_URL: postgres://codecov:${CODECOV_POSTGRES_PASSWORD:-codecov-change-me}@codecov-timescale:5432/codecov
   SERVICES__MINIO__ACCESS_KEY_ID: ${CODECOV_MINIO_ROOT_USER:-codecov}
   SERVICES__MINIO__SECRET_ACCESS_KEY: ${CODECOV_MINIO_ROOT_PASSWORD:-codecov-change-me}
+  # Storage is addressed THROUGH the gateway, not at codecov-minio directly. codecov-api
+  # hands uploaders presigned URLs built from this host:port verbatim and uses the same
+  # value for its own S3 client, so it has to be one name that resolves both inside Docker
+  # (network alias on codecov-gateway) and outside it (Windows, systemd-resolved, and
+  # browsers resolve *.localhost to loopback). The gateway proxies /archive/* to MinIO and
+  # passes Host through unchanged, so the SigV4 signature, which covers host, verifies.
+  # Prod overrides this to the public name over https.
+  SERVICES__MINIO__HOST: codecov.localhost
+  SERVICES__MINIO__PORT: "8090"
+  SERVICES__MINIO__VERIFY_SSL: "false"
 
 x-codecov-depends: &codecov-depends
   codecov-postgres:
@@ -371,6 +381,9 @@ services:
     profiles: ["codecov"]
     image: codecov/self-hosted-gateway:26.4.1@sha256:24ec18b65a79658c9e2dfeec6f11cda1fd905f49776e538c706abd02baa786e4
     environment:
+      # Listen on 8090 inside the container too, so the storage host:port the API signs
+      # (codecov.localhost:8090) is identical whether resolved in Docker or on the host.
+      CODECOV_GATEWAY_HTTP_PORT: "8090"
       CODECOV_GATEWAY_MINIO_ENABLED: "true"
       # Upstream defaults resolve api/frontend/minio, which would collide with the
       # application's own services on shared networks.
@@ -381,10 +394,15 @@ services:
     volumes:
       - ./docker/codecov/config:/config:ro
     expose:
-      - "8080"
+      - "8090"
     networks:
-      - service-egress
-      - codecov-internal
+      service-egress: {}
+      codecov-internal:
+        aliases:
+          # The storage host codecov-api and codecov-worker sign into presigned URLs; see
+          # SERVICES__MINIO__HOST. Alias only here, so it never shadows anything on
+          # service-egress.
+          - codecov.localhost
     depends_on:
       codecov-api:
         condition: service_healthy
@@ -392,7 +410,7 @@ services:
         condition: service_healthy
     healthcheck:
       # HAProxy binds IPv4 only; busybox wget resolves localhost to ::1 first.
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/gateway_health"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8090/gateway_health"]
       interval: 15s
       timeout: 5s
       start_period: 15s

@@ -16,6 +16,7 @@
 #   SERVICES__TIMESERIES_DATABASE_URL             postgres://…@codecov-timescale:5432/codecov
 #   SERVICES__TA_TIMESERIES_DATABASE_URL          postgres://…@codecov-timescale:5432/codecov
 #   SERVICES__MINIO__ACCESS_KEY_ID / _SECRET_ACCESS_KEY  MinIO root credentials
+#   SERVICES__MINIO__HOST / _PORT / _VERIFY_SSL   the GATEWAY, not MinIO directly (see below)
 #
 # See docker-compose.yml (x-codecov-environment) and backend/.env.example.
 
@@ -59,7 +60,13 @@ services:
   # PostgreSQL, TimescaleDB, and MinIO are injected via SERVICES__* environment variables.
   redis_url: redis://codecov-redis:6379
   minio:
-    host: codecov-minio
-    port: 9000
+    # Deliberately the gateway, not codecov-minio. Codecov builds the presigned upload and
+    # download URLs it hands to the CLI, CI, and browsers from this host:port verbatim, and
+    # uses the same value for its own client, so it must resolve both inside Docker and
+    # outside it. The gateway proxies /archive/* to MinIO with the Host header intact.
+    # Compose overrides these per stack: codecov.localhost:8090 (dev, http) and
+    # codecov.<DOMAIN>:443 (prod, https).
+    host: codecov.localhost
+    port: 8090
     verify_ssl: false
     auto_create_bucket: true

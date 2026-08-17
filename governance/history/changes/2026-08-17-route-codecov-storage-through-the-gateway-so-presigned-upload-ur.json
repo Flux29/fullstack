@@ -1,0 +1,82 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "codecov",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Coverage uploads from the host CLI, a browser, or a CI runner that can reach the gateway succeed; before this every upload failed at the final PUT",
+    "The Codecov API and worker reach MinIO through the gateway rather than directly (one extra local hop)"
+  ],
+  "compatibility_impact": "Gateway container port moves from 8080 to 8090 (published dev port unchanged at 8090; Traefik target updated). Storage host for the Codecov API and worker changes from codecov-minio:9000 (direct) to codecov.localhost:8090 in dev and codecov.<DOMAIN>:443 in prod (via the gateway); MinIO itself is unchanged and existing archive data is untouched. Anyone who worked around the original defect with a hosts entry for codecov-minio can remove it. macOS hosts do not resolve *.localhost natively and need a hosts entry for codecov.localhost, documented in MANUAL_STEPS.",
+  "date": "2026-08-17",
+  "files_changed": [
+    "ENV_VARS.md",
+    "MANUAL_STEPS.md",
+    "docker-compose.dev.yml",
+    "docker-compose.prod.yml",
+    "docker-compose.yml",
+    "docker/codecov/.governance.json",
+    "docker/codecov/config/codecov.yml",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [
+    "When the instance is publicly reachable, repeat the upload from a CI runner via codecov-action and confirm the presigned host is codecov.<DOMAIN>"
+  ],
+  "id": "2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The instance's public URL stays localhost:8090 while presigned links use codecov.localhost:8090, the same cross-origin situation upstream has; moving the whole instance to codecov.localhost would give one origin but requires re-registering the GitHub OAuth callback, so it was left alone",
+    "No mechanical test guards this; the regression proof is the live upload recorded above"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "codecov-api hands uploaders presigned MinIO URLs built from services.minio.host, which is the Docker-internal name codecov-minio:9000; the CLI, a browser, or a CI runner cannot resolve it, so every upload fails at the final PUT after retries � pointing services.minio.host at the gateway (network alias codecov.localhost in dev, the public host over https in prod) makes the same name resolve inside Docker and outside it, and the gateway already proxies /archive/* to MinIO with the Host header passed through, so the SigV4 signature still verifies",
+  "risks": [
+    "Prod hairpin is validated by compose config only; a real deployment must confirm the API can resolve and TLS-verify its own public name from inside the container",
+    "Codecov's own coverage figure (54.25 percent) differs from pytest's (52.90 combined / 57.95 line) because Codecov computes hits over lines with its own partial-branch accounting; the numbers are not expected to match exactly"
+  ],
+  "rollback": "git revert restores direct addressing (and the original defect); recreate the codecov containers afterwards. Reports already stored are unaffected either way.",
+  "schema_version": 1,
+  "security_impact": "No new exposure: nothing additional is published; codecov-internal stays internal; the codecov.localhost alias exists only on codecov-internal so it cannot shadow a name on service-egress. Presigned URLs remain time-limited SigV4 URLs (10s expiry) — they now point at the gateway instead of an unreachable internal name. In prod the API and worker hairpin to their own public https name; that traffic leaves and re-enters through Traefik and depends on the public certificate being valid, which SERVICES__MINIO__VERIFY_SSL=true enforces. Uploaders and browsers must be able to reach the gateway, which is already the documented reachability requirement.",
+  "summary": "Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "all stacks and profiles including prod with dummy values; resolved config shows the codecov.localhost alias only on codecov-internal, gateway published 8090:8090, api storage host codecov.localhost:8090 verify_ssl false",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "inside compose-check",
+      "id": "compose-check-prod",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "the exact command that failed — codecovcli --url http://localhost:8090 upload-process against the real repository token, run from the host — now completes with exit 0: raw_upload_location is http://codecov.localhost:8090/archive/..., the PUT succeeded without retries, the API queued the upload (200), the worker logged Successfully processed report / Finished processing upload, and the commit reached state complete with totals coverage 54.25 percent, 155 files, 9174 lines, 956 branches, 157 partials; the token was read from the local Codecov database into a shell variable and never printed",
+      "id": "regression-upload",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "from inside codecov-api, codecov.localhost resolves to the gateway container and http://codecov.localhost:8090/archive/ is answered by MinIO (Server: MinIO, 403 for the unsigned probe), proving the alias, the port, and the /archive route",
+      "id": "routing-probe",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "benign — dev stack running; governance-check-fast used as baseline (14 checks, 0 blocking, 0 advisory)",
+      "id": "preflight-ports",
+      "result": "fail"
+    }
+  ]
+}

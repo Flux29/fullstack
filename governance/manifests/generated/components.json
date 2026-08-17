@@ -290,6 +290,7 @@
         "Optional under the codecov Compose profile. Its data plane (postgres, timescale, redis, minio) is confined to codecov-internal, which is an internal network with no egress; only the gateway is reachable from service-egress, and only api and worker have egress to talk to GitHub",
         "The Codecov stack owns its own PostgreSQL, TimescaleDB, Redis, and MinIO instead of borrowing the application's. Its schema, Redis usage, and object layout are upstream-defined and would collide with the application's allocations",
         "The gateway routes to codecov-* service names through CODECOV_*_HOST variables; the upstream defaults (api, frontend, minio) would resolve to the application's own services on shared networks",
+        "Storage is addressed through the gateway (codecov.localhost:8090 in dev, codecov.<DOMAIN>:443 in prod), never at codecov-minio directly: Codecov signs that host:port into the presigned URLs it hands to uploaders and uses it for its own client, so it must be one name that resolves inside Docker and outside it. The alias lives only on codecov-internal and the gateway listens on the same port it is published on",
         "make preflight-codecov refuses to start the profile while any secret still holds its placeholder default; a placeholder cookie secret or upload token is a well-known credential",
         "CI uploads through codecov/codecov-action with the url input pointed at this instance and are opt-in via repository configuration; without it the upload step is skipped rather than falling back to codecov.io"
       ],
@@ -298,7 +299,7 @@
         "docker/codecov/**"
       ],
       "public_interfaces": [
-        "HTTP on the gateway container port 8080 (loopback 8090 in dev, codecov.<DOMAIN> via Traefik in prod)"
+        "HTTP on the gateway container port 8090 (loopback 8090 in dev, codecov.<DOMAIN> via Traefik in prod)"
       ],
       "purpose": "Self-hosted Codecov: receives backend and frontend coverage reports from CI and serves the coverage UI, so coverage history is deployment-owned rather than delegated to codecov.io",
       "validation": [

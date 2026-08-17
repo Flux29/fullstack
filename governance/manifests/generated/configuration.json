@@ -411,6 +411,23 @@
       ],
       "default": null,
       "default_class": "none",
+      "name": "CODECOV_GATEWAY_HTTP_PORT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-gateway"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
       "name": "CODECOV_GATEWAY_MINIO_ENABLED",
       "required": false,
       "surface": "compose",
@@ -3161,7 +3178,61 @@
       ],
       "default": null,
       "default_class": "none",
+      "name": "SERVICES__MINIO__HOST",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__MINIO__PORT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
       "name": "SERVICES__MINIO__SECRET_ACCESS_KEY",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__MINIO__VERIFY_SSL",
       "required": false,
       "surface": "compose",
       "type": null

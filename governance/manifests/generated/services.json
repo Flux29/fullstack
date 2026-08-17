@@ -386,7 +386,7 @@
         "DOMAIN"
       ],
       "expose": [
-        "8080"
+        "8090"
       ],
       "gpu": false,
       "healthcheck": {
@@ -403,13 +403,13 @@
       ],
       "ports": [
         {
-          "container_port": "8080",
+          "container_port": "8090",
           "host_ip": "127.0.0.1",
           "host_port": "8090",
           "stack": "dev"
         },
         {
-          "container_port": "8080",
+          "container_port": "8090",
           "host_ip": "127.0.0.1",
           "host_port": "8090",
           "stack": "frontend"

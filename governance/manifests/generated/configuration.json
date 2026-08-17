@@ -468,7 +468,7 @@
       ],
       "default": null,
       "default_class": "none",
-      "description": "Optional: secret configured on the GitHub webhook that points at /webhooks/github",
+      "description": "Signing secret for the GitHub webhook Codecov creates on each activated repository. Set it BEFORE activating a repository: Codecov bakes the value into the hook at creation and then rejects any delivery whose HMAC does not match. Empty is not \"verification off\" — unsigned deliveries are rejected too, so an empty value yields a hook that 403s on every delivery. To change it later, edit or recreate the \"Codecov Webhook\" entry under the repository's GitHub webhook settings. Only matters once GitHub can reach the instance; a localhost-only instance receives no deliveries either way. Coverage uploads do not depend on this — webhooks only keep PR comments and statuses prompt.",
       "name": "CODECOV_GITHUB_WEBHOOK_SECRET",
       "required": false,
       "surface": "backend",

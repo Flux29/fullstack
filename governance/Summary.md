@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 82)
+## Recent changes (latest 20 of 83)
 
+- **2026-08-17** — Document the webhook-secret ordering constraint and empty-value trap
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-17-document-the-webhook-secret-ordering-constraint-and-empty-value.json`
 - **2026-08-17** — Add self-hosted Codecov as a Docker Compose integrated service and wire coverage uploads into CI
   - Components: backend-api, codecov, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-17-add-self-hosted-codecov-as-a-docker-compose-integrated-service-a.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Delete three never-wired backend modules: agents/tools/research.py, api/versioning.py, core/csrf.py
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-11-delete-three-never-wired-backend-modules-agents-tools-research-p.json`
-- **2026-08-11** — Delete the legacy /api/kb and /api/orgs RAG fetchers and the orphaned sync-source-logs component
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-11-delete-the-legacy-api-kb-and-api-orgs-rag-fetchers-and-the-orpha.json`
 
 ## Decisions (5)
 

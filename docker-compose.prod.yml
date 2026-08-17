@@ -146,7 +146,7 @@ services:
       traefik.http.routers.fullstack-codecov.rule: Host(`codecov.${DOMAIN:?DOMAIN is required}`)
       traefik.http.routers.fullstack-codecov.entrypoints: websecure
       traefik.http.routers.fullstack-codecov.tls.certresolver: letsencrypt
-      traefik.http.services.fullstack-codecov.loadbalancer.server.port: "8080"
+      traefik.http.services.fullstack-codecov.loadbalancer.server.port: "8090"
       traefik.docker.network: fullstack_service-egress
     deploy:
       resources:
@@ -172,6 +172,11 @@ services:
       SETUP__CODECOV_API_URL: https://codecov.${DOMAIN:?DOMAIN is required}
       SETUP__HTTP__COOKIES_DOMAIN: codecov.${DOMAIN:?DOMAIN is required}
       SETUP__HTTP__FORCE_HTTPS: "true"
+      # Storage via the public name over TLS: the presigned URLs must be reachable by CI
+      # runners and browsers, and the API's own client hairpins through Traefik the same way.
+      SERVICES__MINIO__HOST: codecov.${DOMAIN:?DOMAIN is required}
+      SERVICES__MINIO__PORT: "443"
+      SERVICES__MINIO__VERIFY_SSL: "true"
     deploy:
       resources:
         limits:
@@ -184,6 +189,9 @@ services:
       SETUP__CODECOV_API_URL: https://codecov.${DOMAIN:?DOMAIN is required}
       SETUP__HTTP__COOKIES_DOMAIN: codecov.${DOMAIN:?DOMAIN is required}
       SETUP__HTTP__FORCE_HTTPS: "true"
+      SERVICES__MINIO__HOST: codecov.${DOMAIN:?DOMAIN is required}
+      SERVICES__MINIO__PORT: "443"
+      SERVICES__MINIO__VERIFY_SSL: "true"
     deploy:
       resources:
         limits:

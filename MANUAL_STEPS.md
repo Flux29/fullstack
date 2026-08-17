@@ -120,6 +120,15 @@ Reference: https://docs.codecov.com/docs/configuration.
 - [ ] Log in once at the instance with the admin account so Codecov syncs the organisation
       and repositories; copy the repository upload token from the repo settings page (or set
       `CODECOV_GLOBAL_UPLOAD_TOKEN` and use that with the repo slug).
+- [ ] Prove the pipeline locally before touching CI: `uv run --directory backend pytest
+      --cov=app --cov-report=xml -q`, then
+      `uvx --from codecov-cli codecovcli --url http://localhost:8090 -v upload-process -t <token>
+      -F backend -f backend/coverage.xml --disable-search -Z --git-service github`.
+      The final PUT goes to `http://codecov.localhost:8090/archive/...` — report storage is
+      addressed through the gateway on purpose, because Codecov signs that host into the URLs
+      it hands to every uploader. Windows, systemd-resolved Linux, and browsers resolve
+      `*.localhost` to loopback natively; on macOS add `127.0.0.1 codecov.localhost` to
+      `/etc/hosts` first.
 - [ ] In the GitHub repository: variable `CODECOV_URL` = the public instance URL (no trailing
       slash) and secret `CODECOV_TOKEN` = the upload token. Both CI upload steps
       (`backend` and `frontend` flags) are skipped until `CODECOV_URL` is set, then fail

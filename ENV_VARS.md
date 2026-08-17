@@ -237,6 +237,7 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `CODECOV_API_HOST` | no | — | `compose-only` | — |
 | `CODECOV_BASE_HOST` | no | — | `compose-only` | — |
 | `CODECOV_DEFAULT_HOST` | no | — | `compose-only` | — |
+| `CODECOV_GATEWAY_HTTP_PORT` | no | — | `compose-only` | — |
 | `CODECOV_GATEWAY_MINIO_ENABLED` | no | — | `compose-only` | — |
 | `CODECOV_IA_HOST` | no | — | `compose-only` | — |
 | `CODECOV_MINIO_HOST` | no | — | `compose-only` | — |
@@ -302,7 +303,10 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `RUN_ENV` | no | — | `compose-only` | — |
 | `SERVICES__DATABASE_URL` | no | — | `compose-only` | — |
 | `SERVICES__MINIO__ACCESS_KEY_ID` | no | — | `compose-only` | — |
+| `SERVICES__MINIO__HOST` | no | — | `compose-only` | — |
+| `SERVICES__MINIO__PORT` | no | — | `compose-only` | — |
 | `SERVICES__MINIO__SECRET_ACCESS_KEY` | no | — | `compose-only` | — |
+| `SERVICES__MINIO__VERIFY_SSL` | no | — | `compose-only` | — |
 | `SERVICES__TA_TIMESERIES_DATABASE_URL` | no | — | `compose-only` | — |
 | `SERVICES__TIMESERIES_DATABASE_URL` | no | — | `compose-only` | — |
 | `SETUP__CODECOV_API_URL` | no | — | `compose-only` | — |

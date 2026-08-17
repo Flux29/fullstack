@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 85)
+## Recent changes (latest 20 of 86)
 
+- **2026-08-17** — Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker
+  - Components: codecov, governance-kernel
+  - Record: `governance/history/changes/2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur.json`
 - **2026-08-17** — Measure backend branch coverage and re-baseline the ratcheted floor to the combined metric
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-17-measure-backend-branch-coverage-and-re-baseline-the-ratcheted-fl.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Honor EMAIL_PROVIDER: select the resend and smtp providers instead of silently falling back to log
   - Components: backend-api, email, governance-kernel
   - Record: `governance/history/changes/2026-08-11-honor-email-provider-select-the-resend-and-smtp-providers-instea.json`
-- **2026-08-11** — Follow the site chain in impact analysis and measure the phase-6 exit
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-follow-the-site-chain-in-impact-analysis-and-measure-the-phase-6.json`
 
 ## Decisions (5)
 

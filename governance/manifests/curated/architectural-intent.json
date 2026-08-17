@@ -547,6 +547,69 @@
     },
     {
       "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_COOKIE_SECRET",
+      "reason": "Signs the self-hosted Codecov session cookie. Interpolated into the codecov-api and codecov-worker containers as SETUP__HTTP__COOKIE_SECRET; the application never reads it."
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "name": "CODECOV_GITHUB_CLIENT_ID",
+      "reason": "GitHub OAuth App identifier for Codecov login. Not secret, but only the Codecov containers consume it."
+    },
+    {
+      "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_GITHUB_CLIENT_SECRET",
+      "reason": "GitHub OAuth App secret for Codecov login."
+    },
+    {
+      "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_GLOBAL_UPLOAD_TOKEN",
+      "reason": "Instance-wide upload token; anyone holding it can upload a report for any repository on the instance. Empty by default so the feature is off until deliberately enabled."
+    },
+    {
+      "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_GITHUB_WEBHOOK_SECRET",
+      "reason": "HMAC secret Codecov uses to verify GitHub webhook deliveries."
+    },
+    {
+      "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_POSTGRES_PASSWORD",
+      "reason": "Credential for Codecov's own PostgreSQL and TimescaleDB containers, distinct from the application database."
+    },
+    {
+      "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_MINIO_ROOT_USER",
+      "reason": "Root credential for Codecov's own MinIO archive store, distinct from the application's MinIO."
+    },
+    {
+      "classification": [
+        "secret",
+        "compose-only"
+      ],
+      "name": "CODECOV_MINIO_ROOT_PASSWORD",
+      "reason": "Same."
+    },
+    {
+      "classification": [
         "unknown-consumer",
         "secret"
       ],

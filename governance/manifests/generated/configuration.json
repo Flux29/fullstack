@@ -329,6 +329,284 @@
     },
     {
       "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-frontend",
+        "compose:codecov-gateway"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_API_HOST",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-frontend"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_BASE_HOST",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Session cookie signing key (long random string; rotating it logs everyone out)",
+      "name": "CODECOV_COOKIE_SECRET",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-gateway"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_DEFAULT_HOST",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-gateway"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_GATEWAY_MINIO_ENABLED",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "GitHub OAuth App used to log in to the Codecov UI. Authorization callback URL: http://localhost:8090/login/github (dev) or https://codecov.<DOMAIN>/login/github (prod)",
+      "name": "CODECOV_GITHUB_CLIENT_ID",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_GITHUB_CLIENT_SECRET",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Optional: secret configured on the GitHub webhook that points at /webhooks/github",
+      "name": "CODECOV_GITHUB_WEBHOOK_SECRET",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Optional instance-wide upload token; CI can use it as CODECOV_TOKEN with the repo slug. Leave empty to require per-repository tokens from the Codecov UI.",
+      "name": "CODECOV_GLOBAL_UPLOAD_TOKEN",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-frontend",
+        "compose:codecov-gateway"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_IA_HOST",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-gateway"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_MINIO_HOST",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_MINIO_ROOT_PASSWORD",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Codecov's own MinIO for report archives (never the application bucket)",
+      "name": "CODECOV_MINIO_ROOT_USER",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only",
+        "secret"
+      ],
+      "consumed_by": [
+        "codecov"
+      ],
+      "declared_in": [
+        "backend/.env.example",
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "description": "Codecov's own PostgreSQL + TimescaleDB (never the application database)",
+      "name": "CODECOV_POSTGRES_PASSWORD",
+      "required": false,
+      "surface": "backend",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-frontend"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CODECOV_SCHEME",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
         "unknown-consumer"
       ],
       "consumed_by": [],
@@ -1282,6 +1560,78 @@
     },
     {
       "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GITHUB__CLIENT_ID",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GITHUB__CLIENT_SECRET",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GITHUB__GLOBAL_UPLOAD_TOKEN",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "GITHUB__WEBHOOK_SECRET",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
         "runtime"
       ],
       "consumed_by": [
@@ -1689,6 +2039,7 @@
         "secret"
       ],
       "consumed_by": [
+        "compose:codecov-minio",
         "compose:minio"
       ],
       "declared_in": [
@@ -1707,6 +2058,7 @@
         "secret"
       ],
       "consumed_by": [
+        "compose:codecov-minio",
         "compose:minio"
       ],
       "declared_in": [
@@ -2015,6 +2367,8 @@
       "consumed_by": [
         "backend-api",
         "compose:app",
+        "compose:codecov-postgres",
+        "compose:codecov-timescale",
         "compose:db",
         "compose:taskiq-scheduler",
         "compose:taskiq-worker",
@@ -2063,6 +2417,8 @@
       "consumed_by": [
         "backend-api",
         "compose:app",
+        "compose:codecov-postgres",
+        "compose:codecov-timescale",
         "compose:db",
         "compose:taskiq-scheduler",
         "compose:taskiq-worker",
@@ -2105,6 +2461,8 @@
       "consumed_by": [
         "backend-api",
         "compose:app",
+        "compose:codecov-postgres",
+        "compose:codecov-timescale",
         "compose:db",
         "compose:taskiq-scheduler",
         "compose:taskiq-worker",
@@ -2510,6 +2868,23 @@
     },
     {
       "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "RUN_ENV",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
         "runtime",
         "secret"
       ],
@@ -2736,6 +3111,186 @@
       "required": false,
       "surface": "backend",
       "type": "str"
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__DATABASE_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__MINIO__ACCESS_KEY_ID",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__MINIO__SECRET_ACCESS_KEY",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__TA_TIMESERIES_DATABASE_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SERVICES__TIMESERIES_DATABASE_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SETUP__CODECOV_API_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SETUP__CODECOV_URL",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SETUP__HTTP__COOKIES_DOMAIN",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SETUP__HTTP__COOKIE_SECRET",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:codecov-api",
+        "compose:codecov-worker"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SETUP__HTTP__FORCE_HTTPS",
+      "required": false,
+      "surface": "compose",
+      "type": null
     },
     {
       "classification": [

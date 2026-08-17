@@ -52,6 +52,7 @@
       "backend/scripts/",
       "backend/tests/",
       "docker/",
+      "docker/codecov/",
       "docker/mcp/chrome-devtools/",
       "docker/mcp/docling/",
       "docs/",

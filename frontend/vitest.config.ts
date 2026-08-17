@@ -12,7 +12,8 @@ export default defineConfig({
     exclude: ["node_modules", ".next", "e2e"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html"],
+      // lcov feeds the self-hosted Codecov upload in CI (coverage/lcov.info).
+      reporter: ["text", "json", "html", "lcov"],
       exclude: ["node_modules", ".next", "e2e", "**/*.d.ts", "**/*.config.*", "vitest.setup.ts"],
       // Ratcheted floors: first CI run (2026-08-05) measured 3.7% statements /
       // 17.4% branches / 6.3% functions / 3.7% lines — the generator's 100%

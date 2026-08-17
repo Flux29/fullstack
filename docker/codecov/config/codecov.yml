@@ -1,0 +1,65 @@
+# Self-hosted Codecov instance configuration.
+# Reference: https://docs.codecov.com/docs/configuration
+#
+# This file is mounted read-only at /config/codecov.yml in every Codecov container.
+# It carries only non-secret structure. Deployment-specific values and every secret
+# are supplied by Compose as CATEGORY__KEY environment variables, which the Codecov
+# config loader applies on top of this file (env > yaml > built-in defaults):
+#
+#   SETUP__CODECOV_URL / SETUP__CODECOV_API_URL   public URL, no trailing slash
+#   SETUP__HTTP__COOKIE_SECRET                    session cookie signing key
+#   SETUP__HTTP__COOKIES_DOMAIN                   cookie domain (localhost / codecov.<DOMAIN>)
+#   GITHUB__CLIENT_ID / GITHUB__CLIENT_SECRET     GitHub OAuth App used for login
+#   GITHUB__GLOBAL_UPLOAD_TOKEN                   optional instance-wide upload token
+#   GITHUB__WEBHOOK_SECRET                        optional webhook signing secret
+#   SERVICES__DATABASE_URL                        postgres://…@codecov-postgres:5432/codecov
+#   SERVICES__TIMESERIES_DATABASE_URL             postgres://…@codecov-timescale:5432/codecov
+#   SERVICES__TA_TIMESERIES_DATABASE_URL          postgres://…@codecov-timescale:5432/codecov
+#   SERVICES__MINIO__ACCESS_KEY_ID / _SECRET_ACCESS_KEY  MinIO root credentials
+#
+# See docker-compose.yml (x-codecov-environment) and backend/.env.example.
+
+setup:
+  # Overridden by SETUP__CODECOV_URL / SETUP__CODECOV_API_URL. Kept here so the file is
+  # self-describing; the value below is the dev-stack default.
+  codecov_url: http://localhost:8090
+  codecov_api_url: http://localhost:8090
+  # The general 50-seat license that ships with codecov/self-hosted. It is a technical
+  # requirement of the software, not a purchased artefact; a larger seat count can be
+  # generated with the upstream scripts/license.py.
+  enterprise_license: "F5O0Fu5ASFTPtWXM51BK8YQlq7IM2s+8TBGULrf9Um7wHjfPwI+Z3E4PfF/dPs6Uc5A+MLti+2etHq5dnFEfZgoiIVCLZ8x+0BVmUSWwPS42vJXnf1veY9Bglang4mDIhmfWfp5l6AT6cxmAVFpGrwobiK6OcN9pjWx4iWabazmsOiF9LM++v0WtuHNvhgzRcKmnJPgqahEB7qqF6KQ1hg=="
+  # Instance-wide administrators (required from v5.0). Replace with the GitHub username
+  # that owns this deployment; anyone listed can manage every organisation on the instance.
+  admins:
+    - service: github
+      username: "Flux29"
+  # Require login: this instance is private infrastructure, not an open-source mirror.
+  guest_access: false
+  http:
+    # cookie_secret and cookies_domain come from the environment (see header).
+    force_https: false
+  timeseries:
+    enabled: true
+  ta_timeseries:
+    enabled: true
+
+github:
+  enabled: true
+  # client_id / client_secret / global_upload_token / webhook_secret come from the environment.
+  global_upload_token_enabled: true
+  webhook_secret_enabled: true
+  # A GitHub App (integration) is optional. To enable it, set integration_id_enabled: true
+  # and supply GITHUB__INTEGRATION__ID plus the private key, either as a file mounted into
+  # /config and referenced by GITHUB__INTEGRATION__PEM, or inline as
+  # JSONCONFIG___GITHUB__INTEGRATION__PEM='{"source_type":"base64env","value":"<base64 pem>"}'.
+  integration_id_enabled: false
+
+services:
+  # Everything below resolves on the codecov-internal Compose network. Credentials for
+  # PostgreSQL, TimescaleDB, and MinIO are injected via SERVICES__* environment variables.
+  redis_url: redis://codecov-redis:6379
+  minio:
+    host: codecov-minio
+    port: 9000
+    verify_ssl: false
+    auto_create_bucket: true

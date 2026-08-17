@@ -112,9 +112,11 @@ Reference: https://docs.codecov.com/docs/configuration.
       and `CODECOV_MINIO_ROOT_PASSWORD`; `make preflight-codecov` refuses placeholders.
 - [ ] Put the GitHub username that owns the deployment under `setup.admins` in
       `docker/codecov/config/codecov.yml` (currently the repository owner).
-- [ ] Dev: export the `CODECOV_*` variables in the shell and run `make dev-codecov`.
-      Prod: add them to `backend/.env`, run `make prod` then `make prod-codecov`, and point
-      `codecov.<DOMAIN>` DNS at the host.
+- [ ] Dev: copy the `CODECOV_*` block (only that block) into a gitignored `.env` at the
+      repository root — Compose interpolates that file automatically and `make dev-codecov`
+      checks the same file — then run `make dev-codecov`. Shell exports also work and take
+      precedence. Prod: add them to `backend/.env`, run `make prod` then `make prod-codecov`,
+      and point `codecov.<DOMAIN>` DNS at the host.
 - [ ] Log in once at the instance with the admin account so Codecov syncs the organisation
       and repositories; copy the repository upload token from the repo settings page (or set
       `CODECOV_GLOBAL_UPLOAD_TOKEN` and use that with the repo slug).

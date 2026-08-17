@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 83)
+## Recent changes (latest 20 of 84)
 
+- **2026-08-17** — Let dev-codecov read credentials from the root .env that Compose already interpolates
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-17-let-dev-codecov-read-credentials-from-the-root-env-that-compose.json`
 - **2026-08-17** — Document the webhook-secret ordering constraint and empty-value trap
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-17-document-the-webhook-secret-ordering-constraint-and-empty-value.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Extract route, task, model, test, and tool relations
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-extract-route-task-model-test-and-tool-relations.json`
-- **2026-08-11** — Delete three never-wired backend modules: agents/tools/research.py, api/versioning.py, core/csrf.py
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-11-delete-three-never-wired-backend-modules-agents-tools-research-p.json`
 
 ## Decisions (5)
 

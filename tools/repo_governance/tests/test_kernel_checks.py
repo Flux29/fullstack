@@ -83,6 +83,32 @@ def test_crlf_in_a_generated_file_is_detected_and_named(minimal_repo: Path) -> N
     assert any("CRLF" in (issue.message + (issue.evidence or "")) for issue in issues)
 
 
+def test_generated_drift_is_reported_even_when_only_the_source_is_in_scope(minimal_repo: Path) -> None:
+    """pre-commit passes the staged source, never the stale derived file. Both must still fail."""
+    ctx = Context.discover(minimal_repo)
+    sync(ctx)
+    catalog = minimal_repo / "governance" / "catalog.json"
+    document = read_json(catalog)
+    document["entries"][0]["description"] = "stale"
+    write_json_atomic(catalog, document)
+
+    scoped = CheckScope(ctx=ctx, files=("backend/.env.example",))
+    assert any(issue.path == "governance/catalog.json" for issue in check_generated_files(scoped))
+
+
+def test_a_record_staged_outside_the_batch_still_counts(monkeypatch: pytest.MonkeyPatch, real_context: Context) -> None:
+    """A scoped run sees only its batch of staged files; the record is in the change set regardless."""
+    record = "governance/history/changes/2026-01-01-example.json"
+    tooling = "tools/repo_governance/src/repo_governance/cli.py"
+    monkeypatch.setattr(process, "working_tree_changes", lambda root: [record, tooling])
+
+    scoped = CheckScope(ctx=real_context, files=(tooling,))
+    assert process.check_governance_change_records(scoped) == []
+
+    monkeypatch.setattr(process, "working_tree_changes", lambda root: [tooling])
+    assert process.check_governance_change_records(scoped), "no record anywhere is still a finding"
+
+
 def test_shell_text_in_a_validation_list_is_rejected(minimal_repo: Path) -> None:
     """An annotation must not be able to introduce a command."""
     (minimal_repo / "thing").mkdir()

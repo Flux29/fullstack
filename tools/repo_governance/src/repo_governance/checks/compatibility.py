@@ -153,7 +153,7 @@ def check_orm_migration_pairing(scope: CheckScope) -> list[Issue]:
     """
     from repo_governance.checks.process import _change_set
 
-    changed, known = _change_set(scope)
+    changed, _records, known = _change_set(scope)
     if not known:
         return [
             Issue(

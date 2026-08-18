@@ -1,0 +1,65 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The pre-commit governance-fast-check hook now catches the incident it was written for: a source edit whose generated file was not re-synced",
+    "A fully recorded change is no longer refused at commit because pre-commit batched the record into a different invocation than the source file",
+    "check_policy_weakening_recorded reads the record text from the unscoped record list, so a weakening named in a staged record is recognised under scope"
+  ],
+  "compatibility_impact": "check --fast <files> and check --files now report generated-file drift anywhere in the tree and honour a change record anywhere in the change set. Unscoped runs (make governance-check, the Stop hook, CI) are unchanged. _change_set returns a third value; its three callers were updated. Anyone with pre-existing drift who stages an unrelated governance-adjacent file will now be blocked at commit, which is what CI would have done a step later.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "tools/repo_governance/src/repo_governance/checks/compatibility.py",
+    "tools/repo_governance/src/repo_governance/checks/process.py",
+    "tools/repo_governance/src/repo_governance/checks/schemas.py",
+    "tools/repo_governance/tests/test_kernel_checks.py"
+  ],
+  "follow_up": [
+    "tools/repo_governance carries 43 pre-existing ruff findings and 31 files ruff format would touch; a dedicated formatting session"
+  ],
+  "id": "2026-08-18-stop-applying-the-staged-file-scope-to-whole-repository-facts-in",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "A source that moves a generated file outside the hook file filter is still only caught if some filtered path is staged with it; the filter in .pre-commit-config.yaml was not widened here"
+  ],
+  "manifests_changed": [],
+  "reason": "The pre-commit hook runs governance check --fast with only the staged files it is batching, and three checks applied that file scope to facts that belong to the whole change set: generated-file drift was reported only when the stale derived file itself was staged (so backend/.env.example with an un-synced ENV_VARS.md passed - the exact incident that motivated the hook), and the change-record and policy-weakening checks looked for the record only inside the scoped list (so a staged record in another batch was invisible and a fully recorded change was refused). Records and drift are properties of the whole working tree; only the set of files under consideration is scoped.",
+  "risks": [],
+  "rollback": "git revert. No state outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None. Read-only checks became stricter, not looser: no rule was weakened, and the checks now see more of the tree, not less.",
+  "summary": "Stop applying the staged-file scope to whole-repository facts in check --fast",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "baseline substitute for governance-preflight (preflight-ports benign); 14 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "all tests, including two new regressions: drift in governance/catalog.json is reported when the scope is only backend/.env.example, and a change record staged outside the scoped batch still satisfies governance-changes-are-recorded (and its absence still fails it). The suite also caught the third _change_set caller in checks/compatibility.py",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "39 checks; the single blocking finding before finish was governance-changes-are-recorded for this session",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "not selected by impact; run as the end-to-end proof through the real hook instead: staging backend/.env.example with an un-synced ENV_VARS.md now fails the installed pre-commit hook with 4 blocking findings (exit 1) where it passed before",
+      "id": "compose-check",
+      "result": "pass"
+    }
+  ]
+}

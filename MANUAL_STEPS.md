@@ -126,9 +126,18 @@ Reference: https://docs.codecov.com/docs/configuration.
       skipping:
       `docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.prod.yml
       --profile edge --profile codecov up -d --wait --wait-timeout 300 traefik codecov-gateway
-      codecov-worker`. Ports 22, 80, and 443 must be open at the provider firewall; nothing
-      else is published. Confirm with `curl -sSI https://codecov.<DOMAIN>/gateway_health`
-      (a valid certificate and `200`), then log in once so the repositories sync.
+      codecov-worker`. Compose interpolates the *whole* file stack before it selects services,
+      and `docker-compose.prod.yml` marks `POSTGRES_PASSWORD`, `REDIS_PASSWORD`,
+      `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD` as required (`${VAR:?...}`) on the app,
+      db, redis, and minio services — so a Codecov-only host must set all four in
+      `backend/.env` as well, even though none of those services ever start there. Use
+      obvious dummies with a comment (e.g. `POSTGRES_PASSWORD=unused-codecov-only-host`);
+      left empty, Compose refuses with `required variable ... is missing a value` before it
+      touches Docker. `make compose-check` cannot warn you about this: it passes its own
+      validation values for exactly these variables. Ports 22, 80, and 443 must be open at
+      the provider firewall; nothing else is published. Confirm with
+      `curl -sSI https://codecov.<DOMAIN>/gateway_health` (a valid certificate and `200`),
+      then log in once so the repositories sync.
 - [ ] Log in once at the instance with the admin account so Codecov syncs the organisation
       and repositories; copy the repository upload token from the repo settings page (or set
       `CODECOV_GLOBAL_UPLOAD_TOKEN` and use that with the repo slug).

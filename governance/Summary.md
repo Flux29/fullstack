@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 88)
+## Recent changes (latest 20 of 89)
 
 - **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
   - Components: backend-api, governance-kernel
@@ -72,6 +72,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Make prod-codecov deploy standalone with Traefik and document the Linux host command
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-make-prod-codecov-deploy-standalone-with-traefik-and-document-th.json`
+- **2026-08-18** — Document whole-file Compose interpolation for Codecov-only hosts and record the live codecov.stikkihoney.com deployment
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-18-document-whole-file-compose-interpolation-for-codecov-only-hosts.json`
 - **2026-08-17** — Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker
   - Components: codecov, governance-kernel
   - Record: `governance/history/changes/2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Record accepted exceptions for the two documented wishlist calls so no-broken-site-chains stops counting them
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-record-accepted-exceptions-for-the-two-documented-wishlist-calls.json`
-- **2026-08-11** — Make the read gate's feedback loop close itself
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-11-make-the-read-gate-s-feedback-loop-close-itself.json`
 
 ## Decisions (5)
 

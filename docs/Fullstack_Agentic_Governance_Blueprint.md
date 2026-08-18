@@ -111,12 +111,12 @@ repo-root/
 │   │   │   ├── configuration.json
 │   │   │   ├── data-stores.json
 │   │   │   ├── ai-runtime.json
-│   │   │   ├── interfaces.json
-│   │   │   └── tests.json
+│   │   │   └── interfaces.json
 │   │   ├── curated/
 │   │   │   ├── architectural-intent.json   # includes non-directory component declarations
 │   │   │   ├── ownership.json
-│   │   │   └── exceptions.json
+│   │   │   ├── exceptions.json
+│   │   │   └── tests.json                  # review judgment: suites, floors, invariant coverage
 │   │   └── effective/
 │   │       └── repository.json
 │   ├── policies/

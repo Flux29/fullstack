@@ -6,7 +6,7 @@
       "backend/app/",
       "frontend/src/",
       "governance/manifests/effective/repository.json",
-      "governance/manifests/generated/tests.json"
+      "governance/manifests/curated/tests.json"
     ]
   },
   "risk": [

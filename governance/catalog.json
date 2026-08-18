@@ -129,6 +129,14 @@
       "update": "manual"
     },
     {
+      "authority": "curated",
+      "description": "Test frameworks, gating environment variables, ratcheted coverage floors, and which declared invariants have a dedicated test. Review judgment, hand-maintained; the coverage floors mirror backend/pyproject.toml and frontend/vitest.config.ts and are updated with them.",
+      "kind": "manifest-curated",
+      "path": "governance/manifests/curated/tests.json",
+      "read_when": "Deciding what proves a change, or asking whether an invariant is actually covered.",
+      "update": "manual"
+    },
+    {
       "authority": "mixed",
       "description": "The merged repository model: generated facts joined with curated intent, with merge conflicts surfaced explicitly.",
       "kind": "manifest-effective",
@@ -190,14 +198,6 @@
       "kind": "manifest-generated",
       "path": "governance/manifests/generated/services.json",
       "read_when": "Changing Compose files, ports, profiles, volumes, or anything about how services are exposed.",
-      "update": "sync"
-    },
-    {
-      "authority": "generated",
-      "description": "Test frameworks, gating environment variables, ratcheted coverage floors, and which declared invariants have a dedicated test.",
-      "kind": "manifest-generated",
-      "path": "governance/manifests/generated/tests.json",
-      "read_when": "Deciding what proves a change, or asking whether an invariant is actually covered.",
       "update": "sync"
     },
     {

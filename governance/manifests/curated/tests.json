@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "provenance": {
-    "method": "reviewed-baseline",
+    "method": "curated",
     "sources": [
       "backend/pyproject.toml",
       "backend/tests/",

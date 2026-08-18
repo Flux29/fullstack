@@ -114,7 +114,7 @@ def _component_risk(ctx: Context, python_rank: dict[str, float]) -> list[dict]:
     hurts most where a test is least likely to catch it."""
     from repo_governance.renderers.context import owner_of
 
-    tests_path = ctx.paths.generated_manifests / "tests.json"
+    tests_path = ctx.paths.curated_manifests / "tests.json"
     effective_path = ctx.paths.effective_repository
     if not tests_path.is_file() or not effective_path.is_file():
         return []
@@ -165,7 +165,7 @@ def build_hotspots_report(ctx: Context) -> dict:
                 "backend/app/",
                 "frontend/src/",
                 "governance/manifests/effective/repository.json",
-                "governance/manifests/generated/tests.json",
+                "governance/manifests/curated/tests.json",
             ],
             "extractor_version": ctx.config.version,
         },

@@ -115,8 +115,20 @@ Reference: https://docs.codecov.com/docs/configuration.
 - [ ] Dev: copy the `CODECOV_*` block (only that block) into a gitignored `.env` at the
       repository root — Compose interpolates that file automatically and `make dev-codecov`
       checks the same file — then run `make dev-codecov`. Shell exports also work and take
-      precedence. Prod: add them to `backend/.env`, run `make prod` then `make prod-codecov`,
-      and point `codecov.<DOMAIN>` DNS at the host.
+      precedence. Prod: add them to `backend/.env` together with `DOMAIN` and `ACME_EMAIL`,
+      point an A record for `codecov.<DOMAIN>` at the host (DNS-only, no CDN proxy — Traefik
+      does the ACME challenge and TLS itself), and run `make prod-codecov`. It is standalone:
+      it starts Traefik and the Codecov services only, never the application stack, so a host
+      dedicated to Codecov needs neither `make prod` nor the GPU services.
+- [ ] On a Linux host the Make preflights cannot run (they shell out to `powershell.exe`),
+      so per CLAUDE.md run the recipe's own Compose command instead of rewriting the target —
+      after checking `backend/.env` yourself, since the placeholder guard is what you are
+      skipping:
+      `docker compose --env-file backend/.env -f docker-compose.yml -f docker-compose.prod.yml
+      --profile edge --profile codecov up -d --wait --wait-timeout 300 traefik codecov-gateway
+      codecov-worker`. Ports 22, 80, and 443 must be open at the provider firewall; nothing
+      else is published. Confirm with `curl -sSI https://codecov.<DOMAIN>/gateway_health`
+      (a valid certificate and `200`), then log in once so the repositories sync.
 - [ ] Log in once at the instance with the admin account so Codecov syncs the organisation
       and repositories; copy the repository upload token from the repo settings page (or set
       `CODECOV_GLOBAL_UPLOAD_TOKEN` and use that with the repo slug).

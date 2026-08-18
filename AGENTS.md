@@ -47,9 +47,10 @@ The Makefile is the single operational entry point. Prefer it over raw `uv`/`doc
 | Governance preflight / check / sync | `make governance-preflight` · `make governance-check` · `make governance-sync` |
 | Governance context / impact / explain | `make governance-context` · `make governance-impact` · `make governance-explain ID=...` |
 | Governance views (HTML to artifacts/) | `make governance-visualize VIEW=architecture\|site\|impact\|configuration\|migration\|security` |
-| Governance diagnosis | `make governance-doctor` |
+| Governance diagnosis / agent-surface citations | `make governance-doctor` · `make governance-skills-check` |
 | Backend lint / tests | `make lint` · `make test` · `make test-cov` |
-| Frontend lint, types, unit tests | `make frontend-test` |
+| Frontend lint, types, unit tests with coverage | `make frontend-test` |
+| Frontend format check / production build | `make frontend-format-check` · `make frontend-build` |
 | End-to-end (local only, needs a running stack) | `make playwright` |
 | Dev stack up / down / logs | `make dev` · `make dev-down` · `make dev-logs` |
 | Compose matrix validation | `make compose-check` |

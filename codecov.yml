@@ -1,0 +1,32 @@
+# Repository-level Codecov configuration, read by the self-hosted instance
+# (docker/codecov/, CODECOV_URL). This is distinct from the instance configuration in
+# docker/codecov/config/codecov.yml, which configures the server itself.
+#
+# Both statuses are informational until real frontend tests land: the measured frontend
+# coverage is ~4 percent, so instance-default patch targets would post a red
+# codecov/patch on every frontend PR and train people to ignore the check. The in-repo
+# floors (backend/pyproject.toml fail_under, frontend/vitest.config.ts thresholds) remain
+# the enforced ratchets; Codecov reports, it does not gate. Flip `informational` off per
+# status as a governed change once the numbers can carry the weight.
+coverage:
+  status:
+    project:
+      default:
+        target: auto
+        threshold: 1%
+        informational: true
+    patch:
+      default:
+        informational: true
+
+# Uploads arrive as separate flags from separate CI jobs. carryforward keeps a flag's last
+# known value when a job is skipped (for example by a path filter), instead of reporting
+# the whole flag as vanished.
+flag_management:
+  default_rules:
+    carryforward: true
+
+comment:
+  layout: "condensed_header, flags, files"
+  behavior: default
+  require_changes: false

@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 93)
+## Recent changes (latest 20 of 94)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -75,6 +75,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Move the hand-authored tests manifest from manifests/generated to manifests/curated
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-move-the-hand-authored-tests-manifest-from-manifests-generated-t.json`
+- **2026-08-18** — Make the Makefile the single source of validator commands and have CI invoke it, with workflow hygiene and a repo codecov.yml
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-18-make-the-makefile-the-single-source-of-validator-commands-and-ha.json`
 - **2026-08-18** — Make the governance preflight report a missing pre-commit hook with its repair command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-make-the-governance-preflight-report-a-missing-pre-commit-hook-w.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Update governance selftests to the post-facade tree
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-update-governance-selftests-to-the-post-facade-tree.json`
-- **2026-08-11** — Store the graph in SQLite and report cycles and orphans
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-store-the-graph-in-sqlite-and-report-cycles-and-orphans.json`
 
 ## Decisions (5)
 

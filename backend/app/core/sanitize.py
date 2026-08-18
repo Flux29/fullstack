@@ -16,7 +16,6 @@ import re
 import socket
 import unicodedata
 from pathlib import Path
-from typing import TypeVar
 from urllib.parse import urlparse
 
 DEFAULT_ALLOWED_TAGS = frozenset(
@@ -343,10 +342,7 @@ def sanitize_email(email: str) -> str:
     return email.strip().lower()
 
 
-T = TypeVar("T", int, float)
-
-
-def sanitize_numeric(
+def sanitize_numeric[T: (int, float)](
     value: str | int | float,
     value_type: type[T],
     min_value: T | None = None,

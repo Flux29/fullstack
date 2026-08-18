@@ -21,7 +21,7 @@
     {
       "id": "backend-unit",
       "command": "make test",
-      "description": "The backend pytest suite. Async via anyio with a mocked database session, so it needs no live services.",
+      "description": "The backend pytest suite. Async via anyio with a mocked database session, so it needs no live services. In CI the test job runs make test-cov, a superset of this command.",
       "destructive": false,
       "requires": [],
       "ci_job": "test"
@@ -29,7 +29,7 @@
     {
       "id": "backend-coverage",
       "command": "make test-cov",
-      "description": "Backend pytest with coverage. The fail_under floor is a ratchet against measured coverage, not an achievement claim.",
+      "description": "Backend pytest with coverage (branch measurement on, coverage.xml emitted). The fail_under floor is a ratchet against measured coverage, not an achievement claim. This is the command the CI test job runs.",
       "destructive": false,
       "requires": [],
       "ci_job": "test"
@@ -37,7 +37,7 @@
     {
       "id": "frontend-test",
       "command": "make frontend-test",
-      "description": "Frontend lint, type-check, and vitest run.",
+      "description": "Frontend lint, type-check, and vitest with coverage under bun; the ratcheted thresholds in vitest.config.ts are enforced here, not only in CI.",
       "destructive": false,
       "requires": ["bun"],
       "ci_job": "test-frontend"

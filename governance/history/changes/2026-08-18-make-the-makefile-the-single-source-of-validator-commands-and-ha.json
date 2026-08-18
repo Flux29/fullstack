@@ -1,0 +1,107 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "make governance-*"
+  ],
+  "behavioral_effects": [
+    "Each CI job runs the registered Make target for its validator, so validators.json ci_job entries name a job that runs the same command as the local validator",
+    "make frontend-test uses bun and vitest coverage, so the frontend-test validator enforces the ratcheted thresholds locally",
+    "ci.yml gains permissions, concurrency (cancel-in-progress on PRs only), per-job timeouts, uv and bun caches, tag and workflow_dispatch triggers, and a ci-ok aggregate job that is a signal, not a branch-protection requirement",
+    "A repo-root codecov.yml keeps codecov/project and codecov/patch informational and turns on flag carryforward, so the now-live self-hosted instance reports without gating",
+    "ruff target-version and ty python-version now match requires-python 3.12; sanitize_numeric uses PEP 695 type parameters and the TypeVar import is gone"
+  ],
+  "compatibility_impact": "make frontend-test now requires bun instead of npm and enforces the vitest thresholds; make playwright accepts ARGS. The docker job still runs on main pushes only. Pushes to the dead master and fullstack2 branches no longer trigger CI.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    "AGENTS.md",
+    "Makefile",
+    "backend/app/core/sanitize.py",
+    "backend/pyproject.toml",
+    "codecov.yml",
+    "governance/validators.json"
+  ],
+  "follow_up": [
+    "Phase 1: compose job, frontend build and format check, dependency audits, preflights-are-host-only exception, dependabot",
+    "Open a throwaway PR touching a frontend file and confirm codecov/patch posts as informational and the PR comment renders"
+  ],
+  "id": "2026-08-18-make-the-makefile-the-single-source-of-validator-commands-and-ha",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run; the diff is workflow and Makefile plumbing with one six-line Python change",
+    "This is Phase 0 of the CI/CD coverage plan: it adds no new verified surface, it makes the existing mapping truthful. Phases 1-6 add compose-check, frontend build/format, audits, governance-tool lint and coverage, hygiene, docker matrix and GHCR publish, e2e, and nightly",
+    "actionlint was run locally via docker (clean) but is not yet a CI step; that is Phase 3"
+  ],
+  "manifests_changed": [],
+  "reason": "CI inlined its own copies of the validator commands, so the ci_job claims in validators.json were convention rather than fact, and make frontend-test still called npm without coverage so the registered validator did not enforce the vitest thresholds CI enforces; ci.yml also carried dead branch triggers, no permissions, concurrency, timeouts or caching, and the now-live self-hosted Codecov applies instance-default patch statuses that will go red on any frontend PR at 4 percent coverage. After this change every CI job runs the registered make target, the workflow has hygiene defaults and an aggregate ci-ok signal, and a repo codecov.yml keeps coverage statuses informational until real tests land.",
+  "risks": [
+    "ci-ok is not enforced by branch protection (private repo on GitHub Free, direct-to-main cadence); a red ci-ok on main is a fix-forward signal",
+    "codecov.yml is read by the instance from the evaluated commit; a syntax error there would surface as a Codecov-side warning, not a CI failure"
+  ],
+  "rollback": "git revert. Nothing outside the repository changes: repository variables and secrets are untouched, and the Codecov instance reads codecov.yml from the commit it evaluates.",
+  "schema_version": 1,
+  "security_impact": "None. permissions: contents: read is now declared at the top of the workflow, which narrows the default GITHUB_TOKEN; no secret is added, codecov.yml holds no values.",
+  "summary": "Make the Makefile the single source of validator commands and have CI invoke it, with workflow hygiene and a repo codecov.yml",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint — ruff clean, ruff format clean, ty 22 warnings exit 0 (same 22 as before the py312 bump)",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make test-cov — 505 passed, 13 skipped (4 migration tests need a live DB, 9 live-Google gated); combined coverage 52.89 percent over floor 52",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "same run; coverage.xml emitted",
+      "id": "backend-coverage",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make frontend-test under bun — eslint 0 errors/30 warnings, tsc clean, vitest 6 files 29 tests, 4.14/21.92/7.34/4.14 over thresholds 3/17/6/3",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "317 passed",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run at close",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "no live database on this machine; CI runs it against pgvector",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "part of make test-cov",
+      "id": "agent-evals",
+      "result": "pass"
+    }
+  ]
+}

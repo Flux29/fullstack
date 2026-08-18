@@ -1,4 +1,4 @@
-.PHONY: help install format lint test test-cov frontend-test playwright run run-prod \
+.PHONY: help install format lint test test-cov frontend-test frontend-format-check frontend-build playwright run run-prod \
 	preflight preflight-volumes preflight-model preflight-ports preflight-edge-ports preflight-mcp \
 	preflight-codecov compose-check \
 	dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all dev-down dev-logs dev-rebuild stage stage-down \
@@ -7,8 +7,8 @@
 	upgrade upgrade-dry-run upgrade-new-features upgrade-finalize \
 	governance-install governance-preflight governance-scan governance-sync governance-check \
 	governance-check-fast governance-doctor governance-selftest governance-context \
-	governance-impact governance-explain governance-summary governance-change-start \
-	governance-change-finish
+	governance-impact governance-explain governance-summary governance-gate-metrics \
+	governance-visualize governance-skills-check governance-change-start governance-change-finish
 
 COMPOSE_BASE := docker compose -f docker-compose.yml
 COMPOSE_DEV := $(COMPOSE_BASE) -f docker-compose.dev.yml
@@ -162,14 +162,25 @@ lint:
 test:
 	uv run --directory backend pytest tests/ -v
 
+# The XML report is what CI uploads to Codecov; emitting it here keeps `make test-cov`
+# and the CI `test` job the same command.
 test-cov:
-	uv run --directory backend pytest tests/ -v --cov=app --cov-report=term-missing
+	uv run --directory backend pytest tests/ -v --cov=app --cov-report=term-missing --cov-report=xml
 
+# bun, not npm: the repository has only bun.lock, and CI, the Dockerfile, and vercel.json
+# all use bun. `test:coverage` (not plain vitest) so the ratcheted thresholds in
+# vitest.config.ts are enforced by the registered validator, not only by CI.
 frontend-test:
-	cd frontend && npm run lint && npm run type-check && npm test -- --run
+	cd frontend && bun run lint && bun run type-check && bun run test:coverage
+
+frontend-format-check:
+	cd frontend && bun run format:check
+
+frontend-build:
+	cd frontend && NEXT_TELEMETRY_DISABLED=1 bun run build
 
 playwright:
-	cd frontend && npm run test:e2e
+	cd frontend && bun run test:e2e $(ARGS)
 
 run:
 	uv run --directory backend fullstack server run --reload --port 8100
@@ -270,7 +281,7 @@ upgrade-finalize:
 help:
 	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all"
 	@echo "Lifecycle: dev-down dev-logs stage prod prod-codecov docker-clean (preserves data)"
-	@echo "Validation: lint test frontend-test playwright"
+	@echo "Validation: lint test test-cov frontend-test frontend-format-check frontend-build playwright"
 	@echo "Governance: governance-preflight governance-context governance-sync governance-check (see AGENTS.md)"
 	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"
 	@echo "Local API: make run (port 8100); Taskiq concurrency defaults to 1"

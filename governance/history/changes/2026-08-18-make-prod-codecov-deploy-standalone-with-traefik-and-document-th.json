@@ -1,0 +1,44 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A host dedicated to Codecov can deploy Traefik plus Codecov without the application stack, its external volumes, or the GPU services",
+    "The Linux deployment command is written down once, in MANUAL_STEPS, matching the recipe verbatim"
+  ],
+  "compatibility_impact": "prod-codecov no longer requires make prod to have run; on a host that did run make prod, starting traefik again is a no-op because it is already up. No compose, image, or contract change.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "MANUAL_STEPS.md",
+    "Makefile"
+  ],
+  "follow_up": [],
+  "id": "2026-08-18-make-prod-codecov-deploy-standalone-with-traefik-and-document-th",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The documented Linux command has been validated by compose-check only; the first real run against a Linux host is the deployment that follows this change and its result belongs in the next record",
+    "preflight-codecov stays PowerShell-only by the repository's own rule; a Linux operator gets no placeholder guard beyond the doc's instruction to check the file"
+  ],
+  "manifests_changed": [],
+  "reason": "prod-codecov assumes make prod already started Traefik and reaches its Compose command only through a PowerShell preflight, so on a Linux host dedicated to Codecov — where the application stack, its GPU services, and powershell.exe do not exist — the target fails before Docker is touched and Traefik is never started; starting Traefik from the target itself and recording the raw Compose command as the Linux path lets a Codecov-only host deploy without the application",
+  "risks": [],
+  "rollback": "git revert. Nothing outside the repository is affected.",
+  "schema_version": 1,
+  "security_impact": "None. prod-codecov starts Traefik plus the Codecov services; the set of published ports is unchanged (Traefik 80/443, dashboard loopback-only, nothing from codecov-gateway). The Linux-host path documented in MANUAL_STEPS bypasses the PowerShell placeholder guard, and the doc says so explicitly and tells the operator to check backend/.env themselves.",
+  "summary": "Make prod-codecov deploy standalone with Traefik and document the Linux host command",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "all stacks and profiles including prod with dummy values",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "baseline 14 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    }
+  ]
+}

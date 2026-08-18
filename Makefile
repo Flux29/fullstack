@@ -111,12 +111,14 @@ prod: preflight-volumes preflight-edge-ports compose-check
 	$(COMPOSE_PROD) --profile frontend --profile edge up -d --build --wait --wait-timeout 180
 	$(COMPOSE_PROD) exec -T app fullstack db upgrade
 
-# Self-hosted Codecov behind Traefik at https://codecov.$(DOMAIN). Run after `make prod`;
-# credentials come from the shell or backend/.env.
+# Self-hosted Codecov behind Traefik at https://codecov.$(DOMAIN). Standalone: it starts
+# Traefik itself, so a host dedicated to Codecov never needs `make prod` or the application
+# stack. Credentials come from the shell or backend/.env. On a Linux host, where the
+# PowerShell preflight cannot run, run the recipe's Compose command directly (MANUAL_STEPS).
 prod-codecov: CODECOV=1
 prod-codecov: CODECOV_ENV_FILE=backend/.env
 prod-codecov: preflight-codecov
-	$(COMPOSE_PROD) --profile codecov up -d --wait --wait-timeout 300 codecov-gateway codecov-worker
+	$(COMPOSE_PROD) --profile edge --profile codecov up -d --wait --wait-timeout 300 traefik codecov-gateway codecov-worker
 
 prod-down:
 	$(COMPOSE_PROD) --profile frontend --profile edge --profile codecov down --remove-orphans

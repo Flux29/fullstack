@@ -116,6 +116,18 @@
       "component_refs": ["frontend-app"]
     },
     {
+      "id": "preflights-are-host-only",
+      "statement": "The five preflight validators (preflight-volumes, preflight-model, preflight-ports, preflight-edge-ports, preflight-mcp) declare ci_job null and run in no CI job.",
+      "reason": "Each one probes the developer's host rather than the repository: the external preservation volumes and Docker Model Runner exist only on a machine that runs the stack, free host ports mean nothing on an ephemeral runner, and the MCP token check would have to be fed dummy values to pass, proving nothing. They are also PowerShell-only by design. Running them in CI would be a step that always fails or always vacuously passes, which is the condition the playwright-not-in-ci exception was written to avoid.",
+      "scope": [
+        "governance/validators.json entries preflight-volumes, preflight-model, preflight-ports, preflight-edge-ports, preflight-mcp"
+      ],
+      "status": "active",
+      "review_trigger": "A self-hosted runner with a Docker engine and Docker Model Runner joins the pipeline, at which point preflight-volumes and preflight-model become meaningful there.",
+      "policy_refs": ["validators-declare-their-ci-job"],
+      "component_refs": ["model-runner-host"]
+    },
+    {
       "id": "coverage-floors-are-ratchets",
       "statement": "Coverage thresholds are set at measured levels — 54 percent on the backend and single digits to seventeen percent on the frontend — rather than at an aspirational target.",
       "reason": "The generator shipped 100 percent thresholds against roughly 55 percent and 4 percent actuals, so the gate had never passed and every CI run failed on it. A floor at the measured level catches regressions immediately, which is what a gate is for. It is a ratchet: raise it when real tests are added, never lower it to make a red build green.",

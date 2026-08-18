@@ -1,0 +1,111 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "make governance-*"
+  ],
+  "behavioral_effects": [
+    "New CI job compose runs make compose-check over every stack and profile combination on every push and PR; compose-check and compose-check-prod declare ci_job compose",
+    "test-frontend runs make frontend-format-check and make frontend-build after the unit tests; new validators frontend-format and frontend-build",
+    "security runs make audit-python (gating) and make audit-js (non-gating for now); new validator dependency-audit covers both",
+    "Exception preflights-are-host-only records why the five preflight validators keep ci_job null; validators-declare-their-ci-job now references it",
+    ".github/dependabot.yml proposes weekly grouped updates for uv (backend, governance tool), bun (frontend), npm (chrome-devtools sidecar), docker (four contexts) and github-actions",
+    "frontend README.md and e2e/chat.spec.ts reformatted by prettier; frontend/.governance.json is prettier-ignored because its shape belongs to the governance tool"
+  ],
+  "compatibility_impact": "codecov.yml is added to the read gate always_allow list (the Phase 0 CI run proved the fail-closed read-surface check works: it rejected the untracked-then-committed file). frontend/** is now text eol=lf in .gitattributes; existing Windows checkouts keep CRLF working copies until the tree is refreshed (git ls-files -z frontend | xargs -0 rm -f; git checkout -- frontend), which was done on this machine. compose-check-prod now includes the codecov profile in its description.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".gitattributes",
+    ".github/dependabot.yml",
+    ".github/workflows/ci.yml",
+    "Makefile",
+    "frontend/.prettierignore",
+    "frontend/README.md",
+    "frontend/e2e/chat.spec.ts",
+    "governance/Summary.md",
+    "governance/governance.toml",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/policies/process.json",
+    "governance/validators.json"
+  ],
+  "follow_up": [
+    "Bump the frontend transitive dependencies bun audit flags (sharp, vitest, next-intl, js-yaml, esbuild, postcss, nanoid, opentelemetry) and the hono advisory in docker/mcp/chrome-devtools, then remove continue-on-error from the audit-js step",
+    "Rename docker/mcp/docling/requirements.lock to requirements.txt (or add a pyproject) so Dependabot's pip ecosystem can see it",
+    "Phase 2: governance-tool ruff and coverage floor with a Codecov governance flag, --since plumbing, the coverage-floor-does-not-regress check, new_file_gate tests"
+  ],
+  "id": "2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run; the diff is workflow, Makefile and governance-data plumbing plus two prettier reformat commits",
+    "Phase 1 of the CI/CD coverage plan. Not here: governance-tool lint and coverage, the coverage ratchet check, hygiene job, docker matrix and GHCR publish, e2e, nightly"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "Eight registered validators declared ci_job null and only one had a recorded reason; compose-check and compose-check-prod need nothing but the docker CLI an ubuntu runner already has, next build and prettier were never run anywhere but the Dockerfile and Vercel, and pip-audit covered only the backend lockfile while tools/repo_governance/uv.lock, docker/mcp/docling/requirements.lock and docker/mcp/chrome-devtools/package-lock.json went unaudited. After this change the compose matrix, the production frontend build, the prettier check and every dependency set are exercised on every push and PR, the five preflight validators carry one reviewed exception explaining why they are host-only, and Dependabot proposes updates for each ecosystem.",
+  "risks": [
+    "bun audit is non-gating until the frontend transitive findings are bumped; the follow-up must flip continue-on-error off within a week or the step becomes a badge nobody reads",
+    "Dependabot's bun ecosystem is newer than its npm one; if it rejects the frontend entry, switch that entry to Renovate or npm-on-package.json",
+    "docker/mcp/docling/requirements.lock is not a filename Dependabot pip discovers, so that set is audited by CI but not proposed for updates"
+  ],
+  "rollback": "git revert. Dependabot stops on the next scan once .github/dependabot.yml is gone; nothing else lives outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None new. Dependabot proposes and never merges. The audit surface widens from one lockfile to four; audit-js is visible but non-gating, which is stated in the workflow, the Makefile and the validator description so it cannot pass for a gate.",
+  "summary": "Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "locally, and again in a scratch copy with backend/.env.example standing in for backend/.env as the CI job does",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "6 files, 29 tests, 4.14/21.92/7.34/4.14",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make frontend-format-check clean after pinning frontend/** to LF and formatting README.md and e2e/chat.spec.ts",
+      "id": "frontend-format",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make frontend-build, 143 static pages, no untracked output",
+      "id": "frontend-build",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "audit-python clean across backend, governance-tool and docling locks; audit-js reports 8 frontend findings (1 critical, 7 high, transitive: sharp, vitest, next-intl, js-yaml, esbuild, postcss, nanoid, opentelemetry) and 1 moderate in chrome-devtools (hono). CI runs audit-js non-gating until those are bumped; recorded as fail here rather than hidden",
+      "id": "dependency-audit",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "317 passed, including test_read_surface_coverage_is_clean_in_the_real_repository which failed in the Phase 0 CI run on codecov.yml",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run at close",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "rhysd/actionlint via docker over .github/workflows",
+      "id": "actionlint",
+      "result": "pass"
+    }
+  ]
+}

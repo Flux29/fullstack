@@ -17,3 +17,6 @@ dist/
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Governance annotation: its shape belongs to the governance tool, not to prettier.
+.governance.json

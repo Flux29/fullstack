@@ -43,6 +43,30 @@
       "ci_job": "test-frontend"
     },
     {
+      "id": "frontend-format",
+      "command": "make frontend-format-check",
+      "description": "prettier --check over the frontend. frontend/** is pinned to LF in .gitattributes so the check reads the same on Windows and Linux checkouts.",
+      "destructive": false,
+      "requires": ["bun"],
+      "ci_job": "test-frontend"
+    },
+    {
+      "id": "frontend-build",
+      "command": "make frontend-build",
+      "description": "next build with telemetry disabled. Catches route-level, RSC-boundary, and next.config failures that tsc --noEmit does not.",
+      "destructive": false,
+      "requires": ["bun"],
+      "ci_job": "test-frontend"
+    },
+    {
+      "id": "dependency-audit",
+      "command": "make audit",
+      "description": "pip-audit over the backend and governance-tool locks and the Docling sidecar requirements.lock (audit-python, gating in CI), then bun audit over the frontend and npm audit over the chrome-devtools sidecar (audit-js, non-gating in CI until the known frontend findings are bumped).",
+      "destructive": false,
+      "requires": ["uv", "bun", "node"],
+      "ci_job": "security"
+    },
+    {
       "id": "playwright",
       "command": "make playwright",
       "description": "Playwright end-to-end suite. Local only: its webServer is disabled under CI and it needs a running backend, so it is not part of any CI job until a composed CI stack exists.",
@@ -56,15 +80,15 @@
       "description": "Validates every canonical Compose file-stack and profile combination, then re-invokes the production stack check with dummy values.",
       "destructive": false,
       "requires": ["docker-cli"],
-      "ci_job": null
+      "ci_job": "compose"
     },
     {
       "id": "compose-check-prod",
       "command": "make compose-check-prod",
-      "description": "Validates the production stack with the frontend, edge, and mcp profiles.",
+      "description": "Validates the production stack with the frontend, edge, mcp, and codecov profiles. Runs in CI as the tail of compose-check.",
       "destructive": false,
       "requires": ["docker-cli"],
-      "ci_job": null
+      "ci_job": "compose"
     },
     {
       "id": "preflight-volumes",

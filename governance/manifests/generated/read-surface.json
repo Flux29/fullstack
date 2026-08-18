@@ -89,6 +89,7 @@
       "backend/app/services/rag_document.py",
       "backend/app/services/rag_status.py",
       "backend/app/services/rag_sync.py",
+      "codecov.yml",
       "docker-compose.dev.yml",
       "docker-compose.frontend.yml",
       "docker-compose.prod.yml",

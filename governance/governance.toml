@@ -83,6 +83,7 @@ always_allow = [
   "Makefile",
   "README.md",
   "SECURITY.md",
+  "codecov.yml",
   "docker-compose.dev.yml",
   "docker-compose.frontend.yml",
   "docker-compose.prod.yml",

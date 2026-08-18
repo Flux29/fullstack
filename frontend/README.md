@@ -21,15 +21,15 @@ Or run it in Docker from the project root: `make dev-frontend`.
 
 Copy `.env.example` to `.env.local` and adjust as needed:
 
-| Variable | Read by | Description |
-|----------|---------|-------------|
-| `BACKEND_URL` | server | Backend HTTP base URL used by the route handlers in `src/app/api/*` |
-| `COOKIE_SECURE` | server | `Secure` flag on the auth cookies. Unset follows `NODE_ENV`; set `false` only for an `http://` deployment on a trusted network |
-| `NEXT_PUBLIC_WS_URL` | browser | Backend WebSocket origin for the chat stream (e.g. `wss://api.example.com`) |
-| `NEXT_PUBLIC_API_URL` | browser | Public API URL (OAuth redirects, links to the API docs) |
-| `NEXT_PUBLIC_SITE_URL` | browser | Canonical site origin for SEO metadata, OG tags, `sitemap.xml` |
-| `NEXT_PUBLIC_OAUTH_PROVIDERS` | browser | Comma-separated providers shown on `/login` + `/register` |
-| `NEXT_PUBLIC_RAG_ENABLED` | browser | Show knowledge-base / RAG UI |
+| Variable                      | Read by | Description                                                                                                                    |
+| ----------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `BACKEND_URL`                 | server  | Backend HTTP base URL used by the route handlers in `src/app/api/*`                                                            |
+| `COOKIE_SECURE`               | server  | `Secure` flag on the auth cookies. Unset follows `NODE_ENV`; set `false` only for an `http://` deployment on a trusted network |
+| `NEXT_PUBLIC_WS_URL`          | browser | Backend WebSocket origin for the chat stream (e.g. `wss://api.example.com`)                                                    |
+| `NEXT_PUBLIC_API_URL`         | browser | Public API URL (OAuth redirects, links to the API docs)                                                                        |
+| `NEXT_PUBLIC_SITE_URL`        | browser | Canonical site origin for SEO metadata, OG tags, `sitemap.xml`                                                                 |
+| `NEXT_PUBLIC_OAUTH_PROVIDERS` | browser | Comma-separated providers shown on `/login` + `/register`                                                                      |
+| `NEXT_PUBLIC_RAG_ENABLED`     | browser | Show knowledge-base / RAG UI                                                                                                   |
 
 Two rules that cause most of the deployment confusion:
 

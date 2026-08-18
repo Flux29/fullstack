@@ -229,9 +229,35 @@ jobs:
           disable_search: true
           fail_ci_if_error: true
 
+      # prettier --check: the frontend-format validator. LF is pinned for frontend/** in
+      # .gitattributes so this means the same thing on Windows checkouts.
+      - name: Format check
+        run: make frontend-format-check
+
+      # next build: the frontend-build validator. tsc --noEmit above does not catch
+      # route-level, RSC boundary, or next.config failures; only a real build does.
+      - name: Production build
+        run: make frontend-build
+
       # Playwright E2E is local-only for now: playwright.config disables its
       # webServer on CI and the suite needs a running backend stack. Tracked as
       # a governance finding; run locally via `make playwright`.
+
+  # The compose-check and compose-check-prod validators: every canonical file-stack and
+  # profile combination must resolve. Only the docker CLI is needed, which the runner has.
+  # COMPOSE_PROD reads --env-file backend/.env, so the example file stands in for it; the
+  # recipe supplies its own validation values for the :? guarded variables.
+  compose:
+    name: Compose matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate every stack and profile
+        run: |
+          cp backend/.env.example backend/.env
+          make compose-check
 
   security:
     name: Security Scan
@@ -248,14 +274,24 @@ jobs:
       - name: Set up Python
         run: uv python install 3.12
 
-      - name: Run pip-audit
-        # Audit the locked dependency set; uvx runs pip-audit in its own
-        # ephemeral env (no project venv needed — `uv pip install` without one
-        # is what broke this job originally).
-        run: |
-          uv export --no-hashes --no-emit-project -o requirements-audit.txt
-          uvx pip-audit -r requirements-audit.txt --disable-pip --no-deps --progress-spinner=off
-        working-directory: backend
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      # The dependency-audit validator, python half: pip-audit over the exported backend
+      # and governance-tool locks and the Docling sidecar's requirements.lock. uvx runs
+      # pip-audit in its own ephemeral env (no project venv needed — `uv pip install`
+      # without one is what broke this job originally). Gating.
+      - name: Audit Python dependency sets
+        run: make audit-python
+
+      # JavaScript half: bun audit over frontend/bun.lock and npm audit over the
+      # chrome-devtools sidecar's package-lock.json. Non-gating for now: the frontend
+      # carries known high findings in transitive dependencies (sharp, vitest, next-intl,
+      # js-yaml, ...) that need bumping in their own session; flip continue-on-error off
+      # once that lands so the step becomes a gate rather than a badge nobody reads.
+      - name: Audit JavaScript dependency sets
+        run: make audit-js
+        continue-on-error: true
 
   docker:
     runs-on: ubuntu-latest
@@ -297,7 +333,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: always()
-    needs: [governance, lint, test, test-frontend, security]
+    needs: [governance, lint, test, test-frontend, compose, security]
     steps:
       - name: Every gating job succeeded
         env:

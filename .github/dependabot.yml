@@ -1,0 +1,63 @@
+# One entry per dependency set the repository ships. Weekly, grouped per ecosystem, and
+# capped at three open PRs each: every Dependabot PR runs the full CI matrix on a private
+# repository's billed minutes, so volume is a cost lever, not a virtue.
+#
+# Dependabot proposes; it never merges. That keeps it inside the
+# scheduled-automation-does-not-change-code policy.
+version: 2
+updates:
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      backend-python:
+        patterns: ["*"]
+
+  - package-ecosystem: uv
+    directory: /tools/repo_governance
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      governance-python:
+        patterns: ["*"]
+
+  - package-ecosystem: bun
+    directory: /frontend
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      frontend-js:
+        patterns: ["*"]
+
+  # docker/mcp/docling/requirements.lock is not a filename the pip ecosystem discovers
+  # (it wants requirements*.txt, pyproject.toml, or Pipfile), so that set is covered by
+  # `make audit-python` in CI rather than by Dependabot until the file is renamed.
+
+  - package-ecosystem: npm
+    directory: /docker/mcp/chrome-devtools
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: docker
+    directories:
+      - /backend
+      - /frontend
+      - /docker/mcp/docling
+      - /docker/mcp/chrome-devtools
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+    groups:
+      actions:
+        patterns: ["*"]

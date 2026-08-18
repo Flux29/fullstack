@@ -47,8 +47,14 @@ def _preview(paths: list[str]) -> str:
     return head if len(paths) <= PREVIEW_LIMIT else f"{head}, and {len(paths) - PREVIEW_LIMIT} more"
 
 
-def _change_set(scope: CheckScope) -> tuple[list[str], bool]:
-    """Paths changed in the working tree, plus the `since` range when one is given.
+def _change_set(scope: CheckScope) -> tuple[list[str], list[str], bool]:
+    """Paths under consideration, the change records anywhere in the change set, and trust.
+
+    The first list is the working-tree change set (plus the `since` range when one is
+    given), narrowed to `scope.files` when a scope is set. The second is the change records
+    in the *unscoped* change set: pre-commit hands the check only the staged files it is
+    batching, and a record staged beside them is still the record for them, so looking for
+    it inside the scoped list refuses fully recorded changes.
 
     The boolean reports whether the answer is trustworthy. When git is unavailable the
     check reports uncertainty rather than passing, because "no changes detected" and
@@ -70,14 +76,15 @@ def _change_set(scope: CheckScope) -> tuple[list[str], bool]:
             ranged = found
 
     combined = sorted({*working, *ranged})
+    records = [path for path in combined if path.startswith(CHANGE_RECORD_PREFIX) and path.endswith(".json")]
     if scope.files is not None:
         combined = [path for path in combined if path in scope.files]
-    return combined, known
+    return combined, records, known
 
 
 def check_governance_change_records(scope: CheckScope) -> list[Issue]:
     """A change touching governance or its tooling carries a change record."""
-    changed, known = _change_set(scope)
+    changed, records, known = _change_set(scope)
 
     if not known:
         return [
@@ -95,11 +102,7 @@ def check_governance_change_records(scope: CheckScope) -> list[Issue]:
         if any(path.startswith(prefix) for prefix in GOVERNED_PREFIXES)
         and not path.startswith(CHANGE_RECORD_PREFIX)
     ]
-    if not governed:
-        return []
-
-    records = [path for path in changed if path.startswith(CHANGE_RECORD_PREFIX) and path.endswith(".json")]
-    if records:
+    if not governed or records:
         return []
 
     return [
@@ -146,7 +149,7 @@ def check_untracked_files_are_sanctioned(scope: CheckScope) -> list[Issue]:
 def check_policy_weakening_recorded(scope: CheckScope) -> list[Issue]:
     """Lowering a rule's maturity, or removing a rule, is named in a change record."""
     ctx = scope.ctx
-    changed, known = _change_set(scope)
+    _changed, records, known = _change_set(scope)
     if not known:
         return []
 
@@ -179,11 +182,10 @@ def check_policy_weakening_recorded(scope: CheckScope) -> list[Issue]:
         return []
 
     record_text = ""
-    for path in changed:
-        if path.startswith(CHANGE_RECORD_PREFIX) and path.endswith(".json"):
-            target = ctx.repo_root / path
-            if target.is_file():
-                record_text += target.read_text(encoding="utf-8")
+    for path in records:
+        target = ctx.repo_root / path
+        if target.is_file():
+            record_text += target.read_text(encoding="utf-8")
 
     issues: list[Issue] = []
     for rel, rule_id, transition in weakened:

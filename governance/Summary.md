@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 90)
+## Recent changes (latest 20 of 91)
 
+- **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-18-stop-applying-the-staged-file-scope-to-whole-repository-facts-in.json`
 - **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Remove the disabled-billing credit calls from the live dashboard
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-remove-the-disabled-billing-credit-calls-from-the-live-dashboard.json`
-- **2026-08-11** — Record the phase 6-7 build decision and impact baseline
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-record-the-phase-6-7-build-decision-and-impact-baseline.json`
 
 ## Decisions (5)
 

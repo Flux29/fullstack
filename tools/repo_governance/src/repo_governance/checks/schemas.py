@@ -110,13 +110,17 @@ def check_document_schemas(scope: CheckScope) -> list[Issue]:
 
 
 def check_generated_files(scope: CheckScope) -> list[Issue]:
-    """Generated files reproduce byte-identically from their sources."""
+    """Generated files reproduce byte-identically from their sources.
+
+    Deliberately unscoped: drift is a property of the whole tree, and the file that moved a
+    generated one is a source (an .env.example, a Compose file), never the generated file
+    itself. Filtering by the staged files would report drift only when the stale derived
+    file happened to be staged too, which is exactly when nobody needs telling.
+    """
     ctx = scope.ctx
     issues: list[Issue] = []
 
     for path, reason in compare_generated(ctx):
-        if not scope.selects(path):
-            continue
         issues.append(
             Issue(
                 message=f"Generated file is out of date or hand-edited: {reason}.",

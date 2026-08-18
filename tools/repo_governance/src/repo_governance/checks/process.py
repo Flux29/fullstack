@@ -251,7 +251,7 @@ def check_suite_validator_coverage(scope: CheckScope) -> list[Issue]:
     """Every declared test suite is reachable through a validator, or excluded with a reason."""
     from repo_governance.documents import load_validators
 
-    manifest = scope.ctx.paths.generated_manifests / "tests.json"
+    manifest = scope.ctx.paths.curated_manifests / "tests.json"
     if not manifest.is_file():
         return []
     try:
@@ -271,7 +271,7 @@ def check_suite_validator_coverage(scope: CheckScope) -> list[Issue]:
                 issues.append(
                     Issue(
                         message=f"Suite {suite['id']!r} has no validator and no gate explaining why.",
-                        path="governance/manifests/generated/tests.json",
+                        path="governance/manifests/curated/tests.json",
                         evidence="A suite nobody can select either never runs or runs by accident.",
                         repair="Register a validator, or record it in the registry's excluded list with a reason.",
                     )
@@ -281,7 +281,7 @@ def check_suite_validator_coverage(scope: CheckScope) -> list[Issue]:
             issues.append(
                 Issue(
                     message=f"Suite {suite['id']!r} names validator {validator!r}, which is not registered.",
-                    path="governance/manifests/generated/tests.json",
+                    path="governance/manifests/curated/tests.json",
                     repair="Add it to governance/validators.json, or correct the reference.",
                 )
             )

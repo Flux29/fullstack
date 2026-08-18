@@ -44,7 +44,7 @@ INTERNAL_BINDINGS: tuple[tuple[str, str], ...] = (
     ("governance/validators.json", "validators"),
     ("governance/manifests/curated/ownership.json", "ownership"),
     ("governance/manifests/curated/exceptions.json", "exceptions"),
-    ("governance/manifests/generated/tests.json", "tests"),
+    ("governance/manifests/curated/tests.json", "tests"),
     ("governance/manifests/generated/read-surface.json", "read-surface"),
     ("governance/manifests/effective/repository.json", "effective"),
     ("governance/history/evaluations/*.json", "evaluations"),

@@ -1,0 +1,77 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The tests manifest is filed where its authority says it belongs: curated, hand-maintained review judgment, inside the curated ownership rule, no longer promising a regeneration that does not exist",
+    "The catalog description now says the coverage floors mirror backend/pyproject.toml and frontend/vitest.config.ts and are updated with them, so the duplication is declared rather than implied to be extracted"
+  ],
+  "compatibility_impact": "The tests manifest is now governance/manifests/curated/tests.json with provenance.method curated, catalogued as manifest-curated / authority curated / update manual. Both code readers (checks/process.py, graph/algorithms.py) and the internal schema binding follow it. Historical change records that cite the old path are history and were left untouched. The generated directory no longer contains a file that sync cannot rebuild - except ai-runtime.json and data-stores.json, which have the same shape and were deliberately not moved under this reason.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "docs/Fullstack_Agentic_Governance_Blueprint.md",
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/graph/reports/hotspots.json",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/curated/tests.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/manifests/generated/tests.json",
+    "tools/repo_governance/src/repo_governance/checks/process.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/graph/algorithms.py"
+  ],
+  "follow_up": [
+    "ai-runtime.json and data-stores.json are hand-authored in manifests/generated with the same missing renderer; move each under its own reason or give it an extractor",
+    "A small check that curated tests.json coverage_floors equal fail_under in backend/pyproject.toml and coverage.thresholds in frontend/vitest.config.ts would close the drift the record above admits"
+  ],
+  "id": "2026-08-18-move-the-hand-authored-tests-manifest-from-manifests-generated-t",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "A renderer was not written: suites and invariant_coverage are judgment, not extraction, and a half-rendered file would split one document across two authorities. The coverage_floors values are therefore still hand-mirrored and can drift from pyproject/vitest without a check catching it (the coverage-floor-does-not-regress rule is still phase-5)"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/curated/tests.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/manifests/generated/tests.json"
+  ],
+  "reason": "governance/manifests/generated/tests.json is hand-authored - its suites and invariant_coverage sections are review judgment about which invariant has a dedicated test - but it sat in the generated directory, was catalogued as authority=generated/update=sync, and pipeline.render_all never rendered it, so the location promised a regeneration that did not exist and the reproducibility check could not see it. Filing it under manifests/curated with provenance method curated makes its authority match its origin, keeps it inside the curated ownership rule, and leaves the generated directory meaning what it says.",
+  "risks": [],
+  "rollback": "git revert (the rename and the six repointings are one commit); then make governance-sync.",
+  "schema_version": 1,
+  "security_impact": "None. A file moved between two governed directories; the read-surface still lists it; no permission or exposure change.",
+  "summary": "Move the hand-authored tests manifest from manifests/generated to manifests/curated",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "baseline substitute for governance-preflight (preflight-ports benign); 14 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "all tests",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "39 checks; the single blocking finding before finish was governance-changes-are-recorded for this session; sync regenerated exactly catalog.json, read-surface.json and hotspots.json, each with only the path change",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "not selected; instead both readers were exercised directly after the move: check_suite_validator_coverage loads 8 suites with no issues, and hotspots.json risk still carries its 6 entries derived from the 10 invariant_coverage rows (its diff is the one provenance line)",
+      "id": "compose-check",
+      "result": "pass"
+    }
+  ]
+}

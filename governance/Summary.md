@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 92)
+## Recent changes (latest 20 of 93)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -72,6 +72,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em.json`
+- **2026-08-18** — Move the hand-authored tests manifest from manifests/generated to manifests/curated
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-18-move-the-hand-authored-tests-manifest-from-manifests-generated-t.json`
 - **2026-08-18** — Make the governance preflight report a missing pre-commit hook with its repair command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-make-the-governance-preflight-report-a-missing-pre-commit-hook-w.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Store the graph in SQLite and report cycles and orphans
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-store-the-graph-in-sqlite-and-report-cycles-and-orphans.json`
-- **2026-08-11** — Remove unused leaflet, react-leaflet, and @types/leaflet from frontend dependencies
-  - Components: frontend-app
-  - Record: `governance/history/changes/2026-08-11-remove-unused-leaflet-react-leaflet-and-types-leaflet-from-front.json`
 
 ## Decisions (5)
 

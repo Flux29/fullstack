@@ -291,7 +291,7 @@
       "reason": "Same: exceptions are not policies and have no blueprint schema."
     },
     {
-      "path": "governance/manifests/generated/tests.json",
+      "path": "governance/manifests/curated/tests.json",
       "reason": "Same: the blueprint lists a tests manifest but no tests schema."
     },
     {

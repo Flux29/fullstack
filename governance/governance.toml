@@ -245,14 +245,6 @@ update = "sync"
 read_when = "Changing an API route, a proxy handler, a frontend client, or a WebSocket event."
 
 [[catalog]]
-path = "governance/manifests/generated/tests.json"
-kind = "manifest-generated"
-description = "Test frameworks, gating environment variables, ratcheted coverage floors, and which declared invariants have a dedicated test."
-authority = "generated"
-update = "sync"
-read_when = "Deciding what proves a change, or asking whether an invariant is actually covered."
-
-[[catalog]]
 path = "governance/manifests/generated/read-surface.json"
 kind = "manifest-generated"
 description = "The read-gate surface: allowed path sets and gated corpus roots, compiled for the PreToolUse hook script."
@@ -283,6 +275,14 @@ description = "Deliberate, reviewed departures from policy, each with its reason
 authority = "curated"
 update = "manual"
 read_when = "A check fires on something that looks intentional, or you need to record a new deliberate departure."
+
+[[catalog]]
+path = "governance/manifests/curated/tests.json"
+kind = "manifest-curated"
+description = "Test frameworks, gating environment variables, ratcheted coverage floors, and which declared invariants have a dedicated test. Review judgment, hand-maintained; the coverage floors mirror backend/pyproject.toml and frontend/vitest.config.ts and are updated with them."
+authority = "curated"
+update = "manual"
+read_when = "Deciding what proves a change, or asking whether an invariant is actually covered."
 
 [[catalog]]
 path = "governance/manifests/effective/repository.json"

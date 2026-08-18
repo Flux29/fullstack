@@ -7,6 +7,8 @@ introduces the exact condition its rule exists to catch.
 from __future__ import annotations
 
 import json
+import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -276,6 +278,37 @@ def test_the_porcelain_status_column_is_read_by_width(monkeypatch: pytest.Monkey
         "debug_run.py",
     ]
     assert gitutil.untracked_files(Path(".")) == ["debug_run.py"]
+
+
+def test_hook_installed_follows_git_not_a_guessed_hooks_directory(tmp_path: Path) -> None:
+    """A fresh clone reports the hook missing; writing it where git looks reports it present."""
+    if shutil.which("git") is None:
+        pytest.skip("git is not on PATH")
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    assert gitutil.hook_installed(tmp_path) is False
+
+    hooks_dir = tmp_path / "custom-hooks"
+    hooks_dir.mkdir()
+    subprocess.run(["git", "-C", str(tmp_path), "config", "core.hooksPath", "custom-hooks"], check=True)
+    assert gitutil.hook_installed(tmp_path) is False, "an empty core.hooksPath directory is still missing"
+    (hooks_dir / "pre-commit").write_text("#!/bin/sh\n", encoding="utf-8")
+    assert gitutil.hook_installed(tmp_path) is True
+
+
+def test_preflight_names_a_missing_precommit_hook_and_its_repair(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    from repo_governance import cli
+
+    assert cli._precommit_hook_problem(tmp_path) is None, "no pre-commit config means nothing to install"
+    (tmp_path / ".pre-commit-config.yaml").write_text("repos: []\n", encoding="utf-8")
+    monkeypatch.setattr(cli, "hook_installed", lambda root, name="pre-commit": False)
+    problem = cli._precommit_hook_problem(tmp_path)
+    assert problem is not None and "NOT INSTALLED" in problem and cli.PRECOMMIT_INSTALL in problem
+    monkeypatch.setattr(cli, "hook_installed", lambda root, name="pre-commit": True)
+    assert cli._precommit_hook_problem(tmp_path) is None
+    monkeypatch.setattr(cli, "hook_installed", lambda root, name="pre-commit": None)
+    assert cli._precommit_hook_problem(tmp_path) is None, "unknown is not reported as missing"
 
 
 def test_a_scratch_script_is_reported_and_sanctioned_locations_are_not(

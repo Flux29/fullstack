@@ -23,7 +23,7 @@ import click
 from repo_governance import __version__
 from repo_governance.checks import CheckScope, run_checks
 from repo_governance.config import Context, GovernanceError
-from repo_governance.gitutil import head_commit, is_clean, is_repository
+from repo_governance.gitutil import head_commit, hook_installed, is_clean, is_repository
 from repo_governance.io_atomic import write_text_atomic
 from repo_governance.models import CheckReport
 from repo_governance.pipeline import compare_generated, render_all, sync as run_sync
@@ -76,6 +76,23 @@ def _run_make(target: str, repo_root: Path, extra: list[str] | None = None) -> t
         return False, str(exc)
     output = (completed.stdout + completed.stderr).strip()
     return completed.returncode == 0, output
+
+
+PRECOMMIT_INSTALL = "uv run --directory backend pre-commit install --config .pre-commit-config.yaml"
+
+
+def _precommit_hook_problem(repo_root: Path) -> str | None:
+    """A one-line problem statement when the pre-commit hook is not installed, else None.
+
+    The repository's pre-commit config runs `governance check --fast` on every
+    governance-adjacent path, so a clone without the hook can commit stale generated files
+    and only CI notices. Only `make install` installs it, and nothing else said so.
+    """
+    if not (repo_root / ".pre-commit-config.yaml").is_file():
+        return None
+    if hook_installed(repo_root) is not False:
+        return None
+    return f"pre-commit hook: NOT INSTALLED; check --fast will not run on commit. Repair: {PRECOMMIT_INSTALL}"
 
 
 def _split_paths(values: tuple[str, ...]) -> list[str]:
@@ -183,6 +200,11 @@ def preflight(skip_docker: bool, with_model: bool) -> None:
             failures.append(target)
             if output:
                 click.echo("\n".join(f"    {line}" for line in output.splitlines()[:10]))
+
+    hook_problem = _precommit_hook_problem(ctx.repo_root)
+    if hook_problem:
+        click.echo(hook_problem)
+        failures.append("pre-commit-hook")
 
     scope = CheckScope(ctx=ctx, fast=True)
     from repo_governance.checks.schemas import check_contract_version
@@ -310,6 +332,8 @@ def doctor() -> None:
     for tool in ("git", "make", "uv", "docker"):
         location = shutil.which(tool)
         click.echo(f"  {tool:<8} {location or 'NOT FOUND'}")
+    hook_states = {None: "unknown", True: "installed", False: f"NOT INSTALLED (repair: {PRECOMMIT_INSTALL})"}
+    click.echo(f"  {'hook':<8} pre-commit {hook_states[hook_installed(ctx.repo_root)]}")
 
     click.echo("")
     click.echo("Governance tree")

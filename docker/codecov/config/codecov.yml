@@ -43,6 +43,11 @@ setup:
     enabled: true
   ta_timeseries:
     enabled: true
+  # The worker enables Codecov's hosted Slack-app notifier unless this is false, and posts
+  # to a URL that no self-hosted instance has — every notify logged an ERROR traceback
+  # (MissingSchema: 'None/notify'). Off here at the install level; a repository yaml
+  # cannot re-enable it. GitHub status and comment notifiers are unaffected.
+  slack_app: false
 
 github:
   enabled: true

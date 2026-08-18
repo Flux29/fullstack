@@ -1,0 +1,58 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "codecov"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The worker no longer instantiates the codecov-slack-app notifier, so a notify for a commit runs status-patch and comment only and logs no ERROR traceback",
+    "Deployment state observed in this session, recorded here because the previous record deferred it: (a) first real CI upload on commit 88722a9, Actions run 32156446380 green; both Upload steps success against https://codecov.stikkihoney.com; on the instance the commit is state=complete with two uploads state=merged carrying flags backend and frontend (queried in codecov-postgres). (b) The repository is active=t/activated=t with hookid 667446792 in the instance database — the UI toggle that appeared off was misleading; the worker reached api.github.com (HTTP 200) using the owner OAuth token and GitHub shows commit status codecov/patch=success \"Coverage not affected\"; the comment notifier reported no_pull_request, as expected on a push to main. (c) The GitHub hook had been auto-created at 15:47:07Z with no secret while CODECOV_GITHUB_WEBHOOK_SECRET was empty, and both deliveries (ping, status) 403ed — the trap documented in backend/.env.example, now observed live. Fixed operationally: a 64-hex secret generated on the host into ~/fullstack/backend/.env (commented, value never printed), codecov-api and codecov-worker recreated healthy, the hook config PATCHed with the same secret via the GitHub API, and both deliveries redelivered: 200 and 200, matched by two 200s in the codecov-api access log."
+  ],
+  "compatibility_impact": "None for uploads, statuses, or comments: the worker yields the Slack-app notifier only when setup.slack_app is truthy, and every other notifier is gated independently. Takes effect on the host after git pull and a restart of codecov-api and codecov-worker (the file is a bind mount read at process start).",
+  "date": "2026-08-18",
+  "files_changed": [
+    "docker/codecov/config/codecov.yml"
+  ],
+  "follow_up": [
+    "Tighten permissions on the host: chmod 600 /root/fullstack/backend/.env and remove /root/fullstack/backend/.env.bak-20260818T155717, which duplicates the secrets",
+    "A pre-commit governance sync --check for backend/.env.example and .governance.json edits; a stale-buffer commit already slipped through to CI once",
+    "governance/manifests/generated/tests.json is hand-edited but lives in the generated directory and pipeline.render_all never renders it; give it a renderer or move it to manifests/curated and update ownership.json",
+    "Codecov prod memory ceilings total roughly 6.5 GB of limits on a 3.8 GB host; either lower them or size the host to them",
+    "codecov-worker has no healthcheck and no recorded exception (standing advisory services-declare-healthchecks)"
+  ],
+  "id": "2026-08-18-disable-the-hosted-slack-app-notifier-in-the-self-hosted-codecov",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Not yet deployed to the host at record time; the CI run this push triggers is rerun after the host restart so the fix is observed on a real notify (result reported in the session summary, not in this record)",
+    "PR comments have not been observed because no pull request has existed since activation; only the code path (no_pull_request) and the GitHub reachability were verified"
+  ],
+  "manifests_changed": [],
+  "reason": "Codecov's worker enables the hosted Slack-app notifier by default (setup.slack_app defaults to true) and posts to a URL no self-hosted instance has, so every notify on codecov.stikkihoney.com logged an ERROR traceback (MissingSchema: Invalid URL 'None/notify') after the first real CI upload; turning it off at the install level removes a spurious error from every future notify without touching the GitHub status and comment notifiers that do work",
+  "risks": [
+    "None from this change itself. Host-side: backend/.env (and the .env.bak-20260818T155717 copy made before editing it) are mode 644 under /root/fullstack; pre-existing, not tightened in this session"
+  ],
+  "rollback": "git revert and restart codecov-api/codecov-worker on the host. Nothing else to restore.",
+  "schema_version": 1,
+  "security_impact": "None. One boolean in the committed, secret-free instance config; the notifier it disables would otherwise POST notification payloads to an unset URL. No credential, port, network, or exposure change.",
+  "summary": "Disable the hosted Slack-app notifier in the self-hosted Codecov instance config",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "substituted for the governance-preflight baseline (preflight-ports fails benignly with the dev stack running); 14 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0; the mounted config file is not parsed by it, so the yaml was additionally parsed with PyYAML: setup.slack_app == False, top-level keys github/services/setup intact",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "39 checks, 0 blocking, 7 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

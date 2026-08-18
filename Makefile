@@ -7,7 +7,7 @@
 	db-migrate db-upgrade db-downgrade db-current db-history taskiq-worker taskiq-scheduler \
 	upgrade upgrade-dry-run upgrade-new-features upgrade-finalize \
 	governance-install governance-preflight governance-scan governance-sync governance-check \
-	governance-check-fast governance-doctor governance-selftest governance-context \
+	governance-check-fast governance-doctor governance-selftest governance-lint governance-sample governance-views governance-context \
 	governance-impact governance-explain governance-summary governance-gate-metrics \
 	governance-visualize governance-skills-check governance-change-start governance-change-finish
 
@@ -260,8 +260,29 @@ governance-check-fast:
 governance-doctor:
 	$(GOVERNANCE) doctor
 
+# The tool's own suite with coverage. Run from the repository root, so --cov-config has to
+# name the tool's pyproject explicitly; the ratcheted fail_under lives there.
 governance-selftest:
-	uv run --project tools/repo_governance pytest tools/repo_governance/tests
+	uv run --project tools/repo_governance pytest tools/repo_governance/tests \
+		--cov --cov-config=tools/repo_governance/pyproject.toml \
+		--cov-report=term-missing --cov-report=xml:tools/repo_governance/coverage.xml
+
+governance-lint:
+	uv run --project tools/repo_governance ruff check tools/repo_governance
+	uv run --project tools/repo_governance ruff format --check tools/repo_governance
+
+# Map-vs-territory spot check: seeded by HEAD, so a run is reproducible.
+governance-sample:
+	$(GOVERNANCE) sample $(ARGS)
+
+# Render every focus-free view. A smoke test that the renderers still produce a page from
+# the current graph; artifacts/ is gitignored, so CI uploads the result instead of diffing.
+governance-views:
+	$(GOVERNANCE) visualize architecture
+	$(GOVERNANCE) visualize site
+	$(GOVERNANCE) visualize configuration
+	$(GOVERNANCE) visualize migration
+	$(GOVERNANCE) visualize security
 
 governance-context:
 	$(GOVERNANCE) context --paths "$(PATHS)" --task "$(TASK)" $(ARGS)

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 import click
@@ -26,7 +25,8 @@ from repo_governance.config import Context, GovernanceError
 from repo_governance.gitutil import head_commit, hook_installed, is_clean, is_repository
 from repo_governance.io_atomic import write_text_atomic
 from repo_governance.models import CheckReport
-from repo_governance.pipeline import compare_generated, render_all, sync as run_sync
+from repo_governance.pipeline import compare_generated, render_all
+from repo_governance.pipeline import sync as run_sync
 
 DEFERRED_EXIT = 2
 
@@ -108,7 +108,6 @@ def _split_paths(values: tuple[str, ...]) -> list[str]:
             if normalized:
                 collected.append(normalized)
     return collected
-
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
@@ -407,7 +406,8 @@ def snapshot_mcp_connections(
     """
     from datetime import date as date_type
 
-    from repo_governance.evidence import EvidenceError, snapshot_mcp_connections as collect
+    from repo_governance.evidence import EvidenceError
+    from repo_governance.evidence import snapshot_mcp_connections as collect
 
     ctx = _context()
     try:
@@ -557,8 +557,7 @@ def sample(count: int, seed: str | None) -> None:
         raise SystemExit(1)
 
     click.echo(
-        f"Sampled {report['sampled']} of {report['pool_size']} governed application files "
-        f"(seed {report['seed'][:12]})"
+        f"Sampled {report['sampled']} of {report['pool_size']} governed application files (seed {report['seed'][:12]})"
     )
     for item in report["unreadable"]:
         click.echo(f"  unreadable: {item['path']} - {item['reason']}")
@@ -568,7 +567,9 @@ def sample(count: int, seed: str | None) -> None:
         click.echo(f"    evidence: {item['evidence']}")
 
     if report["mismatches"]:
-        click.echo(f"{len(report['mismatches'])} claim(s) disagree with the territory - each is an evaluation-record candidate.")
+        click.echo(
+            f"{len(report['mismatches'])} claim(s) disagree with the territory - each is an evaluation-record candidate."
+        )
         raise SystemExit(1)
     click.echo("Every sampled file agrees with the claims the manifests make about it.")
 
@@ -592,9 +593,17 @@ def coverage() -> None:
         f"({report['coverage_percent']}%)"
     )
     for label, items, repair in (
-        ("Orphans (tracked, matched by nothing)", report["orphans"], "annotate the directory or add to [gate] always_allow"),
+        (
+            "Orphans (tracked, matched by nothing)",
+            report["orphans"],
+            "annotate the directory or add to [gate] always_allow",
+        ),
         ("Ghosts (promised, absent on disk)", report["ghosts"], "fix the ownership glob or catalog entry"),
-        ("Rule-scope drift (RULE_SCOPES vs .claude/rules/)", report["rules_drift"], "align renderers/context.py with the files on disk"),
+        (
+            "Rule-scope drift (RULE_SCOPES vs .claude/rules/)",
+            report["rules_drift"],
+            "align renderers/context.py with the files on disk",
+        ),
     ):
         if items:
             click.echo(f"{label} — {repair}:")
@@ -638,7 +647,9 @@ def skills_check(strict: bool) -> None:
         click.echo("Every citation resolves: paths, Make targets, and validator IDs all exist.")
         return
     if strict:
-        click.echo(f"{count} finding(s) - each is a citation to something that does not exist. Fix the text or the territory.")
+        click.echo(
+            f"{count} finding(s) - each is a citation to something that does not exist. Fix the text or the territory."
+        )
         raise SystemExit(1)
     click.echo(f"{count} finding(s), advisory run - the default is strict and CI will fail on these.")
 

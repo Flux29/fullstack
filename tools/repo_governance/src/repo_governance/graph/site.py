@@ -56,10 +56,7 @@ def build_site_chains(ctx: Context) -> list[PageChain]:
     #: Normalized frontend path -> (handler file, backend templates).
     by_frontend_path: dict[str, tuple[str, set[str]]] = {}
     for route in proxy_routes:
-        templates = {
-            normalize_template(target.get("path_template", ""))
-            for target in route.get("backend_targets", [])
-        }
+        templates = {normalize_template(target.get("path_template", "")) for target in route.get("backend_targets", [])}
         by_frontend_path[normalize_template(route.get("frontend_path", ""))] = (route["file"], templates)
 
     #: Normalized backend path -> route modules.
@@ -68,11 +65,7 @@ def build_site_chains(ctx: Context) -> list[PageChain]:
         modules_by_template.setdefault(normalize_template(api_route.path), set()).add(api_route.module)
 
     #: Modules whose text names the WS endpoint — the consumers of the documented exception.
-    ws_modules = {
-        module
-        for module in ts_graph.modules
-        if _module_mentions(ctx, module, ws_endpoint)
-    }
+    ws_modules = {module for module in ts_graph.modules if _module_mentions(ctx, module, ws_endpoint)}
 
     chains: list[PageChain] = []
     for page in pages:
@@ -81,9 +74,7 @@ def build_site_chains(ctx: Context) -> list[PageChain]:
         frontier = {page_file}
         for _ in range(FORWARD_WAVES):
             frontier = {
-                edge.dst
-                for edge in ts_graph.edges
-                if edge.src in frontier and edge.kind in RUNTIME_KINDS
+                edge.dst for edge in ts_graph.edges if edge.src in frontier and edge.kind in RUNTIME_KINDS
             } - closure
             closure |= frontier
 
@@ -106,11 +97,7 @@ def build_site_chains(ctx: Context) -> list[PageChain]:
             else:
                 chain.unmatched_paths.append(called)
 
-        modules = {
-            module
-            for template in backend_templates
-            for module in modules_by_template.get(template, set())
-        }
+        modules = {module for template in backend_templates for module in modules_by_template.get(template, set())}
         chain.backend_modules = sorted(module for module in modules if python.path_for_module(module))
         chain.proxy_handlers = sorted(set(chain.proxy_handlers))
         chain.server_calls = sorted(set(chain.server_calls))

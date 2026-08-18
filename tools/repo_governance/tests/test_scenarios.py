@@ -43,8 +43,7 @@ def test_scenario_corpus_covers_both_kinds() -> None:
 
 def test_scenario_expected_ids_resolve_against_governance_documents(real_context: Context) -> None:
     components = {
-        component["id"]
-        for component in read_json(real_context.paths.effective_repository).get("components", [])
+        component["id"] for component in read_json(real_context.paths.effective_repository).get("components", [])
     }
     validators = validator_ids(real_context)
     rules = {rule.id for rule in iter_rules(real_context)}

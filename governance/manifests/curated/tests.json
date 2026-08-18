@@ -21,6 +21,13 @@
       "location": "backend/pyproject.toml [tool.coverage.report] fail_under"
     },
     {
+      "surface": "governance-tool",
+      "kind": "line",
+      "value": 75,
+      "basis": "Ratchet against 76.6 percent measured on 2026-08-18 when coverage was first enabled for tools/repo_governance (74 before the new_file_gate and coverage-ratchet tests landed in the same session). Raise it when real tests land; never lower it to make a red build green.",
+      "location": "tools/repo_governance/pyproject.toml [tool.coverage.report] fail_under"
+    },
+    {
       "surface": "frontend",
       "kind": "statements",
       "value": 3,
@@ -120,7 +127,7 @@
       "validator": "governance-selftest",
       "gated_by": [],
       "requires": [],
-      "notes": "Determinism, idempotence including across processes, schema validity, and one test per kernel rule asserting it fires on the condition it exists to catch."
+      "notes": "Determinism, idempotence including across processes, schema validity, one test per kernel rule asserting it fires on the condition it exists to catch, and the three .claude/hooks scripts. Runs under coverage with a ratcheted floor; CI uploads it as the governance Codecov flag."
     }
   ],
   "invariant_coverage": [

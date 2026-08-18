@@ -25,6 +25,8 @@ governance = "repo_governance.cli:main"
 [dependency-groups]
 dev = [
     "pytest>=8.3",
+    "pytest-cov>=6.1",
+    "ruff>=0.15",
 ]
 
 [build-system]
@@ -38,9 +40,24 @@ packages = ["src/repo_governance"]
 testpaths = ["tests"]
 addopts = "-q"
 
+[tool.coverage.run]
+source = ["repo_governance"]
+
+[tool.coverage.report]
+# Ratcheted floor: 76.6 percent measured on 2026-08-18 when coverage was first enabled for
+# this tool (74 before the new_file_gate and coverage-ratchet tests landed in the same
+# session). Set one point under the measured value to absorb display rounding. Raise it
+# only alongside real new tests; never lower it. The coverage-floor-does-not-regress check
+# reads this value.
+fail_under = 75
+show_missing = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
+# As in backend/pyproject.toml: ruff format owns line length for code; E501 would only
+# fire on long strings and comments, which wrapping makes harder to read, not easier.
+ignore = ["E501"]

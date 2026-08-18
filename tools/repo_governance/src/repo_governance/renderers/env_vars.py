@@ -69,9 +69,7 @@ def _row(variable: dict[str, Any]) -> str:
             alias_note += f" Removal: {milestone}."
         description = f"{alias_note} {description}".strip()
 
-    return (
-        f"| `{name}` | {_required(variable.get('required'))} | {default} | {classes} | {_cell(description)} |"
-    )
+    return f"| `{name}` | {_required(variable.get('required'))} | {default} | {classes} | {_cell(description)} |"
 
 
 def render_env_vars(ctx: Context, configuration: dict[str, Any]) -> str:
@@ -99,11 +97,7 @@ def render_env_vars(ctx: Context, configuration: dict[str, Any]) -> str:
             parts.append("\n".join(rows))
             parts.append("\n")
 
-    remaining = [
-        by_name[name]
-        for name in sorted(by_name)
-        if name not in rendered
-    ]
+    remaining = [by_name[name] for name in sorted(by_name) if name not in rendered]
     if remaining:
         parts.append("\n## Declared elsewhere\n")
         parts.append(

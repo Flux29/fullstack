@@ -77,9 +77,7 @@ def test_real_tree_risk_join_ranks_covered_gaps_by_centrality(real_context: Cont
 
 
 def test_real_tree_hotspots_report_is_deterministic(real_context: Context) -> None:
-    assert canonical_json(build_hotspots_report(real_context)) == canonical_json(
-        build_hotspots_report(real_context)
-    )
+    assert canonical_json(build_hotspots_report(real_context)) == canonical_json(build_hotspots_report(real_context))
 
 
 def test_churn_report_is_cache_material_sorted_by_hotspot(real_context: Context) -> None:

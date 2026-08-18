@@ -30,12 +30,7 @@ def _active_exception_scopes(scope: CheckScope) -> list[str]:
         entries = read_json(path).get("exceptions", [])
     except ValueError:
         return []
-    return [
-        scoped
-        for entry in entries
-        if entry.get("status") == "active"
-        for scoped in entry.get("scope", [])
-    ]
+    return [scoped for entry in entries if entry.get("status") == "active" for scoped in entry.get("scope", [])]
 
 
 def _excused(path: str, exception_scopes: list[str]) -> bool:
@@ -86,10 +81,7 @@ def check_forbidden_dependencies(scope: CheckScope) -> list[Issue]:
     graph = get_import_graph(scope.ctx)
     manifest, _ = build_components(scope.ctx)
     components = manifest["components"]
-    forbidden_by_id = {
-        component["id"]: set(component.get("forbidden_dependencies", []))
-        for component in components
-    }
+    forbidden_by_id = {component["id"]: set(component.get("forbidden_dependencies", [])) for component in components}
 
     owner_cache: dict[str, str | None] = {}
 
@@ -111,10 +103,7 @@ def check_forbidden_dependencies(scope: CheckScope) -> list[Issue]:
         if dst_component in forbidden_by_id.get(src_component, set()):
             issues.append(
                 Issue(
-                    message=(
-                        f"Component {src_component!r} imports {dst_component!r}, "
-                        "which its declaration forbids."
-                    ),
+                    message=(f"Component {src_component!r} imports {dst_component!r}, which its declaration forbids."),
                     path=graph.path_for_module(edge.src),
                     evidence=f"{edge.src} imports {edge.dst} at line {edge.line}.",
                     repair="Remove the dependency, or revise the declared boundary in a governed change.",
@@ -129,11 +118,7 @@ def _thick_domains(scope: CheckScope) -> list[str]:
     services_dir = scope.ctx.repo_root / SERVICES_DIR
     if not services_dir.is_dir():
         return []
-    return sorted(
-        entry.name
-        for entry in services_dir.iterdir()
-        if entry.is_dir() and entry.name not in EXCLUDED_DIRS
-    )
+    return sorted(entry.name for entry in services_dir.iterdir() if entry.is_dir() and entry.name not in EXCLUDED_DIRS)
 
 
 def check_dependency_cycles(scope: CheckScope) -> list[Issue]:
@@ -152,10 +137,7 @@ def check_dependency_cycles(scope: CheckScope) -> list[Issue]:
             severity = "import-time" if entry["import_time"] else "deferred-import"
             issues.append(
                 Issue(
-                    message=(
-                        f"{len(entry['modules'])} {language} modules form a dependency cycle "
-                        f"({severity})."
-                    ),
+                    message=(f"{len(entry['modules'])} {language} modules form a dependency cycle ({severity})."),
                     path="governance/graph/reports/cycles.json",
                     evidence=" <-> ".join(entry["modules"]),
                     repair=(
@@ -185,8 +167,7 @@ def check_orphans(scope: CheckScope) -> list[Issue]:
         issues.append(
             Issue(
                 message=(
-                    f"{len(orphans)} {language} module(s) have no importer and no "
-                    "classification that explains it."
+                    f"{len(orphans)} {language} module(s) have no importer and no classification that explains it."
                 ),
                 path="governance/graph/reports/orphans.json",
                 evidence=", ".join(orphans),
@@ -216,9 +197,7 @@ def check_broken_site_chains(scope: CheckScope) -> list[Issue]:
     issues: list[Issue] = []
     for chain in build_site_chains(scope.ctx):
         unexcused = [
-            path
-            for path in chain.unmatched_paths
-            if not _excused(f"{chain.file} calls {path}", exception_scopes)
+            path for path in chain.unmatched_paths if not _excused(f"{chain.file} calls {path}", exception_scopes)
         ]
         if not unexcused:
             continue
@@ -227,10 +206,7 @@ def check_broken_site_chains(scope: CheckScope) -> list[Issue]:
                 message=f"Page {chain.route} calls {len(unexcused)} API path(s) that nothing serves.",
                 path=chain.file,
                 evidence=", ".join(unexcused),
-                repair=(
-                    "Delete the dead call, add the missing proxy handler or backend route, "
-                    "or fix the path."
-                ),
+                repair=("Delete the dead call, add the missing proxy handler or backend route, or fix the path."),
             )
         )
     return issues

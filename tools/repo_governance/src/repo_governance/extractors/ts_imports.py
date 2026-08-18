@@ -169,7 +169,7 @@ def build_ts_import_graph(ctx: Context, *, package_dir: str = PACKAGE_DIR) -> Im
             unknowns.append(f"{rel}: {error}")
             continue
 
-        def line_of(offset: int) -> int:
+        def line_of(offset: int, text: str = text) -> int:
             return text.count("\n", 0, offset) + 1
 
         for pattern in (STATIC_FROM, EXPORT_FROM):

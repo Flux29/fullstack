@@ -68,8 +68,8 @@
       "statement": "Coverage floors are ratchets: they may rise with real tests and must never be lowered to make a failing build pass.",
       "rationale": "The generator shipped 100 percent thresholds against roughly 55 and 4 percent actuals, so the gate had never once passed. A floor at the measured level catches regressions, which is what a gate is for.",
       "maturity": "advisory",
-      "check_impl": "phase-5",
-      "promotion_criteria": "The CI job compares the floor against the previous commit's value.",
+      "check_impl": "checks.process.check_coverage_floor_ratchet",
+      "promotion_criteria": "The check compares every floor source (backend and governance-tool pyproject fail_under, frontend vitest thresholds) against the CI base commit and fails a decrease unless a change record names this rule. Promote to warning after ten governed changes without a false positive; to blocking after ten more.",
       "exceptions_allowed": true,
       "exception_refs": ["coverage-floors-are-ratchets"]
     },

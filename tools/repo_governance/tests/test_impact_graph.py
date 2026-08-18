@@ -50,9 +50,7 @@ def test_analyse_impact_notes_fallback_when_graph_unavailable(
     assert "backend-api" in result.components, "the manifest-declared radius must survive the fallback"
 
 
-def test_analyse_impact_notes_truncation_at_node_bound(
-    real_context: Context, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_analyse_impact_notes_truncation_at_node_bound(real_context: Context, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("repo_governance.renderers.context.GRAPH_EXPANSION_MAX_NODES", 1)
     result = analyse_impact(real_context, ["backend/app/services/rag/config.py"])
     assert len(result.graph_files) == 1

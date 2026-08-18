@@ -193,9 +193,7 @@ def _write_snapshot(
             "connections_exposing_every_advertised_tool": ungated,
         },
         "by_configuration": rows,
-        "by_host": [
-            {"host": sanitize_host(host), "connections": count} for host, count in hosts
-        ],
+        "by_host": [{"host": sanitize_host(host), "connections": count} for host, count in hosts],
         "notes": [
             "Aggregates only; no row was read. URLs were reduced to host at capture time.",
             "A connection with allowed_tools unset exposes every tool its server advertises, "

@@ -164,9 +164,7 @@ def check_orm_migration_pairing(scope: CheckScope) -> list[Issue]:
             )
         ]
 
-    models_changed = [
-        path for path in changed if path.startswith("backend/app/db/models/") and path.endswith(".py")
-    ]
+    models_changed = [path for path in changed if path.startswith("backend/app/db/models/") and path.endswith(".py")]
     if not models_changed:
         return []
     if any(path.startswith("backend/alembic/versions/") for path in changed):

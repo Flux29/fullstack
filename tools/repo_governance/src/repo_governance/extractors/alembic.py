@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import ast
 from dataclasses import dataclass, field
-from pathlib import Path
 
 from repo_governance.config import Context, iter_files
 

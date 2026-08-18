@@ -44,10 +44,7 @@ def build_catalog(ctx: Context, generated_paths: frozenset[str]) -> dict:
     for spec in ctx.config.catalog_spec:
         path = spec["path"]
         target = ctx.repo_root / path.rstrip("/")
-        if path in generated_paths:
-            exists = True
-        else:
-            exists = target.is_dir() if path.endswith("/") else target.is_file()
+        exists = path in generated_paths or (target.is_dir() if path.endswith("/") else target.is_file())
         if not exists:
             continue
         entries.append(
@@ -109,10 +106,9 @@ def render_all(ctx: Context) -> dict[str, str]:
     outputs[INTERFACES_PATH] = canonical_json(interfaces)
     outputs[DECISION_INDEX_PATH] = canonical_json(decision_index)
 
+    from repo_governance.graph.algorithms import build_hotspots_report
     from repo_governance.graph.queries import build_cycles_report, build_orphans_report
     from repo_governance.graph.site import build_boundaries_report
-
-    from repo_governance.graph.algorithms import build_hotspots_report
 
     outputs[CYCLES_REPORT_PATH] = canonical_json(build_cycles_report(ctx))
     outputs[ORPHANS_REPORT_PATH] = canonical_json(build_orphans_report(ctx))

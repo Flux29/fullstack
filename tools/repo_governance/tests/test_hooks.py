@@ -135,9 +135,7 @@ def test_grep_of_one_named_corpus_file_is_allowed_even_in_deny_mode(gate, monkey
     record.parent.mkdir(parents=True, exist_ok=True)
     record.write_text("{}", encoding="utf-8")
 
-    output = _run_gate(
-        gate, monkeypatch, capsys, _grep("governance/history/changes/2026-01-01-x.json"), mode="deny"
-    )
+    output = _run_gate(gate, monkeypatch, capsys, _grep("governance/history/changes/2026-01-01-x.json"), mode="deny")
 
     assert _decision(output) == "allow"
 
@@ -249,7 +247,9 @@ def test_a_change_session_start_also_unlocks(gate, monkeypatch, capsys) -> None:
 
 
 def test_the_cli_change_start_form_also_unlocks(gate, monkeypatch, capsys) -> None:
-    _record_context(gate, monkeypatch, "uv run --project tools/repo_governance governance change start --summary a --reason b")
+    _record_context(
+        gate, monkeypatch, "uv run --project tools/repo_governance governance change start --summary a --reason b"
+    )
     capsys.readouterr()
     output = _run_gate(gate, monkeypatch, capsys, _grep("backend"))
     assert _decision(output) == "allow"
@@ -482,6 +482,103 @@ def test_touched_ignores_paths_outside_the_repository(touched, monkeypatch, tmp_
     event = {"session_id": "s1", "tool_name": "Write", "tool_input": {"file_path": outside}}
     _run_touched(touched, monkeypatch, event)
     assert not (tmp_path / "state" / "s1" / "touched.jsonl").exists()
+
+
+# --- the new-file gate ------------------------------------------------------------------
+
+
+@pytest.fixture
+def new_file_gate(repo_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """The real new-file gate, pointed at a synthetic repository root."""
+    module = _load_script(repo_root, "new_file_gate.py")
+    fake_root = tmp_path / "repo"
+    fake_root.mkdir()
+    monkeypatch.setattr(module, "_repo_root", lambda: str(fake_root))
+    return module, fake_root
+
+
+def _run_new_file_gate(module, monkeypatch, capsys, payload) -> dict:
+    text = payload if isinstance(payload, str) else json.dumps(payload)
+    monkeypatch.setattr(sys, "stdin", io.StringIO(text))
+    module.main()
+    return json.loads(capsys.readouterr().out)["hookSpecificOutput"]
+
+
+def _write_event(path: str, tool: str = "Write", key: str = "file_path") -> dict:
+    return {"session_id": "s1", "tool_name": tool, "tool_input": {key: path}}
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "governance/history/changes/2026-08-18-x.json",
+        "backend/alembic/versions/0029_thing.py",
+        "backend/tests/test_thing.py",
+        "tools/repo_governance/tests/test_thing.py",
+        "frontend/e2e/thing.spec.ts",
+        "docs/howto/thing.md",
+        ".claude/skills/new-skill/SKILL.md",
+        "frontend/src/lib/thing.test.ts",
+        "frontend/src/components/thing.spec.tsx",
+    ],
+)
+def test_new_file_gate_allows_where_new_files_are_the_norm(new_file_gate, monkeypatch, capsys, relative) -> None:
+    module, root = new_file_gate
+    decision = _run_new_file_gate(module, monkeypatch, capsys, _write_event(str(root / relative)))
+    assert decision["permissionDecision"] == "allow"
+
+
+@pytest.mark.parametrize(
+    "relative",
+    ["frontend/src/lib/thing.ts", "backend/app/services/thing.py", ".claude/hooks/another_gate.py", "scratch.py"],
+)
+def test_new_file_gate_asks_for_a_genuinely_new_file(new_file_gate, monkeypatch, capsys, relative) -> None:
+    module, root = new_file_gate
+    decision = _run_new_file_gate(module, monkeypatch, capsys, _write_event(str(root / relative)))
+    assert decision["permissionDecision"] == "ask"
+    assert relative in decision["permissionDecisionReason"]
+
+
+def test_new_file_gate_allows_an_existing_file(new_file_gate, monkeypatch, capsys) -> None:
+    module, root = new_file_gate
+    existing = root / "backend" / "app" / "services" / "thing.py"
+    existing.parent.mkdir(parents=True)
+    existing.write_text("", encoding="utf-8")
+    decision = _run_new_file_gate(module, monkeypatch, capsys, _write_event(str(existing)))
+    assert decision["permissionDecision"] == "allow"
+
+
+def test_new_file_gate_reads_notebook_path_for_notebook_edits(new_file_gate, monkeypatch, capsys) -> None:
+    """NotebookEdit carries notebook_path; reading only file_path would allow every notebook write."""
+    module, root = new_file_gate
+    event = _write_event(
+        str(root / "backend" / "notebooks" / "explore.ipynb"), tool="NotebookEdit", key="notebook_path"
+    )
+    decision = _run_new_file_gate(module, monkeypatch, capsys, event)
+    assert decision["permissionDecision"] == "ask"
+
+
+def test_new_file_gate_allows_the_session_scratchpad_but_asks_elsewhere_outside(
+    new_file_gate, monkeypatch, capsys, tmp_path
+) -> None:
+    module, _root = new_file_gate
+    scratch = tmp_path / "Temp" / "claude" / "session" / "scratchpad" / "notes.md"
+    assert _run_new_file_gate(module, monkeypatch, capsys, _write_event(str(scratch)))["permissionDecision"] == "allow"
+    elsewhere = tmp_path / "elsewhere" / "notes.md"
+    decision = _run_new_file_gate(module, monkeypatch, capsys, _write_event(str(elsewhere)))
+    assert decision["permissionDecision"] == "ask"
+    assert "outside the repository" in decision["permissionDecisionReason"]
+
+
+def test_new_file_gate_allows_when_the_event_names_no_path(new_file_gate, monkeypatch, capsys) -> None:
+    module, _root = new_file_gate
+    event = {"session_id": "s1", "tool_name": "Write", "tool_input": {}}
+    assert _run_new_file_gate(module, monkeypatch, capsys, event)["permissionDecision"] == "allow"
+
+
+def test_new_file_gate_fails_open_on_malformed_input(new_file_gate, monkeypatch, capsys) -> None:
+    module, _root = new_file_gate
+    assert _run_new_file_gate(module, monkeypatch, capsys, "{not json")["permissionDecision"] == "allow"
 
 
 # --- latency: the reason the gate is a stdlib script -----------------------------------

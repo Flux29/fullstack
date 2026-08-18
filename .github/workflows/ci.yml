@@ -58,14 +58,32 @@ jobs:
       - name: Install backend (for the sanitized OpenAPI export)
         run: uv sync --directory backend --dev
 
+      # The process checks (change records, policy weakening, coverage-floor ratchet)
+      # compare against a base commit. Locally that is HEAD; on a clean CI checkout HEAD
+      # is the change itself, so they would have nothing to evaluate. Pass the real base:
+      # the PR's base sha, or the pre-push sha when it exists, else the parent commit.
+      - name: Resolve the base commit for range checks
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = pull_request ]; then
+            base="$PR_BASE"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            base="$BEFORE"
+          else
+            base=$(git rev-parse HEAD~1)
+          fi
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+          echo "base=$base"
+
       # Rebuild every generated document from the sources in a clean checkout and fail if
       # the result differs from what is committed. This is the real drift gate: a stale
       # manifest and a hand-edited one are the same condition here.
       - name: Full governance check
-        run: make governance-check ARGS="--verbose"
-
-      - name: Governance self-test
-        run: make governance-selftest
+        run: make governance-check ARGS="--verbose --since ${{ steps.base.outputs.sha }}"
 
       # Belt and braces: the check above compares rendered output against the committed
       # bytes, and this proves a real sync writes nothing new.
@@ -91,6 +109,69 @@ jobs:
       # paths, Make targets, and validator IDs that exist. Strict: stale citations fail.
       - name: Skills reference check
         run: make governance-skills-check
+
+      # Map-vs-territory: 25 files sampled with HEAD as the seed, each manifest claim about
+      # them verified against the file. The governance-sample validator.
+      - name: Manifest spot check
+        run: make governance-sample
+
+      # Every focus-free view renders from the current graph. artifacts/ is gitignored, so
+      # the pages are uploaded for review rather than diffed.
+      - name: Render governance views
+        run: make governance-views
+
+      - name: Upload governance views
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-views
+          path: artifacts/governance/
+          retention-days: 14
+          if-no-files-found: error
+
+  # The governance tool's own quality gates: ruff, and its test suite under a ratcheted
+  # coverage floor. Separate from `governance` because it needs no backend install and
+  # is the tool testing itself, not the tool testing the repository.
+  governance-tool:
+    name: Governance tool
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          version: "latest"
+          enable-cache: true
+          cache-dependency-glob: tools/repo_governance/uv.lock
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install governance tool
+        run: uv sync --project tools/repo_governance
+
+      # ruff check + ruff format --check — the governance-lint validator.
+      - name: Lint
+        run: make governance-lint
+
+      # pytest with coverage under the fail_under floor in tools/repo_governance/pyproject.toml
+      # — the governance-selftest validator.
+      - name: Self-test with coverage
+        run: make governance-selftest
+
+      # Third flag on the self-hosted instance, same opt-in as the other two.
+      - name: Upload governance-tool coverage to self-hosted Codecov
+        if: vars.CODECOV_URL != ''
+        uses: codecov/codecov-action@v5
+        with:
+          url: ${{ vars.CODECOV_URL }}
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: ${{ github.repository }}
+          files: ./tools/repo_governance/coverage.xml
+          flags: governance
+          disable_search: true
+          fail_ci_if_error: true
 
   lint:
     runs-on: ubuntu-latest
@@ -333,7 +414,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: always()
-    needs: [governance, lint, test, test-frontend, compose, security]
+    needs: [governance, governance-tool, lint, test, test-frontend, compose, security]
     steps:
       - name: Every gating job succeeded
         env:

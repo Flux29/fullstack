@@ -66,7 +66,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 95)
+## Recent changes (latest 20 of 96)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -86,6 +86,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Make prod-codecov deploy standalone with Traefik and document the Linux host command
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-make-prod-codecov-deploy-standalone-with-traefik-and-document-th.json`
+- **2026-08-18** — Lint and coverage-gate the governance tool, implement the coverage-floor ratchet check, and give CI the commit range its process checks need
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-18-lint-and-coverage-gate-the-governance-tool-implement-the-coverag.json`
 - **2026-08-18** — Document whole-file Compose interpolation for Codecov-only hosts and record the live codecov.stikkihoney.com deployment
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-document-whole-file-compose-interpolation-for-codecov-only-hosts.json`
@@ -125,9 +128,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-11-wire-the-missing-clone-route-for-rag-sync-sources-schema-and-ser.json`
-- **2026-08-11** — Wire the broken-chain rule, surface visualize, and measure the phase-7 exit
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-wire-the-broken-chain-rule-surface-visualize-and-measure-the-pha.json`
 
 ## Decisions (5)
 

@@ -156,8 +156,24 @@
     },
     {
       "id": "governance-selftest",
-      "command": "uv run --project tools/repo_governance pytest tools/repo_governance/tests",
-      "description": "The governance tool's own suite: determinism, idempotence, golden fixtures, and malformed-input handling.",
+      "command": "make governance-selftest",
+      "description": "The governance tool's own suite under coverage: determinism, idempotence, golden fixtures, malformed-input handling, and the hook scripts. The fail_under floor in tools/repo_governance/pyproject.toml is a ratchet against measured coverage.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "governance-tool"
+    },
+    {
+      "id": "governance-lint",
+      "command": "make governance-lint",
+      "description": "ruff check and ruff format --check over tools/repo_governance, with the tool's own ruff configuration.",
+      "destructive": false,
+      "requires": [],
+      "ci_job": "governance-tool"
+    },
+    {
+      "id": "governance-sample",
+      "command": "make governance-sample",
+      "description": "Map-vs-territory spot check: samples tracked files (seeded by HEAD, so reproducible) and verifies every manifest claim about them. Nonzero on any mismatch.",
       "destructive": false,
       "requires": [],
       "ci_job": "governance"

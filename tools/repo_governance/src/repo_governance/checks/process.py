@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import re
+import tomllib
 
 from repo_governance.checks import CheckScope, relative
 from repo_governance.config import iter_files
@@ -99,8 +101,7 @@ def check_governance_change_records(scope: CheckScope) -> list[Issue]:
     governed = [
         path
         for path in changed
-        if any(path.startswith(prefix) for prefix in GOVERNED_PREFIXES)
-        and not path.startswith(CHANGE_RECORD_PREFIX)
+        if any(path.startswith(prefix) for prefix in GOVERNED_PREFIXES) and not path.startswith(CHANGE_RECORD_PREFIX)
     ]
     if not governed or records:
         return []
@@ -155,9 +156,12 @@ def check_policy_weakening_recorded(scope: CheckScope) -> list[Issue]:
 
     weakened: list[tuple[str, str, str]] = []
 
+    # Compare against the CI base commit when one is given, else HEAD. Against HEAD alone
+    # this could never fire on a clean checkout, which is exactly what CI is.
+    base_ref = scope.since or "HEAD"
     for path in iter_files(ctx.paths.policies, suffixes=(".json",)):
         rel = relative(ctx, path)
-        previous_text = file_at_ref(ctx.repo_root, "HEAD", rel)
+        previous_text = file_at_ref(ctx.repo_root, base_ref, rel)
         if previous_text is None:
             continue  # New policy file; nothing to weaken.
 
@@ -302,6 +306,91 @@ def check_validator_ci_jobs(scope: CheckScope) -> list[Issue]:
                     path="governance/validators.json",
                     evidence="Without this it is impossible to tell which validators gate a merge and which are local only.",
                     repair="Set ci_job to the job name, or to null if it deliberately does not run in CI.",
+                )
+            )
+    return issues
+
+
+#: The rule a change record must name to lower a floor deliberately.
+COVERAGE_RATCHET_RULE = "coverage-floor-does-not-regress"
+
+#: A coverage-floor source: repo-relative path and a function from its text to {name: floor}.
+COVERAGE_FLOOR_SOURCES: tuple[tuple[str, str], ...] = (
+    ("backend/pyproject.toml", "pyproject"),
+    ("tools/repo_governance/pyproject.toml", "pyproject"),
+    ("frontend/vitest.config.ts", "vitest"),
+)
+
+_VITEST_THRESHOLDS = re.compile(r"thresholds\s*:\s*\{(?P<body>[^}]*)\}", re.DOTALL)
+_VITEST_FLOOR = re.compile(r"\b(statements|branches|functions|lines)\s*:\s*(\d+(?:\.\d+)?)")
+
+
+def _coverage_floors(kind: str, text: str) -> dict[str, float]:
+    """The floors a coverage-config file declares, by name. Unparseable text yields {}."""
+    if kind == "pyproject":
+        try:
+            document = tomllib.loads(text)
+        except tomllib.TOMLDecodeError:
+            return {}
+        value = document.get("tool", {}).get("coverage", {}).get("report", {}).get("fail_under")
+        return {"fail_under": float(value)} if isinstance(value, int | float) else {}
+    if kind == "vitest":
+        match = _VITEST_THRESHOLDS.search(text)
+        if match is None:
+            return {}
+        return {name: float(number) for name, number in _VITEST_FLOOR.findall(match.group("body"))}
+    return {}
+
+
+def check_coverage_floor_ratchet(scope: CheckScope) -> list[Issue]:
+    """A coverage floor never moves down unless a change record names the ratchet rule.
+
+    Floors are ratchets against measured coverage; lowering one is how a red build gets
+    made green without a test being written. Each floor source is compared with its
+    content at the CI base commit (or HEAD locally); a decrease is an issue unless a change
+    record in the change set names the rule, the same escape hatch policy weakening uses.
+    """
+    ctx = scope.ctx
+    _changed, records, known = _change_set(scope)
+    if not known:
+        return []  # check_governance_change_records already reports git being unavailable.
+    base_ref = scope.since or "HEAD"
+
+    record_text = ""
+    for path in records:
+        target = ctx.repo_root / path
+        if target.is_file():
+            record_text += target.read_text(encoding="utf-8")
+    if COVERAGE_RATCHET_RULE in record_text:
+        return []
+
+    issues: list[Issue] = []
+    for rel, kind in COVERAGE_FLOOR_SOURCES:
+        current_path = ctx.repo_root / rel
+        if not current_path.is_file():
+            continue
+        previous_text = file_at_ref(ctx.repo_root, base_ref, rel)
+        if previous_text is None:
+            continue  # New file; nothing to regress from.
+        before = _coverage_floors(kind, previous_text)
+        after = _coverage_floors(kind, current_path.read_text(encoding="utf-8"))
+        for name, old_floor in before.items():
+            new_floor = after.get(name)
+            if new_floor is None:
+                lowered = f"{name} removed (was {old_floor:g})"
+            elif new_floor < old_floor:
+                lowered = f"{name} {old_floor:g} -> {new_floor:g}"
+            else:
+                continue
+            issues.append(
+                Issue(
+                    message=f"Coverage floor lowered in {rel} without a change record naming {COVERAGE_RATCHET_RULE!r}.",
+                    path=rel,
+                    evidence=lowered,
+                    repair=(
+                        "Raise the floor back, or record the lowering deliberately: a change record that names "
+                        f"{COVERAGE_RATCHET_RULE} and says why the measured value fell."
+                    ),
                 )
             )
     return issues

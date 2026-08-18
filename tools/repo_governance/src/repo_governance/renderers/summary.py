@@ -107,9 +107,7 @@ def render_summary(
     exceptions_path = ctx.paths.curated_manifests / "exceptions.json"
     if exceptions_path.is_file():
         active = [
-            entry
-            for entry in read_json(exceptions_path).get("exceptions", [])
-            if entry.get("status") == "active"
+            entry for entry in read_json(exceptions_path).get("exceptions", []) if entry.get("status") == "active"
         ]
         parts.append(f"\n## Accepted exceptions ({len(active)})\n\n")
         for entry in sorted(active, key=lambda item: item["id"]):

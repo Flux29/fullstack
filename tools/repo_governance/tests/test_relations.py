@@ -31,8 +31,8 @@ def test_route_paths_are_qualified_through_the_v1_registry(minimal_repo: Path) -
     _write(
         minimal_repo,
         f"{V1}/__init__.py",
-        "v1_router.include_router(sessions.router, prefix=\"/sessions\", tags=[\"sessions\"])\n"
-        "v1_router.include_router(health.router, tags=[\"health\"])\n",
+        'v1_router.include_router(sessions.router, prefix="/sessions", tags=["sessions"])\n'
+        'v1_router.include_router(health.router, tags=["health"])\n',
     )
     _write(
         minimal_repo,
@@ -50,7 +50,7 @@ def test_route_paths_are_qualified_through_the_v1_registry(minimal_repo: Path) -
 
 
 def test_websocket_decorator_is_a_route_with_websocket_method(minimal_repo: Path) -> None:
-    _write(minimal_repo, f"{V1}/__init__.py", "v1_router.include_router(agent.router, tags=[\"agent\"])\n")
+    _write(minimal_repo, f"{V1}/__init__.py", 'v1_router.include_router(agent.router, tags=["agent"])\n')
     _write(minimal_repo, f"{V1}/agent.py", '@router.websocket("/ws/agent")\nasync def ws(): ...\n')
 
     relations = _relations(minimal_repo)
@@ -67,7 +67,7 @@ def test_module_missing_from_the_registry_is_recorded_not_misnamed(minimal_repo:
 
 def test_non_literal_route_path_is_an_unknown(minimal_repo: Path) -> None:
     _write(minimal_repo, f"{V1}/__init__.py", "v1_router.include_router(dyn.router)\n")
-    _write(minimal_repo, f"{V1}/dyn.py", '@router.get(PATH)\nasync def x(): ...\n')
+    _write(minimal_repo, f"{V1}/dyn.py", "@router.get(PATH)\nasync def x(): ...\n")
 
     relations = _relations(minimal_repo)
     assert relations.api_routes == ()
@@ -137,7 +137,7 @@ def test_router_own_prefix_concatenates_with_registry_prefix(minimal_repo: Path)
     """FastAPI mounts at include-prefix + router-prefix; files.py carries its whole
     prefix on the router itself, which extraction misread until the site-chain join
     produced zero backend matches for it."""
-    _write(minimal_repo, f"{V1}/__init__.py", "v1_router.include_router(files.router, tags=[\"files\"])\n")
+    _write(minimal_repo, f"{V1}/__init__.py", 'v1_router.include_router(files.router, tags=["files"])\n')
     _write(
         minimal_repo,
         f"{V1}/files.py",

@@ -421,16 +421,8 @@ def analyse_read_surface_coverage(ctx: Context) -> dict[str, Any]:
     orphans = sorted(path for path in considered if not covered(path))
 
     ghosts = sorted(
-        {
-            item
-            for item in surface["repo"]["exact_files"]
-            if not (ctx.repo_root / item).is_file()
-        }
-        | {
-            item
-            for item in surface["repo"]["dir_prefixes"]
-            if not (ctx.repo_root / item.rstrip("/")).is_dir()
-        }
+        {item for item in surface["repo"]["exact_files"] if not (ctx.repo_root / item).is_file()}
+        | {item for item in surface["repo"]["dir_prefixes"] if not (ctx.repo_root / item.rstrip("/")).is_dir()}
     )
 
     declared_rules = {rule_file for rule_file, _ in RULE_SCOPES}

@@ -107,9 +107,7 @@ def _expand_with_import_graph(ctx: Context, paths: list[str]) -> tuple[list[str]
         importers, truncated = graph.reverse_closure(
             expansion_seeds, max_depth=GRAPH_EXPANSION_DEPTH, max_nodes=GRAPH_EXPANSION_MAX_NODES
         )
-        graph_files = sorted(
-            {file for module in importers if (file := graph.path_for_module(module)) is not None}
-        )
+        graph_files = sorted({file for module in importers if (file := graph.path_for_module(module)) is not None})
         notes.append(
             f"Import graph: {len(graph_files)} module(s) import the changed backend modules "
             f"(depth <= {GRAPH_EXPANSION_DEPTH})."
@@ -189,9 +187,7 @@ def _expand_with_site_chain(ctx: Context, paths: list[str]) -> tuple[list[str], 
     calling = set(seeds)
     frontier = set(seeds)
     for _ in range(2):
-        frontier = {
-            edge.dst for edge in graph.edges if edge.src in frontier and edge.kind in RUNTIME_KINDS
-        } - calling
+        frontier = {edge.dst for edge in graph.edges if edge.src in frontier and edge.kind in RUNTIME_KINDS} - calling
         calling |= frontier
 
     called = called_api_paths(ctx, sorted(calling))
@@ -247,9 +243,9 @@ def owner_of(components: list[dict[str, Any]], path: str) -> str | None:
     best: tuple[int, str] | None = None
     for component in components:
         for pattern in component.get("owns", []):
-            if fnmatch.fnmatch(path, pattern) or path.startswith(pattern.rstrip("*")):
-                if best is None or len(pattern) > best[0]:
-                    best = (len(pattern), component["id"])
+            matches = fnmatch.fnmatch(path, pattern) or path.startswith(pattern.rstrip("*"))
+            if matches and (best is None or len(pattern) > best[0]):
+                best = (len(pattern), component["id"])
     return best[1] if best else None
 
 
@@ -286,9 +282,7 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
     frontier = set(seeds)
     for _ in range(max(depth, 0)):
         nextwave = {
-            component["id"]
-            for component in components
-            if set(component.get("allowed_dependencies", [])) & frontier
+            component["id"] for component in components if set(component.get("allowed_dependencies", [])) & frontier
         }
         frontier = nextwave - reached
         reached |= nextwave
@@ -296,9 +290,7 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
             break
 
     configuration = {
-        name
-        for component_id in reached
-        for name in by_id.get(component_id, {}).get("configuration_refs", [])
+        name for component_id in reached for name in by_id.get(component_id, {}).get("configuration_refs", [])
     }
     # A variable shared with another component pulls that component in too: changing a
     # variable's meaning affects everything that reads it.
@@ -344,11 +336,7 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
         }
     )
     result.validators = sorted(
-        {
-            validator
-            for component_id in reached
-            for validator in by_id.get(component_id, {}).get("validation", [])
-        }
+        {validator for component_id in reached for validator in by_id.get(component_id, {}).get("validation", [])}
     )
     result.decisions = sorted(
         {ref for component_id in reached for ref in by_id.get(component_id, {}).get("decision_refs", [])}
@@ -371,7 +359,9 @@ def rules_for(paths: list[str]) -> list[str]:
     """Convention files that apply, as references. Their content is never restated here."""
     applicable = []
     for rule_file, scopes in RULE_SCOPES:
-        if any(fnmatch.fnmatch(path, scope) or path.startswith(scope.rstrip("*")) for path in paths for scope in scopes):
+        if any(
+            fnmatch.fnmatch(path, scope) or path.startswith(scope.rstrip("*")) for path in paths for scope in scopes
+        ):
             applicable.append(rule_file)
     return applicable
 
@@ -422,8 +412,7 @@ def render_context(ctx: Context, paths: list[str], task: str | None, token_budge
                 "proxy",
                 "\n## Proxy handlers in the chain\n\n"
                 "Every REST call from the browser passes through these. An API change is not "
-                "complete until they are updated too.\n\n"
-                + "".join(f"- `{item}`\n" for item in impact.proxy_routes),
+                "complete until they are updated too.\n\n" + "".join(f"- `{item}`\n" for item in impact.proxy_routes),
             )
         )
 
@@ -434,9 +423,7 @@ def render_context(ctx: Context, paths: list[str], task: str | None, token_budge
         sections.append(
             (
                 "configuration",
-                "\n## Configuration referenced\n\n"
-                + ", ".join(f"`{name}`" for name in impact.configuration)
-                + "\n",
+                "\n## Configuration referenced\n\n" + ", ".join(f"`{name}`" for name in impact.configuration) + "\n",
             )
         )
 
@@ -517,9 +504,7 @@ def _related_history(ctx: Context, components: list[str], limit: int = 3) -> str
             matches.append(record)
 
     matches.sort(key=lambda item: item.get("date", ""), reverse=True)
-    return "".join(
-        f"- **{record['date']}** {record['summary']} (`{record['id']}`)\n" for record in matches[:limit]
-    )
+    return "".join(f"- **{record['date']}** {record['summary']} (`{record['id']}`)\n" for record in matches[:limit])
 
 
 def render_explain(ctx: Context, component_id: str) -> str:

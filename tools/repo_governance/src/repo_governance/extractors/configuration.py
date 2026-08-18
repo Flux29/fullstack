@@ -209,9 +209,11 @@ def extract_configuration(ctx: Context) -> dict[str, Any]:
         if name in compose_refs.names():
             declared_in.append("docker-compose.yml")
 
-        if name.startswith("NEXT_PUBLIC_"):
-            surface = "frontend"
-        elif name in frontend_template.entries or (name in process_env and not setting):
+        if (
+            name.startswith("NEXT_PUBLIC_")
+            or name in frontend_template.entries
+            or (name in process_env and not setting)
+        ):
             surface = "frontend"
         elif setting or name in backend_template.entries:
             surface = "backend"

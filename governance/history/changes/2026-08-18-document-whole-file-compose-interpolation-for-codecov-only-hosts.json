@@ -1,0 +1,59 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "MANUAL_STEPS.md Linux-host bullet now states that Compose interpolates the whole file stack before selecting services, names POSTGRES_PASSWORD, REDIS_PASSWORD, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD as the :? guards on app/db/redis/minio, tells a Codecov-only operator to set all four in backend/.env as commented dummies, quotes the Compose failure text, and says compose-check cannot catch the omission because it passes its own validation values for exactly these variables",
+    "Live deployment result (deferred by 2026-08-18-make-prod-codecov-deploy-standalone-with-traefik-and-document-th): codecov.stikkihoney.com is deployed on a Hetzner CPX22 (2.29.2.196, Ubuntu, 3.8 GB) at 7a1bda9 with the documented Linux command. The first attempt failed exactly on the missing four variables and succeeded after adding them with a comment. Verified 2026-08-18 15:37 UTC from outside: /gateway_health 200, port 80 redirects 308 to https, Let's Encrypt certificate valid 2026-08-18 to 2026-11-16, /login/github redirects to GitHub. On the host: 9 containers up (7 healthy; codecov-worker and traefik carry no healthcheck), 1.4 GB used. GitHub repo Flux29/fullstack holds variable CODECOV_URL=https://codecov.stikkihoney.com and secret CODECOV_TOKEN, so the CI upload gate is open."
+  ],
+  "compatibility_impact": "None. No Compose, image, Makefile, or contract change; the file stack was not touched.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "MANUAL_STEPS.md"
+  ],
+  "follow_up": [
+    "Watch the CI run triggered by this push: both Upload steps green and the commit on https://codecov.stikkihoney.com/github/Flux29/fullstack with backend and frontend flags; if red, diagnose before anything else",
+    "If PR comments or commit statuses are missing, read docker compose logs --since 30m codecov-worker codecov-api on the host; likely causes are the worker failing to reach the GitHub API or the bundled licence seat cap",
+    "Set CODECOV_GITHUB_WEBHOOK_SECRET on the host and re-create the Codecov Webhook entry, now that the instance is publicly reachable",
+    "A pre-commit governance sync --check for backend/.env.example and .governance.json edits; a stale-buffer commit already slipped through to CI once",
+    "governance/manifests/generated/tests.json is hand-edited but lives in the generated directory and pipeline.render_all never renders it; give it a renderer or move it to manifests/curated and update ownership.json",
+    "Codecov prod memory ceilings total roughly 6.5 GB of limits on a 3.8 GB host; either lower them or size the host to them"
+  ],
+  "id": "2026-08-18-document-whole-file-compose-interpolation-for-codecov-only-hosts",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The first real CI upload has not been observed yet: the push that lands this record is the first run with CODECOV_URL set, and both codecov-action steps use fail_ci_if_error, so its result (green job, commit visible on the instance with backend and frontend flags) belongs to the next record",
+    "No automated check catches the missing-dummy failure; compose-check supplies the values itself and the PowerShell preflight does not run on Linux. Only the doc guards it",
+    "CODECOV_GITHUB_WEBHOOK_SECRET remains unset on the host; per the ordering constraint in backend/.env.example, setting it now means editing or recreating the Codecov Webhook entry in the GitHub repo settings",
+    "In the instance UI the repository activation toggle reverted to off on its own; uploads do not need activation, PR comments and commit statuses do. Not diagnosed in this session"
+  ],
+  "manifests_changed": [],
+  "reason": "MANUAL_STEPS.md told a Linux operator to run the raw prod Compose command on a Codecov-only host without saying that docker-compose.prod.yml interpolates the whole file before selecting services, so the real Hetzner deployment failed on unset POSTGRES_PASSWORD, REDIS_PASSWORD, MINIO_ROOT_USER, MINIO_ROOT_PASSWORD even though app, db, redis and minio never start there; compose-check cannot catch this because it supplies dummy values itself. The previous change record deferred the live deployment result to this session.",
+  "risks": [
+    "The four dummy variables now sit in the same backend/.env as real CODECOV_* secrets on the host; an operator who later runs the application stack there must replace them, and nothing but the comment says so"
+  ],
+  "rollback": "git revert. The edit made on the live host (four dummy lines with a comment in ~/fullstack/backend/.env on 2.29.2.196) is outside the repository and is unaffected either way.",
+  "schema_version": 1,
+  "security_impact": "None. Documentation-only. The record and the doc name variable names only, never values. The dummy values the doc asks for feed only the :? interpolation guards of services that never start on a Codecov-only host (app, db, redis, minio); the codecov services take their own CODECOV_* credentials, so a dummy application password cannot reach a running container.",
+  "summary": "Document whole-file Compose interpolation for Codecov-only hosts and record the live codecov.stikkihoney.com deployment",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "substituted for the governance-preflight baseline because preflight-ports fails benignly while the dev stack is running (3000, 5001, 8090, 8100, 8201-8203 occupied); 14 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "all file-stacks and profiles including prod with the Makefile dummy values; exit 0 (file stack unchanged; run to corroborate the doc claims about it)",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "39 checks, 0 blocking, 7 advisory, all pre-existing (orphaned radio-group/scroll-area, codecov-worker healthcheck, email facade imports)",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

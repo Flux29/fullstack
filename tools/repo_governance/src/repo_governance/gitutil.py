@@ -100,6 +100,21 @@ def head_commit(root: Path) -> str | None:
     return output.strip() if output else None
 
 
+def hook_installed(root: Path, name: str = "pre-commit") -> bool | None:
+    """Whether the git hook `name` exists for this repository, or None if unknown.
+
+    Asked through `git rev-parse --git-path`, so worktrees and `core.hooksPath` resolve to
+    the directory git will actually consult, not a guessed `.git/hooks`.
+    """
+    output = _run(["rev-parse", "--git-path", f"hooks/{name}"], root)
+    if not output:
+        return None
+    hook = Path(output.strip())
+    if not hook.is_absolute():
+        hook = root / hook
+    return hook.is_file()
+
+
 def tracked_files(root: Path) -> list[str] | None:
     """Repo-relative POSIX paths git tracks, or None if unknown."""
     output = _run(["ls-files", "-z"], root)

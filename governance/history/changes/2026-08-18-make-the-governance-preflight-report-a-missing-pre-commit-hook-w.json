@@ -1,0 +1,68 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "preflight prints \"pre-commit hook: NOT INSTALLED; check --fast will not run on commit. Repair: uv run --directory backend pre-commit install --config .pre-commit-config.yaml\" and fails when the hook is missing; doctor shows installed / NOT INSTALLED / unknown",
+    "gitutil.hook_installed asks git where hooks live (worktrees and core.hooksPath honoured) instead of guessing .git/hooks",
+    "This clone now has the hook installed, and it was proven to refuse a commit whose staged ENV_VARS.md is stale (exit 1, two blocking generated-file findings)"
+  ],
+  "compatibility_impact": "governance preflight now exits nonzero when .pre-commit-config.yaml exists and the pre-commit hook is not installed (message names the repair). governance doctor gains one Environment line. Nothing else changes; check --fast, sync, and the hook config are untouched.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/gitutil.py",
+    "tools/repo_governance/tests/test_kernel_checks.py"
+  ],
+  "follow_up": [
+    "Make check_generated_files ignore the file scope (drift is a whole-repository property) with a regression test that scopes to a source file and expects the derived generated file to be reported",
+    "tools/repo_governance carries 43 pre-existing ruff findings and 31 files ruff format would touch; a dedicated formatting session, not a side effect"
+  ],
+  "id": "2026-08-18-make-the-governance-preflight-report-a-missing-pre-commit-hook-w",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Found and NOT fixed here (own session next): the hook is still blind to the actual incident shape. Staging backend/.env.example with an un-synced ENV_VARS.md passes, because check --fast <files> keeps a generated-file drift finding only when the generated file itself is in the passed set (checks/schemas.py check_generated_files filters by scope.selects), while pre-commit passes only the staged source. Reproduced: scoped run 0 blocking, unscoped run 4 blocking on the same tree",
+    "No \"governance sync --check\" flag was added; check --fast already is that check, and a second entry point would be a second thing to keep aligned"
+  ],
+  "manifests_changed": [],
+  "reason": ".pre-commit-config.yaml already runs governance check --fast (which includes generated-file drift) on every governance-adjacent path, but the hook is only installed by make install and this clone had no .git/hooks/pre-commit at all, which is how a stale ENV_VARS.md reached CI once; the governance preflight that every session opens with was silent about it. Reporting the missing hook there, with the exact install command, closes the gap at the one place every session already looks — no new sync --check flag is needed because check --fast already is that check.",
+  "risks": [
+    "Agents that treat any preflight failure as the known-benign ports failure could skip past this one too; the message carries the exact repair to make that unlikely"
+  ],
+  "rollback": "git revert. The hook installed in this clone during the session (uv run --directory backend pre-commit install) is local state; leave it, it is what make install would have done.",
+  "schema_version": 1,
+  "security_impact": "None. Read-only git query (rev-parse --git-path) and two echo lines; nothing is installed or written by the tool. The install command it prints is the one make install already runs.",
+  "summary": "Make the governance preflight report a missing pre-commit hook with its repair command",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "substituted for the governance-preflight baseline (preflight-ports fails benignly with the dev stack running); 14 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "tools/repo_governance/tests, all passed including two new tests: hook_installed against a real temp repo (missing -> core.hooksPath dir -> present) and _precommit_hook_problem (no config / missing / installed / unknown)",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "39 checks; the single blocking finding before finish was governance-changes-are-recorded for this very session",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff over tools/repo_governance with its own config; the 43 pre-existing findings are unchanged and none is on a changed line",
+      "id": "backend-lint",
+      "result": "pass"
+    }
+  ]
+}

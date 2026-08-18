@@ -47,9 +47,7 @@ def test_malformed_evaluation_record_fails_document_check(minimal_repo: Path) ->
     }
     evaluations = minimal_repo / "governance" / "history" / "evaluations"
     evaluations.mkdir(parents=True)
-    (evaluations / "2026-01-01-missing-observation.json").write_text(
-        json.dumps(record), encoding="utf-8"
-    )
+    (evaluations / "2026-01-01-missing-observation.json").write_text(json.dumps(record), encoding="utf-8")
 
     issues = check_document_schemas(CheckScope(ctx=Context.discover(minimal_repo)))
     messages = " ".join(issue.message + (issue.evidence or "") for issue in issues)

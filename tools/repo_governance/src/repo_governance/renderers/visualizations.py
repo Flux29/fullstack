@@ -83,9 +83,7 @@ def render_html(data: ViewData) -> str:
     svg: list[str] = []
     for column, (label, nodes) in enumerate(data.layers):
         x = 10 + column * (BOX_WIDTH + COLUMN_GAP)
-        svg.append(
-            f'<text x="{x}" y="16" class="col">{html.escape(label)}</text>'
-        )
+        svg.append(f'<text x="{x}" y="16" class="col">{html.escape(label)}</text>')
         for row, node in enumerate(nodes):
             y = 28 + row * (BOX_HEIGHT + ROW_GAP)
             positions[node] = (x, y)
@@ -104,13 +102,10 @@ def render_html(data: ViewData) -> str:
         start_x, start_y = sx + BOX_WIDTH, sy + BOX_HEIGHT // 2
         end_x, end_y = dx, dy + BOX_HEIGHT // 2
         mid = (start_x + end_x) // 2
-        paths.append(
-            f'<path d="M {start_x} {start_y} C {mid} {start_y}, {mid} {end_y}, {end_x} {end_y}"/>'
-        )
+        paths.append(f'<path d="M {start_x} {start_y} C {mid} {start_y}, {mid} {end_y}, {end_x} {end_y}"/>')
 
     edge_lines = "".join(
-        f"<li><code>{html.escape(src)}</code> → <code>{html.escape(dst)}</code></li>"
-        for src, dst in data.edges
+        f"<li><code>{html.escape(src)}</code> → <code>{html.escape(dst)}</code></li>" for src, dst in data.edges
     )
     note_lines = "".join(f"<li>{html.escape(note)}</li>" for note in data.notes)
 
@@ -166,7 +161,14 @@ def _architecture(ctx: Context, focus: str | None) -> ViewData:
         kind = by_id[component_id]["kind"]
         if kind in ("frontend-feature",):
             groups["Frontend"].append(component_id)
-        elif kind in ("data", "infrastructure", "host-runtime", "image-only-service", "mcp-sidecar", "db-resident-surface"):
+        elif kind in (
+            "data",
+            "infrastructure",
+            "host-runtime",
+            "image-only-service",
+            "mcp-sidecar",
+            "db-resident-surface",
+        ):
             groups["Data & infrastructure"].append(component_id)
         else:
             groups["Application"].append(component_id)
@@ -254,9 +256,7 @@ def _configuration(ctx: Context, focus: str | None) -> ViewData:
     manifest = read_json(ctx.paths.generated_manifests / "configuration.json")
     variables = manifest.get("variables", [])
     edges = sorted(
-        (variable["name"], consumer)
-        for variable in variables
-        for consumer in variable.get("consumed_by", [])
+        (variable["name"], consumer) for variable in variables for consumer in variable.get("consumed_by", [])
     )
     if focus:
         edges = [(name, consumer) for name, consumer in edges if focus in (name, consumer)]
@@ -327,7 +327,9 @@ def _security(ctx: Context, focus: str | None) -> ViewData:
         "mcp-url-embedded-credentials-unencrypted",
     ]
     notes = [f"Standing finding: {finding}" if isinstance(finding, str) else str(finding) for finding in findings]
-    notes.append("Per-user MCP connections exist only as database rows; they appear here as a toolset class, never as enumerated servers (runtime-evidence rule).")
+    notes.append(
+        "Per-user MCP connections exist only as database rows; they appear here as a toolset class, never as enumerated servers (runtime-evidence rule)."
+    )
 
     return ViewData(
         title="Agent and MCP permission map",

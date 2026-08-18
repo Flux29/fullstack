@@ -1,0 +1,130 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "make governance-*"
+  ],
+  "behavioral_effects": [
+    "checks.process.check_coverage_floor_ratchet implements coverage-floor-does-not-regress: backend and governance-tool fail_under and the four vitest thresholds are compared with the base commit and any decrease is an issue unless a change record names the rule; registered as a fast check so pre-commit runs it too",
+    "check_policy_weakening_recorded compares against scope.since or HEAD instead of HEAD alone, so it can fire on a clean CI checkout",
+    "The CI governance job resolves a base commit (PR base sha, pre-push sha, or HEAD~1) and passes it as --since; it also runs make governance-sample and make governance-views and uploads the rendered views",
+    "New CI job governance-tool runs make governance-lint and make governance-selftest and uploads a third Codecov flag, governance; validators governance-lint and governance-sample added, governance-selftest re-pointed at the Make target",
+    "tools/repo_governance gains pytest-cov and ruff dev dependencies, a ratcheted coverage floor of 75, and an E501 ignore; 31 files reformatted, three real ruff findings fixed (a loop-variable closure in ts_imports, a nested if in renderers/context, an if/else in pipeline)",
+    "new_file_gate.py has 18 tests covering allow, ask, notebook_path, scratchpad, no-path and fail-open; test_coverage_ratchet.py has 11"
+  ],
+  "compatibility_impact": "governance-selftest's registered command is now make governance-selftest (pytest with coverage and --cov-config); it needs the tool's uv.lock, which now includes pytest-cov and ruff. check_policy_weakening_recorded and the new ratchet check compare against --since when CI passes it, HEAD otherwise, so their behaviour on a clean CI checkout changes from vacuous to real. E501 is ignored for the tool, mirroring the backend.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    "Makefile",
+    "governance/manifests/curated/tests.json",
+    "governance/policies/process.json",
+    "governance/validators.json",
+    "tools/repo_governance/pyproject.toml",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/checks/__init__.py",
+    "tools/repo_governance/src/repo_governance/checks/compatibility.py",
+    "tools/repo_governance/src/repo_governance/checks/graph.py",
+    "tools/repo_governance/src/repo_governance/checks/process.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/evidence.py",
+    "tools/repo_governance/src/repo_governance/extractors/alembic.py",
+    "tools/repo_governance/src/repo_governance/extractors/compose.py",
+    "tools/repo_governance/src/repo_governance/extractors/configuration.py",
+    "tools/repo_governance/src/repo_governance/extractors/imports.py",
+    "tools/repo_governance/src/repo_governance/extractors/relations.py",
+    "tools/repo_governance/src/repo_governance/extractors/ts_imports.py",
+    "tools/repo_governance/src/repo_governance/extractors/typescript_ast.py",
+    "tools/repo_governance/src/repo_governance/graph/queries.py",
+    "tools/repo_governance/src/repo_governance/graph/site.py",
+    "tools/repo_governance/src/repo_governance/merge.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/src/repo_governance/renderers/context.py",
+    "tools/repo_governance/src/repo_governance/renderers/env_vars.py",
+    "tools/repo_governance/src/repo_governance/renderers/summary.py",
+    "tools/repo_governance/src/repo_governance/renderers/visualizations.py",
+    "tools/repo_governance/src/repo_governance/session.py",
+    "tools/repo_governance/src/repo_governance/skills.py",
+    "tools/repo_governance/tests/test_algorithms.py",
+    "tools/repo_governance/tests/test_coverage_ratchet.py",
+    "tools/repo_governance/tests/test_evaluations.py",
+    "tools/repo_governance/tests/test_extractors.py",
+    "tools/repo_governance/tests/test_graph_checks.py",
+    "tools/repo_governance/tests/test_graph_queries.py",
+    "tools/repo_governance/tests/test_hooks.py",
+    "tools/repo_governance/tests/test_impact_graph.py",
+    "tools/repo_governance/tests/test_relations.py",
+    "tools/repo_governance/tests/test_scenarios.py",
+    "tools/repo_governance/tests/test_site_graph.py",
+    "tools/repo_governance/uv.lock"
+  ],
+  "follow_up": [
+    "Phase 3: hygiene job with pre-commit --all-files, actionlint and zizmor, hadolint, and range-scoped gitleaks",
+    "Watch the first CI run: the governance job now passes --since and the ratchet, change-record and policy-weakening checks evaluate the real commit range for the first time"
+  ],
+  "id": "2026-08-18-lint-and-coverage-gate-the-governance-tool-implement-the-coverag",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run over the ruff reformat; the three hand edits are one-line rewrites",
+    "Phase 2 of the CI/CD coverage plan. Not here: hygiene job, docker matrix and GHCR publish, e2e, nightly, the ci.yml extractor that would let validators-declare-their-ci-job verify job names"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/tests.json"
+  ],
+  "reason": "The governance tool that gates every other surface was itself never linted or coverage-measured (74 percent measured, no floor, no Codecov flag), the coverage-floor-does-not-regress rule had check_impl phase-5 and so was enforced by nobody, the change-record and policy-weakening checks were vacuous in CI because no --since range was passed, and new_file_gate.py had no test. After this change the governance-tool job runs ruff and pytest-cov with a ratcheted floor and uploads a governance flag, the ratchet check fails any lowered floor unless a change record names the rule, CI passes the real base commit to check --full, and every hook script has tests.",
+  "risks": [
+    "The ratchet check is advisory by the maturity ladder; it reports, it does not fail CI. Promotion criteria are recorded in process.json",
+    "governance-views renders five pages per run; if a renderer starts needing --focus the target must be updated, and CI will say so"
+  ],
+  "rollback": "git revert. Nothing lives outside the repository except the governance flag on the Codecov instance, which simply stops receiving uploads.",
+  "schema_version": 1,
+  "security_impact": "None. The governance-tool job runs with the workflow's contents: read permission and no backend install; the Codecov governance flag carries coverage data only. The ratchet check reads two pyproject files and one vitest config and never executes them.",
+  "summary": "Lint and coverage-gate the governance tool, implement the coverage-floor ratchet check, and give CI the commit range its process checks need",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "ruff check clean, ruff format --check clean after a one-time 31-file reformat and 7 auto-fixes",
+      "id": "governance-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "346 passed, 76.60 percent line coverage over the new floor of 75 (74 measured before the new tests)",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "25 of 160 governed application files, seed 3b3a8824c2b7, every claim agrees",
+      "id": "governance-sample",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "40 checks run; the only blocking finding before change finish was the absent record for this session, which finish writes",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "unchanged surface; run in Phase 1 this session and by CI on the previous commit",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "rhysd/actionlint via docker over the updated workflow",
+      "id": "actionlint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lowering backend fail_under 52 to 51 in the working tree made check --fast report coverage-floor-does-not-regress; reverted",
+      "id": "coverage-ratchet-canary",
+      "result": "pass"
+    }
+  ]
+}

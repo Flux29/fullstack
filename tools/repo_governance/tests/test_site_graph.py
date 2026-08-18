@@ -52,7 +52,7 @@ def test_page_chain_reaches_backend_through_the_proxy(minimal_repo: Path) -> Non
     _write(
         minimal_repo,
         "backend/app/api/routes/v1/__init__.py",
-        "v1_router.include_router(files.router, tags=[\"files\"])\n",
+        'v1_router.include_router(files.router, tags=["files"])\n',
     )
     _write(
         minimal_repo,
@@ -89,7 +89,7 @@ def test_direct_backend_call_is_server_side_not_broken(minimal_repo: Path) -> No
     _write(
         minimal_repo,
         "backend/app/api/routes/v1/__init__.py",
-        "v1_router.include_router(admin_stats.router, prefix=\"/admin\", tags=[\"admin\"])\n",
+        'v1_router.include_router(admin_stats.router, prefix="/admin", tags=["admin"])\n',
     )
     _write(
         minimal_repo,
@@ -136,7 +136,7 @@ def test_websocket_consumer_is_flagged_as_the_exception_not_broken(minimal_repo:
     _write(
         minimal_repo,
         "frontend/src/hooks/use-chat.ts",
-        'const url = `${wsBase}/api/v1/ws/agent`;\n',
+        "const url = `${wsBase}/api/v1/ws/agent`;\n",
     )
     _interfaces(
         minimal_repo,

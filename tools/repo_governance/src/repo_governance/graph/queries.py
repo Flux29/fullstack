@@ -124,12 +124,12 @@ def assemble(ctx: Context) -> GraphData:
     for src, dst in routes_to_edges(ctx, relations):
         edges.add(GraphEdge(src, dst, EDGE_ROUTES_TO, 0, "join", "high"))
 
-    return GraphData(nodes=tuple(sorted(nodes)), edges=tuple(sorted(edges, key=lambda e: (e.src, e.dst, e.kind, e.line))))
+    return GraphData(
+        nodes=tuple(sorted(nodes)), edges=tuple(sorted(edges, key=lambda e: (e.src, e.dst, e.kind, e.line)))
+    )
 
 
-def strongly_connected_components(
-    modules: set[str], edges: list[tuple[str, str]]
-) -> list[list[str]]:
+def strongly_connected_components(modules: set[str], edges: list[tuple[str, str]]) -> list[list[str]]:
     """Tarjan, iterative, deterministic: components sorted, members sorted. Only
     components larger than one module are returned — a lone module is not a cycle."""
     graph: dict[str, list[str]] = {}
@@ -318,7 +318,12 @@ def build_orphans_report(ctx: Context) -> dict:
         "schema_version": ctx.config.schema_version,
         "provenance": {
             "method": "extracted",
-            "sources": [".fastapi-fullstack.json", "backend/app/", "frontend/src/", "governance/manifests/effective/repository.json"],
+            "sources": [
+                ".fastapi-fullstack.json",
+                "backend/app/",
+                "frontend/src/",
+                "governance/manifests/effective/repository.json",
+            ],
             "extractor_version": ctx.config.version,
         },
         "python": _python_orphans(ctx),
@@ -326,9 +331,7 @@ def build_orphans_report(ctx: Context) -> dict:
     }
 
 
-def shortest_path(
-    edges: list[tuple[str, str]], source: str, target: str
-) -> list[str] | None:
+def shortest_path(edges: list[tuple[str, str]], source: str, target: str) -> list[str] | None:
     """BFS with sorted neighbor expansion, so equal-length answers are stable."""
     if source == target:
         return [source]

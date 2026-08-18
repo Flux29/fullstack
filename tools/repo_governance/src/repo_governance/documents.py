@@ -633,9 +633,7 @@ def governed_json_documents(ctx: Context) -> list[Path]:
     from repo_governance.config import iter_files
 
     documents = [
-        path
-        for path in iter_files(ctx.paths.governance, suffixes=(".json",))
-        if ctx.paths.schemas not in path.parents
+        path for path in iter_files(ctx.paths.governance, suffixes=(".json",)) if ctx.paths.schemas not in path.parents
     ]
     documents.extend(annotation_files(ctx))
     return sorted(documents, key=lambda item: relative_posix(item, ctx.repo_root))

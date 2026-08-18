@@ -55,7 +55,9 @@ def test_cycle_closed_at_module_scope_is_import_time(minimal_repo: Path) -> None
 
 
 def test_package_roots_and_dynamic_subtrees_are_excluded_not_orphaned(minimal_repo: Path) -> None:
-    _write(minimal_repo, "backend/app/commands/__init__.py", "from importlib import import_module\nimport_module('x')\n")
+    _write(
+        minimal_repo, "backend/app/commands/__init__.py", "from importlib import import_module\nimport_module('x')\n"
+    )
     _write(minimal_repo, "backend/app/commands/seed.py", "")
     _write(minimal_repo, "backend/app/dead.py", "")
 

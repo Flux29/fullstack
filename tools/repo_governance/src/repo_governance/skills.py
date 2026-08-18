@@ -299,7 +299,9 @@ def _check_skill_integrity(ctx: Context, resolver: _Resolver) -> list[dict[str, 
         if name is None or name.group(1) != directory.name:
             found = "missing" if name is None else name.group(1)
             findings.append(
-                _finding(rel, 2, "skill-integrity", found, f"frontmatter name must equal directory name {directory.name}")
+                _finding(
+                    rel, 2, "skill-integrity", found, f"frontmatter name must equal directory name {directory.name}"
+                )
             )
         if description is None:
             findings.append(_finding(rel, 2, "skill-integrity", directory.name, "frontmatter description is empty"))

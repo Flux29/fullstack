@@ -23,7 +23,7 @@ be parsed lands in ``unknowns`` and is never counted as containing nothing.
 from __future__ import annotations
 
 import ast
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from repo_governance.config import Context, iter_files
@@ -85,8 +85,7 @@ class Relations:
     def as_payload(self) -> dict:
         return {
             "api_routes": [
-                [route.method, route.path, route.module, route.function, route.line]
-                for route in self.api_routes
+                [route.method, route.path, route.module, route.function, route.line] for route in self.api_routes
             ],
             "tasks": [[task.name, task.module, task.line] for task in self.tasks],
             "models": [[model.name, model.table, model.module, model.line] for model in self.models],
@@ -196,8 +195,7 @@ def _extract_routes(ctx: Context, unknowns: list[str]) -> list[ApiRoute]:
                     continue
                 if not decorator.args or not isinstance(decorator.args[0], ast.Constant):
                     unknowns.append(
-                        f"{relative_posix(path, ctx.repo_root)}:{node.lineno}: "
-                        f"{node.name} has a non-literal route path"
+                        f"{relative_posix(path, ctx.repo_root)}:{node.lineno}: {node.name} has a non-literal route path"
                     )
                     continue
                 routes.append(
@@ -252,9 +250,7 @@ def _extract_models(ctx: Context, unknowns: list[str]) -> list[ModelDef]:
             for statement in node.body:
                 if (
                     isinstance(statement, ast.Assign)
-                    and any(
-                        isinstance(t, ast.Name) and t.id == "__tablename__" for t in statement.targets
-                    )
+                    and any(isinstance(t, ast.Name) and t.id == "__tablename__" for t in statement.targets)
                     and isinstance(statement.value, ast.Constant)
                 ):
                     table = str(statement.value.value)
@@ -324,8 +320,7 @@ def _extract_tools(ctx: Context, unknowns: list[str]) -> list[dict]:
                         names.append(str(first.value))
         if not names:
             unknowns.append(
-                f"{PRODUCTS_FILE}:{node.lineno}: no literal tool names found for "
-                f"product {kind_node.value!r}"
+                f"{PRODUCTS_FILE}:{node.lineno}: no literal tool names found for product {kind_node.value!r}"
             )
         products.append({"kind": str(kind_node.value), "tools": names})
     if not products:
@@ -361,9 +356,7 @@ def routes_to_edges(ctx: Context, relations: Relations) -> list[tuple[str, str]]
         {
             (edge.src, edge.dst)
             for edge in graph.edges
-            if edge.kind in RUNTIME_KINDS
-            and edge.src in route_modules
-            and edge.dst.startswith("app.services")
+            if edge.kind in RUNTIME_KINDS and edge.src in route_modules and edge.dst.startswith("app.services")
         }
     )
 

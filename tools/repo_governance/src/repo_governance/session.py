@@ -131,9 +131,7 @@ def build_record(
     }
 
     if not record["behavioral_effects"]:
-        record["behavioral_effects"] = [
-            "None stated. An empty list is a claim that nothing observably changes."
-        ]
+        record["behavioral_effects"] = ["None stated. An empty list is a claim that nothing observably changes."]
 
     return record
 

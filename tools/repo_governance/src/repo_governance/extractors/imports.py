@@ -101,9 +101,7 @@ class ImportGraph:
         truncated = False
         for _ in range(max(max_depth, 0)):
             wave = sorted(
-                {importer for module in frontier for importer in reverse.get(module, set())}
-                - reached
-                - seeds
+                {importer for module in frontier for importer in reverse.get(module, set())} - reached - seeds
             )
             if not wave:
                 break
@@ -199,13 +197,7 @@ def build_import_graph(
             unresolved.add((src, target))
 
     def walk(node: ast.AST, src: str, is_package: bool, in_function: bool, type_only: bool) -> None:
-        kind = (
-            EDGE_IMPORTS_TYPE_ONLY
-            if type_only
-            else EDGE_IMPORTS_DEFERRED
-            if in_function
-            else EDGE_IMPORTS
-        )
+        kind = EDGE_IMPORTS_TYPE_ONLY if type_only else EDGE_IMPORTS_DEFERRED if in_function else EDGE_IMPORTS
         if isinstance(node, ast.Import):
             for alias in node.names:
                 if in_tree(alias.name):

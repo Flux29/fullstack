@@ -215,9 +215,7 @@ def test_broken_chain_exception_excuses_the_call_not_the_page(minimal_repo: Path
         json.dumps(
             {
                 "proxy_routes": [],
-                "frontend_pages": [
-                    {"route": "/settings", "file": "frontend/src/app/[locale]/settings/page.tsx"}
-                ],
+                "frontend_pages": [{"route": "/settings", "file": "frontend/src/app/[locale]/settings/page.tsx"}],
                 "websocket": {"endpoint": "/api/v1/ws/agent"},
             }
         ),
@@ -233,9 +231,7 @@ def test_broken_chain_exception_excuses_the_call_not_the_page(minimal_repo: Path
                         "id": "wishlist-call-accepted",
                         "statement": "The settings page's password call is wishlist surface.",
                         "reason": "test fixture",
-                        "scope": [
-                            "frontend/src/app/[locale]/settings/page.tsx calls /api/auth/password/change"
-                        ],
+                        "scope": ["frontend/src/app/[locale]/settings/page.tsx calls /api/auth/password/change"],
                         "status": "active",
                     }
                 ],

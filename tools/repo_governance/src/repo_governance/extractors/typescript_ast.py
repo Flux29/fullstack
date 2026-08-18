@@ -125,9 +125,7 @@ def extract_frontend(ctx: Context) -> FrontendExtraction:
 
         if path.name in {"page.tsx", "page.ts"}:
             parts = tuple(part for part in relative.parts[:-1] if part != "[locale]")
-            result.pages.append(
-                {"route": _route_from_directory(parts), "file": relative_posix(path, ctx.repo_root)}
-            )
+            result.pages.append({"route": _route_from_directory(parts), "file": relative_posix(path, ctx.repo_root)})
 
     result.proxy_routes.sort(key=lambda item: item.file)
     result.pages.sort(key=lambda item: item["file"])

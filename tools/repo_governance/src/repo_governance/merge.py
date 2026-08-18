@@ -120,9 +120,7 @@ def build_components(ctx: Context) -> tuple[dict[str, Any], list[dict[str, str]]
             continue
         by_id[component_id] = record
 
-    annotation_index = {
-        record["annotation_path"]: record["id"] for record in annotations if record.get("id")
-    }
+    annotation_index = {record["annotation_path"]: record["id"] for record in annotations if record.get("id")}
 
     for record in by_id.values():
         if record["declared_in"] == "annotation":

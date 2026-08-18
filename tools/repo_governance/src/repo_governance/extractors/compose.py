@@ -133,9 +133,7 @@ def extract_compose(ctx: Context) -> ComposeExtraction:
     base_document = documents.get("docker-compose.yml", {})
     declared_volumes = base_document.get("volumes") or {}
     external_names = {
-        name
-        for name, spec in declared_volumes.items()
-        if isinstance(spec, dict) and spec.get("external")
+        name for name, spec in declared_volumes.items() if isinstance(spec, dict) and spec.get("external")
     }
     external_real_names = {
         (spec.get("name") or name)

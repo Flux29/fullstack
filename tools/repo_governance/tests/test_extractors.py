@@ -142,9 +142,7 @@ def test_a_literal_allowlist_is_read(tmp_path: Path) -> None:
 
 def _revision(directory: Path, name: str, revision: str, down: str | None) -> None:
     rendered = "None" if down is None else repr(down)
-    (directory / f"{name}.py").write_text(
-        f"revision = {revision!r}\ndown_revision = {rendered}\n", encoding="utf-8"
-    )
+    (directory / f"{name}.py").write_text(f"revision = {revision!r}\ndown_revision = {rendered}\n", encoding="utf-8")
 
 
 def _alembic_repo(root: Path) -> Context:
@@ -202,9 +200,7 @@ def test_a_merge_revision_collapses_the_branch(tmp_path: Path) -> None:
     _revision(versions, "0001_start", "0001", None)
     _revision(versions, "0002_a", "0002a", "0001")
     _revision(versions, "0002_b", "0002b", "0001")
-    (versions / "0003_merge.py").write_text(
-        "revision = '0003'\ndown_revision = ('0002a', '0002b')\n", encoding="utf-8"
-    )
+    (versions / "0003_merge.py").write_text("revision = '0003'\ndown_revision = ('0002a', '0002b')\n", encoding="utf-8")
 
     graph = extract_revisions(ctx)
 

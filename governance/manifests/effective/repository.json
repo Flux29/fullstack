@@ -615,6 +615,9 @@
         "ADR-002"
       ],
       "declared_in": "curated",
+      "exceptions": [
+        "preflights-are-host-only"
+      ],
       "forbidden_dependencies": [],
       "id": "model-runner-host",
       "invariants": [
@@ -817,6 +820,7 @@
     "coverage-floors-are-ratchets",
     "google-live-suites-excluded-from-registry",
     "playwright-not-in-ci",
+    "preflights-are-host-only",
     "profile-gated-services-without-healthchecks",
     "taskiq-healthchecks-disabled",
     "trivy-advisory-deliberate",

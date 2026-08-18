@@ -19,3 +19,8 @@ ENV_VARS.md            text eol=lf
 # diffs stay line-accurate.
 AGENTS.md              text eol=lf
 CLAUDE.md              text eol=lf
+
+# The frontend declares LF in .editorconfig and .prettierrc (endOfLine: lf); pinning it here
+# too keeps `make frontend-format-check` meaningful on Windows checkouts, where core.autocrlf
+# would otherwise hand prettier CRLF files and it would flag every one of them.
+frontend/**            text eol=lf

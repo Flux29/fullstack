@@ -1,4 +1,5 @@
-.PHONY: help install format lint test test-cov frontend-test frontend-format-check frontend-build playwright run run-prod \
+.PHONY: help install format lint test test-cov frontend-test frontend-format-check frontend-build playwright \
+	audit audit-python audit-js run run-prod \
 	preflight preflight-volumes preflight-model preflight-ports preflight-edge-ports preflight-mcp \
 	preflight-codecov compose-check \
 	dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all dev-down dev-logs dev-rebuild stage stage-down \
@@ -182,6 +183,29 @@ frontend-build:
 playwright:
 	cd frontend && bun run test:e2e $(ARGS)
 
+# Every dependency set the repository ships, not only the backend: the governance tool's
+# lock, the Docling sidecar's requirements.lock, the frontend's bun.lock, and the
+# chrome-devtools sidecar's package-lock.json. Exports go under the gitignored .cache/ so
+# they never appear as untracked files. pip-audit runs through uvx in its own ephemeral env.
+#
+# Two halves so CI can gate on one while measuring the other: audit-python is clean today
+# and gates; audit-js currently reports known high findings in the frontend's transitive
+# dependencies and runs non-gating in CI until those are bumped in their own session.
+AUDIT_TMP ?= .cache/audit
+audit: audit-python audit-js
+
+audit-python:
+	mkdir -p $(AUDIT_TMP)
+	uv export --directory backend --no-hashes --no-emit-project -o ../$(AUDIT_TMP)/backend.txt
+	uvx pip-audit -r $(AUDIT_TMP)/backend.txt --disable-pip --no-deps --progress-spinner=off
+	uv export --project tools/repo_governance --no-hashes --no-emit-project -o $(AUDIT_TMP)/governance.txt
+	uvx pip-audit -r $(AUDIT_TMP)/governance.txt --disable-pip --no-deps --progress-spinner=off
+	uvx pip-audit -r docker/mcp/docling/requirements.lock --disable-pip --no-deps --progress-spinner=off
+
+audit-js:
+	cd frontend && bun audit --audit-level=high
+	cd docker/mcp/chrome-devtools && npm audit --omit=dev --audit-level=high
+
 run:
 	uv run --directory backend fullstack server run --reload --port 8100
 
@@ -281,7 +305,7 @@ upgrade-finalize:
 help:
 	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all"
 	@echo "Lifecycle: dev-down dev-logs stage prod prod-codecov docker-clean (preserves data)"
-	@echo "Validation: lint test test-cov frontend-test frontend-format-check frontend-build playwright"
+	@echo "Validation: lint test test-cov frontend-test frontend-format-check frontend-build playwright audit compose-check"
 	@echo "Governance: governance-preflight governance-context governance-sync governance-check (see AGENTS.md)"
 	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"
 	@echo "Local API: make run (port 8100); Taskiq concurrency defaults to 1"

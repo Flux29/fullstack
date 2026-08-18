@@ -34,7 +34,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **env-example-unknown-consumers** (low) — Three variables remain genuinely unread: OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS all appear in backend/.env.example with no Settings field and no Compose consumer. Setting any of them has no effect and produces no warning, because Settings uses extra="ignore". Now surfaced automatically by the configuration extractor rather than depending on someone noticing.
   - Disposition: app-fix-required
 
-## Accepted exceptions (10)
+## Accepted exceptions (11)
 
 - **alembic-numbering-gaps-accepted** — Migration filenames are not contiguously numbered: 0017 and 0019 through 0021 do not exist, and 0004_5 is interleaved.
   - Revisit when: The revision graph itself becomes disconnected or grows an unexpected head.
@@ -46,6 +46,8 @@ Current state, what is unresolved, and recent material history. This is not the 
   - Revisit when: A caller needs to run it programmatically, which would mean designing a safe harness first.
 - **playwright-not-in-ci** — The Playwright end-to-end suite runs locally only and is not part of any CI job.
   - Revisit when: A composed CI stack exists that can bring up the backend, at which point the suite should return to CI.
+- **preflights-are-host-only** — The five preflight validators (preflight-volumes, preflight-model, preflight-ports, preflight-edge-ports, preflight-mcp) declare ci_job null and run in no CI job.
+  - Revisit when: A self-hosted runner with a Docker engine and Docker Model Runner joins the pipeline, at which point preflight-volumes and preflight-model become meaningful there.
 - **profile-gated-services-without-healthchecks** — The MCP sidecars, the browser service, pgweb, and Traefik declare no healthcheck.
   - Revisit when: Any service starts depending on one of these being healthy, or an MCP sidecar failure stops being invisible to the application's probe-and-skip path.
 - **taskiq-healthchecks-disabled** — The Taskiq worker and scheduler services have healthchecks explicitly disabled, while every other long-running service has one.
@@ -64,7 +66,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 94)
+## Recent changes (latest 20 of 95)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -90,6 +92,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Disable the hosted Slack-app notifier in the self-hosted Codecov instance config
   - Components: codecov
   - Record: `governance/history/changes/2026-08-18-disable-the-hosted-slack-app-notifier-in-the-self-hosted-codecov.json`
+- **2026-08-18** — Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe.json`
 - **2026-08-17** — Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker
   - Components: codecov, governance-kernel
   - Record: `governance/history/changes/2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur.json`
@@ -123,9 +128,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Wire the broken-chain rule, surface visualize, and measure the phase-7 exit
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-wire-the-broken-chain-rule-surface-visualize-and-measure-the-pha.json`
-- **2026-08-11** — Update governance selftests to the post-facade tree
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-11-update-governance-selftests-to-the-post-facade-tree.json`
 
 ## Decisions (5)
 

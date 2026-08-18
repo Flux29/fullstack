@@ -61,7 +61,7 @@
       "check_impl": "checks.process.check_validator_ci_jobs",
       "promotion_criteria": "No false positive across ten governed changes.",
       "exceptions_allowed": true,
-      "exception_refs": ["playwright-not-in-ci"]
+      "exception_refs": ["playwright-not-in-ci", "preflights-are-host-only"]
     },
     {
       "id": "coverage-floor-does-not-regress",

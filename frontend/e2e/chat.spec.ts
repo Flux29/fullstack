@@ -99,9 +99,7 @@ test.describe("AI Chat", () => {
       await sendButton.click();
 
       // Message should be styled as user message
-      const userMessage = page
-        .getByRole("paragraph")
-        .filter({ hasText: /^My test message$/ });
+      const userMessage = page.getByRole("paragraph").filter({ hasText: /^My test message$/ });
       await expect(userMessage).toBeVisible();
     });
 

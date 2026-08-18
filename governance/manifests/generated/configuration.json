@@ -63,7 +63,7 @@
       ],
       "default": "admin@example.com",
       "default_class": "literal",
-      "description": "Let's Encrypt email for SSL certificates",
+      "description": "Let's Encrypt email for SSL certificates: any real mailbox you read (expiry and incident notices go there). Set it in backend/.env on the host; Let's Encrypt rejects example.* addresses.",
       "name": "ACME_EMAIL",
       "required": false,
       "surface": "backend",

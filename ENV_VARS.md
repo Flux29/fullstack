@@ -193,7 +193,7 @@ appears here or in any other governance artifact.
 | Variable | Required | Default | Class | Description |
 | --- | --- | --- | --- | --- |
 | `DOMAIN` | no | `example.com` | `compose-only` | Domain for production deployment |
-| `ACME_EMAIL` | no | `admin@example.com` | `compose-only` | Let's Encrypt email for SSL certificates |
+| `ACME_EMAIL` | no | `admin@example.com` | `compose-only` | Let's Encrypt email for SSL certificates: any real mailbox you read (expiry and incident notices go there). Set it in backend/.env on the host; Let's Encrypt rejects example.* addresses. |
 | `REDIS_PASSWORD` | no | *(secret — never recorded)* | `runtime`, `secret` | Traefik dashboard auth (generate with: htpasswd -nb admin password) TRAEFIK_DASHBOARD_AUTH=admin:$$apr1$$... Redis password for production |
 
 ### Self-hosted Codecov (Compose profile `codecov`)

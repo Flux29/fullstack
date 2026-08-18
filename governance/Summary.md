@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 86)
+## Recent changes (latest 20 of 87)
 
+- **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em.json`
 - **2026-08-17** — Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker
   - Components: codecov, governance-kernel
   - Record: `governance/history/changes/2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-11** — Join the site graph and report chain coverage
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-11-join-the-site-graph-and-report-chain-coverage.json`
-- **2026-08-11** — Honor EMAIL_PROVIDER: select the resend and smtp providers instead of silently falling back to log
-  - Components: backend-api, email, governance-kernel
-  - Record: `governance/history/changes/2026-08-11-honor-email-provider-select-the-resend-and-smtp-providers-instea.json`
 
 ## Decisions (5)
 

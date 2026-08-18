@@ -1,0 +1,76 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "backend/.env.example again states that dev-codecov reads the root .env, that only five of the codecov values are guarded, and how the webhook secret actually behaves; ACME_EMAIL is a placeholder with guidance",
+    "main passes the CI sync-is-a-no-op gate again once this is pushed"
+  ],
+  "compatibility_impact": "None. Template and rendered documentation only. Anyone who copied ACME_EMAIL from the template into backend/.env must supply a real address there, which the new comment states.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/.env.example",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "follow_up": [
+    "Consider a pre-commit hook that runs governance sync --check when backend/.env.example or any .governance.json changes, so a stale-buffer edit fails locally instead of in CI"
+  ],
+  "id": "2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The upstream cause — an edit made from a stale editor buffer and committed without governance-sync — is not mechanically prevented; the CI governance job catches it after the fact, which is what happened"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json"
+  ],
+  "reason": "Commit d90dbc1 edited backend/.env.example from a stale buffer: it re-introduced wording two earlier governed sessions had corrected (that dev-codecov needs shell exports and that every codecov value is guarded, both now false; and the one-line webhook-secret note that hides the set-before-activation and empty-is-rejected behaviour), put a real address into the committed template, and was pushed without regenerating ENV_VARS.md and configuration.json, so main currently fails the CI sync-is-a-no-op gate; this restores the recorded wording, returns ACME_EMAIL to a placeholder, and regenerates the derived files",
+  "risks": [],
+  "rollback": "git revert, then make governance-sync.",
+  "schema_version": 1,
+  "security_impact": "Removes a real personal email address from the committed template and from the rendered ENV_VARS.md, returning both to a placeholder; the address itself is not a secret and the repository is private, so this is hygiene rather than a leak. No behaviour, compose, or exposure change.",
+  "summary": "Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "22 pre-existing ty diagnostics, unchanged",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "505 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "29 tests",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 skipped, no host-reachable database; no schema change",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "baseline before this session, pre-existing — HEAD d90dbc1 changed backend/.env.example without regenerating configuration.json/ENV_VARS.md and without a change record, so the working-tree regeneration read as governance changed without a record; this session's record closes exactly that gap",
+      "id": "governance-check-fast",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "after restoring the wording, governance-sync moved only the ACME_EMAIL row of ENV_VARS.md; the webhook-secret row regenerated back to the bytes HEAD's ENV_VARS.md already carried, confirming the restored text equals the recorded sessions verbatim",
+      "id": "regeneration-diff",
+      "result": "pass"
+    }
+  ]
+}

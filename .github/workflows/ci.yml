@@ -590,13 +590,13 @@ jobs:
         run: make audit-python
 
       # JavaScript half: bun audit over frontend/bun.lock and npm audit over the
-      # chrome-devtools sidecar's package-lock.json. Non-gating for now: the frontend
-      # carries known high findings in transitive dependencies (sharp, vitest, next-intl,
-      # js-yaml, ...) that need bumping in their own session; flip continue-on-error off
-      # once that lands so the step becomes a gate rather than a badge nobody reads.
+      # chrome-devtools sidecar's package-lock.json. Gating since 2026-08-19, when the
+      # known frontend findings (vitest/vite, postcss, nanoid, sharp, js-yaml) and the
+      # sidecar's hono advisory were bumped away. A new advisory fails this job; bump it
+      # (or, for a transitive pin, override it in frontend/package.json) rather than
+      # re-adding continue-on-error.
       - name: Audit JavaScript dependency sets
         run: make audit-js
-        continue-on-error: true
 
   # Every image the repository ships, built on every event so a broken Dockerfile cannot
   # reach main, and scanned by Trivy. Trivy stays advisory (exit-code 0) under the

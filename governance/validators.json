@@ -61,7 +61,7 @@
     {
       "id": "dependency-audit",
       "command": "make audit",
-      "description": "pip-audit over the backend and governance-tool locks and the Docling sidecar requirements.lock (audit-python, gating in CI), then bun audit over the frontend and npm audit over the chrome-devtools sidecar (audit-js, non-gating in CI until the known frontend findings are bumped).",
+      "description": "pip-audit over the backend and governance-tool locks and the Docling sidecar requirements.lock (audit-python, gating in CI), then bun audit over the frontend and npm audit over the chrome-devtools sidecar (audit-js, gating in CI since 2026-08-19; a framework-pinned transitive finding is fixed through the overrides block in frontend/package.json).",
       "destructive": false,
       "requires": ["uv", "bun", "node"],
       "ci_job": "security"

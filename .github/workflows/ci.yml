@@ -384,11 +384,14 @@ jobs:
       REDIS_HOST: localhost
       REDIS_PORT: "6379"
       # >= 32 chars, unique per run, never a literal secret in the file.
-      SECRET_KEY: e2e-only-${{ github.run_id }}-${{ github.run_attempt }}-0123456789abcdef
+      SECRET_KEY: e2e-only-not-a-secret-${{ github.run_id }}-${{ github.run_attempt }}-0123456789abcdef0123456789abcdef
       FRONTEND_URL: http://localhost:3000
       # The integrations spec expects the three deployment-managed MCP servers to be listed.
       # None is reachable here; the backend probes and skips them at connection time.
       MCP_SERVERS: '[{"name":"docling-internal","url":"http://docling-mcp:8000/mcp","headers":{"Host":"localhost:8000"}},{"name":"chrome-internal","url":"http://chrome-devtools-mcp:8000/mcp"},{"name":"github-internal","url":"http://github-mcp:8082/","auth":"github","allowed_tools":["get_file_contents","search_code","search_issues","issue_read","pull_request_read","list_commits"]}]'
+      # Settings refuse a github-auth MCP entry without a token. This value is not a token:
+      # the sidecar it would be sent to does not exist on the runner.
+      GITHUB_MCP_TOKEN: e2e-placeholder-not-a-token
       # --- frontend ---
       BACKEND_URL: http://localhost:8100
       NEXT_PUBLIC_API_URL: http://localhost:8100

@@ -98,7 +98,7 @@
       "rationale": "Automation may regenerate derived files, propose changes, and produce reports. It may not weaken a policy, broaden a permission, accept a security exception, or approve its own governance change.",
       "maturity": "advisory",
       "check_impl": "manual",
-      "promotion_criteria": "Enforceable only as a review requirement; there is no scheduled automation yet to check.",
+      "promotion_criteria": "Enforceable only as a review requirement. The scheduled automation now in place - .github/workflows/nightly.yml (report-only, contents: read, no write step) and .github/dependabot.yml (proposes PRs, never merges) - is what a reviewer checks this rule against; a check could assert that no scheduled workflow requests write permissions.",
       "exceptions_allowed": false,
       "exception_refs": []
     }

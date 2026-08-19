@@ -1,0 +1,61 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    ".github/workflows/nightly.yml: weekday 03:17 UTC and workflow_dispatch; e2e over all five Playwright projects on the composed stack, backend pytest on windows-latest, full-history gitleaks (non-gating), Trivy on all four images against a fresh database with JSON evidence, make audit, governance sample --count 100"
+  ],
+  "compatibility_impact": "None to the merge gate: nightly does not feed ci-ok. scheduled-automation-does-not-change-code's promotion criteria now name nightly.yml and dependabot.yml as what a reviewer checks.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/nightly.yml",
+    "governance/policies/process.json"
+  ],
+  "follow_up": [
+    "Trigger nightly once via workflow_dispatch and read the five Playwright reports and the Windows suite result"
+  ],
+  "id": "2026-08-18-add-a-report-only-nightly-workflow-for-the-full-playwright-brows",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not applicable",
+    "Phase 6 of the CI/CD coverage plan; the deferred items (ci.yml extractor for validators-declare-their-ci-job, en/pl message parity, CODEOWNERS, impact-selected validators, Trivy promotion, wider ty and ruff scope) remain their own sessions"
+  ],
+  "manifests_changed": [],
+  "reason": "Some checks are too slow, too broad, or too noisy for every push and PR and had no home at all: only chromium ran in CI while the suite declares five browser projects, the backend suite never ran on Windows although that is the development platform, gitleaks scanned only the pushed range, Trivy only ran against the vulnerability database of the moment of the push, and the manifest sample was 25 files. After this change a weekday nightly workflow runs all of them and reports; per the scheduled-automation-does-not-change-code policy it never writes to the repository or changes a setting.",
+  "risks": [],
+  "rollback": "git revert; the schedule stops with the file.",
+  "schema_version": 1,
+  "security_impact": "The nightly workflow declares contents: read only, has no write step, and every job is report-only; the full-history gitleaks job is continue-on-error because the open secrets-pushed-to-remote finding lives in history and is closed by rotation, not tooling. Windows minutes bill at 2x and are confined to this workflow.",
+  "summary": "Add a report-only nightly workflow for the full Playwright browser matrix, the backend suite on Windows, the full-history secret scan, fresh Trivy scans, dependency audits, and a wider manifest sample",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make hygiene-workflows - actionlint and zizmor clean over ci.yml and nightly.yml",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "the blocking finding before finish is the absent record; nightly.yml shows as untracked until committed",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "unchanged tool",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "the schedule fires on the next weekday 03:17 UTC; workflow_dispatch is available for an on-demand proof, which is the follow-up",
+      "id": "nightly-run",
+      "result": "skipped"
+    }
+  ]
+}

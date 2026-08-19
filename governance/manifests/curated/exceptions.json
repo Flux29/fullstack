@@ -92,12 +92,12 @@
     {
       "id": "playwright-not-in-ci",
       "statement": "The Playwright end-to-end suite runs locally only and is not part of any CI job.",
-      "reason": "Its webServer is disabled under CI and the tests need a running backend, so as shipped the CI step could only ever fail or vacuously pass. Removing it was more honest than leaving a step that never proved anything. E2E remains available as make playwright against a local stack.",
+      "reason": "Its webServer is disabled under CI and the tests need a running backend, so as shipped the CI step could only ever fail or vacuously pass. Removing it was more honest than leaving a step that never proved anything. E2E remains available as make playwright against a local stack. Expired 2026-08-18: the review trigger fired - the CI e2e job boots the backend on the pgvector and redis services with LLM_PROVIDER=test and runs the suite on chromium; the exception is kept for history.",
       "scope": [
         ".github/workflows/ci.yml",
         "frontend/playwright.config.ts"
       ],
-      "status": "active",
+      "status": "expired",
       "review_trigger": "A composed CI stack exists that can bring up the backend, at which point the suite should return to CI.",
       "policy_refs": ["validators-declare-their-ci-job"],
       "component_refs": ["frontend-app"]

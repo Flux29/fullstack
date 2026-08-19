@@ -8,8 +8,10 @@ description: Write or run Playwright end-to-end tests in frontend/e2e — the on
 Specs live in `frontend/e2e/` — `home.spec.ts`, `auth.spec.ts`, `chat.spec.ts`,
 `integrations.spec.ts` — with `auth.setup.ts` as the setup project that authenticates
 first and shares its storage state with the rest. The registered validator is
-`playwright` (`make playwright`): **local only**, `requires: running-stack`,
-`ci_job: null` — CI does not run it, so a local run is the only evidence there is.
+`playwright` (`make playwright`), `requires: running-stack`, `ci_job: e2e` — CI runs
+it on chromium against a backend booted on the pgvector and redis services with
+`LLM_PROVIDER=test` (deterministic fake replies, no key). A local run adds the other
+browsers and a real model; a CI run is the evidence on every push.
 
 ## When the spin-up is worth it
 

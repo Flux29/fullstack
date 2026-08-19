@@ -51,7 +51,7 @@ The Makefile is the single operational entry point. Prefer it over raw `uv`/`doc
 | Backend lint / tests | `make lint` · `make test` · `make test-cov` |
 | Frontend lint, types, unit tests with coverage | `make frontend-test` |
 | Frontend format check / production build | `make frontend-format-check` · `make frontend-build` |
-| End-to-end (local only, needs a running stack) | `make playwright` |
+| End-to-end (needs a running stack; CI runs chromium) | `make playwright` |
 | Dev stack up / down / logs | `make dev` · `make dev-down` · `make dev-logs` |
 | Compose matrix validation | `make compose-check` |
 | Operational preflights | `make preflight-volumes` · `make preflight-model` · `make preflight-ports` |

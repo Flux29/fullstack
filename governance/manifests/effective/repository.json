@@ -448,7 +448,6 @@
       ],
       "exceptions": [
         "coverage-floors-are-ratchets",
-        "playwright-not-in-ci",
         "wishlist-calls-fail-gracefully",
         "ws-chat-bypasses-proxy"
       ],
@@ -819,7 +818,6 @@
     "billing-generator-feature-disabled",
     "coverage-floors-are-ratchets",
     "google-live-suites-excluded-from-registry",
-    "playwright-not-in-ci",
     "preflights-are-host-only",
     "profile-gated-services-without-healthchecks",
     "taskiq-healthchecks-disabled",

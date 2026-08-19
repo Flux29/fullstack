@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 103)
+## Recent changes (latest 20 of 104)
 
 - **2026-08-18** — Stop the backgrounded backend at the end of the CI e2e job so setup-uv's cache prune cannot hang on it
   - Components: none recorded
@@ -114,6 +114,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Add an LLM_PROVIDER=test path that builds the agent on pydantic-ai's TestModel so end-to-end tests can round-trip chat without a live model
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-an-llm-provider-test-path-that-builds-the-agent-on-pydantic.json`
+- **2026-08-18** — Add a report-only nightly workflow for the full Playwright browser matrix, the backend suite on Windows, the full-history secret scan, fresh Trivy scans, dependency audits, and a wider manifest sample
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-18-add-a-report-only-nightly-workflow-for-the-full-playwright-brows.json`
 - **2026-08-18** — Add a hygiene CI job that runs the pre-commit hooks, lints the workflows and Dockerfiles, and scans the pushed range for secrets
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-a-hygiene-ci-job-that-runs-the-pre-commit-hooks-lints-the-wo.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-17** — Measure backend branch coverage and re-baseline the ratcheted floor to the combined metric
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-17-measure-backend-branch-coverage-and-re-baseline-the-ratcheted-fl.json`
-- **2026-08-17** — Let dev-codecov read credentials from the root .env that Compose already interpolates
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-17-let-dev-codecov-read-credentials-from-the-root-env-that-compose.json`
 
 ## Decisions (5)
 

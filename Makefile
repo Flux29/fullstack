@@ -1,5 +1,6 @@
 .PHONY: help install format lint test test-cov frontend-test frontend-format-check frontend-build playwright \
-	audit audit-python audit-js run run-prod \
+	audit audit-python audit-js hygiene hygiene-precommit hygiene-workflows hygiene-dockerfiles secret-scan \
+	run run-prod \
 	preflight preflight-volumes preflight-model preflight-ports preflight-edge-ports preflight-mcp \
 	preflight-codecov compose-check \
 	dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all dev-down dev-logs dev-rebuild stage stage-down \
@@ -206,6 +207,35 @@ audit-js:
 	cd frontend && bun audit --audit-level=high
 	cd docker/mcp/chrome-devtools && npm audit --omit=dev --audit-level=high
 
+# Repository hygiene: the pre-commit hooks over the whole tree (ty and the governance fast
+# check are skipped because `lint` and `governance-check` already run them), the workflow
+# linters, and hadolint over every Dockerfile. actionlint, hadolint and gitleaks run from
+# pinned images so the same binary runs here and in CI; MSYS_NO_PATHCONV stops Git Bash on
+# Windows from rewriting the /repo mount into a Windows path.
+ACTIONLINT_IMAGE ?= rhysd/actionlint:1.7.12
+HADOLINT_IMAGE ?= hadolint/hadolint:v2.15.1
+GITLEAKS_IMAGE ?= ghcr.io/gitleaks/gitleaks:v8.30.1
+DOCKER_RUN_REPO := MSYS_NO_PATHCONV=1 docker run --rm -v "$(CURDIR):/repo" -w /repo
+DOCKERFILES := backend/Dockerfile frontend/Dockerfile docker/mcp/docling/Dockerfile docker/mcp/chrome-devtools/Dockerfile
+
+hygiene: hygiene-precommit hygiene-workflows hygiene-dockerfiles
+
+hygiene-precommit:
+	SKIP=ty,governance-fast-check uvx pre-commit run --all-files --show-diff-on-failure
+
+hygiene-workflows:
+	$(DOCKER_RUN_REPO) $(ACTIONLINT_IMAGE)
+	uvx zizmor --config .github/zizmor.yml .github/workflows
+
+hygiene-dockerfiles:
+	$(DOCKER_RUN_REPO) $(HADOLINT_IMAGE) hadolint --failure-threshold warning $(DOCKERFILES)
+
+# Secret scan over a commit range (BASE..HEAD) or, without BASE, the working tree and
+# history git can see. CI passes the push or PR base; a full-history scan is deliberately
+# not the gate because of the open secrets-pushed-to-remote finding.
+secret-scan:
+	$(DOCKER_RUN_REPO) $(GITLEAKS_IMAGE) git /repo --redact --no-banner --exit-code 1 $(if $(BASE),--log-opts="$(BASE)..HEAD",)
+
 run:
 	uv run --directory backend fullstack server run --reload --port 8100
 
@@ -326,7 +356,7 @@ upgrade-finalize:
 help:
 	@echo "Core: preflight compose-check dev dev-frontend dev-mcp dev-db-ui dev-codecov dev-all"
 	@echo "Lifecycle: dev-down dev-logs stage prod prod-codecov docker-clean (preserves data)"
-	@echo "Validation: lint test test-cov frontend-test frontend-format-check frontend-build playwright audit compose-check"
+	@echo "Validation: lint test test-cov frontend-test frontend-format-check frontend-build playwright audit compose-check hygiene secret-scan"
 	@echo "Governance: governance-preflight governance-context governance-sync governance-check (see AGENTS.md)"
 	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"
 	@echo "Local API: make run (port 8100); Taskiq concurrency defaults to 1"

@@ -67,6 +67,22 @@
       "ci_job": "security"
     },
     {
+      "id": "hygiene",
+      "command": "make hygiene",
+      "description": "The pre-commit hooks over the whole tree (ty and the governance fast check skipped: lint and governance-check already run them), actionlint and zizmor over the workflows, and hadolint at warning threshold over every Dockerfile. actionlint, hadolint and gitleaks run from pinned container images so the local and CI binaries are the same.",
+      "destructive": false,
+      "requires": ["uv", "docker-cli"],
+      "ci_job": "hygiene"
+    },
+    {
+      "id": "secret-scan",
+      "command": "make secret-scan",
+      "description": "gitleaks over a commit range (BASE=<sha>) or the working tree and reachable history without one. CI passes the push or PR base; a full-history scan is not the gate because of the open secrets-pushed-to-remote finding.",
+      "destructive": false,
+      "requires": ["docker-cli"],
+      "ci_job": "hygiene"
+    },
+    {
       "id": "playwright",
       "command": "make playwright",
       "description": "Playwright end-to-end suite. Local only: its webServer is disabled under CI and it needs a running backend, so it is not part of any CI job until a composed CI stack exists.",

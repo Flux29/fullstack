@@ -31,14 +31,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
+          persist-credentials: false
           # The change-record and policy-weakening checks compare against the previous
           # commit, which a shallow clone does not have.
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
         with:
           version: "latest"
           enable-cache: true
@@ -83,7 +84,9 @@ jobs:
       # the result differs from what is committed. This is the real drift gate: a stale
       # manifest and a hand-edited one are the same condition here.
       - name: Full governance check
-        run: make governance-check ARGS="--verbose --since ${{ steps.base.outputs.sha }}"
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: make governance-check ARGS="--verbose --since $BASE_SHA"
 
       # Belt and braces: the check above compares rendered output against the committed
       # bytes, and this proves a real sync writes nothing new.
@@ -121,7 +124,7 @@ jobs:
         run: make governance-views
 
       - name: Upload governance views
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: governance-views
           path: artifacts/governance/
@@ -136,10 +139,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
         with:
           version: "latest"
           enable-cache: true
@@ -163,7 +168,7 @@ jobs:
       # Third flag on the self-hosted instance, same opt-in as the other two.
       - name: Upload governance-tool coverage to self-hosted Codecov
         if: vars.CODECOV_URL != ''
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           url: ${{ vars.CODECOV_URL }}
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -177,10 +182,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
         with:
           version: "latest"
           enable-cache: true
@@ -226,10 +233,12 @@ jobs:
           --health-retries 5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
         with:
           version: "latest"
           enable-cache: true
@@ -262,7 +271,7 @@ jobs:
       # Unset, the step is skipped instead of falling back to codecov.io.
       - name: Upload backend coverage to self-hosted Codecov
         if: vars.CODECOV_URL != ''
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           url: ${{ vars.CODECOV_URL }}
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -276,13 +285,15 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       - name: Cache bun packages
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.bun/install/cache
           key: bun-${{ runner.os }}-${{ hashFiles('frontend/bun.lock') }}
@@ -300,7 +311,7 @@ jobs:
       # Same opt-in as the backend upload; the lcov reporter is enabled in vitest.config.ts.
       - name: Upload frontend coverage to self-hosted Codecov
         if: vars.CODECOV_URL != ''
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           url: ${{ vars.CODECOV_URL }}
           token: ${{ secrets.CODECOV_TOKEN }}
@@ -333,22 +344,80 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Validate every stack and profile
         run: |
           cp backend/.env.example backend/.env
           make compose-check
 
+  # Repository hygiene — the hygiene and secret-scan validators. pre-commit over the whole
+  # tree (a clone without the hook installed would otherwise commit whatever the hooks
+  # catch and only CI would know), actionlint and zizmor over the workflows, hadolint over
+  # every Dockerfile, and gitleaks over the pushed or proposed commit range. Full history is
+  # deliberately not the gate: the open secrets-pushed-to-remote finding lives there.
+  hygiene:
+    name: Hygiene
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          # gitleaks scans a commit range.
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Cache pre-commit environments
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ runner.os }}-${{ hashFiles('.pre-commit-config.yaml') }}
+
+      - name: pre-commit, workflow linters, Dockerfile linter
+        run: make hygiene
+
+      - name: Resolve the base commit for the secret scan
+        id: base
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          BEFORE: ${{ github.event.before }}
+        run: |
+          if [ "$EVENT_NAME" = pull_request ]; then
+            base="$PR_BASE"
+          elif [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ] && git cat-file -e "$BEFORE" 2>/dev/null; then
+            base="$BEFORE"
+          else
+            base=$(git rev-parse HEAD~1)
+          fi
+          echo "sha=$base" >> "$GITHUB_OUTPUT"
+
+      - name: Secret scan over the commit range
+        env:
+          BASE_SHA: ${{ steps.base.outputs.sha }}
+        run: make secret-scan BASE="$BASE_SHA"
+
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@38f3f104447c67c051c4a08e39b64a148898af3a # v4.2.0
         with:
           version: "latest"
 
@@ -356,7 +425,7 @@ jobs:
         run: uv python install 3.12
 
       - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
 
       # The dependency-audit validator, python half: pip-audit over the exported backend
       # and governance-tool locks and the Docling sidecar's requirements.lock. uvx runs
@@ -380,13 +449,15 @@ jobs:
     needs: [lint, test]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
       - name: Build Docker image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: ./backend
           push: false
@@ -396,7 +467,7 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: fullstack:latest
           format: table
@@ -414,7 +485,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: always()
-    needs: [governance, governance-tool, lint, test, test-frontend, compose, security]
+    needs: [governance, governance-tool, lint, test, test-frontend, compose, hygiene, security]
     steps:
       - name: Every gating job succeeded
         env:

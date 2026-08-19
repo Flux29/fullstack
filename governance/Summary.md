@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 108)
+## Recent changes (latest 20 of 109)
 
+- **2026-08-19** — Keep the cookie-consent banner from covering the auth form submit button on mobile viewports
+  - Components: frontend-app
+  - Record: `governance/history/changes/2026-08-19-keep-the-cookie-consent-banner-from-covering-the-auth-form-submi.json`
 - **2026-08-19** — Fix email template resolution so welcome.html is found on plain uv sync installs
   - Components: backend-api, email
   - Record: `governance/history/changes/2026-08-19-fix-email-template-resolution-so-welcome-html-is-found-on-plain.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe.json`
-- **2026-08-18** — Add an LLM_PROVIDER=test path that builds the agent on pydantic-ai's TestModel so end-to-end tests can round-trip chat without a live model
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-18-add-an-llm-provider-test-path-that-builds-the-agent-on-pydantic.json`
 
 ## Decisions (5)
 

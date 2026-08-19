@@ -88,10 +88,14 @@ export function CookieBanner() {
   if (!show) return null;
 
   return (
+    // Below `md` the banner is sticky and in flow rather than fixed: it still hugs the
+    // bottom edge, but the document grows by its height, so a phone user (or Playwright)
+    // can always scroll a covered control — the auth submit button — out from under it.
+    // From `md` up it floats fixed in the corner and overlaps nothing that matters.
     <div
       role="dialog"
       aria-labelledby="cookie-banner-title"
-      className="fixed inset-x-0 bottom-0 z-[55] p-4 md:right-4 md:bottom-4 md:left-auto md:max-w-md"
+      className="sticky bottom-0 z-[55] p-4 md:fixed md:right-4 md:bottom-4 md:max-w-md"
     >
       <div className="border-foreground/15 bg-card text-foreground rounded-2xl border shadow-2xl">
         <div className="flex items-start gap-3 p-5">

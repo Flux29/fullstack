@@ -167,7 +167,7 @@ jobs:
 
       # Third flag on the self-hosted instance, same opt-in as the other two.
       - name: Upload governance-tool coverage to self-hosted Codecov
-        if: vars.CODECOV_URL != ''
+        if: vars.CODECOV_URL != '' && github.actor != 'dependabot[bot]'
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           url: ${{ vars.CODECOV_URL }}
@@ -269,8 +269,11 @@ jobs:
       # Opt-in: set the CODECOV_URL repository variable and the CODECOV_TOKEN secret
       # (a repository upload token from the instance, or its global upload token).
       # Unset, the step is skipped instead of falling back to codecov.io.
+      # Dependabot runs are excluded: the instance rejects their PR-event uploads
+      # ("Not valid tokenless upload") even with the token supplied via the Dependabot
+      # secrets store, and coverage floors already gate locally in pytest/vitest.
       - name: Upload backend coverage to self-hosted Codecov
-        if: vars.CODECOV_URL != ''
+        if: vars.CODECOV_URL != '' && github.actor != 'dependabot[bot]'
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           url: ${{ vars.CODECOV_URL }}
@@ -310,7 +313,7 @@ jobs:
 
       # Same opt-in as the backend upload; the lcov reporter is enabled in vitest.config.ts.
       - name: Upload frontend coverage to self-hosted Codecov
-        if: vars.CODECOV_URL != ''
+        if: vars.CODECOV_URL != '' && github.actor != 'dependabot[bot]'
         uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5.5.5
         with:
           url: ${{ vars.CODECOV_URL }}

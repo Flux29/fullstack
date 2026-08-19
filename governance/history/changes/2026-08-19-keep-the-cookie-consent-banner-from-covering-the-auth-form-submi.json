@@ -1,0 +1,53 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [
+    "Pages under /[locale]"
+  ],
+  "behavioral_effects": [
+    "Below the md breakpoint the cookie banner is sticky and in flow instead of position:fixed, so the document grows by the banner height and any control it overlaps (auth submit button, chat composer) can be scrolled out from under it",
+    "The nightly Mobile Chrome / Mobile Safari e2e projects no longer time out on locator.click for auth.spec.ts:59 (and the Mobile Safari login clicks)"
+  ],
+  "compatibility_impact": "None for callers: the component API and DOM structure are unchanged; only the wrapper's Tailwind classes moved from fixed to sticky below md. From md up the banner is fixed in the bottom-right corner exactly as before.",
+  "date": "2026-08-19",
+  "files_changed": [
+    "frontend/src/components/marketing/cookie-banner.tsx"
+  ],
+  "follow_up": [],
+  "id": "2026-08-19-keep-the-cookie-consent-banner-from-covering-the-auth-form-submi",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Did not change the e2e spec; the test now passes through Playwright's normal scroll-into-view retry, the same path a phone user takes",
+    "Local Windows WebKit fill() on the email input is unreliable (pre-existing, environment-specific); the Mobile Safari 'invalid credentials' test was not made green locally for that reason"
+  ],
+  "manifests_changed": [],
+  "reason": "Below the md breakpoint the consent dialog is a full-width position:fixed overlay across the bottom of the page. The auth pages barely exceed the viewport, so at maximum scroll the Register (and on iPhone 12 the Login) submit button still sits underneath it; the nightly Mobile Chrome and Mobile Safari e2e projects time out on locator.click because the dialog subtree intercepts pointer events, and a real phone user is equally unable to tap it without first dismissing the banner. Making the banner sticky and in-flow on small viewports (still fixed in the corner from md up) grows the document by the banner height so scrolling always uncovers the button.",
+  "risks": [
+    "On the h-screen dashboard/chat shells an un-consented mobile visitor can scroll the body by the banner height (~231px) until they decide; before, the same banner covered the bottom of the shell outright with no way to reach what was underneath. Verified by measurement on Pixel 5 emulation, judged acceptable"
+  ],
+  "rollback": "git revert of the single commit restores the fixed overlay; nothing outside the file is affected. Note that reverting re-breaks the Mobile Chrome and Mobile Safari nightly e2e projects.",
+  "schema_version": 1,
+  "security_impact": "None. Positioning-only CSS change to the consent dialog; no consent semantics, storage, or tracking behaviour changed.",
+  "summary": "Keep the cookie-consent banner from covering the auth form submit button on mobile viewports",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make frontend-test — lint 0 errors (30 pre-existing warnings), type-check clean, vitest 29/29 passed",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make playwright --project=\"Mobile Chrome\" --project=\"Mobile Safari\" against the rebuilt fullstack-frontend:local container — auth.spec.ts:59 'should validate password requirements' passes on both mobile projects, along with the two Mobile Safari login tests the nightly also lost to the banner; 66/67 passed. The one failure (Mobile Safari 'should show error for invalid credentials') is a local Windows-WebKit quirk where fill() on the email input yields '' — reproduced identically with the banner absent and on desktop webkit, while the nightly's Linux WebKit snapshot shows the same field filled correctly",
+      "id": "playwright",
+      "result": "pass"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

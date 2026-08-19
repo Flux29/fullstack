@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 101)
+## Recent changes (latest 20 of 102)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -78,6 +78,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Move the hand-authored tests manifest from manifests/generated to manifests/curated
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-move-the-hand-authored-tests-manifest-from-manifests-generated-t.json`
+- **2026-08-18** — Mark chat messages with data-role and make the e2e chat and user-menu assertions hold when the model answers instantly
+  - Components: chat-frontend, frontend-app
+  - Record: `governance/history/changes/2026-08-18-mark-chat-messages-with-data-role-and-make-the-e2e-chat-and-user.json`
 - **2026-08-18** — Make the Makefile the single source of validator commands and have CI invoke it, with workflow hygiene and a repo codecov.yml
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-make-the-makefile-the-single-source-of-validator-commands-and-ha.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-17** — Document the webhook-secret ordering constraint and empty-value trap
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-17-document-the-webhook-secret-ordering-constraint-and-empty-value.json`
-- **2026-08-17** — Add self-hosted Codecov as a Docker Compose integrated service and wire coverage uploads into CI
-  - Components: backend-api, codecov, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-17-add-self-hosted-codecov-as-a-docker-compose-integrated-service-a.json`
 
 ## Decisions (5)
 

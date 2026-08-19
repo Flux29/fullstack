@@ -118,7 +118,7 @@
       "validator": "playwright",
       "gated_by": [],
       "requires": ["bun", "running-stack"],
-      "notes": "Local only. Its webServer is disabled under CI and it needs a running backend, so the CI step could only fail or vacuously pass; see the playwright-not-in-ci exception."
+      "notes": "Runs in the CI e2e job on chromium against a real backend (pgvector, redis, LLM_PROVIDER=test); locally needs make dev or make run first. The five-project matrix is nightly work. The playwright-not-in-ci exception is expired."
     },
     {
       "id": "governance-selftest",

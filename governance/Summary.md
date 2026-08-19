@@ -34,7 +34,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **env-example-unknown-consumers** (low) — Three variables remain genuinely unread: OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS all appear in backend/.env.example with no Settings field and no Compose consumer. Setting any of them has no effect and produces no warning, because Settings uses extra="ignore". Now surfaced automatically by the configuration extractor rather than depending on someone noticing.
   - Disposition: app-fix-required
 
-## Accepted exceptions (11)
+## Accepted exceptions (10)
 
 - **alembic-numbering-gaps-accepted** — Migration filenames are not contiguously numbered: 0017 and 0019 through 0021 do not exist, and 0004_5 is interleaved.
   - Revisit when: The revision graph itself becomes disconnected or grows an unexpected head.
@@ -44,8 +44,6 @@ Current state, what is unresolved, and recent material history. This is not the 
   - Revisit when: A meaningful body of tests lands without the floor moving, which means the ratchet is not being maintained.
 - **google-live-suites-excluded-from-registry** — The live Google Workspace test suite is absent from the validator registry rather than present and marked destructive.
   - Revisit when: A caller needs to run it programmatically, which would mean designing a safe harness first.
-- **playwright-not-in-ci** — The Playwright end-to-end suite runs locally only and is not part of any CI job.
-  - Revisit when: A composed CI stack exists that can bring up the backend, at which point the suite should return to CI.
 - **preflights-are-host-only** — The five preflight validators (preflight-volumes, preflight-model, preflight-ports, preflight-edge-ports, preflight-mcp) declare ci_job null and run in no CI job.
   - Revisit when: A self-hosted runner with a Docker engine and Docker Model Runner joins the pipeline, at which point preflight-volumes and preflight-model become meaningful there.
 - **profile-gated-services-without-healthchecks** — The MCP sidecars, the browser service, pgweb, and Traefik declare no healthcheck.
@@ -66,11 +64,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 99)
+## Recent changes (latest 20 of 100)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-stop-applying-the-staged-file-scope-to-whole-repository-facts-in.json`
+- **2026-08-18** — Run the Playwright end-to-end suite in CI against a real backend on pgvector and redis with the fake LLM provider, and retire the playwright-not-in-ci exception
+  - Components: agent-operating-surface, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-18-run-the-playwright-end-to-end-suite-in-ci-against-a-real-backend.json`
 - **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em.json`
@@ -125,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-12** — Update the recorded migration head expectation to 0028_user_magic_link_epoch
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-12-update-the-recorded-migration-head-expectation-to-0028-user-magi.json`
-- **2026-08-12** — Reduce agent token consumption via deferred MCP tool loading and OpenRouter prompt caching
-  - Components: agents, backend-api
-  - Record: `governance/history/changes/2026-08-12-reduce-agent-token-consumption-via-deferred-mcp-tool-loading-and.json`
 
 ## Decisions (5)
 

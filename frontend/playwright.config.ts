@@ -81,13 +81,17 @@ export default defineConfig({
     },
   ],
 
-  /* Run your local dev server before starting the tests */
-  webServer: process.env.CI
-    ? undefined
-    : {
-        command: "bun run dev",
-        url: "http://localhost:3000",
-        reuseExistingServer: !process.env.CI,
-        timeout: 120 * 1000,
-      },
+  /*
+   * The frontend is Playwright's to start: the dev server locally, the production build in
+   * CI (`bun run build` has already run there). The backend is not — it needs a database,
+   * a migration and a seeded user, so the CI job boots it before Playwright starts and a
+   * developer runs `make dev` or `make run`. Set PLAYWRIGHT_BASE_URL to point at a
+   * frontend that is already up.
+   */
+  webServer: {
+    command: process.env.CI ? "bun run start" : "bun run dev",
+    url: "http://localhost:3000",
+    reuseExistingServer: !process.env.CI,
+    timeout: 120 * 1000,
+  },
 });

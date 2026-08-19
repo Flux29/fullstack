@@ -85,10 +85,10 @@
     {
       "id": "playwright",
       "command": "make playwright",
-      "description": "Playwright end-to-end suite. Local only: its webServer is disabled under CI and it needs a running backend, so it is not part of any CI job until a composed CI stack exists.",
+      "description": "Playwright end-to-end suite - the one validator that proves the browser-to-proxy-to-backend chain. Playwright starts the frontend itself; the backend must be up (make dev or make run locally; the CI e2e job boots it on the pgvector and redis services with LLM_PROVIDER=test). CI runs chromium only: make playwright ARGS=--project=chromium.",
       "destructive": false,
       "requires": ["bun", "running-stack"],
-      "ci_job": null
+      "ci_job": "e2e"
     },
     {
       "id": "compose-check",

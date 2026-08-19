@@ -1,0 +1,89 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Pages under /[locale]"
+  ],
+  "behavioral_effects": [
+    "New CI job e2e: pgvector and redis services, backend installed and started with LLM_PROVIDER=test, fullstack db upgrade and user create, make frontend-build, make playwright ARGS=--project=chromium, Playwright report and backend log uploaded on every outcome",
+    "playwright.config.ts starts the production build under CI and the dev server locally; PLAYWRIGHT_BASE_URL still overrides",
+    "playwright validator ci_job e2e; playwright-not-in-ci expired; tests.json, the e2e-playwright skill and AGENTS.md say CI runs chromium"
+  ],
+  "compatibility_impact": "playwright.config.ts now always defines webServer (bun run start under CI, bun run dev otherwise, reuse an existing server locally); developers who relied on CI having no webServer are unaffected. The playwright validator declares ci_job e2e; the playwright-not-in-ci exception is expired and removed from validators-declare-their-ci-job. ci-ok now needs e2e, so PR wall-clock is bounded by the e2e job.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".claude/skills/e2e-playwright/SKILL.md",
+    ".github/workflows/ci.yml",
+    "AGENTS.md",
+    "frontend/playwright.config.ts",
+    "governance/Summary.md",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/curated/tests.json",
+    "governance/manifests/effective/repository.json",
+    "governance/policies/process.json",
+    "governance/validators.json"
+  ],
+  "follow_up": [
+    "Watch the e2e job on this push; if the chat spec's loading-state assertion flakes with the fake model, gate that one spec on E2E_LLM",
+    "Phase 6: nightly workflow with the full Playwright matrix, Windows backend pytest, full-history gitleaks with baseline, Trivy on all four images, make audit, governance sample --count 100"
+  ],
+  "id": "2026-08-18-run-the-playwright-end-to-end-suite-in-ci-against-a-real-backend",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run; the change is a workflow job, one config block and governance data",
+    "Phase 5b of the CI/CD coverage plan. WebKit, Firefox and the mobile projects are nightly work (Phase 6)"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/curated/tests.json",
+    "governance/manifests/effective/repository.json"
+  ],
+  "reason": "The e2e suite was the only validator that proves the browser-to-proxy-to-backend chain and it ran nowhere but a developer's machine, because playwright.config disabled its webServer under CI and the chat specs needed a live model; with LLM_PROVIDER=test in place the composed stack the exception asked for can exist. After this change every push and PR boots the backend on the CI pgvector and redis services, migrates, seeds the test user, builds the frontend and runs the suite on chromium, uploading the report on failure, and the exception is expired.",
+  "risks": [
+    "First CI run may surface a runner-only difference (next start in standalone mode, cookie behaviour, MCP probe timing); the uploaded report and backend log are the diagnosis",
+    "e2e is now on the ci-ok path and is the slowest job; a flaky spec blocks the aggregate signal, so retries stay at 2 on CI"
+  ],
+  "rollback": "git revert. Nothing lives outside the repository.",
+  "schema_version": 1,
+  "security_impact": "The e2e job runs the backend with ENVIRONMENT=local, LLM_PROVIDER=test (fake model, no key, no tool calls), a per-run SECRET_KEY derived from the run id, and the deployment-managed MCP_SERVERS list pointing at hostnames that do not resolve on the runner (probed and skipped). COOKIE_SECURE=false is set only in this job so the auth cookies work over http://localhost under next start. No secret is stored; the seeded test user lives in a service container that dies with the job.",
+  "summary": "Run the Playwright end-to-end suite in CI against a real backend on pgvector and redis with the fake LLM provider, and retire the playwright-not-in-ci exception",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make playwright ARGS=--project=chromium locally against the running dev stack with the new webServer config - 34 passed in 17.6s (real OpenRouter model locally; the CI job uses LLM_PROVIDER=test and next start, proven by the CI run on this push)",
+      "id": "playwright",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make hygiene-workflows - actionlint clean, zizmor 0 findings on the new e2e job",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "the only blocking finding before finish was the absent record",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "unchanged tool; 346 passed earlier this session",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "e2e-playwright skill prose updated and every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "playwright.config.ts is excluded from vitest and tsc covers it in the CI test-frontend job",
+      "id": "frontend-test",
+      "result": "skipped"
+    }
+  ]
+}

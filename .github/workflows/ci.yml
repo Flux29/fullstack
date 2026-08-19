@@ -443,11 +443,138 @@ jobs:
         run: make audit-js
         continue-on-error: true
 
+  # Every image the repository ships, built on every event so a broken Dockerfile cannot
+  # reach main, and scanned by Trivy. Trivy stays advisory (exit-code 0) under the
+  # trivy-image-scan promotion ladder; the JSON report is uploaded so the four-week evidence
+  # the ladder asks for exists. On PRs an image whose context did not change is skipped
+  # inside the job, so the job still reports success and ci-ok stays a single name.
   docker:
+    name: Docker (${{ matrix.name }})
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    needs: [lint, test]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      pull-requests: read # paths-filter lists a PR's changed files through the API
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: ./backend
+          - name: frontend
+            context: ./frontend
+          - name: docling-mcp
+            context: ./docker/mcp/docling
+          - name: chrome-devtools-mcp
+            context: ./docker/mcp/chrome-devtools
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Did this image's context change? (PRs only)
+        id: changes
+        if: github.event_name == 'pull_request'
+        uses: dorny/paths-filter@0e4a8c6effa4802afeda77dc8d303f8176d7dfad # v3.0.4
+        with:
+          filters: |
+            context:
+              - '${{ matrix.context }}/**'
+              - '.github/workflows/ci.yml'
+
+      - name: Set up Docker Buildx
+        if: github.event_name != 'pull_request' || steps.changes.outputs.context == 'true'
+        uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - name: Build image
+        if: github.event_name != 'pull_request' || steps.changes.outputs.context == 'true'
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: ${{ matrix.context }}
+          push: false
+          load: true
+          tags: fullstack-${{ matrix.name }}:ci
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
+
+      - name: Trivy scan (table, advisory)
+        if: github.event_name != 'pull_request' || steps.changes.outputs.context == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: fullstack-${{ matrix.name }}:ci
+          format: table
+          exit-code: 0
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+
+      - name: Trivy scan (JSON evidence)
+        if: github.event_name != 'pull_request' || steps.changes.outputs.context == 'true'
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: fullstack-${{ matrix.name }}:ci
+          format: json
+          output: trivy-${{ matrix.name }}.json
+          exit-code: 0
+          ignore-unfixed: true
+          severity: CRITICAL,HIGH
+        env:
+          # The table step above already pulled the vulnerability DB; do not pull it twice.
+          TRIVY_SKIP_DB_UPDATE: "true"
+
+      - name: Upload Trivy report
+        if: github.event_name != 'pull_request' || steps.changes.outputs.context == 'true'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: trivy-${{ matrix.name }}
+          path: trivy-${{ matrix.name }}.json
+          retention-days: 90
+
+  # One aggregate result for the merge-gating jobs. It is a signal, not a branch-protection
+  # requirement: the repository is private on GitHub Free (protection is unavailable) and the
+  # single-branch workflow pushes to main directly, which a required check would reject. It
+  # exists so the publish job can depend on one name and so protection can be switched on
+  # without touching the workflow.
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs: [governance, governance-tool, lint, test, test-frontend, compose, hygiene, security, docker]
+    steps:
+      - name: Every gating job succeeded
+        env:
+          RESULTS: ${{ toJSON(needs) }}
+        run: |
+          echo "$RESULTS" | jq .
+          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")' > /dev/null
+
+  # First delivery step: the four images, rebuilt from the per-image GHA layer cache the
+  # docker job just warmed, pushed to ghcr.io/<owner>/fullstack-<image>. Only after ci-ok,
+  # only on pushes to main (tags `main` and `sha-<short>`) and v* tags (`X.Y.Z` and `latest`).
+  # The frontend image bakes NEXT_PUBLIC_* at build time; the values come from repository
+  # variables and fall back to the Dockerfile's localhost defaults, in which case that image
+  # is a validation build rather than a deployable one (Vercel is the frontend's real deploy).
+  publish:
+    name: Publish (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    needs: [ci-ok]
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: backend
+            context: ./backend
+          - name: frontend
+            context: ./frontend
+          - name: docling-mcp
+            context: ./docker/mcp/docling
+          - name: chrome-devtools-mcp
+            context: ./docker/mcp/chrome-devtools
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -456,40 +583,38 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - name: Build Docker image
+      - name: Log in to GHCR
+        uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Image tags and labels
+        id: meta
+        uses: docker/metadata-action@c299e40c65443455700f0fdfc63efafe5b349051 # v5.10.0
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/fullstack-${{ matrix.name }}
+          tags: |
+            type=sha,prefix=sha-
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') }}
+
+      - name: Build and push
         uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
-          context: ./backend
-          push: false
-          load: true
-          tags: fullstack:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: fullstack:latest
-          format: table
-          exit-code: 0
-          severity: CRITICAL,HIGH
-
-  # One aggregate result for the merge-gating jobs. It is a signal, not a branch-protection
-  # requirement: the repository is private on GitHub Free (protection is unavailable) and the
-  # single-branch workflow pushes to main directly, which a required check would reject. It
-  # exists so a later publish job can depend on one name and so protection can be switched
-  # on without touching the workflow. `docker` is deliberately absent while it runs on main
-  # pushes only; it joins once it runs on every event.
-  ci-ok:
-    name: CI OK
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    if: always()
-    needs: [governance, governance-tool, lint, test, test-frontend, compose, hygiene, security]
-    steps:
-      - name: Every gating job succeeded
-        env:
-          RESULTS: ${{ toJSON(needs) }}
-        run: |
-          echo "$RESULTS" | jq .
-          echo "$RESULTS" | jq -e 'all(.[]; .result == "success")' > /dev/null
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # Only the frontend Dockerfile declares these ARGs; the others ignore them.
+          build-args: |
+            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL || 'http://localhost:8100' }}
+            NEXT_PUBLIC_WS_URL=${{ vars.NEXT_PUBLIC_WS_URL || 'ws://localhost:8100' }}
+            NEXT_PUBLIC_SITE_URL=${{ vars.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000' }}
+            NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB=${{ vars.NEXT_PUBLIC_MAX_UPLOAD_SIZE_MB || '50' }}
+            NEXT_PUBLIC_OAUTH_PROVIDERS=${{ vars.NEXT_PUBLIC_OAUTH_PROVIDERS || 'google' }}
+            NEXT_PUBLIC_RAG_ENABLED=${{ vars.NEXT_PUBLIC_RAG_ENABLED || 'false' }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}

@@ -1,0 +1,73 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "make governance-*"
+  ],
+  "behavioral_effects": [
+    "docker job: matrix over backend, frontend, docling-mcp, chrome-devtools-mcp on every push and PR, per-image GHA cache scope, Trivy table plus JSON artifact (90 days), PR short-circuit via dorny/paths-filter",
+    "publish job: after ci-ok on main and v* tags, docker/metadata-action tags, GHCR login with GITHUB_TOKEN, build-push from the warmed cache",
+    "trivy-image-scan statement and trivy-advisory-deliberate scope now name all four images; ci-ok needs docker"
+  ],
+  "compatibility_impact": "The docker job now runs on every event as a four-image matrix (PR builds skip an image whose context is untouched) and ci-ok depends on it. Images publish to ghcr.io/flux29/fullstack-{backend,frontend,docling-mcp,chrome-devtools-mcp} tagged sha-<short> and main on main pushes, X.Y.Z and latest on v* tags. The frontend image bakes NEXT_PUBLIC_* from repository variables with localhost defaults, so it is validation-only until those variables are set. Nothing pulls these images yet: make prod still builds locally.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    "governance/Summary.md",
+    "governance/manifests/curated/exceptions.json",
+    "governance/policies/process.json"
+  ],
+  "follow_up": [
+    "After the first main push: confirm ghcr.io/flux29/fullstack-backend:sha-<short> pulls from the dev machine and set package visibility deliberately",
+    "Phase 5a: LLM_PROVIDER=test fake provider so the e2e chat specs run without a live model"
+  ],
+  "id": "2026-08-18-build-and-scan-all-four-container-images-on-every-ci-event-and-p",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run; the change is workflow YAML and two governance data edits",
+    "Phase 4 of the CI/CD coverage plan. Not here: a compose override that pulls ghcr images (which would turn make prod into a pull-based deploy), e2e, nightly, Trivy promotion"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/exceptions.json"
+  ],
+  "reason": "Only the backend image was ever built in CI, only on pushes to main, so a broken frontend or MCP sidecar Dockerfile reached main unnoticed and Trivy never saw three of the four images; the pipeline also delivered nothing - the one image it built was discarded. After this change every push and PR builds all four images with per-image layer caches and Trivy reports on each (still advisory, now with JSON evidence for the promotion ladder), and pushes to main and v* tags publish them to ghcr.io/flux29 as the first delivery step.",
+  "risks": [
+    "GHCR package visibility defaults to private on first push and inherits nothing from the repository; the packages page must be checked after the first publish",
+    "PR short-circuit means a Dockerfile change reaching main through a PR that did not touch its context is only built on the main push - acceptable because ci-ok on main is the fix-forward signal"
+  ],
+  "rollback": "git revert stops the publish; images already pushed to GHCR remain and are deleted by hand from the packages page if unwanted.",
+  "schema_version": 1,
+  "security_impact": "The publish job is the first job with packages: write, scoped to that job only, gated on ci-ok, and limited by if to pushes on main and v* tags; it logs in with the ephemeral GITHUB_TOKEN. The docker job gains pull-requests: read for paths-filter. Trivy now covers all four images (advisory, unchanged exit-code 0) and stores JSON reports for 90 days as the promotion-ladder evidence. Published images are pulled by digest-pinned bases and built from GHA layer caches scoped per image; zizmor's cache-poisoning concern is recorded in .github/zizmor.yml.",
+  "summary": "Build and scan all four container images on every CI event and publish them to GHCR from main and release tags",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "only blocking finding before finish was the absent record",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "unchanged since the previous session's 346-pass run minutes earlier; no tool code changed",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make hygiene-workflows - actionlint clean, zizmor 0 findings on the rewritten docker and new publish jobs",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "docker build of docker/mcp/docling and docker/mcp/chrome-devtools succeeds locally; the backend image built in the previous session; the frontend image is proven by the CI docker job on this push",
+      "id": "docker-build-sidecars",
+      "result": "pass"
+    }
+  ]
+}

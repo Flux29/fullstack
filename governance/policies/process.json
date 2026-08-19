@@ -75,8 +75,8 @@
     },
     {
       "id": "trivy-image-scan",
-      "statement": "The container image vulnerability scan reports CRITICAL and HIGH findings.",
-      "rationale": "The pilot for the advisory-to-blocking promotion ladder. It runs today with exit-code 0 and cannot fail the build, which is a reasonable starting point for a scan whose finding volume is unknown.",
+      "statement": "The container image vulnerability scan reports CRITICAL and HIGH findings for every image the repository ships: backend, frontend, docling-mcp, and chrome-devtools-mcp.",
+      "rationale": "The pilot for the advisory-to-blocking promotion ladder. It runs today with exit-code 0 and cannot fail the build, which is a reasonable starting point for a scan whose finding volume is unknown. Since 2026-08-18 the JSON report of every scan is a 90-day CI artifact, so the four-week evidence the ladder asks for exists.",
       "maturity": "advisory",
       "check_impl": "manual",
       "promotion_criteria": "Promote to warning after four consecutive weeks in which every CRITICAL finding was either fixed or recorded as an accepted exception. Promote to blocking after four further weeks at warning with no unreviewed finding. Each promotion is a governed change that flips exit-code in ci.yml; do not promote by editing this file alone.",

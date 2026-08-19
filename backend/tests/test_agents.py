@@ -139,6 +139,9 @@ class TestModelProvider:
         from app.agents.assistant import _build_model, settings
 
         monkeypatch.setattr(settings, "LLM_PROVIDER", "openrouter")
+        # A placeholder, not a credential: the provider refuses to construct without one,
+        # and this asserts provider selection, not that CI has a key.
+        monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "test-not-a-real-key")
         assert isinstance(_build_model("anthropic/claude-sonnet-5"), OpenRouterModel)
 
     def test_test_provider_builds_the_pydantic_ai_test_model_without_tool_calls(self, monkeypatch):

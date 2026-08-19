@@ -1,0 +1,48 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "test_openrouter_is_the_default_provider monkeypatches a placeholder OPENROUTER_API_KEY before building the model"
+  ],
+  "compatibility_impact": "Test only.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "backend/tests/test_agents.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-18-make-the-default-provider-test-independent-of-a-real-openrouter",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not applicable",
+    "Fix-forward: the CI test job was red from eb5a97e to efb00dd because this test only passed where a local key existed; the previous session's local run did not catch it"
+  ],
+  "manifests_changed": [],
+  "reason": "test_openrouter_is_the_default_provider built a real OpenRouterModel and passed only where backend/.env supplied a key; on the CI runner pydantic-ai raised UserError for the missing key and the test job has been red since the fake-provider change landed. After this change the test sets a placeholder key before building the model, so it asserts provider selection rather than the presence of a credential.",
+  "risks": [],
+  "rollback": "git revert.",
+  "schema_version": 1,
+  "security_impact": "None. The placeholder string is set on the in-process settings object inside one test and is never sent anywhere.",
+  "summary": "Make the default-provider test independent of a real OPENROUTER_API_KEY in the environment",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "tests/test_agents.py TestModelProvider 5 passed with backend/.env moved aside so no OPENROUTER_API_KEY was available - the condition that failed in CI",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run at close",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

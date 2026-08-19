@@ -203,7 +203,21 @@ class Settings(BaseSettings):
         "deepseek/deepseek-r1",
     ]
     AI_FRAMEWORK: str = "pydantic_ai"
-    LLM_PROVIDER: str = "openrouter"
+    # "test" builds every agent on pydantic-ai's TestModel: deterministic replies, no
+    # network, no key. It exists so the end-to-end suite can round-trip chat in CI, and is
+    # refused in production because a fake model answering real users is an outage that
+    # looks healthy.
+    LLM_PROVIDER: Literal["openrouter", "test"] = "openrouter"
+
+    @field_validator("LLM_PROVIDER")
+    @classmethod
+    def validate_llm_provider(cls, v: str, info: ValidationInfo) -> str:
+        env = info.data.get("ENVIRONMENT", "local") if info.data else "local"
+        if v == "test" and env == "production":
+            raise ValueError(
+                "LLM_PROVIDER=test is a fake model for tests and cannot run in production"
+            )
+        return v
 
     TAVILY_API_KEY: str = ""
 

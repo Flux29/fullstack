@@ -130,6 +130,60 @@ class TestGetAgent:
         assert isinstance(agent, AssistantAgent)
 
 
+class TestModelProvider:
+    """LLM_PROVIDER selects the model _build_model returns; `test` is the deterministic fake."""
+
+    def test_openrouter_is_the_default_provider(self, monkeypatch):
+        from pydantic_ai.models.openrouter import OpenRouterModel
+
+        from app.agents.assistant import _build_model, settings
+
+        monkeypatch.setattr(settings, "LLM_PROVIDER", "openrouter")
+        assert isinstance(_build_model("anthropic/claude-sonnet-5"), OpenRouterModel)
+
+    def test_test_provider_builds_the_pydantic_ai_test_model_without_tool_calls(self, monkeypatch):
+        from app.agents.assistant import _build_model, settings
+
+        monkeypatch.setattr(settings, "LLM_PROVIDER", "test")
+        model = _build_model("anything")
+        assert isinstance(model, TestModel)
+        assert model.call_tools == []
+
+    def test_test_provider_is_refused_in_production(self):
+        from pydantic import ValidationError
+
+        from app.core.config import Settings
+
+        with pytest.raises(ValidationError, match="cannot run in production"):
+            Settings(
+                ENVIRONMENT="production", LLM_PROVIDER="test", SECRET_KEY="x" * 32, _env_file=None
+            )
+        assert (
+            Settings(ENVIRONMENT="local", LLM_PROVIDER="test", _env_file=None).LLM_PROVIDER
+            == "test"
+        )
+
+    def test_an_unknown_provider_is_rejected(self):
+        from pydantic import ValidationError
+
+        from app.core.config import Settings
+
+        with pytest.raises(ValidationError):
+            Settings(LLM_PROVIDER="not-a-provider", _env_file=None)
+
+    @pytest.mark.anyio
+    async def test_the_fake_round_trips_a_chat_turn_with_no_network(self, monkeypatch):
+        """What the e2e suite relies on: a real AssistantAgent, a real reply, no key, no tools."""
+        from app.agents.assistant import settings
+
+        monkeypatch.setattr(settings, "LLM_PROVIDER", "test")
+        monkeypatch.setattr(settings, "OPENROUTER_API_KEY", "")
+        agent = AssistantAgent()
+        output, tool_events, _deps = await agent.run("Hello!")
+        assert output
+        assert tool_events == []
+
+
 class TestAgentRoutes:
     """Tests for agent WebSocket routes."""
 

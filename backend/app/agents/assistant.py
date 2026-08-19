@@ -21,7 +21,9 @@ from pydantic_ai.messages import (
     ToolReturnPart,
     UserPromptPart,
 )
+from pydantic_ai.models import Model
 from pydantic_ai.models.openrouter import OpenRouterModel
+from pydantic_ai.models.test import TestModel
 from pydantic_ai.providers.openrouter import OpenRouterProvider
 from pydantic_ai.settings import ModelSettings
 from pydantic_ai.tools import DeferredToolRequests, DeferredToolResults
@@ -52,7 +54,16 @@ from app.core.config import settings
 logger = logging.getLogger(__name__)
 
 
-def _build_model(model_name: str) -> OpenRouterModel:
+def _build_model(model_name: str) -> Model:
+    """The one place a model is constructed: the assistant and research services both call it.
+
+    LLM_PROVIDER=test returns pydantic-ai's TestModel — deterministic replies, no network,
+    no key — so the end-to-end suite can round-trip chat in CI. Settings refuse it in
+    production. call_tools=[] keeps the fake from invoking every registered tool on each
+    turn, which is TestModel's default and would turn a chat smoke test into a tool storm.
+    """
+    if settings.LLM_PROVIDER == "test":
+        return TestModel(call_tools=[])
     return OpenRouterModel(
         model_name or settings.AI_MODEL,
         provider=OpenRouterProvider(api_key=settings.OPENROUTER_API_KEY),

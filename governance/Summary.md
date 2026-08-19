@@ -66,7 +66,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 98)
+## Recent changes (latest 20 of 99)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -101,6 +101,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe.json`
+- **2026-08-18** — Add an LLM_PROVIDER=test path that builds the agent on pydantic-ai's TestModel so end-to-end tests can round-trip chat without a live model
+  - Components: agents, backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-18-add-an-llm-provider-test-path-that-builds-the-agent-on-pydantic.json`
 - **2026-08-18** — Add a hygiene CI job that runs the pre-commit hooks, lints the workflows and Dockerfiles, and scans the pushed range for secrets
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-a-hygiene-ci-job-that-runs-the-pre-commit-hooks-lints-the-wo.json`
@@ -125,9 +128,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-12** — Reduce agent token consumption via deferred MCP tool loading and OpenRouter prompt caching
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-12-reduce-agent-token-consumption-via-deferred-mcp-tool-loading-and.json`
-- **2026-08-12** — Persist MCP tool discovery across chat turns via conversation-scoped replay in the agent session
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-12-persist-mcp-tool-discovery-across-chat-turns-via-conversation-sc.json`
 
 ## Decisions (5)
 

@@ -129,6 +129,7 @@ appears here or in any other governance artifact.
 
 | Variable | Required | Default | Class | Description |
 | --- | --- | --- | --- | --- |
+| `LLM_PROVIDER` | no | `openrouter` | `runtime` | openrouter (default) needs OPENROUTER_API_KEY. test builds every agent on pydantic-ai's TestModel: deterministic replies, no network, no key - for the end-to-end suite only, and refused when ENVIRONMENT=production. |
 | `OPENROUTER_API_KEY` | no | *(secret — never recorded)* | `runtime`, `secret` | — |
 | `AI_MODEL` | no | `anthropic/claude-opus-4-7` | `runtime` | — |
 | `AI_THINKING_ENABLED` | no | `false` | `runtime` | — |
@@ -280,7 +281,6 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `GOOGLE_WORKSPACE_MCP_CLIENT_ID` | no | `` | `deprecated-alias`, `runtime` | Alias of `GOOGLE_API_CLIENT_ID`. Removal: Remove once no deployment sets it and the direct Google REST executor is the only path. |
 | `GOOGLE_WORKSPACE_MCP_CLIENT_SECRET` | no | *(secret — never recorded)* | `deprecated-alias`, `runtime`, `secret` | Alias of `GOOGLE_API_CLIENT_SECRET`. Removal: Remove alongside GOOGLE_WORKSPACE_MCP_CLIENT_ID. |
 | `HF_TOKEN` | no | `` | `runtime` | — |
-| `LLM_PROVIDER` | no | `openrouter` | `runtime` | — |
 | `LOG_PROVIDER_WRITE_TO_DISK` | no | `false` | `runtime` | — |
 | `MAX_UPLOAD_SIZE_MB` | no | `50` | `runtime` | — |
 | `MCP_PROBE_FAILURE_TTL_SECS` | no | `30.0` | `runtime` | — |

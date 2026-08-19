@@ -120,7 +120,14 @@ async def readiness_probe(
 
     # LLM provider — config-only check (avoid spending money on a probe call).
     llm_provider = (getattr(settings, "LLM_PROVIDER", None) or "").lower()
-    if llm_provider:
+    if llm_provider == "test":
+        # The fake model is healthy by construction and must never read as a real provider.
+        checks["llm"] = {
+            "status": "healthy",
+            "provider": "test",
+            "detail": "pydantic-ai TestModel: deterministic fake for end-to-end tests, no real model",
+        }
+    elif llm_provider:
         key_field = {
             "openai": "OPENAI_API_KEY",
             "anthropic": "ANTHROPIC_API_KEY",

@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Dependabot PR runs skip the three Codecov upload steps, so test, test-frontend, Governance tool, and CI OK no longer fail on 'Not valid tokenless upload'; the six open Dependabot PRs can go green on their real signal."
+  ],
+  "compatibility_impact": "None for code. Coverage telemetry: Dependabot-triggered runs stop uploading backend/frontend/governance flags to the self-hosted Codecov; pushes to main and human PR runs are unchanged, so trend data on main is unaffected.",
+  "date": "2026-08-19",
+  "files_changed": [
+    ".github/workflows/ci.yml"
+  ],
+  "follow_up": [
+    "When the next human PR runs, check its upload step; if it also fails tokenless, add override_branch github.head_ref to the three steps or fix the instance config, and consider removing this actor guard."
+  ],
+  "id": "2026-08-19-skip-self-hosted-codecov-uploads-on-dependabot-runs-so-dependenc",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Root cause on the Codecov instance side is undiagnosed: it rejects PR-event uploads from Dependabot runs even with a valid token freshly copied from the instance config (fork-format branch label forcing the tokenless path is the suspect). Whether human same-repo PR uploads succeed is still unverified - no such PR has run with a token present.",
+    "Verified by workflow linters only; the behavioural proof is the next Dependabot rebase going green."
+  ],
+  "manifests_changed": [],
+  "reason": "All six open Dependabot PRs fail test, test-frontend, and Governance tool at the Codecov upload step: the instance rejects PR-event uploads with 'Not valid tokenless upload' even with a valid 36-char token from the Dependabot secrets store, and fail_ci_if_error turns that into a red CI OK; coverage floors already gate locally in pytest/vitest so the upload is telemetry, not a gate",
+  "risks": [],
+  "rollback": "git revert the commit; the guard is three step-level if conditions plus a comment.",
+  "schema_version": 1,
+  "security_impact": "None. The change narrows when a coverage upload runs; no new secret exposure, and the CODECOV_TOKEN secret remains referenced only by the same pinned codecov-action steps.",
+  "summary": "Skip self-hosted Codecov uploads on Dependabot runs so dependency PRs stop failing CI on coverage telemetry",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "actionlint 1.7.12 exit 0 and zizmor 1.29.0 no findings over .github/workflows",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

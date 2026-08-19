@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 109)
+## Recent changes (latest 20 of 110)
 
+- **2026-08-19** — Skip self-hosted Codecov uploads on Dependabot runs so dependency PRs stop failing CI on coverage telemetry
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-19-skip-self-hosted-codecov-uploads-on-dependabot-runs-so-dependenc.json`
 - **2026-08-19** — Keep the cookie-consent banner from covering the auth form submit button on mobile viewports
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-19-keep-the-cookie-consent-banner-from-covering-the-auth-form-submi.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Build and scan all four container images on every CI event and publish them to GHCR from main and release tags
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-build-and-scan-all-four-container-images-on-every-ci-event-and-p.json`
-- **2026-08-18** — Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe.json`
 
 ## Decisions (5)
 

@@ -74,6 +74,7 @@
       ".fastapi-fullstack.json",
       ".gitattributes",
       ".gitignore",
+      ".gitleaks-baseline.json",
       ".pre-commit-config.yaml",
       "AGENTS.md",
       "CLAUDE.md",

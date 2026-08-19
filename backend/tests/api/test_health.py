@@ -76,3 +76,15 @@ async def test_readiness_check_db_unhealthy(client: AsyncClient, mock_db_session
     data = response.json()
     assert data["status"] == "not_ready"
     assert data["checks"]["database"]["status"] == "unhealthy"
+
+
+@pytest.mark.anyio
+async def test_readiness_reports_the_test_llm_provider_as_a_fake(client: AsyncClient, monkeypatch):
+    """LLM_PROVIDER=test must read as a fake, never as a configured real provider."""
+    monkeypatch.setattr(settings, "LLM_PROVIDER", "test")
+    response = await client.get(f"{settings.API_V1_STR}/ready")
+    assert response.status_code == 200
+    llm = response.json()["checks"]["llm"]
+    assert llm["provider"] == "test"
+    assert llm["status"] == "healthy"
+    assert "fake" in llm["detail"]

@@ -1876,14 +1876,16 @@
       ],
       "consumed_by": [],
       "declared_in": [
-        "backend/app/core/config.py"
+        "backend/app/core/config.py",
+        "backend/.env.example"
       ],
       "default": "openrouter",
       "default_class": "literal",
+      "description": "openrouter (default) needs OPENROUTER_API_KEY. test builds every agent on pydantic-ai's TestModel: deterministic replies, no network, no key - for the end-to-end suite only, and refused when ENVIRONMENT=production.",
       "name": "LLM_PROVIDER",
       "required": false,
       "surface": "backend",
-      "type": "str"
+      "type": "Literal['openrouter', 'test']"
     },
     {
       "classification": [

@@ -29,10 +29,10 @@
     },
     {
       "id": "trivy-advisory-deliberate",
-      "statement": "The Trivy image scan in CI runs with exit-code 0 and can never fail the build.",
+      "statement": "The Trivy image scans in CI (backend, frontend, docling-mcp, chrome-devtools-mcp) run with exit-code 0 and can never fail the build.",
       "reason": "The scan reports CRITICAL and HIGH findings in base images that are pinned by digest and cannot always be fixed on the repository's schedule. Blocking on it before the finding volume is known would train people to bypass CI. Recorded as deliberate rather than left looking like an oversight, and used as the pilot for the advisory-to-blocking promotion ladder.",
       "scope": [
-        ".github/workflows/ci.yml job docker"
+        ".github/workflows/ci.yml job docker, matrix backend, frontend, docling-mcp, chrome-devtools-mcp"
       ],
       "status": "active",
       "review_trigger": "Promotion criteria in the trivy-image-scan rule are met, or a vulnerability ships that the scan reported and nobody read.",

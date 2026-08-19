@@ -52,7 +52,7 @@ Current state, what is unresolved, and recent material history. This is not the 
   - Revisit when: Any service starts depending on one of these being healthy, or an MCP sidecar failure stops being invisible to the application's probe-and-skip path.
 - **taskiq-healthchecks-disabled** — The Taskiq worker and scheduler services have healthchecks explicitly disabled, while every other long-running service has one.
   - Revisit when: A queue stall goes unnoticed in an environment where nobody is watching Redis.
-- **trivy-advisory-deliberate** — The Trivy image scan in CI runs with exit-code 0 and can never fail the build.
+- **trivy-advisory-deliberate** — The Trivy image scans in CI (backend, frontend, docling-mcp, chrome-devtools-mcp) run with exit-code 0 and can never fail the build.
   - Revisit when: Promotion criteria in the trivy-image-scan rule are met, or a vulnerability ships that the scan reported and nobody read.
 - **wishlist-calls-fail-gracefully** — The settings/account page POSTs /api/auth/password/change and the admin/system page GETs /api/health/ready; neither endpoint exists yet, and both pages handle the failure gracefully by design.
   - Revisit when: The backend lands a password-change endpoint or a per-service /health/ready; wire the page for real and retire this exception.
@@ -66,7 +66,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 97)
+## Recent changes (latest 20 of 98)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -95,6 +95,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Disable the hosted Slack-app notifier in the self-hosted Codecov instance config
   - Components: codecov
   - Record: `governance/history/changes/2026-08-18-disable-the-hosted-slack-app-notifier-in-the-self-hosted-codecov.json`
+- **2026-08-18** — Build and scan all four container images on every CI event and publish them to GHCR from main and release tags
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-18-build-and-scan-all-four-container-images-on-every-ci-event-and-p.json`
 - **2026-08-18** — Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe.json`
@@ -125,9 +128,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-12** — Persist MCP tool discovery across chat turns via conversation-scoped replay in the agent session
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-12-persist-mcp-tool-discovery-across-chat-turns-via-conversation-sc.json`
-- **2026-08-12** — Cache per-turn MCP liveness probe results with a TTL to cut chat-turn latency
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-12-cache-per-turn-mcp-liveness-probe-results-with-a-ttl-to-cut-chat.json`
 
 ## Decisions (5)
 

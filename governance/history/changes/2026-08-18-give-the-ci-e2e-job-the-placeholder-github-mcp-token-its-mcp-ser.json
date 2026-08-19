@@ -1,0 +1,49 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "e2e job sets GITHUB_MCP_TOKEN to a placeholder and a SECRET_KEY that is at least 32 characters for any run id"
+  ],
+  "compatibility_impact": "e2e job environment only.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/ci.yml"
+  ],
+  "follow_up": [
+    "Watch the e2e job on this push"
+  ],
+  "id": "2026-08-18-give-the-ci-e2e-job-the-placeholder-github-mcp-token-its-mcp-ser",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not applicable, two env lines",
+    "Fix-forward on the previous session's e2e job after its first CI run failed in Migrate and seed"
+  ],
+  "manifests_changed": [],
+  "reason": "The first run of the e2e job died in Settings validation: the deployment-managed MCP_SERVERS list carries a github-auth entry, which requires GITHUB_MCP_TOKEN to be non-empty even though the sidecar is unreachable on the runner, and the SECRET_KEY pattern only cleared the 32-character floor by relying on an eleven-digit run id. After this change Settings validate with the exact job environment (proven locally with the same variables) and the backend can migrate, seed and start.",
+  "risks": [],
+  "rollback": "git revert.",
+  "schema_version": 1,
+  "security_impact": "None. GITHUB_MCP_TOKEN in the e2e job is the literal e2e-placeholder-not-a-token, sent nowhere because the github-mcp hostname does not resolve on the runner; SECRET_KEY remains a per-run, non-secret value used only for the job's own session cookies.",
+  "summary": "Give the CI e2e job the placeholder GITHUB_MCP_TOKEN its MCP server list requires and a SECRET_KEY that is long enough regardless of run id",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "Settings(_env_file=None) instantiated locally with the exact e2e job environment (LLM_PROVIDER=test, MCP_SERVERS with the github-auth entry, GITHUB_MCP_TOKEN placeholder, run-id 1 SECRET_KEY): ok, 3 MCP servers, email provider log",
+      "id": "settings-smoke",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make hygiene-workflows clean",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run at close",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

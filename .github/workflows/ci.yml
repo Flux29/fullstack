@@ -455,6 +455,7 @@ jobs:
       - name: Start the backend
         run: |
           nohup uv run --directory backend fullstack server run --host 127.0.0.1 --port 8100 > "$RUNNER_TEMP/backend.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/backend.pid"
           curl --silent --show-error --fail --retry 40 --retry-delay 2 --retry-connrefused \
             http://localhost:8100/api/v1/health
 
@@ -465,6 +466,17 @@ jobs:
       # setup project logs in and saves the storage state the browser projects reuse.
       - name: Playwright (chromium)
         run: make playwright ARGS="--project=chromium"
+
+      # A live `uv run` process holds the uv cache, and setup-uv's post step (`uv cache
+      # prune`) hangs on it until the job dies; the first green e2e run failed exactly there.
+      - name: Stop the backend
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/backend.pid" ]; then
+            pkill -TERM -P "$(cat "$RUNNER_TEMP/backend.pid")" || true
+            kill -TERM "$(cat "$RUNNER_TEMP/backend.pid")" || true
+          fi
+          pkill -f "fullstack server run" || true
 
       - name: Upload Playwright report and backend log
         if: always()

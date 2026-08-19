@@ -1,0 +1,48 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "e2e job records the backend PID and terminates the process tree in an always-run step before job cleanup"
+  ],
+  "compatibility_impact": "e2e job only.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/ci.yml"
+  ],
+  "follow_up": [
+    "Watch this push: the e2e job should complete green end to end"
+  ],
+  "id": "2026-08-18-stop-the-backgrounded-backend-at-the-end-of-the-ci-e2e-job-so-se",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not applicable"
+  ],
+  "manifests_changed": [],
+  "reason": "The first green e2e run (34 passed) still failed the job: setup-uv's post step runs uv cache prune, the nohup'd uv run backend process was still holding the cache, and the prune hung for five minutes before exiting 2. After this change the job records the backend's PID and an always-run step terminates it before the post steps.",
+  "risks": [],
+  "rollback": "git revert.",
+  "schema_version": 1,
+  "security_impact": "None.",
+  "summary": "Stop the backgrounded backend at the end of the CI e2e job so setup-uv's cache prune cannot hang on it",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make hygiene-workflows clean",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run at close",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "CI run 32204074039 on the previous commit - 34 passed in 35.6s on the composed stack; only setup-uv's post step failed",
+      "id": "playwright",
+      "result": "pass"
+    }
+  ]
+}

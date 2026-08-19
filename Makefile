@@ -232,9 +232,11 @@ hygiene-dockerfiles:
 
 # Secret scan over a commit range (BASE..HEAD) or, without BASE, the working tree and
 # history git can see. CI passes the push or PR base; a full-history scan is deliberately
-# not the gate because of the open secrets-pushed-to-remote finding.
+# not the gate because of the open secrets-pushed-to-remote finding. BASELINE=1 subtracts
+# the fingerprints in .gitleaks-baseline.json (redacted: commit, file, rule, line - the
+# three known findings) so the nightly full-history scan fails only on something new.
 secret-scan:
-	$(DOCKER_RUN_REPO) $(GITLEAKS_IMAGE) git /repo --redact --no-banner --exit-code 1 $(if $(BASE),--log-opts="$(BASE)..HEAD",)
+	$(DOCKER_RUN_REPO) $(GITLEAKS_IMAGE) git /repo --redact --no-banner --exit-code 1 $(if $(BASE),--log-opts="$(BASE)..HEAD",) $(if $(BASELINE),--baseline-path /repo/.gitleaks-baseline.json,)
 
 run:
 	uv run --directory backend fullstack server run --reload --port 8100

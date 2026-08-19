@@ -184,22 +184,23 @@ jobs:
       - name: Run tests
         run: uv run --directory backend pytest tests/ -q --no-cov
 
-  # Full-history secret scan. Non-gating by design: the open secrets-pushed-to-remote
-  # finding lives in history and is closed by rotation at the provider, not by tooling.
-  # This job keeps the history visible until then; the CI hygiene job gates the range.
+  # Full-history secret scan against the committed fingerprint baseline: the three findings
+  # of the open secrets-pushed-to-remote finding (commit aaec6463, backend/.env.example) are
+  # subtracted, so this fails only on a leak that is not already recorded. The finding itself
+  # is closed by rotation at the provider, not by this baseline. The CI hygiene job gates
+  # the pushed range without a baseline.
   secret-scan-history:
     name: Secret scan (full history)
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: true
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
           fetch-depth: 0
 
-      - name: gitleaks over all history
-        run: make secret-scan
+      - name: gitleaks over all history, minus the recorded baseline
+        run: make secret-scan BASELINE=1
 
   # Trivy on all four images with a fresh vulnerability database. The CI docker job scans
   # on every push; this catches advisories published since the last push.

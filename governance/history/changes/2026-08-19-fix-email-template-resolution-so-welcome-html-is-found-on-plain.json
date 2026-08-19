@@ -1,0 +1,72 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "email"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "fullstack user create and UserService.register no longer log welcome_email_failed / EmailTemplateError welcome.html not found when the backend runs from a repository checkout (CI e2e job, local uv run).",
+    "EmailTemplateError details now carry a searched list of every candidate path instead of a single path."
+  ],
+  "compatibility_impact": "None for callers: render_email keeps its signature and return shape. Docker/compose deployments keep working because /app/emails (the compose bind mount, resolved relative to backend/) remains a search location; repository checkouts and plain uv sync installs now resolve <repo>/emails/compiled as well.",
+  "date": "2026-08-19",
+  "files_changed": [
+    "backend/app/services/email/templates.py",
+    "backend/tests/test_services.py"
+  ],
+  "follow_up": [
+    "Consider copying emails/compiled into the backend image (or a settings-driven templates dir) so a bare docker run without compose also finds templates."
+  ],
+  "id": "2026-08-19-fix-email-template-resolution-so-welcome-html-is-found-on-plain",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The Docker image still does not bundle emails/compiled (build context is backend/); it relies on the compose bind mount ./emails:/app/emails as before. Baking the templates into the image or adding an EMAIL_TEMPLATES_DIR setting was left out of scope.",
+    "The e2e job itself was not re-run here; the fix was verified by unit tests that fail against the old loader with the exact CI error and pass with the new one."
+  ],
+  "manifests_changed": [],
+  "reason": "CI e2e backend log shows welcome_email_failed EmailTemplateError welcome.html not found; templates.py resolves emails/compiled from backend/ (one directory too shallow) which only works under the compose bind mount",
+  "risks": [],
+  "rollback": "git revert the commit. No data, config, or migration to restore.",
+  "schema_version": 1,
+  "security_impact": "None. Template lookup is still limited to two fixed in-repo directories; no user input reaches the path and the error detail lists only those searched paths.",
+  "summary": "Fix email template resolution so welcome.html is found on plain uv sync installs",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint exit 0; ruff clean on touched files, ty diagnostics are pre-existing in unrelated files",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "covered by make test-cov, 516 passed 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make test-cov total 53.53% over the 52% floor",
+      "id": "backend-coverage",
+      "result": "pass"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped, no reachable database; no schema change in this diff",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "no frontend files touched, backend-only Python change",
+      "id": "frontend-test",
+      "result": "skipped"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

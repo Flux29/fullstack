@@ -149,6 +149,7 @@ export function MessageItem({ message, groupPosition, onRegenerate }: MessageIte
 
   return (
     <div
+      data-role={message.role}
       className={cn(
         "group relative flex gap-2 overflow-visible sm:gap-4",
         isGrouped ? "py-2 sm:py-3" : "py-3 sm:py-4",

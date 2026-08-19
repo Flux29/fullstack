@@ -1,0 +1,59 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "chat-frontend",
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "message-item.tsx sets data-role on the message wrapper",
+    "chat.spec asserts the assistant marker for a reply, and progress-or-reply after sending; auth.spec user-menu locator takes .first()"
+  ],
+  "compatibility_impact": "Every chat message wrapper now carries data-role=user|assistant; nothing else reads it. The loading-state spec is renamed to describe what it asserts.",
+  "date": "2026-08-18",
+  "files_changed": [
+    "frontend/e2e/auth.spec.ts",
+    "frontend/e2e/chat.spec.ts",
+    "frontend/src/components/chat/message-item.tsx"
+  ],
+  "follow_up": [
+    "Watch the e2e job on this push; if the MCP OAuth callback redirect still flakes at its 5 second URL budget, widen that assertion in its own session"
+  ],
+  "id": "2026-08-18-mark-chat-messages-with-data-role-and-make-the-e2e-chat-and-user",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not applicable",
+    "Fix-forward on the e2e job after its first full run: 29 passed, 1 failed, 3 flaky - all four traced to spec assumptions, not to the stack"
+  ],
+  "manifests_changed": [],
+  "reason": "The first composed-stack e2e run showed the fake model replying immediately, which exposed three spec assumptions that only held with a slow real model: the chat specs waited for a data-role marker the message component never rendered or for a transient thinking state that never became visible, and the user-menu spec used a strict-mode locator that matches twice for a user with no display name. After this change the message wrapper carries data-role, the chat specs assert on the reply or on progress, and the user-menu spec takes the first match.",
+  "risks": [],
+  "rollback": "git revert.",
+  "schema_version": 1,
+  "security_impact": "None. A data attribute on a client component and three spec locators.",
+  "summary": "Mark chat messages with data-role and make the e2e chat and user-menu assertions hold when the model answers instantly",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "6 files 29 tests, 4.14/21.92/7.34/4.14",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "id": "frontend-format",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "against the local docker frontend (35 hours old, without data-role) the send-and-receive spec fails as expected; a host dev server on 3100 could not be driven because dev-mode cold compiles exceed the setup project's 10 second redirect budget. The CI e2e job on this push, which uses the production build, is the validation",
+      "id": "playwright",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "run at close",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

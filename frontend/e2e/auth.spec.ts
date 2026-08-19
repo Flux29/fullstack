@@ -96,9 +96,13 @@ test.describe("Authentication", () => {
     test("should show user menu or profile", async ({ page }) => {
       await page.goto("/dashboard");
 
-      // Should have user profile/menu element
+      // Should have user profile/menu element. `.first()`: a user with no display name
+      // shows the email in more than one place, and strict mode would refuse the match.
       await expect(
-        page.getByRole("button", { name: /profile|account|user/i }).or(page.getByText(/@|user/i)),
+        page
+          .getByRole("button", { name: /profile|account|user/i })
+          .or(page.getByText(/@|user/i))
+          .first(),
       ).toBeVisible();
     });
 

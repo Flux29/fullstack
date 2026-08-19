@@ -189,9 +189,9 @@ playwright:
 # chrome-devtools sidecar's package-lock.json. Exports go under the gitignored .cache/ so
 # they never appear as untracked files. pip-audit runs through uvx in its own ephemeral env.
 #
-# Two halves so CI can gate on one while measuring the other: audit-python is clean today
-# and gates; audit-js currently reports known high findings in the frontend's transitive
-# dependencies and runs non-gating in CI until those are bumped in their own session.
+# Two halves so each ecosystem can be run and reasoned about on its own; both are clean
+# and both gate in the CI security job. A transitive finding pinned by a framework (Next.js
+# pins postcss and sharp) is fixed with an `overrides` entry in frontend/package.json.
 AUDIT_TMP ?= .cache/audit
 audit: audit-python audit-js
 

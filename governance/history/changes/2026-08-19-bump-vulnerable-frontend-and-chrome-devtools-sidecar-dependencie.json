@@ -1,0 +1,94 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "chrome-devtools-mcp",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "frontend: vitest, @vitest/ui and @vitest/coverage-v8 2.1.9 -> 3.2.7 (vite 5.4.21 -> 7.3.6, esbuild 0.21.5 -> 0.28.2 under it); package.json gains an overrides block pinning postcss ^8.5.26 and sharp ^0.35.3 so Next.js 15's own postcss 8.4.31 pin and sharp ^0.34 range resolve to patched versions; nested nanoid 3.3.16 -> 3.3.18 and gray-matter's js-yaml 3.15.0 -> 3.15.1; next 15.5.22 -> 15.5.23 and other in-range patch bumps; bun update rewrote every range floor in package.json to the resolved version",
+    "docker/mcp/chrome-devtools: hono 4.12.x -> 4.13.3 in package-lock.json via npm audit fix --package-lock-only; image rebuilt from the new lock",
+    "CI security job: the 'Audit JavaScript dependency sets' step no longer carries continue-on-error, so a new bun or npm high/critical advisory fails the job; Makefile comment and the dependency-audit validator description updated to say both halves gate"
+  ],
+  "compatibility_impact": "vitest 2 -> 3 major: config, thresholds and the six existing suites run unchanged; the vite advisory forced vite 7 under vitest, which is inside vitest 3.2's declared range and @vitejs/plugin-react 4.7's peer range. The postcss/sharp overrides sit outside Next 15's declared ranges; verified by next build succeeding, sharp 0.35.3 encoding a PNG, and Next resolving postcss 8.5.26. Everything else is patch/minor within existing ranges.",
+  "date": "2026-08-19",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    "Makefile",
+    "docker/mcp/chrome-devtools/package-lock.json",
+    "frontend/bun.lock",
+    "frontend/package.json",
+    "governance/validators.json"
+  ],
+  "follow_up": [
+    "Drop the postcss and sharp overrides when next moves to a release whose own pins are patched (Next 16 already is)",
+    "Consider vitest 4 in its own session; 3.2.7 was chosen as the smallest jump that clears the advisories"
+  ],
+  "id": "2026-08-19-bump-vulnerable-frontend-and-chrome-devtools-sidecar-dependencie",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "next stays on 15.5.x; Next 16 (which pins postcss 8.5.23 and sharp ^0.35 itself) was not adopted, so the overrides are what carries those two fixes",
+    "No browser/e2e run against the rebuilt frontend; validation is unit tests, next build and a sharp/postcss load probe. The chrome-devtools sidecar was rebuilt but not started against browserless",
+    "bun install and bun update each took 7-11 minutes on this machine (the known stall); nothing was done about that"
+  ],
+  "manifests_changed": [],
+  "reason": "make audit-js reported 8 high/critical transitive vulnerabilities in the frontend and 1 moderate (hono) in the chrome-devtools sidecar, so the CI security job ran the JavaScript audit step with continue-on-error and a red audit could not fail the build; bumping the affected packages makes the audit clean so the step can gate again",
+  "risks": [
+    "The sharp and postcss overrides bypass Next.js's own version pins; a future next bump that needs a different postcss/sharp will silently be forced to the override until someone notices — the overrides block is commented in ci.yml and Makefile so it is discoverable",
+    "bun update rewrote all package.json range floors; the diff is larger than the vulnerability fix strictly needed, but every floor now equals a version bun.lock already resolved, so no new resolution was introduced by that rewrite"
+  ],
+  "rollback": "git revert the commit restores package.json, bun.lock, package-lock.json, ci.yml, Makefile and validators.json together; no data or schema is involved. Reverting also re-enables continue-on-error, so audit-js goes back to non-gating — that is the point of the record's coupling, not a side effect.",
+  "schema_version": 1,
+  "security_impact": "Removes 8 high/critical frontend advisories (vitest UI arbitrary file read GHSA-5xrq-8626-4rwp, vite server.fs.deny bypass, two postcss sourceMappingURL path-traversal/file-read issues, nanoid infinite loop, sharp/libvips CVE-2026-33327/33328/35590/35591, js-yaml quadratic !!omap) and four moderate hono advisories in the MCP sidecar (CORS ReDoS, memo() SSR cross-user leak, proxy Connection-header stripping, language-middleware DoS). Turns audit-js from a badge into a gate so regressions cannot merge silently.",
+  "summary": "Bump vulnerable frontend and chrome-devtools sidecar dependencies so make audit-js is clean and the CI audit step gates again",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make audit-js clean (bun audit: no findings at --audit-level=high; chrome-devtools npm audit: 0 vulnerabilities); make audit-python: No known vulnerabilities across backend, governance-tool and docling locks",
+      "id": "dependency-audit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint 0 errors (30 pre-existing warnings), tsc clean, vitest 3.2.7: 6 files / 29 tests passed, coverage 3.55/49.39/42.2/3.55 over floors 3/17/6/3",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "next build 15.5.23 exits 0 (run as the underlying bun run build from bash; the Make target's env-prefix syntax is POSIX-only)",
+      "id": "frontend-build",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "516 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "346 passed, coverage 76.60% over the 75% floor",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run after finish; see report",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

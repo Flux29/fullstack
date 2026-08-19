@@ -64,11 +64,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 107)
+## Recent changes (latest 20 of 108)
 
 - **2026-08-19** — Fix email template resolution so welcome.html is found on plain uv sync installs
   - Components: backend-api, email
   - Record: `governance/history/changes/2026-08-19-fix-email-template-resolution-so-welcome-html-is-found-on-plain.json`
+- **2026-08-19** — Bump vulnerable frontend and chrome-devtools sidecar dependencies so make audit-js is clean and the CI audit step gates again
+  - Components: chrome-devtools-mcp, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-19-bump-vulnerable-frontend-and-chrome-devtools-sidecar-dependencie.json`
 - **2026-08-18** — Stop the backgrounded backend at the end of the CI e2e job so setup-uv's cache prune cannot hang on it
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-stop-the-backgrounded-backend-at-the-end-of-the-ci-e2e-job-so-se.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Add an LLM_PROVIDER=test path that builds the agent on pydantic-ai's TestModel so end-to-end tests can round-trip chat without a live model
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-an-llm-provider-test-path-that-builds-the-agent-on-pydantic.json`
-- **2026-08-18** — Add a report-only nightly workflow for the full Playwright browser matrix, the backend suite on Windows, the full-history secret scan, fresh Trivy scans, dependency audits, and a wider manifest sample
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-18-add-a-report-only-nightly-workflow-for-the-full-playwright-brows.json`
 
 ## Decisions (5)
 

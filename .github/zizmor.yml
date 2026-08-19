@@ -1,0 +1,11 @@
+# zizmor configuration for `make hygiene-workflows`.
+rules:
+  # The workflow both restores caches (uv, bun, GHA docker layers) and, on tag pushes, will
+  # publish images (Phase 4 of the CI/CD plan). zizmor flags that combination as a
+  # cache-poisoning surface at low confidence. Accepted for now: the publish job rebuilds
+  # from digest-pinned bases with cache scoped per image, and every job that writes a
+  # cache runs the same tests that gate the publish. Revisit when the publish job exists
+  # and can be given a cache-free path.
+  cache-poisoning:
+    ignore:
+      - ci.yml

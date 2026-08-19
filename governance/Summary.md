@@ -66,7 +66,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 96)
+## Recent changes (latest 20 of 97)
 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
@@ -98,6 +98,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Add compose validation, frontend build and format checks, and dependency audits over every lockfile to CI, and record why the preflight validators stay host-only
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-compose-validation-frontend-build-and-format-checks-and-depe.json`
+- **2026-08-18** — Add a hygiene CI job that runs the pre-commit hooks, lints the workflows and Dockerfiles, and scans the pushed range for secrets
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-18-add-a-hygiene-ci-job-that-runs-the-pre-commit-hooks-lints-the-wo.json`
 - **2026-08-17** — Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker
   - Components: codecov, governance-kernel
   - Record: `governance/history/changes/2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur.json`
@@ -125,9 +128,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-12** — Cache per-turn MCP liveness probe results with a TTL to cut chat-turn latency
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-12-cache-per-turn-mcp-liveness-probe-results-with-a-ttl-to-cut-chat.json`
-- **2026-08-11** — Wire the missing clone route for RAG sync sources: schema and service existed, the route and proxy hop were never built
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-11-wire-the-missing-clone-route-for-rag-sync-sources-schema-and-ser.json`
 
 ## Decisions (5)
 

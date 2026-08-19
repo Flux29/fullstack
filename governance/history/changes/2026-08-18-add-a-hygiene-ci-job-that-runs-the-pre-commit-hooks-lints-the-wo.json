@@ -1,0 +1,102 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "make governance-*"
+  ],
+  "behavioral_effects": [
+    "New CI job hygiene runs make hygiene (pre-commit over the whole tree with ty and the governance fast check skipped, actionlint, zizmor with .github/zizmor.yml, hadolint over four Dockerfiles) and make secret-scan over the push or PR base range; ci-ok depends on it",
+    "Validators hygiene and secret-scan registered with ci_job hygiene; Make targets hygiene, hygiene-precommit, hygiene-workflows, hygiene-dockerfiles, secret-scan added with pinned tool images",
+    "All 23 action references in ci.yml pinned to commit SHAs; persist-credentials false on every checkout; the governance --since sha passed via env",
+    "backend/Dockerfile HEALTHCHECK uses exec form (hadolint DL3025)"
+  ],
+  "compatibility_impact": "make hygiene and make secret-scan need docker for actionlint, hadolint and gitleaks (pinned images) and uv for pre-commit and zizmor. The backend image HEALTHCHECK moved from shell form with || exit 1 to exec form; a connection failure still exits nonzero because httpx raises. backend/.env.example gained its missing final newline.",
+  "date": "2026-08-18",
+  "files_changed": [
+    ".github/workflows/ci.yml",
+    ".github/zizmor.yml",
+    "Makefile",
+    "backend/.env.example",
+    "backend/Dockerfile",
+    "governance/validators.json"
+  ],
+  "follow_up": [
+    "Phase 4: docker matrix over all four images on every event, Trivy JSON evidence, GHCR publish on main and v* tags"
+  ],
+  "id": "2026-08-18-add-a-hygiene-ci-job-that-runs-the-pre-commit-hooks-lints-the-wo",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run; the change is workflow, Makefile and validator plumbing",
+    "Phase 3 of the CI/CD coverage plan. Not here: docker matrix and GHCR publish, e2e, nightly (which will carry the full-history gitleaks scan with a baseline)"
+  ],
+  "manifests_changed": [],
+  "reason": "The pre-commit configuration was installed on developer machines but never run in CI, so a clone without the hook could commit whatever the hooks would have caught and nobody would know; the workflow files, four Dockerfiles, and commit contents had no linter or secret scan at all, and the repository already carries an open secrets-pushed-to-remote finding. After this change every push and PR runs pre-commit over the whole tree, actionlint and zizmor over the workflows, hadolint over every Dockerfile, and gitleaks over the pushed commit range, and the pre-commit hooks are registered as a validator.",
+  "risks": [
+    "hadolint runs at warning threshold; DL3066 (non-numeric USER) is info-level on all four images and stays visible without gating",
+    "Pinned action SHAs go stale without Dependabot; the github-actions ecosystem entry from Phase 1 covers that"
+  ],
+  "rollback": "git revert. Nothing lives outside the repository.",
+  "schema_version": 1,
+  "security_impact": "Positive. Every action in ci.yml is pinned to a commit SHA with its version as a comment (Dependabot keeps them fresh), every checkout sets persist-credentials false, the base sha reaches run steps through env rather than template expansion, and gitleaks now scans every pushed or proposed commit range. zizmor's cache-poisoning audit is accepted in .github/zizmor.yml with the reasoning recorded; the open secrets-pushed-to-remote finding is unchanged - the range scan cannot see history and does not claim to.",
+  "summary": "Add a hygiene CI job that runs the pre-commit hooks, lints the workflows and Dockerfiles, and scans the pushed range for secrets",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make hygiene - pre-commit all-files clean after one EOF fix to backend/.env.example, actionlint clean, zizmor 0 findings (8 cache-poisoning ignored by .github/zizmor.yml, 8 suppressed), hadolint 4 Dockerfiles at warning threshold with only DL3066 info remaining",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make secret-scan BASE=HEAD~3 - no leaks found",
+      "id": "secret-scan",
+      "result": "pass"
+    },
+    {
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "346 passed, 76.60 percent",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "the only blocking finding before finish was the absent record",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "docker build ./backend succeeds and the image HEALTHCHECK is exec form",
+      "id": "docker-build-backend",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "no backend Python changed; the Dockerfile HEALTHCHECK edit is verified by the image build",
+      "id": "backend-unit",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "no migration or model changed",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "host probe, unrelated",
+      "id": "preflight-volumes",
+      "result": "skipped"
+    }
+  ]
+}

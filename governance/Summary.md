@@ -64,8 +64,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 106)
+## Recent changes (latest 20 of 107)
 
+- **2026-08-19** — Fix email template resolution so welcome.html is found on plain uv sync installs
+  - Components: backend-api, email
+  - Record: `governance/history/changes/2026-08-19-fix-email-template-resolution-so-welcome-html-is-found-on-plain.json`
 - **2026-08-18** — Stop the backgrounded backend at the end of the CI e2e job so setup-uv's cache prune cannot hang on it
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-stop-the-backgrounded-backend-at-the-end-of-the-ci-e2e-job-so-se.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Add a report-only nightly workflow for the full Playwright browser matrix, the backend suite on Windows, the full-history secret scan, fresh Trivy scans, dependency audits, and a wider manifest sample
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-add-a-report-only-nightly-workflow-for-the-full-playwright-brows.json`
-- **2026-08-18** — Add a hygiene CI job that runs the pre-commit hooks, lints the workflows and Dockerfiles, and scans the pushed range for secrets
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-18-add-a-hygiene-ci-job-that-runs-the-pre-commit-hooks-lints-the-wo.json`
 
 ## Decisions (5)
 

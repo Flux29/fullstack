@@ -1,5 +1,6 @@
 """Tests for service layer."""
 
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4
 
@@ -9,10 +10,13 @@ from app.core.config import settings
 from app.core.exceptions import AlreadyExistsError, AuthenticationError, NotFoundError
 from app.core.security import get_password_hash
 from app.schemas.user import UserCreate, UserUpdate
-from app.services.email import get_email_provider
+from app.services.email import get_email_provider, templates
+from app.services.email.exceptions import EmailTemplateError
 from app.services.email.providers.log import LogProvider
 from app.services.email.providers.resend import ResendProvider
 from app.services.email.providers.smtp import SMTPProvider
+from app.services.email.service import EmailService
+from app.services.email.templates import render_email
 from app.services.user import UserService
 
 
@@ -87,6 +91,68 @@ class TestEmailProviderSelection:
             provider = get_email_provider()
         assert isinstance(provider, LogProvider)
         assert any("carrier-pigeon" in r.message for r in caplog.records)
+
+
+class TestEmailTemplates:
+    """Compiled templates must resolve from the repository checkout, not only the Docker bind mount.
+
+    Regression for the CI e2e run where `fullstack user create` logged `welcome_email_failed`
+    with EmailTemplateError("Email template 'welcome.html' not found"): the loader resolved
+    emails/compiled relative to backend/ (one level too shallow), which only exists inside the
+    container because compose mounts ./emails at /app/emails.
+    """
+
+    def test_repo_root_emails_compiled_is_a_search_location(self):
+        repo_root = Path(__file__).resolve().parents[2]
+        assert repo_root / "emails" / "compiled" in templates._DIST_DIRS
+
+    def test_render_welcome_substitutes_context(self):
+        subject, html, text = render_email(
+            "welcome",
+            {"name": "Ada", "login_url": "https://example.test/login", "app_name": "fullstack"},
+        )
+        assert subject == "Welcome to fullstack, Ada!"
+        assert "Ada" in html
+        assert "https://example.test/login" in html
+        assert "https://example.test/login" in text
+        assert "[[" not in subject
+        assert "[[" not in html
+        assert "[[" not in text
+
+    def test_missing_template_reports_every_searched_path(self, monkeypatch, tmp_path):
+        monkeypatch.setattr(templates, "_DIST_DIRS", (tmp_path / "a", tmp_path / "b"))
+        with pytest.raises(EmailTemplateError) as exc_info:
+            render_email("welcome", {})
+        searched = exc_info.value.details["searched"]
+        assert searched == [
+            str(tmp_path / "a" / "welcome.html"),
+            str(tmp_path / "b" / "welcome.html"),
+        ]
+
+    def test_fallback_directory_is_used_when_first_is_missing(self, monkeypatch, tmp_path):
+        fallback = tmp_path / "fallback"
+        fallback.mkdir()
+        (fallback / "welcome.html").write_text("<p>Hi [[name]]</p>", encoding="utf-8")
+        (fallback / "welcome.txt").write_text(
+            "Subject: Hey [[name]]\nHi [[name]]", encoding="utf-8"
+        )
+        monkeypatch.setattr(templates, "_DIST_DIRS", (tmp_path / "missing", fallback))
+        subject, html, text = render_email("welcome", {"name": "Ada"})
+        assert (subject, html, text) == ("Hey Ada", "<p>Hi Ada</p>", "Hi Ada")
+
+    @pytest.mark.anyio
+    async def test_send_welcome_through_log_provider_renders_real_template(self, caplog):
+        """End-to-end through EmailService with the log provider — nothing leaves the process."""
+        service = EmailService(provider=LogProvider())
+        with caplog.at_level("INFO", logger="app.services.email.providers.log"):
+            result = await service.send_welcome(
+                to="ada@example.test", name="Ada", login_url="https://x.test/login"
+            )
+        assert result.accepted is True
+        assert result.provider_message_id.startswith("log_")
+        record = next(r for r in caplog.records if r.message == "email_send_simulated")
+        assert record.to == ["ada@example.test"]
+        assert record.subject == "Welcome to fullstack, Ada!"
 
 
 class TestUserServicePostgresql:

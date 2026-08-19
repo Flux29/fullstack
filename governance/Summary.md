@@ -64,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 104)
+## Recent changes (latest 20 of 105)
 
 - **2026-08-18** — Stop the backgrounded backend at the end of the CI e2e job so setup-uv's cache prune cannot hang on it
   - Components: none recorded
@@ -90,6 +90,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Make the governance preflight report a missing pre-commit hook with its repair command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-make-the-governance-preflight-report-a-missing-pre-commit-hook-w.json`
+- **2026-08-18** — Make the default-provider test independent of a real OPENROUTER_API_KEY in the environment
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-18-make-the-default-provider-test-independent-of-a-real-openrouter.json`
 - **2026-08-18** — Make prod-codecov deploy standalone with Traefik and document the Linux host command
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-make-prod-codecov-deploy-standalone-with-traefik-and-document-th.json`
@@ -123,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-17** — Route Codecov storage through the gateway so presigned upload URLs resolve outside Docker
   - Components: codecov, governance-kernel
   - Record: `governance/history/changes/2026-08-17-route-codecov-storage-through-the-gateway-so-presigned-upload-ur.json`
-- **2026-08-17** — Measure backend branch coverage and re-baseline the ratcheted floor to the combined metric
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-17-measure-backend-branch-coverage-and-re-baseline-the-ratcheted-fl.json`
 
 ## Decisions (5)
 

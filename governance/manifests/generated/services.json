@@ -814,6 +814,39 @@
       ]
     },
     {
+      "depends_on": [],
+      "env_refs": [],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "digest": "sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459",
+        "ref": "tecnativa/docker-socket-proxy"
+      },
+      "name": "docker-socket-proxy",
+      "networks": [
+        "docker-socket"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "edge"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "/var/run/docker.sock",
+          "target": "/var/run/docker.sock"
+        }
+      ]
+    },
+    {
       "build": {
         "args": [],
         "context": "docker/mcp/docling"
@@ -1430,7 +1463,9 @@
       ]
     },
     {
-      "depends_on": [],
+      "depends_on": [
+        "docker-socket-proxy"
+      ],
       "env_refs": [
         "ACME_EMAIL",
         "TRAEFIK_DASHBOARD_PORT",
@@ -1448,6 +1483,7 @@
       },
       "name": "traefik",
       "networks": [
+        "docker-socket",
         "service-egress"
       ],
       "presence": [
@@ -1460,11 +1496,6 @@
         }
       ],
       "volumes": [
-        {
-          "class": "bind",
-          "name": "/var/run/docker.sock",
-          "target": "/var/run/docker.sock"
-        },
         {
           "class": "named",
           "name": "traefik_letsencrypt",

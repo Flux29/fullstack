@@ -1,0 +1,37 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "Discovery behavior is identical: Traefik reads the same labels through tcp://docker-socket-proxy:2375. depends_on uses service_started so a failing proxy healthcheck degrades discovery rather than blocking the edge from starting. Applies on the next prod deploy (docker compose up recreates traefik and adds the proxy); until then the host keeps the old wiring. compose-check including the prod tail passes; the standalone compose-check-prod target still requires the interpolation dummies it always required.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "ENV_VARS.md",
+    "docker-compose.prod.yml",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-put-a-least-privilege-socket-proxy-between-traefik-and-the-docke",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "Security finding: production mounts /var/run/docker.sock into Traefik with the insecure API enabled; a read-only bind mount does not restrict the Docker API itself, so a Traefik compromise reaches full host control. A socket proxy with a container-read-only endpoint allowlist bounds that blast radius",
+  "risks": [],
+  "rollback": "git revert restores the direct socket mount; the socket-proxy container and docker-socket network are removed on the next compose up --remove-orphans.",
+  "schema_version": 1,
+  "security_impact": "Traefik no longer holds the Docker socket. A digest-pinned tecnativa/docker-socket-proxy (v0.5.0) owns the read-only mount on an internal no-egress network shared only with Traefik, and exposes CONTAINERS=1 plus the ping/version defaults; verified locally against the pinned image: container and label listing ALLOWED, container create, image list, and exec all DENIED. A Traefik compromise now reads container metadata instead of reaching the full Docker API (the previous :ro mount only made the socket file read-only, not the API). The insecure dashboard API remains loopback-bound on the host, unchanged and out of scope here.",
+  "summary": "Put a least-privilege socket proxy between Traefik and the Docker API",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

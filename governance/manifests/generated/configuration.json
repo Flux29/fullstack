@@ -690,6 +690,23 @@
         "compose-only"
       ],
       "consumed_by": [
+        "compose:docker-socket-proxy"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "CONTAINERS",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
         "compose:frontend"
       ],
       "declared_in": [

@@ -245,6 +245,7 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `CODECOV_SCHEME` | no | — | `compose-only` | — |
 | `CODE_EXECUTION_MAX_MEMORY_MB` | no | `256` | `runtime` | — |
 | `CONCURRENT` | no | — | `compose-only` | — |
+| `CONTAINERS` | no | — | `compose-only` | — |
 | `COOKIE_SECURE` | no | — | `compose-only` | — |
 | `CORS_ALLOW_CREDENTIALS` | no | `true` | `runtime` | — |
 | `CORS_ALLOW_HEADERS` | no | — | `runtime` | — |

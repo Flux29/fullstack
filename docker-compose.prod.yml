@@ -1,11 +1,38 @@
 services:
+  # Least-privilege gate in front of the Docker API: only Traefik's discovery
+  # needs (container/label listing plus /version and /_ping) are allowed;
+  # create, exec, images, volumes, networks and every other mutating endpoint
+  # answer 403. Traefik itself no longer touches the socket, so a Traefik
+  # compromise reads container metadata instead of owning the host.
+  docker-socket-proxy:
+    profiles: ["edge"]
+    image: tecnativa/docker-socket-proxy@sha256:1f5038b54f06c3e18422902cf00ba21803d1c97805aae032e5e6673d532d3459
+    environment:
+      CONTAINERS: "1"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - docker-socket
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:2375/version"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
   traefik:
     profiles: ["edge"]
     image: traefik@sha256:617c253c5d960e257ec153d582cc62f191461baba6863bd6b498ae062d3d5c19
+    depends_on:
+      # service_started, not service_healthy: a broken proxy healthcheck must
+      # degrade discovery, not keep the edge from coming up at all.
+      docker-socket-proxy:
+        condition: service_started
     command:
       - --api.dashboard=true
       - --api.insecure=true
       - --providers.docker=true
+      - --providers.docker.endpoint=tcp://docker-socket-proxy:2375
       - --providers.docker.exposedbydefault=false
       - --providers.docker.network=fullstack_service-egress
       - --entrypoints.web.address=:80
@@ -22,10 +49,10 @@ services:
       - "${TRAEFIK_HTTPS_PORT:-443}:443"
       - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - traefik_letsencrypt:/letsencrypt
     networks:
       - service-egress
+      - docker-socket
     restart: unless-stopped
 
   app:
@@ -225,6 +252,13 @@ services:
         limits:
           cpus: "0.5"
           memory: 512M
+
+networks:
+  # Carries exactly one conversation: Traefik -> docker-socket-proxy. No
+  # egress, and no other service joins it.
+  docker-socket:
+    driver: bridge
+    internal: true
 
 volumes:
   traefik_letsencrypt:

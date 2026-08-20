@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 126)
+## Recent changes (latest 20 of 127)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -82,6 +82,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Rate-limit login, registration, password-reset and magic-link requests per client IP and per account
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-rate-limit-login-registration-password-reset-and-magic-link-requ.json`
+- **2026-08-20** — Put a least-privilege socket proxy between Traefik and the Docker API
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-20-put-a-least-privilege-socket-proxy-between-traefik-and-the-docke.json`
 - **2026-08-20** — Install the backend security headers middleware and make SECURITY.md match it
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-install-the-backend-security-headers-middleware-and-make-securit.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-19** — Close the secrets-pushed-to-remote finding: both leaked credentials are rotated and revoked at their providers
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-19-close-the-secrets-pushed-to-remote-finding-both-leaked-credentia.json`
-- **2026-08-19** — Bump vulnerable frontend and chrome-devtools sidecar dependencies so make audit-js is clean and the CI audit step gates again
-  - Components: chrome-devtools-mcp, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-19-bump-vulnerable-frontend-and-chrome-devtools-sidecar-dependencie.json`
 
 ## Decisions (5)
 

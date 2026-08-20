@@ -5,6 +5,22 @@ import type { RefreshTokenResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
   try {
+    // Defense in depth: this route turns the HttpOnly refresh cookie into an
+    // access token in the response body, so gate it on browser fetch
+    // metadata. Sec-Fetch-Site must be same-origin when the browser sends it
+    // (cross-site callers and sandboxed opaque-origin documents report
+    // cross-site), and the app's own callers mark themselves with
+    // X-Token-Refresh. Neither stops a full same-origin XSS — nothing can
+    // while the chat WebSocket needs the token in JS — but they block
+    // cross-site and sandboxed callers outright.
+    const secFetchSite = request.headers.get("sec-fetch-site");
+    if (secFetchSite && secFetchSite !== "same-origin") {
+      return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
+    }
+    if (request.headers.get("x-token-refresh") !== "1") {
+      return NextResponse.json({ detail: "Forbidden" }, { status: 403 });
+    }
+
     const refreshToken = request.cookies.get("refresh_token")?.value;
 
     if (!refreshToken) {

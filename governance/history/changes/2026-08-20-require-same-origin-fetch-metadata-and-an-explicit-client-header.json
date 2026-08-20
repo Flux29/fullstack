@@ -1,0 +1,35 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "The refresh response shape is unchanged. Both client call sites (api-client refreshAccessToken and the apiClient request path used by use-auth) now send X-Token-Refresh, so the transparent 401-retry flow and the WebSocket reconnect token refresh keep working; vitest covers accept and reject paths. Any future non-app caller of /api/auth/refresh must send the marker header.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "frontend/src/app/api/auth/refresh/route.test.ts",
+    "frontend/src/app/api/auth/refresh/route.ts",
+    "frontend/src/lib/api-client.ts",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-require-same-origin-fetch-metadata-and-an-explicit-client-header",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Security finding: the Next /api/auth/refresh route reads the HttpOnly refresh cookie and returns a fresh access token in its JSON body, so any script that can POST to it same-origin defeats the HttpOnly protection; gate it on Sec-Fetch-Site and a custom request header as defense in depth now that the uploaded-HTML execution vector is closed",
+  "risks": [],
+  "rollback": "git revert removes the gate and the client marker together; partial reverts would lock the app out of refreshing (gate without marker) and must not be cherry-picked.",
+  "schema_version": 1,
+  "security_impact": "The refresh proxy no longer hands out access tokens to arbitrary same-origin POSTs: it requires the X-Token-Refresh marker header and rejects any request whose Sec-Fetch-Site metadata is not same-origin, so cross-site callers and sandboxed opaque-origin documents (the uploaded-content vector, already sandboxed in a prior session) get 403 before the cookie is read. Verified live: no marker 403, cross-site metadata 403, legitimate call 200. Residual accepted risk: a full same-origin XSS can still set the marker - unavoidable while the chat WebSocket design requires the access token in JS; the layered defenses (upload sandbox, CSP, this gate) reduce the paths to such an XSS.",
+  "summary": "Require same-origin fetch metadata and an explicit client header on the auth refresh route",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

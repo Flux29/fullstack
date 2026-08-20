@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 123)
+## Recent changes (latest 20 of 124)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -67,6 +67,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-rewrite-git-history-to-remove-the-three-dead-credential-strings.json`
+- **2026-08-20** — Require same-origin fetch metadata and an explicit client header on the auth refresh route
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-20-require-same-origin-fetch-metadata-and-an-explicit-client-header.json`
 - **2026-08-20** — Require edit shares for conversation update/archive and restrict delete to owners
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-require-edit-shares-for-conversation-update-archive-and-restrict.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-stop-applying-the-staged-file-scope-to-whole-repository-facts-in.json`
-- **2026-08-18** — Run the Playwright end-to-end suite in CI against a real backend on pgvector and redis with the fake LLM provider, and retire the playwright-not-in-ci exception
-  - Components: agent-operating-surface, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-18-run-the-playwright-end-to-end-suite-in-ci-against-a-real-backend.json`
 
 ## Decisions (5)
 

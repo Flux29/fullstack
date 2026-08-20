@@ -38,7 +38,7 @@ function refreshAccessToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = fetch(`/api${REFRESH_ENDPOINT}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "X-Token-Refresh": "1" },
     })
       .then(async (res) => {
         if (!res.ok) return false;
@@ -77,6 +77,8 @@ class ApiClient {
         ...fetchOptions,
         headers: {
           "Content-Type": "application/json",
+          // The refresh proxy requires this marker (see its route handler).
+          ...(endpoint === REFRESH_ENDPOINT ? { "X-Token-Refresh": "1" } : {}),
           ...fetchOptions.headers,
         },
         body: body ? JSON.stringify(body) : undefined,

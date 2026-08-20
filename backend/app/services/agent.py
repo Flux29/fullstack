@@ -251,6 +251,7 @@ async def persist_user_turn(
             user_msg = await conv_service.add_message(
                 UUID(conversation_id),
                 MessageCreate(role="user", content=user_message),
+                user_id=user.id,
             )
             if file_ids:
                 try:

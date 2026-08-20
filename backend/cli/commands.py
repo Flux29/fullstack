@@ -168,8 +168,8 @@ def user_create(email: str, password: str, role: str, superuser: bool):
         async with async_session_maker() as session:
             user_service = UserService(session)
             try:
-                user_in = UserCreate(email=email, password=password, role=UserRole(role))
-                user = await user_service.register(user_in)
+                user_in = UserCreate(email=email, password=password)
+                user = await user_service.register(user_in, role=UserRole(role))
 
                 if superuser:
                     user.role = UserRole.ADMIN.value
@@ -202,8 +202,8 @@ def user_create_admin(email: str, password: str):
         async with async_session_maker() as session:
             user_service = UserService(session)
             try:
-                user_in = UserCreate(email=email, password=password, role=UserRole.ADMIN)
-                user = await user_service.register(user_in)
+                user_in = UserCreate(email=email, password=password)
+                user = await user_service.register(user_in, role=UserRole.ADMIN)
 
                 session.add(user)
 

@@ -1,0 +1,116 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "OpenAPI under /api/v1"
+  ],
+  "behavioral_effects": [
+    "Self-registration always yields role=user; admin creation happens only via the CLI trusted role parameter or first-user promotion.",
+    "Reading or writing another user conversation via the message endpoints now 404s without a share; writing with a view-only share 403s; edit shares can still write.",
+    "The agent WebSocket user-turn persistence passes the acting user id through add_message as defense in depth."
+  ],
+  "compatibility_impact": "No request or response shape changes; proxy handlers untouched. POST /api/v1/auth/register now ignores a role key (schema extra=ignore) instead of honoring it. Conversation message endpoints return 404 for non-owners without a share and 403 for view-only share recipients on write. The frontend never sent role and the chat path already scoped to owned conversations, so no legitimate client behavior changes.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/api/routes/v1/conversations.py",
+    "backend/app/schemas/user.py",
+    "backend/app/services/agent.py",
+    "backend/app/services/conversation.py",
+    "backend/app/services/user.py",
+    "backend/cli/commands.py",
+    "backend/tests/api/test_auth.py",
+    "backend/tests/test_services.py",
+    "backend/tests/test_services_conversation.py"
+  ],
+  "follow_up": [
+    "Enforce edit permission on the remaining conversation write paths, decide whether delete is owner-only, and wire up or delete the orphaned ConversationShareService.check_edit_permission.",
+    "Consider restricting MessageCreate.role to user on the public REST endpoint."
+  ],
+  "id": "2026-08-20-fix-critical-security-findings-registration-role-escalation-and",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "update_conversation, archive_conversation, and delete_conversation still accept a view-only share (pre-existing permission-blind branch); registered as open finding view-share-can-modify-conversations with a spawned follow-up session.",
+    "MessageCreate still accepts role=system on the REST endpoint; with ownership enforced the remaining injection surface is the actor own or edit-shared conversations.",
+    "migrations validator self-skipped: no reachable database in this environment and no schema change in the session."
+  ],
+  "manifests_changed": [],
+  "reason": "External security assessment found two critical issues: (1) UserCreate exposes role and register() persists it, letting anyone register as admin; (2) list_messages/add_message skip conversation ownership checks, allowing cross-user message read and injection",
+  "risks": [
+    "Admin routes and internal agent persistence use user_id=None as the trusted unscoped path; a future caller that omits the actor silently bypasses the ownership check. Mitigated by regression tests and the follow-up to consolidate write-path authorization."
+  ],
+  "rollback": "git revert of the single commit restores both vulnerabilities and removes the regression tests; no schema or data migration involved, nothing outside the tree to restore beyond regenerating Summary.md via governance-sync.",
+  "schema_version": 1,
+  "security_impact": "Closes two critical vulnerabilities. (1) Registration role escalation: UserCreate no longer carries role, so a self-registration payload cannot mint an admin; privilege flows only through a keyword-only trusted role parameter on UserService.register used by the CLI (first-user app-admin promotion unchanged). (2) Conversation message IDOR: list_messages and add_message now pass the acting user into get_conversation, closing cross-user message reading and injection; add_message additionally requires an edit share, so a view-only share cannot inject user/assistant/system turns into the owner agent history. An adversarial review of the change surfaced the pre-existing permission-blind share branch on update/archive/delete, registered here as the open finding view-share-can-modify-conversations.",
+  "summary": "Fix critical security findings: registration role escalation and conversation message IDOR",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint exit 0; ruff check and format clean over app, tests, cli; ty warnings pre-existing in untouched files",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make test 523 passed, 13 skipped (pre-existing gated skips); includes 7 new regression tests for both findings",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipping without a reachable database; session contains no schema change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "exit 0 across the file-stack x profile matrix",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check, vitest all pass; exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "redis-data and docling-models present",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "40 checks run, 0 blocking, 7 advisory after the record and findings were written",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ],
+  "findings": [
+    {
+      "id": "registration-role-escalation",
+      "severity": "high",
+      "status": "resolved",
+      "disposition": "fixed-in-code",
+      "detail": "UserCreate exposed a role field and UserService.register persisted user_in.role for every user after the first, so POST /api/v1/auth/register with role=admin minted an administrator with access to every CurrentAdmin endpoint including user administration and conversation export. Fixed 2026-08-20: the field is removed from the schema (extra keys are ignored at the boundary), and role is now a keyword-only parameter of register() supplied only by trusted code (CLI user create/create-admin); the public route always registers role=user. Regression tests cover the service, the trusted CLI path, and the API boundary."
+    },
+    {
+      "id": "conversation-message-idor",
+      "severity": "high",
+      "status": "resolved",
+      "disposition": "fixed-in-code",
+      "detail": "ConversationService.list_messages accepted a user_id but never passed it into get_conversation, and add_message took no actor at all, so any authenticated user who learned another conversation UUID could read its messages or inject user/assistant/system messages into it — active cross-conversation prompt injection into the owner's agent history, not merely disclosure. Fixed 2026-08-20: both methods route the acting user through get_conversation's ownership/share check (404 for strangers), and add_message additionally requires an edit share (403 for view-only recipients). Admin routes and internal agent persistence remain deliberately unscoped via user_id=None; the WebSocket user-turn persistence now passes the actor as defense in depth."
+    },
+    {
+      "id": "view-share-can-modify-conversations",
+      "severity": "high",
+      "status": "open",
+      "disposition": "remediation-required",
+      "detail": "Pre-existing and surfaced by this session's adversarial review: get_conversation's share branch accepts any share row without inspecting share.permission, and update_conversation, archive_conversation, and delete_conversation authorize through it, so a view-only share recipient can rename, archive, or hard-delete the owner's conversation. The purpose-built ConversationShareService.check_edit_permission has zero callers. Link-share tokens are not affected (get_share matches shared_with, which is NULL for link shares). add_message was made permission-aware in this change; the remaining write paths need the same treatment plus a product decision on whether delete is owner-only. A follow-up session is queued."
+    }
+  ]
+}

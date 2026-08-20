@@ -215,7 +215,8 @@ async def add_message(
     current_user: CurrentUser,
 ) -> Any:
     """Add a message to a conversation."""
-    return await conversation_service.add_message(conversation_id, data)
+    uid = None if current_user.has_role(UserRole.ADMIN) else current_user.id
+    return await conversation_service.add_message(conversation_id, data, user_id=uid)
 
 
 @router.post(

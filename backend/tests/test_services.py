@@ -9,6 +9,7 @@ import pytest
 from app.core.config import settings
 from app.core.exceptions import AlreadyExistsError, AuthenticationError, NotFoundError
 from app.core.security import get_password_hash
+from app.db.models.user import UserRole
 from app.schemas.user import UserCreate, UserUpdate
 from app.services.email import get_email_provider, templates
 from app.services.email.exceptions import EmailTemplateError
@@ -242,6 +243,57 @@ class TestUserServicePostgresql:
 
             assert result == mock_user
             mock_repo.create.assert_called_once()
+
+    @pytest.mark.anyio
+    async def test_register_with_requested_admin_role_persists_regular_user(
+        self, user_service: UserService, mock_user: MockUser
+    ):
+        """A role smuggled into the registration payload must never be persisted."""
+        scalar_one_result = MagicMock()
+        scalar_one_result.scalar_one.return_value = 1  # not the first user
+        user_service.db.execute = AsyncMock(return_value=scalar_one_result)
+
+        with (
+            patch("app.services.user.user_repo") as mock_repo,
+            patch("app.services.user.get_email_service") as mock_email,
+        ):
+            mock_repo.get_by_email = AsyncMock(return_value=None)
+            mock_repo.create = AsyncMock(return_value=mock_user)
+            mock_email.return_value.send_welcome = AsyncMock()
+
+            user_in = UserCreate.model_validate(
+                {
+                    "email": "attacker@example.com",
+                    "password": "password123",
+                    "role": "admin",
+                }
+            )
+            await user_service.register(user_in)
+
+            assert mock_repo.create.call_args.kwargs["role"] == "user"
+            assert mock_repo.create.call_args.kwargs["is_app_admin"] is False
+
+    @pytest.mark.anyio
+    async def test_register_trusted_role_parameter_creates_admin(
+        self, user_service: UserService, mock_user: MockUser
+    ):
+        """The CLI path passes role as a code-level argument, not request input."""
+        scalar_one_result = MagicMock()
+        scalar_one_result.scalar_one.return_value = 1
+        user_service.db.execute = AsyncMock(return_value=scalar_one_result)
+
+        with (
+            patch("app.services.user.user_repo") as mock_repo,
+            patch("app.services.user.get_email_service") as mock_email,
+        ):
+            mock_repo.get_by_email = AsyncMock(return_value=None)
+            mock_repo.create = AsyncMock(return_value=mock_user)
+            mock_email.return_value.send_welcome = AsyncMock()
+
+            user_in = UserCreate(email="operator@example.com", password="password123")
+            await user_service.register(user_in, role=UserRole.ADMIN)
+
+            assert mock_repo.create.call_args.kwargs["role"] == "admin"
 
     @pytest.mark.anyio
     async def test_register_duplicate_email(self, user_service: UserService, mock_user: MockUser):

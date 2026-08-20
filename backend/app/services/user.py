@@ -96,8 +96,12 @@ class UserService:
         ]
         return AdminUserList(items=items, total=total)
 
-    async def register(self, user_in: UserCreate) -> User:
+    async def register(self, user_in: UserCreate, *, role: UserRole = UserRole.USER) -> User:
         """Create a local password account.
+
+        ``role`` is a trusted, code-level escalation path (CLI, seeding) and is
+        never populated from request input — the registration endpoint always
+        calls this with the default.
 
         The first user to register is auto-promoted to app-admin — no separate
         CLI step needed. That convenience is a land-grab on a public
@@ -120,7 +124,7 @@ class UserService:
             email=user_in.email,
             hashed_password=hashed_password,
             full_name=user_in.full_name,
-            role=UserRole.ADMIN.value if is_first_user else user_in.role.value,
+            role=UserRole.ADMIN.value if is_first_user else role.value,
             is_app_admin=is_first_user,
         )
         try:

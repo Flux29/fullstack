@@ -17,13 +17,15 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **infrastructure** — codecov, docling-serve, traefik
 - **mcp-sidecar** — chrome-devtools-mcp, docling-mcp
 
-## Open findings (6)
+## Open findings (7)
 
 - **mcp-approval-gating-asymmetry** (high) — Human-in-the-loop tool approval uses pydantic-ai deferred tools and currently covers Google mutation tools only; MCP-sourced tools bypass approval entirely. A per-user connection with `allowed_tools` unset (NULL) exposes every tool the server advertises, so a write-capable arbitrary server combines full tool exposure with no approval gate. This requires an explicit product-security decision (approval parity, default allowlists, or a documented restriction) before MCP policies are promoted past advisory; an accepted-risk ADR alone is not sufficient.
   - Disposition: product-security-decision-required
 - **mcp-no-connection-time-ssrf-revalidation** (high) — `validate_mcp_url` (SSRF check, resolves DNS) runs at connection create/update and during OAuth flows, but the per-turn reachability probe and toolset attach open the stored URL directly with no revalidation, leaving a validation-to-connection window (DNS rebinding). Remediation options: revalidate at probe/attach time, and preferably network-level egress controls. This is an open security finding, never described as a protected invariant until the connection path is fixed.
   - Disposition: remediation-required
 - **mcp-url-embedded-credentials-unencrypted** (high) — The frontend MCP catalog supports `tokenPlacement: "url"`, so a connection URL can carry a live API key. The `mcp_connections.url` column is stored unencrypted (unlike `auth_token`, which is Fernet-encrypted) and is returned verbatim by the connections API. Every governance surface that touches a connection URL strips query strings and userinfo first; remediating the storage design (store the token separately and substitute it at connect time) is tracked here.
+  - Disposition: remediation-required
+- **view-share-can-modify-conversations** (high) — Pre-existing and surfaced by this session's adversarial review: get_conversation's share branch accepts any share row without inspecting share.permission, and update_conversation, archive_conversation, and delete_conversation authorize through it, so a view-only share recipient can rename, archive, or hard-delete the owner's conversation. The purpose-built ConversationShareService.check_edit_permission has zero callers. Link-share tokens are not affected (get_share matches shared_with, which is NULL for link shares). add_message was made permission-aware in this change; the remaining write paths need the same treatment plus a product decision on whether delete is owner-only. A follow-up session is queued.
   - Disposition: remediation-required
 - **timezone-not-iana** (medium) — `TIMEZONE` defaults to `"EDT"` in `backend/app/core/config.py`, but the field's own comment requires an IANA zone name and `EDT` is not one (`America/New_York` is the intended value). This is an application fix with test impact, deliberately out of governance scope; it is tracked here until landed.
   - Disposition: app-fix-required
@@ -62,7 +64,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 114)
+## Recent changes (latest 20 of 115)
 
 - **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
   - Components: none recorded
@@ -70,6 +72,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
+- **2026-08-20** — Fix critical security findings: registration role escalation and conversation message IDOR
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json`
 - **2026-08-20** — Add the MIT LICENSE ahead of making the repository public
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public.json`
@@ -121,9 +126,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Lint and coverage-gate the governance tool, implement the coverage-floor ratchet check, and give CI the commit range its process checks need
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-lint-and-coverage-gate-the-governance-tool-implement-the-coverag.json`
-- **2026-08-18** — Give the nightly full-history secret scan a redacted fingerprint baseline so the one known finding does not paint every nightly red
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-18-give-the-nightly-full-history-secret-scan-a-redacted-fingerprint.json`
 
 ## Decisions (5)
 

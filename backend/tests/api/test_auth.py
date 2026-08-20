@@ -126,6 +126,25 @@ async def test_register_success(client_with_mock_service: AsyncClient):
 
 
 @pytest.mark.anyio
+async def test_register_role_in_body_never_reaches_the_service(
+    client_with_mock_service: AsyncClient,
+    mock_user_service: MagicMock,
+):
+    """A role field in the registration payload is dropped at the schema boundary."""
+    response = await client_with_mock_service.post(
+        f"{settings.API_V1_STR}/auth/register",
+        json={
+            "email": "attacker@example.com",
+            "password": "password123",
+            "role": "admin",
+        },
+    )
+    assert response.status_code == 201
+    user_in = mock_user_service.register.call_args.args[0]
+    assert "role" not in user_in.model_dump()
+
+
+@pytest.mark.anyio
 async def test_register_duplicate_email(
     client_with_mock_service: AsyncClient,
     mock_user_service: MagicMock,

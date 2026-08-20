@@ -6,7 +6,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError
+from app.core.exceptions import AuthorizationError, NotFoundError
 from app.db.models.conversation import Conversation, Message, ToolCall
 from app.repositories import (
     chat_file_repo,
@@ -151,6 +151,7 @@ class ConversationService:
         *,
         include_messages: bool = False,
         user_id: UUID | None = None,
+        require_edit: bool = False,
     ) -> Conversation:
         conversation = await conversation_repo.get_conversation_by_id(
             self.db, conversation_id, include_messages=include_messages
@@ -173,6 +174,10 @@ class ConversationService:
                     message="Conversation not found",
                     details={"conversation_id": str(conversation_id)},
                 )
+            # The share's existence is already disclosed to its recipient, so an
+            # explicit 403 here is honest rather than leaky.
+            if require_edit and share.permission != "edit":
+                raise AuthorizationError(message="Edit permission required for this conversation")
         if include_messages and user_id is not None and conversation.messages:
             message_ids = [m.id for m in conversation.messages]
             user_ratings = await message_rating_repo.get_user_ratings_for_messages(
@@ -389,8 +394,10 @@ class ConversationService:
         include_tool_calls: bool = False,
         user_id: UUID | None = None,
     ) -> tuple[list[Message | MessageRead], int]:
-        """When user_id is provided, messages are enriched with user_rating and rating_count."""
-        await self.get_conversation(conversation_id)
+        """When user_id is provided, access is scoped to that user (owner or share
+        recipient) and messages are enriched with user_rating and rating_count.
+        A user_id of None is the trusted path (admin routes, internal callers)."""
+        await self.get_conversation(conversation_id, user_id=user_id)
         items = await conversation_repo.get_messages_by_conversation(
             self.db,
             conversation_id,
@@ -421,8 +428,12 @@ class ConversationService:
         self,
         conversation_id: UUID,
         data: MessageCreate,
+        *,
+        user_id: UUID | None = None,
     ) -> Message:
-        await self.get_conversation(conversation_id)
+        """When user_id is provided, the actor must own the conversation or hold an
+        edit share; None is the trusted path (admin routes, internal agent persistence)."""
+        await self.get_conversation(conversation_id, user_id=user_id, require_edit=True)
         return await conversation_repo.create_message(
             self.db,
             conversation_id=conversation_id,

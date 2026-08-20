@@ -30,10 +30,14 @@ class UserBase(BaseSchema):
 
 
 class UserCreate(UserBase):
-    """Schema for creating a user."""
+    """Schema for creating a user.
+
+    Deliberately carries no ``role``: this schema is bound to the public
+    registration endpoint, and privilege must never come from request input.
+    Trusted callers pass a role to ``UserService.register`` directly.
+    """
 
     password: str = Field(min_length=8, max_length=128)
-    role: UserRole = UserRole.USER
 
 
 class UserUpdate(BaseSchema):

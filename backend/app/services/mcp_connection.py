@@ -4,7 +4,9 @@ Connections are user-scoped rows (Settings → Integrations) pointing at
 remote MCP servers (streamable HTTP or SSE, inferred from the URL). The
 service owns:
   - SSRF validation of user-supplied URLs (same policy as webhooks),
-  - at-rest encryption of bearer tokens (Fernet, see app/core/crypto.py),
+  - at-rest encryption of bearer tokens and full connection URLs (Fernet,
+    see app/core/crypto.py) — the ``url`` column keeps only the
+    credential-stripped display form,
   - the connectivity test that discovers the server's tools, and
   - building per-turn agent toolsets from the user's enabled connections.
 """
@@ -47,6 +49,7 @@ from app.agents.mcp_oauth import McpOAuthPayload, OAuthError
 from app.core.config import settings
 from app.core.crypto import decrypt_value, encrypt_value
 from app.core.exceptions import AlreadyExistsError, NotFoundError
+from app.core.sanitize import strip_url_credentials
 from app.db.models.mcp_connection import McpConnection
 from app.db.session import get_db_context
 from app.repositories import mcp_connection_repo
@@ -164,6 +167,25 @@ async def _oauth_access_token(db: AsyncSession, connection: McpConnection) -> st
     return await _refresh_under_lock(db, connection)
 
 
+def _connect_url(connection: McpConnection) -> str | None:
+    """The full URL to reach *connection* — decrypted from ``connect_url``.
+
+    ``url`` is the credential-stripped display form and must never be used to
+    connect: for catalog servers that place their token in the URL it would
+    silently connect unauthenticated. Rows written before the split (NULL
+    ``connect_url``) fall back to ``url``, which still holds their full URL.
+    None when the ciphertext can't be read (SECRET_KEY rotated) — a dead
+    connection the user has to re-create, not a reason to fail the turn.
+    """
+    if connection.connect_url is None:
+        return connection.url
+    try:
+        return decrypt_value(connection.connect_url, settings.SECRET_KEY)
+    except Exception:
+        logger.warning("Cannot decrypt connect URL for MCP connection %r", connection.name)
+        return None
+
+
 async def _resolve_auth_headers(
     db: AsyncSession, connection: McpConnection
 ) -> dict[str, str] | None:
@@ -203,7 +225,8 @@ class McpConnectionService:
                 self.db,
                 user_id=user_id,
                 name=data.name,
-                url=url,
+                url=strip_url_credentials(url),
+                connect_url=encrypt_value(url, settings.SECRET_KEY),
                 auth_token=encrypt_value(token, settings.SECRET_KEY) if token else None,
                 allowed_tools=data.allowed_tools,
                 is_enabled=data.is_enabled,
@@ -223,7 +246,9 @@ class McpConnectionService:
         )
 
         if "url" in update_data:
-            update_data["url"] = await validate_mcp_url(update_data["url"])
+            full_url = await validate_mcp_url(update_data["url"])
+            update_data["url"] = strip_url_credentials(full_url)
+            update_data["connect_url"] = encrypt_value(full_url, settings.SECRET_KEY)
 
         if "name" in update_data and update_data["name"] != db_connection.name:
             collision = await mcp_connection_repo.get_by_name(
@@ -275,16 +300,22 @@ class McpConnectionService:
         tools: list[McpToolInfo] = []
         error: str | None = None
         headers = await _resolve_auth_headers(self.db, db_connection)
+        url = _connect_url(db_connection)
         if headers is None:
             error = "This plugin needs to be authorized before it can connect."
+        elif url is None:
+            error = "The stored server URL can no longer be read — re-create this connection."
         else:
             try:
-                if google_api_kind(db_connection.url):
+                if google_api_kind(url):
                     tools = await probe_google_api(
-                        db_connection.url, headers["Authorization"].removeprefix("Bearer ")
+                        url, headers["Authorization"].removeprefix("Bearer ")
                     )
                 else:
-                    tools = await probe_mcp_server(db_connection.url, headers)
+                    # Re-run the SSRF check: the URL was validated at write
+                    # time, but its hostname may resolve differently now.
+                    await validate_mcp_url(url)
+                    tools = await probe_mcp_server(url, headers)
             except Exception as exc:
                 error = probe_error_message(exc)
         db_connection = await mcp_connection_repo.update(
@@ -372,7 +403,8 @@ class McpConnectionService:
                 self.db,
                 user_id=user_id,
                 name=name,
-                url=url,
+                url=strip_url_credentials(url),
+                connect_url=encrypt_value(url, settings.SECRET_KEY),
                 auth_token=None,
                 allowed_tools=allowed_tools,
                 is_enabled=True,
@@ -421,7 +453,8 @@ class McpConnectionService:
             db_connection=connection,
             update_data={
                 # The URL moves together with the tokens issued for it.
-                "url": payload.server_url,
+                "url": strip_url_credentials(payload.server_url),
+                "connect_url": encrypt_value(payload.server_url, settings.SECRET_KEY),
                 "oauth_payload": encrypt_value(payload.model_dump_json(), settings.SECRET_KEY),
                 "oauth_pending_payload": None,
                 "oauth_state": None,
@@ -486,7 +519,13 @@ async def build_toolsets_for_user(
                         "Skipping MCP connection %r: no usable credentials", connection.name
                     )
                     continue
-                kind = google_api_kind(connection.url)
+                url = _connect_url(connection)
+                if url is None:
+                    logger.info(
+                        "Skipping MCP connection %r: stored URL cannot be read", connection.name
+                    )
+                    continue
+                kind = google_api_kind(url)
                 if kind:
                     prefix = _tool_prefix(connection.name)
                     if prefix in used_prefixes:
@@ -499,7 +538,7 @@ async def build_toolsets_for_user(
                     used_prefixes.add(prefix)
                     toolset = build_google_api_toolset(
                         name=connection.name,
-                        url=connection.url,
+                        url=url,
                         access_token=headers["Authorization"].removeprefix("Bearer "),
                         allowed_tools=connection.allowed_tools,
                         user_id=str(user_id),
@@ -517,9 +556,14 @@ async def build_toolsets_for_user(
                 specs.append(
                     McpServerSpec(
                         name=connection.name,
-                        url=connection.url,
+                        url=url,
                         headers=headers,
                         allowed_tools=connection.allowed_tools,
+                        # User-added servers are arbitrary: mutations pause for
+                        # approval, and the user-supplied URL is re-validated
+                        # against DNS rebinding on every turn.
+                        require_approval=True,
+                        revalidate_url=True,
                     )
                 )
     google_toolsets.sort(key=lambda entry: entry[:2])

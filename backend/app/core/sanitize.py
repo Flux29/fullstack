@@ -16,7 +16,7 @@ import re
 import socket
 import unicodedata
 from pathlib import Path
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urlunparse
 
 DEFAULT_ALLOWED_TAGS = frozenset(
     {
@@ -288,6 +288,31 @@ def validate_webhook_url(
             )
 
     return url
+
+
+def strip_url_credentials(url: str) -> str:
+    """Strip the credential-bearing parts of a URL: query string, fragment, userinfo.
+
+    Used wherever a connection URL is stored, displayed, or logged in plaintext —
+    some providers place API tokens in the query string (e.g. ``?apikey=...``),
+    so only the scheme, host, port, and path survive.
+
+    Args:
+        url: The URL to strip.
+
+    Returns:
+        The URL without query string, fragment, or userinfo.
+
+    Example:
+        >>> strip_url_credentials("https://mcp.example.co/mcp?apikey=s3cret")
+        "https://mcp.example.co/mcp"
+    """
+    parsed = urlparse(url)
+    hostname = parsed.hostname or ""
+    if ":" in hostname:  # IPv6 literal — urlparse strips the brackets
+        hostname = f"[{hostname}]"
+    netloc = f"{hostname}:{parsed.port}" if parsed.port else hostname
+    return urlunparse((parsed.scheme, netloc, parsed.path, "", "", ""))
 
 
 def sanitize_string(

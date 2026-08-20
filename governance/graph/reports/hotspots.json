@@ -16,7 +16,7 @@
         "Embedding dimension agrees across all five contract points"
       ],
       "invariants": 2,
-      "max_module_centrality": 0.0772,
+      "max_module_centrality": 0.0771,
       "uncovered": []
     },
     {
@@ -83,12 +83,12 @@
           "score": 0.0133
         },
         {
-          "id": "app.services.user",
+          "id": "app.services.mcp_connection",
           "score": 0.0102
         },
         {
-          "id": "app.services.mcp_connection",
-          "score": 0.0097
+          "id": "app.services.user",
+          "score": 0.0102
         },
         {
           "id": "app.worker.tasks.rag_tasks",
@@ -123,12 +123,12 @@
           "score": 0.0036
         },
         {
-          "id": "app.services.webhook",
-          "score": 0.0036
-        },
-        {
           "id": "app.services.email",
           "score": 0.0033
+        },
+        {
+          "id": "app.services.webhook",
+          "score": 0.0032
         },
         {
           "id": "app.agents.assistant",
@@ -162,7 +162,7 @@
         },
         {
           "id": "app.services.rag",
-          "score": 0.0772
+          "score": 0.0771
         },
         {
           "id": "app.schemas.base",
@@ -209,12 +209,12 @@
           "score": 0.0081
         },
         {
-          "id": "app.agents.google_apis.products",
+          "id": "app.schemas.user",
           "score": 0.008
         },
         {
-          "id": "app.schemas.user",
-          "score": 0.008
+          "id": "app.agents.google_apis.products",
+          "score": 0.0079
         },
         {
           "id": "app.db.models.chat_file",

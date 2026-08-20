@@ -10,6 +10,7 @@ import pytest
 from app.core.sanitize import (
     SSRFBlockedError,
     _is_ip_blocked,
+    strip_url_credentials,
     validate_webhook_url,
 )
 
@@ -53,6 +54,39 @@ class TestIsIpBlocked:
     def test_unparseable_ip_is_blocked(self):
         """If we can't parse it, we block it (fail-closed)."""
         assert _is_ip_blocked("not-an-ip") is True
+
+
+class TestStripUrlCredentials:
+    """The credential-bearing parts of a URL never reach plaintext storage."""
+
+    def test_query_string_is_stripped(self):
+        assert (
+            strip_url_credentials("https://mcp.example.co/mcp?apikey=s3cret")
+            == "https://mcp.example.co/mcp"
+        )
+
+    def test_userinfo_is_stripped(self):
+        assert (
+            strip_url_credentials("https://user:pass@example.com/mcp") == "https://example.com/mcp"
+        )
+
+    def test_fragment_is_stripped(self):
+        assert strip_url_credentials("https://example.com/mcp#token") == "https://example.com/mcp"
+
+    def test_port_and_path_survive(self):
+        assert (
+            strip_url_credentials("http://example.com:8443/a/b?x=1")
+            == "http://example.com:8443/a/b"
+        )
+
+    def test_plain_url_is_unchanged(self):
+        assert strip_url_credentials("https://example.com/mcp") == "https://example.com/mcp"
+
+    def test_ipv6_host_keeps_brackets(self):
+        assert (
+            strip_url_credentials("http://[2606:4700::1111]:8080/mcp?k=v")
+            == "http://[2606:4700::1111]:8080/mcp"
+        )
 
 
 # validate_webhook_url — scheme validation

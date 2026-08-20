@@ -1,0 +1,127 @@
+{
+  "adr_refs": [
+    "ADR-003"
+  ],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "/api/v1/me/mcp-connections"
+  ],
+  "behavioral_effects": [
+    "User-added MCP tools not annotated read-only now pause the chat turn for human approval before executing",
+    "A user MCP connection whose hostname now resolves to an internal address is skipped for the turn instead of being connected (DNS rebinding window closed to the sub-second client-connect race)",
+    "The API and DB expose only credential-stripped MCP connection URLs; connections are opened with the decrypted connect_url",
+    "Probe failure messages are scrubbed of URL query strings and userinfo before persistence and logging"
+  ],
+  "compatibility_impact": "API shape unchanged (McpConnectionRead fields identical; url is now credential-stripped, which the frontend already displayed stripped and matches via catalogBaseUrl ignoring query). New DB column connect_url via migration 0029 with in-migration backfill; dev database migrated and 11 rows backfilled. Rows predating the migration fall back to url at connect time. New MCP approval requests reuse the existing tool_approval_required WebSocket event, so no frontend change was needed.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/alembic/versions/0029_mcp_connect_url.py",
+    "backend/app/agents/mcp.py",
+    "backend/app/core/sanitize.py",
+    "backend/app/db/models/mcp_connection.py",
+    "backend/app/repositories/mcp_connection.py",
+    "backend/app/services/mcp_connection.py",
+    "backend/tests/test_mcp_connections.py",
+    "backend/tests/test_ssrf.py",
+    "governance/Summary.md",
+    "governance/graph/reports/hotspots.json",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/data-stores.json",
+    "governance/policies/security.json",
+    "tools/repo_governance/tests/test_visualizations.py"
+  ],
+  "follow_up": [
+    "Consider an automated policy check asserting build_toolsets_for_user specs carry require_approval and revalidate_url, per the promotion criteria now recorded in security.json"
+  ],
+  "id": "2026-08-20-close-the-three-standing-mcp-security-findings",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "A sub-second DNS rebinding race remains between revalidation and the HTTP client's own re-resolution; network-level egress controls remain the preferred hardening and are not part of this change",
+    "Path-embedded secrets (personal-URL catalog entries such as Zapier) are encrypted at rest in connect_url but their path still appears in the stripped display URL returned to the owning user",
+    "A server can still lie by annotating a mutating tool readOnlyHint true; the annotation is trusted by design, matching MCP semantics"
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/data-stores.json"
+  ],
+  "reason": "Three HIGH findings on the mcp-user-connections surface: arbitrary MCP mutation tools bypass the human approval gate (allowed_tools=NULL exposes every advertised tool), MCP URLs are DNS-validated only at write time leaving a rebinding/SSRF TOCTOU at probe and tool attachment, and credentials embedded in mcp_connections.url are stored and returned in plaintext while bearer tokens are Fernet-encrypted",
+  "risks": [
+    "Servers that fail to annotate readOnlyHint on genuinely read-only tools will prompt for approval on every call - deliberate fail-closed friction",
+    "Per-turn DNS revalidation adds one threaded getaddrinfo per user connection per turn"
+  ],
+  "rollback": "git revert the commit, then alembic downgrade 0028_user_magic_link_epoch, which restores each row's full URL into the plaintext url column (rows whose ciphertext no longer decrypts keep the stripped URL, losing any URL-embedded token). Reverting without downgrading leaves the harmless extra connect_url column.",
+  "schema_version": 1,
+  "security_impact": "Closes the three standing MCP findings. (1) mcp-approval-gating-asymmetry: every user-added MCP toolset is wrapped in pydantic-ai ApprovalRequiredToolset; any tool not annotated readOnlyHint pauses for the same deferred-tool human approval the Google write tools use, fail-closed for unannotated tools. Deployment-managed servers stay outside the gate (curated explicit allowlists enforced at startup). (2) mcp-no-connection-time-ssrf-revalidation: user-connection specs carry revalidate_url, re-running the SSRF/DNS check every turn ahead of the probe cache and at the test endpoint; deployment sidecars exempt as they resolve internally by design. (3) mcp-url-embedded-credentials-unencrypted: mcp_connections.url now stores only the credential-stripped form (no query, fragment, userinfo); the full URL is Fernet-encrypted in the new connect_url column (migration 0029 backfills both) and only the decrypted connect_url is used to connect. The security-review pass found and this change also fixes a follow-on leak: probe error messages (httpx embeds the full request URL) are now scrubbed of URL query/userinfo before reaching the plaintext last_error column or logs.",
+  "summary": "Close the three standing MCP security findings",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "566 passed 13 skipped, includes new TestApprovalGating, TestConnectionTimeRevalidation, TestConnectUrl, TestProbeErrorScrubbing",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff check and format clean, ty warnings pre-existing, exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "upgrade/downgrade round-trip on throwaway pgvector container; backfill smoke-tested with a credentialed row (token stripped from url, connect_url Fernet-encrypted, downgrade restores full URL)",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check, vitest all green, exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "external volumes present and protected",
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ],
+  "findings": [
+    {
+      "id": "mcp-approval-gating-asymmetry",
+      "severity": "high",
+      "status": "resolved",
+      "disposition": "remediated",
+      "detail": "User-added MCP toolsets are now wrapped in pydantic-ai ApprovalRequiredToolset (backend/app/agents/mcp.py); any tool not annotated readOnlyHint pauses for the deferred-tool human approval flow the Google write tools already used, fail-closed for unannotated tools. allowed_tools=NULL still exposes every advertised tool but no longer bypasses the approval boundary. Deployment-managed servers remain outside the gate: their explicit allowed_tools lists are curated deployment config enforced at startup. Guaranteed by backend-unit (TestApprovalGating, TestToolsetsForUser); the mcp-approval-parity policy rule now records the mechanism and a promotion path."
+    },
+    {
+      "id": "mcp-no-connection-time-ssrf-revalidation",
+      "severity": "high",
+      "status": "resolved",
+      "disposition": "remediated",
+      "detail": "Per-user connection specs carry revalidate_url: the per-turn toolset build re-runs the SSRF/DNS check ahead of the probe cache before any toolset attaches, and the connection test endpoint revalidates before probing. Deployment-managed sidecars are exempt because they legitimately resolve to internal Compose addresses. Residual: a sub-second race remains between revalidation and the HTTP client's own DNS resolution; network-level egress controls remain the preferred hardening. Guaranteed by backend-unit (TestConnectionTimeRevalidation)."
+    },
+    {
+      "id": "mcp-url-embedded-credentials-unencrypted",
+      "severity": "high",
+      "status": "resolved",
+      "disposition": "remediated",
+      "detail": "mcp_connections.url now stores only the credential-stripped form (query string, fragment, and userinfo removed via strip_url_credentials); the full URL is Fernet-encrypted in the new connect_url column, backfilled for all existing rows by migration 0029, and only the decrypted connect_url is ever used to connect. The API continues to return the url field, now credential-stripped by construction. The security-review pass on this change additionally caught probe error messages embedding the full request URL (httpx behaviour) and probe_error_message now scrubs URL query/userinfo before the message reaches the plaintext last_error column or logs. Guaranteed by backend-unit (TestConnectUrl, TestProbeErrorScrubbing, TestStripUrlCredentials) and the migrations round-trip."
+    }
+  ]
+}

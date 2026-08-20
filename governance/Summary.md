@@ -17,14 +17,8 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **infrastructure** — codecov, docling-serve, traefik
 - **mcp-sidecar** — chrome-devtools-mcp, docling-mcp
 
-## Open findings (6)
+## Open findings (3)
 
-- **mcp-approval-gating-asymmetry** (high) — Human-in-the-loop tool approval uses pydantic-ai deferred tools and currently covers Google mutation tools only; MCP-sourced tools bypass approval entirely. A per-user connection with `allowed_tools` unset (NULL) exposes every tool the server advertises, so a write-capable arbitrary server combines full tool exposure with no approval gate. This requires an explicit product-security decision (approval parity, default allowlists, or a documented restriction) before MCP policies are promoted past advisory; an accepted-risk ADR alone is not sufficient.
-  - Disposition: product-security-decision-required
-- **mcp-no-connection-time-ssrf-revalidation** (high) — `validate_mcp_url` (SSRF check, resolves DNS) runs at connection create/update and during OAuth flows, but the per-turn reachability probe and toolset attach open the stored URL directly with no revalidation, leaving a validation-to-connection window (DNS rebinding). Remediation options: revalidate at probe/attach time, and preferably network-level egress controls. This is an open security finding, never described as a protected invariant until the connection path is fixed.
-  - Disposition: remediation-required
-- **mcp-url-embedded-credentials-unencrypted** (high) — The frontend MCP catalog supports `tokenPlacement: "url"`, so a connection URL can carry a live API key. The `mcp_connections.url` column is stored unencrypted (unlike `auth_token`, which is Fernet-encrypted) and is returned verbatim by the connections API. Every governance surface that touches a connection URL strips query strings and userinfo first; remediating the storage design (store the token separately and substitute it at connect time) is tracked here.
-  - Disposition: remediation-required
 - **timezone-not-iana** (medium) — `TIMEZONE` defaults to `"EDT"` in `backend/app/core/config.py`, but the field's own comment requires an IANA zone name and `EDT` is not one (`America/New_York` is the intended value). This is an application fix with test impact, deliberately out of governance scope; it is tracked here until landed.
   - Disposition: app-fix-required
 - **backend-url-default-port-mismatch** (low) — The proxy layer defaults BACKEND_URL to port 8000 in frontend/src/lib/server-api.ts, while frontend/src/lib/constants.ts defaults to 8100. Both are fallbacks that apply only when the variable is unset, so a deployment that forgets to set it fails in two different ways depending on which module is asked. Recorded during the configuration baseline review; the fix is an application change.
@@ -58,11 +52,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 ## Active contracts
 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
-- **Migration head** — 0028_user_magic_link_epoch
+- **Migration head** — 0029_mcp_connect_url
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 118)
+## Recent changes (latest 20 of 119)
 
 - **2026-08-20** — Scope WebSocket chat file access to the acting user
   - Components: agents, backend-api
@@ -82,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Fix critical security findings: registration role escalation and conversation message IDOR
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json`
+- **2026-08-20** — Close the three standing MCP security findings
+  - Components: agents, backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
 - **2026-08-20** — Add the MIT LICENSE ahead of making the repository public
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public.json`
@@ -121,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Make the Makefile the single source of validator commands and have CI invoke it, with workflow hygiene and a repo codecov.yml
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-make-the-makefile-the-single-source-of-validator-commands-and-ha.json`
-- **2026-08-18** — Make the governance preflight report a missing pre-commit hook with its repair command
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-18-make-the-governance-preflight-report-a-missing-pre-commit-hook-w.json`
 
 ## Decisions (5)
 

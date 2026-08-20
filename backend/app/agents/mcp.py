@@ -30,7 +30,7 @@ from time import monotonic
 from typing import Any
 
 from app.core.config import GITHUB_MCP_READ_ONLY_TOOLS, settings
-from app.core.sanitize import validate_webhook_url
+from app.core.sanitize import strip_url_credentials, validate_webhook_url
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +73,16 @@ class McpServerSpec:
     # None = expose every tool the server offers.
     allowed_tools: list[str] | None = None
     assert_read_only: bool = False
+    # Tools not annotated read-only pause for human approval before running.
+    # Set for user-added connections; deployment-managed servers are curated
+    # (explicit allowed_tools, enforced at startup) and stay ungated.
+    require_approval: bool = False
+    # Re-run the SSRF check every turn before probing or attaching. Set for
+    # user-supplied URLs, which are otherwise only validated at write time —
+    # a hostname can pass then and later resolve to an internal address (DNS
+    # rebinding). Deployment-managed servers point at internal sidecars, so
+    # the public-address policy must not apply to them.
+    revalidate_url: bool = False
 
 
 def static_server_specs() -> list[McpServerSpec]:
@@ -163,23 +173,53 @@ def _carries_base_exception(exc: BaseException) -> bool:
     return not isinstance(exc, Exception)
 
 
+_URL_IN_MESSAGE = re.compile(r"https?://[^\s'\"]+")
+
+
+def _scrub_url_credentials(match: re.Match[str]) -> str:
+    try:
+        return strip_url_credentials(match.group())
+    except Exception:
+        return "<redacted-url>"
+
+
 def probe_error_message(exc: BaseException) -> str:
     """Human-readable reason for a failed probe.
 
     The MCP client runs on anyio task groups, so failures surface as nested
     ExceptionGroups ("unhandled errors in a TaskGroup") — unwrap to the root
     cause before showing anything to a user.
+
+    Any URL in the message is stripped of query string and userinfo: httpx
+    embeds the full request URL in HTTP errors, and for URL-token servers
+    that URL carries a live credential. This message is persisted to the
+    plaintext ``last_error`` column and logged on every failed turn, so a
+    token surviving here would defeat the encrypted ``connect_url`` split.
     """
     while isinstance(exc, BaseExceptionGroup) and exc.exceptions:
         exc = exc.exceptions[0]
     if isinstance(exc, TimeoutError):
         return f"Connection timed out after {settings.MCP_CONNECT_TIMEOUT_SECS:g}s"
-    return str(exc) or exc.__class__.__name__
+    message = str(exc) or exc.__class__.__name__
+    return _URL_IN_MESSAGE.sub(_scrub_url_credentials, message)
 
 
 def _tool_prefix(name: str) -> str:
     """Connection name → tool prefix, e.g. "github-work" → "github_work"."""
     return re.sub(r"[^a-z0-9_]", "_", name.lower()).strip("_") or "mcp"
+
+
+def mcp_tool_approval_required(_ctx: Any, tool_def: Any, _tool_args: dict[str, Any]) -> bool:
+    """Whether one MCP tool call must pause for human approval.
+
+    Keyed on the MCP ``readOnlyHint`` tool annotation, which the toolset layer
+    carries through in ``tool_def.metadata``. Fail closed: a tool that doesn't
+    declare itself read-only is treated as a mutation, so an unannotated (or
+    lying-by-omission) server gets the same approval boundary the Google write
+    tools have, instead of a free pass.
+    """
+    annotations = (tool_def.metadata or {}).get("annotations") or {}
+    return annotations.get("readOnlyHint") is not True
 
 
 def _make_toolset(spec: McpServerSpec) -> Any:
@@ -190,6 +230,10 @@ def _make_toolset(spec: McpServerSpec) -> Any:
     allowlist filter runs before prefixing, so it compares against the
     unprefixed names the user picked in the UI.
 
+    Specs with ``require_approval`` are wrapped so any tool not annotated
+    read-only pauses the run for human approval — the same deferred-approval
+    flow the Google write tools use (see :func:`mcp_tool_approval_required`).
+
     Every MCP tool is marked ``defer_loading`` — its schema stays out of the
     model request until the auto-injected tool-search capability reveals it.
     A handful of connected servers otherwise puts >100 schemas (~40k input
@@ -199,7 +243,7 @@ def _make_toolset(spec: McpServerSpec) -> Any:
     round-trip the first time a server is used in a run.
     """
     from pydantic_ai.mcp import MCPToolset
-    from pydantic_ai.toolsets import DeferredLoadingToolset
+    from pydantic_ai.toolsets import ApprovalRequiredToolset, DeferredLoadingToolset
 
     server: Any = MCPToolset(
         spec.url,
@@ -210,7 +254,12 @@ def _make_toolset(spec: McpServerSpec) -> Any:
     if spec.allowed_tools is not None:
         allowed = set(spec.allowed_tools)
         server = server.filtered(lambda _ctx, tool: tool.name in allowed)
-    return DeferredLoadingToolset(server.prefixed(_tool_prefix(spec.name)))
+    toolset: Any = server.prefixed(_tool_prefix(spec.name))
+    if spec.require_approval:
+        toolset = ApprovalRequiredToolset(
+            toolset, approval_required_func=mcp_tool_approval_required
+        )
+    return DeferredLoadingToolset(toolset)
 
 
 def _dedupe_by_prefix(specs: list[McpServerSpec]) -> list[McpServerSpec]:
@@ -400,6 +449,16 @@ async def build_mcp_toolsets(
         return []
 
     async def _try(spec: McpServerSpec) -> Any | None:
+        if spec.revalidate_url:
+            # Write-time validation alone leaves a DNS-rebinding window: the
+            # hostname can resolve publicly then and internally now. Re-check
+            # on every turn — deliberately in front of the probe cache, so a
+            # remembered verdict never skips the check.
+            try:
+                await validate_mcp_url(spec.url)
+            except Exception as exc:
+                logger.warning("Skipping MCP server %r for this turn: %s", spec.name, exc)
+                return None
         tools = await _probe_with_cache(spec)
         if tools is None:
             return None

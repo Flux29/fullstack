@@ -66,40 +66,31 @@
     {
       "id": "connection-urls-are-stripped",
       "statement": "Every governance surface strips query strings and userinfo from a connection URL before storing, logging, or emitting it.",
-      "rationale": "The catalog supports placing a token in the URL, and the url column is unencrypted while auth_token is not. A URL is credential-bearing until proven otherwise.",
+      "rationale": "The catalog supports placing a token in the URL. Since 2026-08-20 the application stores the url column credential-stripped and keeps the full URL Fernet-encrypted in connect_url (migration 0029), but a URL in flight is still credential-bearing until proven otherwise, so every governance surface strips before it stores or logs.",
       "maturity": "blocking",
       "check_impl": "checks.security.check_no_secret_values",
       "exceptions_allowed": false,
-      "exception_refs": [],
-      "finding_refs": [
-        "mcp-url-embedded-credentials-unencrypted"
-      ]
+      "exception_refs": []
     },
     {
       "id": "mcp-approval-parity",
       "statement": "A write-capable tool is approval-gated regardless of whether it is sourced from the Google REST executor or from an MCP server.",
-      "rationale": "Currently false. Deferred-tool approval covers Google mutation tools only; MCP-sourced tools bypass it, and a connection with allowed_tools unset exposes everything its server advertises. Stated as the intended rule so the gap is visible as a gap rather than as an absence.",
-      "maturity": "experimental",
+      "rationale": "Holds since 2026-08-20: every user-added MCP toolset is wrapped in ApprovalRequiredToolset, pausing any tool not annotated readOnlyHint for the same deferred-tool approval flow the Google write tools use. Fail-closed — an unannotated tool is treated as a mutation. Deployment-managed servers stay outside the gate because their explicit allowed_tools lists are curated and enforced at startup.",
+      "maturity": "advisory",
       "check_impl": "manual",
-      "promotion_criteria": "Blocked on a product-security decision — approval parity, default allowlists, or a documented restriction. An accepted-risk ADR is explicitly not sufficient. Until then this rule must not be promoted, because promoting it would either fail every run or be quietly weakened to match current behaviour.",
+      "promotion_criteria": "Promote once an automated check asserts that every per-user spec built by build_toolsets_for_user carries require_approval. Today the guarantee is held by backend-unit (tests/test_mcp_connections.py TestApprovalGating and TestToolsetsForUser).",
       "exceptions_allowed": false,
-      "exception_refs": [],
-      "finding_refs": [
-        "mcp-approval-gating-asymmetry"
-      ]
+      "exception_refs": []
     },
     {
       "id": "connection-time-url-revalidation",
       "statement": "A stored connection URL is revalidated at probe and attach time, not only when it is written.",
-      "rationale": "Currently false. Validation runs on create, update, and OAuth flows; the per-turn probe opens the stored URL directly, leaving a DNS-rebinding window. Recorded as an open finding rather than described as a protected invariant.",
-      "maturity": "experimental",
+      "rationale": "Holds since 2026-08-20: user-connection specs carry revalidate_url, so every turn re-runs the SSRF/DNS check ahead of the probe cache before the toolset attaches, and the connection test endpoint revalidates before probing. Deployment-managed sidecars are exempt (they resolve internally by design). Residual: DNS is re-resolved by the HTTP client at connect, so a sub-second rebinding race remains; network-level egress controls stay the preferred hardening.",
+      "maturity": "advisory",
       "check_impl": "manual",
-      "promotion_criteria": "Blocked on the connection path being fixed. Remediation is revalidation at connect time, preferably with network-level egress controls.",
+      "promotion_criteria": "Promote once an automated check asserts the revalidation call sits in front of the probe cache. Today the guarantee is held by backend-unit (tests/test_mcp_connections.py TestConnectionTimeRevalidation).",
       "exceptions_allowed": false,
-      "exception_refs": [],
-      "finding_refs": [
-        "mcp-no-connection-time-ssrf-revalidation"
-      ]
+      "exception_refs": []
     },
     {
       "id": "catalog-maps-to-a-backend-kind",

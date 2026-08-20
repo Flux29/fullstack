@@ -177,17 +177,12 @@
         "ADR-003"
       ],
       "declared_in": "curated",
-      "finding_refs": [
-        "mcp-approval-gating-asymmetry",
-        "mcp-no-connection-time-ssrf-revalidation",
-        "mcp-url-embedded-credentials-unencrypted"
-      ],
       "id": "mcp-user-connections",
       "invariants": [
         "These edges live in database rows, not in any file. Static extraction cannot enumerate them, so they are recorded only from runtime evidence with provenance database, under the runtime-evidence rules, and never statically assumed",
-        "Bearer tokens are encrypted at rest; the URL column is not, and the catalog supports placing a token in the URL. Every governance surface strips query strings and userinfo before storing or logging a connection URL",
-        "A connection with allowed_tools unset exposes every tool its server advertises, and MCP-sourced tools bypass the deferred-tool approval gate entirely. Together these mean a write-capable arbitrary server has full exposure and no gate",
-        "URL validation runs at write time only. The per-turn probe and toolset attach open the stored URL without revalidating, leaving a validation-to-connection window"
+        "Bearer tokens and the full connection URL are encrypted at rest: because the catalog supports placing a token in the URL, the url column keeps only the credential-stripped form (no query string, fragment, or userinfo) and only the Fernet-encrypted connect_url is ever used to open a connection. Every governance surface still strips query strings and userinfo before storing or logging a URL",
+        "Every tool from a user-added MCP server that is not annotated readOnlyHint pauses for the same deferred-tool human approval the Google write tools use. Approval is fail-closed: an unannotated tool is treated as a mutation, so allowed_tools unset widens exposure but never bypasses the gate",
+        "The stored URL is SSRF-revalidated at connection time, not only at write time: the per-turn toolset build re-runs the DNS check ahead of the probe cache, and the connection test endpoint revalidates before probing. Deployment-managed sidecar URLs are exempt because they legitimately resolve to internal addresses"
       ],
       "kind": "db-resident-surface",
       "owns": [],

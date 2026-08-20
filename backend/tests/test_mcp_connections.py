@@ -25,6 +25,7 @@ from app.agents.mcp import (
     _mcp_transport,
     _tool_prefix,
     build_mcp_toolsets,
+    mcp_tool_approval_required,
     probe_mcp_server,
     static_server_specs,
 )
@@ -274,6 +275,101 @@ class TestBuildMcpToolsets:
         assert discoveries.attached == set()
 
 
+class TestApprovalGating:
+    """Arbitrary user-added servers get the same approval boundary the Google
+    write tools have: any tool not annotated read-only pauses the run."""
+
+    def test_require_approval_spec_wraps_the_toolset(self):
+        from pydantic_ai.toolsets import (
+            ApprovalRequiredToolset,
+            DeferredLoadingToolset,
+            PrefixedToolset,
+        )
+
+        spec = McpServerSpec(name="crm", url="https://example.com/mcp", require_approval=True)
+        toolset = _make_toolset(spec)
+        assert isinstance(toolset, DeferredLoadingToolset)
+        gate = toolset.wrapped
+        assert isinstance(gate, ApprovalRequiredToolset)
+        assert gate.approval_required_func is mcp_tool_approval_required
+        assert isinstance(gate.wrapped, PrefixedToolset)
+
+    def test_deployment_managed_specs_stay_ungated(self):
+        from pydantic_ai.toolsets import ApprovalRequiredToolset
+
+        spec = McpServerSpec(name="workspace", url="https://example.com/mcp")
+        assert not isinstance(_make_toolset(spec).wrapped, ApprovalRequiredToolset)
+
+    def test_read_only_annotated_tool_needs_no_approval(self):
+        tool_def = SimpleNamespace(metadata={"annotations": {"readOnlyHint": True}})
+        assert mcp_tool_approval_required(None, tool_def, {}) is False
+
+    @pytest.mark.parametrize(
+        "metadata",
+        [
+            None,
+            {},
+            {"annotations": None},
+            {"annotations": {}},
+            {"annotations": {"readOnlyHint": False}},
+            {"annotations": {"destructiveHint": False}},  # non-destructive ≠ read-only
+        ],
+    )
+    def test_anything_not_declared_read_only_requires_approval(self, metadata):
+        """Fail closed: an unannotated server's tools are treated as mutations."""
+        tool_def = SimpleNamespace(metadata=metadata)
+        assert mcp_tool_approval_required(None, tool_def, {}) is True
+
+
+class TestConnectionTimeRevalidation:
+    """Write-time URL validation leaves a DNS-rebinding window — specs flagged
+    ``revalidate_url`` re-run the SSRF check on every turn."""
+
+    @pytest.mark.anyio
+    async def test_blocked_url_is_skipped_and_never_probed(self, monkeypatch):
+        probe = AsyncMock()
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+
+        async def blocked(url: str) -> str:
+            raise SSRFBlockedError("resolves to a private address")
+
+        monkeypatch.setattr("app.agents.mcp.validate_mcp_url", blocked)
+        specs = [McpServerSpec(name="rebind", url="https://example.com/mcp", revalidate_url=True)]
+        assert await build_mcp_toolsets(specs) == []
+        probe.assert_not_awaited()
+
+    @pytest.mark.anyio
+    async def test_rebound_hostname_is_blocked_even_with_a_cached_probe(self, monkeypatch):
+        """The check runs in front of the probe cache — a remembered liveness
+        verdict must not skip it, or the cache TTL becomes the attack window."""
+        probe = AsyncMock(return_value=[McpToolInfo(name="t", description="")])
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+        verdict = {"blocked": False}
+
+        async def validate(url: str) -> str:
+            if verdict["blocked"]:
+                raise SSRFBlockedError("resolves to a private address")
+            return url
+
+        monkeypatch.setattr("app.agents.mcp.validate_mcp_url", validate)
+        specs = [McpServerSpec(name="rebind", url="https://example.com/mcp", revalidate_url=True)]
+        assert len(await build_mcp_toolsets(specs)) == 1
+        verdict["blocked"] = True  # DNS now resolves internally
+        assert await build_mcp_toolsets(specs) == []
+
+    @pytest.mark.anyio
+    async def test_deployment_managed_specs_are_not_revalidated(self, monkeypatch):
+        """Deployment-managed sidecars live on internal Compose addresses — the
+        public-address policy must not apply to them."""
+        probe = AsyncMock(return_value=[McpToolInfo(name="t", description="")])
+        monkeypatch.setattr("app.agents.mcp.probe_mcp_server", probe)
+        validate = AsyncMock(side_effect=SSRFBlockedError("internal"))
+        monkeypatch.setattr("app.agents.mcp.validate_mcp_url", validate)
+        specs = [McpServerSpec(name="github", url="http://github-mcp:8082/")]
+        assert len(await build_mcp_toolsets(specs)) == 1
+        validate.assert_not_awaited()
+
+
 class TestMcpDiscoveries:
     """Sticky discovery state: replay only what is attached, age out the unused."""
 
@@ -425,6 +521,65 @@ class TestProbeErrors:
             await probe_mcp_server("https://example.com/mcp")
 
 
+class TestProbeErrorScrubbing:
+    """httpx embeds the full request URL in HTTP errors; for URL-token servers
+    that is a live credential, and the message reaches the plaintext
+    ``last_error`` column and the logs."""
+
+    def test_query_string_is_scrubbed_from_error_messages(self):
+        from app.agents.mcp import probe_error_message
+
+        exc = BaseExceptionGroup(
+            "unhandled errors in a TaskGroup",
+            [
+                Exception(
+                    "Client error '401 Unauthorized' for url "
+                    "'https://mcp.example.co/mcp?apikey=s3cret'"
+                )
+            ],
+        )
+        message = probe_error_message(exc)
+        assert "s3cret" not in message
+        assert "https://mcp.example.co/mcp" in message
+
+    @pytest.mark.anyio
+    async def test_persisted_last_error_never_carries_the_token(self, monkeypatch):
+        """Service-level proof: a probe failure that quotes the credentialed
+        URL is stored scrubbed."""
+        from unittest.mock import MagicMock
+
+        from app.services import mcp_connection as svc
+
+        user_id = uuid4()
+        full = "https://mcp.example.co/mcp?apikey=s3cret"
+        conn = _connection(
+            user_id=user_id,
+            url="https://mcp.example.co/mcp",
+            connect_url=encrypt_value(full, settings.SECRET_KEY),
+        )
+        repo = MagicMock()
+        repo.get_by_id = AsyncMock(return_value=conn)
+        repo.update = AsyncMock(return_value=conn)
+        monkeypatch.setattr(svc, "mcp_connection_repo", repo)
+
+        async def passthrough(url: str) -> str:
+            return url
+
+        monkeypatch.setattr(svc, "validate_mcp_url", passthrough)
+
+        async def failing_probe(url, headers=None, timeout=None):
+            raise McpProbeError(f"Client error '401 Unauthorized' for url '{url}'")
+
+        monkeypatch.setattr(svc, "probe_mcp_server", failing_probe)
+
+        service = McpConnectionService(db=AsyncMock())
+        _, _, error = await service.test(user_id=user_id, connection_id=conn.id)
+
+        assert error is not None and "s3cret" not in error
+        stored = repo.update.call_args.kwargs["update_data"]["last_error"]
+        assert "s3cret" not in stored
+
+
 class TestStaticServerSpecs:
     def test_maps_settings_entries(self, monkeypatch):
         monkeypatch.setattr(
@@ -528,6 +683,69 @@ class TestToolsetsForUser:
         assert [spec.name for spec in seen[0]] == ["workspace"]
 
     @pytest.mark.anyio
+    async def test_user_connections_get_gated_and_revalidated_specs(self, monkeypatch):
+        """A user-added server connects with its full (decrypted) URL, pauses
+        mutations for approval, and re-runs the SSRF check every turn."""
+        user_id = uuid4()
+        full = "https://mcp.example.co/mcp?apikey=s3cret"
+        conn = _connection(
+            user_id=user_id,
+            name="stocks",
+            url="https://mcp.example.co/mcp",
+            connect_url=encrypt_value(full, settings.SECRET_KEY),
+        )
+        monkeypatch.setattr(mcp_connection_service, "static_server_specs", list)
+        monkeypatch.setattr(mcp_connection_service, "get_db_context", lambda: _null_db_context())
+        monkeypatch.setattr(
+            mcp_connection_service.mcp_connection_repo,
+            "list_for_user",
+            AsyncMock(return_value=([conn], 1)),
+        )
+        seen: list[list[McpServerSpec]] = []
+
+        async def fake_build(
+            specs: list[McpServerSpec], *, discoveries: McpDiscoveries | None = None
+        ) -> list:
+            seen.append(specs)
+            return []
+
+        monkeypatch.setattr(mcp_connection_service, "build_mcp_toolsets", fake_build)
+
+        await mcp_connection_service.build_toolsets_for_user(user_id)
+
+        (spec,) = seen[0]
+        assert spec.url == full
+        assert spec.require_approval is True
+        assert spec.revalidate_url is True
+
+    @pytest.mark.anyio
+    async def test_undecryptable_connect_url_skips_the_connection(self, monkeypatch):
+        """A rotated SECRET_KEY strands the row — skip it, never crash the turn
+        and never fall back to the credential-stripped display URL."""
+        user_id = uuid4()
+        conn = _connection(user_id=user_id, connect_url="enc:not-valid-ciphertext")
+        monkeypatch.setattr(mcp_connection_service, "static_server_specs", list)
+        monkeypatch.setattr(mcp_connection_service, "get_db_context", lambda: _null_db_context())
+        monkeypatch.setattr(
+            mcp_connection_service.mcp_connection_repo,
+            "list_for_user",
+            AsyncMock(return_value=([conn], 1)),
+        )
+        seen: list[list[McpServerSpec]] = []
+
+        async def fake_build(
+            specs: list[McpServerSpec], *, discoveries: McpDiscoveries | None = None
+        ) -> list:
+            seen.append(specs)
+            return []
+
+        monkeypatch.setattr(mcp_connection_service, "build_mcp_toolsets", fake_build)
+
+        await mcp_connection_service.build_toolsets_for_user(user_id)
+
+        assert seen[0] == []
+
+    @pytest.mark.anyio
     async def test_google_toolsets_serialize_in_canonical_product_order(self, monkeypatch):
         """Database row order must not decide the tool block's shape.
 
@@ -544,6 +762,7 @@ class TestToolsetsForUser:
             MagicMock(
                 spec=McpConnection,
                 url=google_api_url(product),
+                connect_url=None,
                 allowed_tools=None,
                 auth_type="bearer",
             )
@@ -595,6 +814,27 @@ class TestToolsetsForUser:
 @contextlib.asynccontextmanager
 async def _null_db_context():
     yield MagicMock()
+
+
+class TestConnectUrl:
+    """The plaintext ``url`` column is display-only; connections open the
+    Fernet-encrypted ``connect_url``, which may carry a token."""
+
+    def test_legacy_row_falls_back_to_the_plain_url(self):
+        conn = _connection(connect_url=None)
+        assert mcp_connection_service._connect_url(conn) == conn.url
+
+    def test_decrypts_the_stored_full_url(self):
+        full = "https://mcp.example.co/mcp?apikey=s3cret"
+        conn = _connection(
+            url="https://mcp.example.co/mcp",
+            connect_url=encrypt_value(full, settings.SECRET_KEY),
+        )
+        assert mcp_connection_service._connect_url(conn) == full
+
+    def test_unreadable_ciphertext_yields_none(self):
+        conn = _connection(connect_url="enc:not-valid-ciphertext")
+        assert mcp_connection_service._connect_url(conn) is None
 
 
 class TestAuthHeaders:
@@ -866,6 +1106,89 @@ class TestMcpConnectionService:
         assert update_data["last_status"] is None
 
     @pytest.mark.anyio
+    async def test_create_splits_url_credentials(self, service, repo, monkeypatch):
+        """A token embedded in the URL never lands in the plaintext column."""
+        _allow_any_url(monkeypatch)
+        data = McpConnectionCreate(name="stocks", url="https://mcp.example.co/mcp?apikey=s3cret")
+        await service.create(user_id=uuid4(), data=data)
+
+        kwargs = repo.create.call_args.kwargs
+        assert kwargs["url"] == "https://mcp.example.co/mcp"
+        assert (
+            decrypt_value(kwargs["connect_url"], settings.SECRET_KEY)
+            == "https://mcp.example.co/mcp?apikey=s3cret"
+        )
+
+    @pytest.mark.anyio
+    async def test_update_url_reencrypts_connect_url(self, service, repo, monkeypatch):
+        _allow_any_url(monkeypatch)
+        user_id = uuid4()
+        conn = _connection(user_id=user_id)
+        repo.get_by_id.return_value = conn
+
+        await service.update(
+            user_id=user_id,
+            connection_id=conn.id,
+            data=McpConnectionUpdate(url="https://new.example/mcp?apikey=tok"),
+        )
+
+        update_data = repo.update.call_args.kwargs["update_data"]
+        assert update_data["url"] == "https://new.example/mcp"
+        assert (
+            decrypt_value(update_data["connect_url"], settings.SECRET_KEY)
+            == "https://new.example/mcp?apikey=tok"
+        )
+
+    @pytest.mark.anyio
+    async def test_test_probes_the_full_connect_url(self, service, repo, monkeypatch):
+        """The probe must reach the credentialed URL, not the display form —
+        otherwise URL-token servers would test as unauthenticated."""
+        _allow_any_url(monkeypatch)
+        user_id = uuid4()
+        full = "https://mcp.example.co/mcp?apikey=s3cret"
+        conn = _connection(
+            user_id=user_id,
+            url="https://mcp.example.co/mcp",
+            connect_url=encrypt_value(full, settings.SECRET_KEY),
+        )
+        repo.get_by_id.return_value = conn
+        repo.update.return_value = conn
+        probed: list[str] = []
+
+        async def ok_probe(url, headers=None, timeout=None):
+            probed.append(url)
+            return []
+
+        monkeypatch.setattr(mcp_connection_service, "probe_mcp_server", ok_probe)
+
+        _, _, error = await service.test(user_id=user_id, connection_id=conn.id)
+
+        assert error is None
+        assert probed == [full]
+
+    @pytest.mark.anyio
+    async def test_test_reblocks_a_rebound_hostname(self, service, repo, monkeypatch):
+        """The write-time SSRF verdict is not trusted at probe time."""
+        user_id = uuid4()
+        conn = _connection(user_id=user_id)
+        repo.get_by_id.return_value = conn
+        repo.update.return_value = conn
+
+        async def blocked(url: str) -> str:
+            raise SSRFBlockedError("resolves to a private address")
+
+        monkeypatch.setattr(mcp_connection_service, "validate_mcp_url", blocked)
+        probe = AsyncMock()
+        monkeypatch.setattr(mcp_connection_service, "probe_mcp_server", probe)
+
+        _, tools, error = await service.test(user_id=user_id, connection_id=conn.id)
+
+        assert tools == []
+        assert error is not None and "private" in error
+        probe.assert_not_awaited()
+        assert repo.update.call_args.kwargs["update_data"]["last_status"] == "error"
+
+    @pytest.mark.anyio
     async def test_update_url_revalidates_ssrf(self, service, repo):
         user_id = uuid4()
         conn = _connection(user_id=user_id)
@@ -886,6 +1209,7 @@ class TestMcpConnectionService:
 
     @pytest.mark.anyio
     async def test_test_records_failure(self, service, repo, monkeypatch):
+        _allow_any_url(monkeypatch)
         user_id = uuid4()
         conn = _connection(user_id=user_id)
         repo.get_by_id.return_value = conn
@@ -905,6 +1229,7 @@ class TestMcpConnectionService:
 
     @pytest.mark.anyio
     async def test_test_records_success_and_returns_tools(self, service, repo, monkeypatch):
+        _allow_any_url(monkeypatch)
         user_id = uuid4()
         conn = _connection(user_id=user_id)
         repo.get_by_id.return_value = conn

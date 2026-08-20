@@ -54,9 +54,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
 - **Migration head** — 0030_mcp_url_origin_only
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
-- **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
+- **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 128)
+## Recent changes (latest 20 of 129)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -106,6 +106,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Close the three standing MCP security findings
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
+- **2026-08-20** — Close public API authorization gaps: is_demo mass-assignment, message role injection, unauthenticated RAG status stream
+  - Components: backend-api, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-20-close-public-api-authorization-gaps-is-demo-mass-assignment-mess.json`
 - **2026-08-20** — Add the MIT LICENSE ahead of making the repository public
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-19** — Keep the cookie-consent banner from covering the auth form submit button on mobile viewports
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-19-keep-the-cookie-consent-banner-from-covering-the-auth-form-submi.json`
-- **2026-08-19** — Fix email template resolution so welcome.html is found on plain uv sync installs
-  - Components: backend-api, email
-  - Record: `governance/history/changes/2026-08-19-fix-email-template-resolution-so-welcome-html-is-found-on-plain.json`
 
 ## Decisions (5)
 

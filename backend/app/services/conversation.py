@@ -323,6 +323,14 @@ class ConversationService:
             self.db, db_conversation=conversation, update_data=update_data
         )
 
+    async def set_demo_flag(self, conversation_id: UUID, *, is_demo: bool) -> Conversation:
+        """Admin-only trusted path. is_demo is deliberately not a ConversationUpdate
+        field, so the public PATCH can never mark a conversation as a public demo."""
+        conversation = await self.get_conversation(conversation_id)
+        return await conversation_repo.update_conversation(
+            self.db, db_conversation=conversation, update_data={"is_demo": is_demo}
+        )
+
     async def archive_conversation(
         self,
         conversation_id: UUID,

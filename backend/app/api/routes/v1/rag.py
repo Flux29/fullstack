@@ -401,12 +401,15 @@ async def list_connectors(
 
 @router.get("/status/stream", response_class=EventSourceResponse)
 async def rag_status_stream(
+    _: CurrentAdmin,
     rag_status_svc: RAGStatusSvc,
 ) -> AsyncIterable[ServerSentEvent]:
-    """SSE endpoint for real-time RAG ingestion status updates.
+    """SSE endpoint for real-time RAG ingestion status updates (admin only).
 
     Subscribes to the ``rag_status`` Redis pub/sub channel; the browser auto-reconnects
-    via the EventSource API.
+    via the EventSource API. EventSource cannot send an Authorization header, so the
+    browser reaches this through the Next.js proxy handler, which injects the bearer
+    token from the HttpOnly cookie.
 
     The endpoint is itself an async generator: FastAPI's native SSE producer
     streams what it yields. Returning the generator object instead (with

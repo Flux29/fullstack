@@ -4,7 +4,9 @@
  * IMPORTANT: This file should only be imported in server-side code (API routes, Server Components).
  */
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+// Exported for the rare proxy handler that must stream the raw response
+// (e.g. the RAG status SSE proxy) instead of going through backendFetch.
+export const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
 export class BackendApiError extends Error {
   constructor(

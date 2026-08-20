@@ -23,6 +23,7 @@ from app.schemas.conversation import (
     MessageCreate,
     MessageList,
     MessageRead,
+    UserMessageCreate,
 )
 from app.schemas.conversation_share import (
     ConversationShareCreate,
@@ -210,13 +211,18 @@ async def list_messages(
 )
 async def add_message(
     conversation_id: UUID,
-    data: MessageCreate,
+    data: UserMessageCreate,
     conversation_service: ConversationSvc,
     current_user: CurrentUser,
 ) -> Any:
-    """Add a message to a conversation."""
+    """Add a user message to a conversation.
+
+    The role is fixed server-side: system and assistant messages are written only by
+    internal callers, never through this endpoint.
+    """
     uid = None if current_user.has_role(UserRole.ADMIN) else current_user.id
-    return await conversation_service.add_message(conversation_id, data, user_id=uid)
+    message = MessageCreate(role="user", content=data.content)
+    return await conversation_service.add_message(conversation_id, message, user_id=uid)
 
 
 @router.post(

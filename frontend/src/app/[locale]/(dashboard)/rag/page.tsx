@@ -68,7 +68,6 @@ import { SyncSourceWizard } from "@/components/rag/sync-source-wizard";
 import { apiClient } from "@/lib/api-client";
 import { PageHeader } from "@/components/dashboard/page-header";
 
-import { BACKEND_URL } from "@/lib/constants";
 import { getErrorMessage, isAppAdmin, MAX_UPLOAD_SIZE_MB, timeAgo } from "@/lib/utils";
 
 interface CollectionWithInfo {
@@ -267,9 +266,11 @@ export default function RAGPage() {
     if (selected) fetchDocs(selected);
   }, [selected]);
 
-  // SSE for real-time ingestion status updates (auto-reconnect built-in)
+  // SSE for real-time ingestion status updates (auto-reconnect built-in).
+  // Same-origin via the Next proxy, which injects auth from the HttpOnly cookie —
+  // EventSource cannot send Authorization headers itself.
   useEffect(() => {
-    const es = new EventSource(`${BACKEND_URL}/api/v1/rag/status/stream`);
+    const es = new EventSource("/api/v1/rag/status/stream");
 
     es.addEventListener("status", (event) => {
       try {

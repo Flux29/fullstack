@@ -275,6 +275,7 @@
         "frontend/src/app/api/v1/rag/documents/[docId]/download/route.ts",
         "frontend/src/app/api/v1/rag/documents/[docId]/route.ts",
         "frontend/src/app/api/v1/rag/documents/route.ts",
+        "frontend/src/app/api/v1/rag/status/stream/route.ts",
         "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
         "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
         "frontend/src/app/api/v1/rag/sync/local/route.ts",

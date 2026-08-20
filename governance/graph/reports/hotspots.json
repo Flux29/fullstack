@@ -238,7 +238,7 @@
       "betweenness": [
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0195
+          "score": 0.0193
         },
         {
           "id": "frontend/src/stores/index.ts",
@@ -320,19 +320,19 @@
       "pagerank": [
         {
           "id": "frontend/src/lib/utils.ts",
-          "score": 0.1225
+          "score": 0.1222
         },
         {
           "id": "frontend/src/lib/server-api.ts",
-          "score": 0.0671
+          "score": 0.0681
         },
         {
           "id": "frontend/src/lib/constants.ts",
-          "score": 0.038
+          "score": 0.0379
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0272
+          "score": 0.0271
         },
         {
           "id": "frontend/src/lib/api-client.ts",
@@ -344,11 +344,11 @@
         },
         {
           "id": "frontend/src/lib/seo.ts",
-          "score": 0.0152
+          "score": 0.0151
         },
         {
           "id": "frontend/src/i18n.ts",
-          "score": 0.0147
+          "score": 0.0146
         },
         {
           "id": "frontend/src/components/ui/button.tsx",
@@ -364,7 +364,7 @@
         },
         {
           "id": "frontend/src/lib/admin-auth.ts",
-          "score": 0.0079
+          "score": 0.0078
         },
         {
           "id": "frontend/src/stores/theme-store.ts",
@@ -380,7 +380,7 @@
         },
         {
           "id": "frontend/src/components/states/index.ts",
-          "score": 0.0057
+          "score": 0.0056
         },
         {
           "id": "frontend/src/components/chat/markdown-content.impl.tsx",
@@ -392,7 +392,7 @@
         },
         {
           "id": "frontend/src/components/chat/markdown-content.tsx",
-          "score": 0.0048
+          "score": 0.0047
         },
         {
           "id": "frontend/src/stores/auth-store.ts",

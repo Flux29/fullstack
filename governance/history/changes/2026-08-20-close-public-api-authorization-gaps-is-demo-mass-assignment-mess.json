@@ -1,0 +1,49 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "PATCH /api/v1/conversations/{id} silently ignores is_demo instead of applying it (extra fields are ignored by schema config, so no 422s). POST /api/v1/conversations/{id}/messages narrows its accepted body to {content}; extra fields including role are ignored, and the browser never called this route (messages are created over the chat WebSocket), so no frontend caller breaks. The RAG dashboard now opens the SSE stream same-origin through the new proxy handler; the direct backend EventSource URL stops working for browsers, which it effectively already had (the endpoint 500s on a pre-existing broken DI factory, flagged as a separate task). MessageCreate remains available unchanged for internal callers (agent persistence).",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/api/routes/v1/admin_conversations.py",
+    "backend/app/api/routes/v1/conversations.py",
+    "backend/app/api/routes/v1/rag.py",
+    "backend/app/schemas/__init__.py",
+    "backend/app/schemas/conversation.py",
+    "backend/app/services/conversation.py",
+    "backend/tests/api/test_conversations.py",
+    "backend/tests/test_services_conversation.py",
+    "frontend/src/app/[locale]/(dashboard)/rag/page.tsx",
+    "frontend/src/app/api/v1/rag/status/",
+    "frontend/src/lib/server-api.ts",
+    "governance/Summary.md",
+    "governance/graph/reports/boundaries.json",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json",
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-close-public-api-authorization-gaps-is-demo-mass-assignment-mess",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "reason": "Preparing to make the repository public. Any user with an edit share could flip is_demo via the ordinary conversation PATCH and publish a conversation to the unauthenticated demo gallery; the public message-create endpoint accepted role=system/assistant, letting an edit-share recipient persist higher-authority instructions that are replayed as real system prompts in later agent runs; and the RAG ingestion status SSE stream required no authentication at all while every sibling RAG route requires admin.",
+  "risks": [],
+  "rollback": "git revert the single commit for this change; no schema migration and no data shape changed, so revert restores the prior API surface completely. The regenerated governance manifests resync via make governance-sync after revert.",
+  "schema_version": 1,
+  "security_impact": "Closes three authorization gaps ahead of making the repository public: (1) is_demo removed from ConversationUpdate, so an owner or edit-share user can no longer publish a conversation to the unauthenticated demo gallery via the ordinary PATCH — the admin-only /admin/conversations/{id}/demo route is now the single writer through a dedicated trusted service path; (2) the public message-create endpoint now takes UserMessageCreate and forces role=user server-side, closing persistent system/assistant prompt injection into stored history that the agent replays as real SystemPromptParts; (3) GET /api/v1/rag/status/stream now requires admin auth, with a new Next.js SSE proxy injecting the bearer token from the HttpOnly cookie because EventSource cannot send Authorization headers — this also removes an undocumented second direct browser-to-backend edge, leaving the chat WebSocket as the only documented exception.",
+  "summary": "Close public API authorization gaps: is_demo mass-assignment, message role injection, unauthenticated RAG status stream",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

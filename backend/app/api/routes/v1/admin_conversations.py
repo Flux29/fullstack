@@ -7,7 +7,6 @@ from app.api.deps import ConversationSvc, CurrentAdmin
 from app.schemas.conversation import (
     ConversationRead,
     ConversationReadWithMessages,
-    ConversationUpdate,
 )
 from app.schemas.conversation_share import AdminConversationList
 
@@ -63,9 +62,7 @@ async def admin_set_demo_flag(
     """Toggle a conversation's public-demo flag (admin only).
 
     Demo conversations are served without auth on the public demo gallery for replay.
+    This route is the only writer of is_demo — the field is deliberately absent from
+    ConversationUpdate so the ordinary PATCH can never set it.
     """
-    return await service.update_conversation(
-        conversation_id,
-        ConversationUpdate(is_demo=is_demo),
-        user_id=None,  # admin bypass — no ownership check
-    )
+    return await service.set_demo_flag(conversation_id, is_demo=is_demo)

@@ -13,6 +13,7 @@ from app.schemas.conversation import (
     MessageCreate,
     MessageRead,
     ToolCallRead,
+    UserMessageCreate,
 )
 
 from app.schemas.webhook import (
@@ -50,6 +51,7 @@ __all__ = [
     "MessageCreate",
     "MessageRead",
     "ToolCallRead",
+    "UserMessageCreate",
     "WebhookCreate",
     "WebhookRead",
     "WebhookUpdate",

@@ -70,10 +70,20 @@ class MessageBase(BaseSchema):
 
 
 class MessageCreate(MessageBase):
-    """Schema for creating a message."""
+    """Internal persistence schema for creating a message.
+
+    Accepts any role plus model/token metadata, so it must never be exposed on a
+    public route — user-facing message creation goes through ``UserMessageCreate``.
+    """
 
     model_name: str | None = Field(default=None, max_length=100, description="AI model used")
     tokens_used: int | None = Field(default=None, ge=0, description="Token count")
+
+
+class UserMessageCreate(BaseSchema):
+    """Public schema for a user-authored message; the role is implicitly ``user``."""
+
+    content: str = Field(..., description="Message content")
 
 
 class MessageFileRead(BaseSchema):
@@ -130,7 +140,6 @@ class ConversationUpdate(BaseSchema):
 
     title: str | None = Field(default=None, max_length=255)
     is_archived: bool | None = None
-    is_demo: bool | None = None
 
 
 class ConversationRead(ConversationBase, TimestampSchema):

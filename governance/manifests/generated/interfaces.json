@@ -1433,6 +1433,19 @@
     {
       "backend_targets": [
         {
+          "path_template": "/api/v1/rag/status/stream"
+        }
+      ],
+      "file": "frontend/src/app/api/v1/rag/status/stream/route.ts",
+      "frontend_path": "/api/v1/rag/status/stream",
+      "mechanism": "fetch",
+      "methods": [
+        "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
           "path_template": "/api/v1/rag/supported-formats"
         }
       ],

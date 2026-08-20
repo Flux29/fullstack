@@ -378,6 +378,44 @@ class TestConversationServiceUpdate:
             mock_repo.update_conversation.assert_called_once()
 
 
+class TestConversationServiceSetDemoFlag:
+    """Tests for the admin-only set_demo_flag path."""
+
+    @pytest.fixture
+    def mock_db(self) -> AsyncMock:
+        """Create mock database session."""
+        return AsyncMock()
+
+    @pytest.fixture
+    def service(self, mock_db: AsyncMock) -> ConversationService:
+        """Create ConversationService instance with mock db."""
+        return ConversationService(mock_db)
+
+    @pytest.mark.anyio
+    async def test_set_demo_flag_updates_only_is_demo(self, service: ConversationService):
+        """set_demo_flag writes exactly the is_demo column, nothing else."""
+        conv_id = uuid4()
+        mock_conv = MockConversation(id=conv_id)
+
+        with patch("app.services.conversation.conversation_repo") as mock_repo:
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_repo.update_conversation = AsyncMock(return_value=mock_conv)
+
+            await service.set_demo_flag(conv_id, is_demo=True)
+
+            _, kwargs = mock_repo.update_conversation.call_args
+            assert kwargs["update_data"] == {"is_demo": True}
+
+    @pytest.mark.anyio
+    async def test_set_demo_flag_on_missing_conversation_raises(self, service: ConversationService):
+        """set_demo_flag raises NotFoundError when the conversation does not exist."""
+        with patch("app.services.conversation.conversation_repo") as mock_repo:
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=None)
+
+            with pytest.raises(NotFoundError):
+                await service.set_demo_flag(uuid4(), is_demo=True)
+
+
 class TestConversationServiceArchive:
     """Tests for archive_conversation with ownership."""
 

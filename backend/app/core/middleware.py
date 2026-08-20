@@ -68,16 +68,21 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         app: ASGIApp,
         csp_directives: dict[str, str] | None = None,
         exclude_paths: set[str] | None = None,
+        exclude_prefixes: tuple[str, ...] = ("/admin",),
+        hsts: bool = False,
     ) -> None:
         super().__init__(app)
         self.csp_directives = csp_directives or self.DEFAULT_CSP_DIRECTIVES
         self.exclude_paths = exclude_paths or {"/docs", "/redoc", "/openapi.json"}
+        self.exclude_prefixes = exclude_prefixes
+        self.hsts = hsts
 
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         """Add security headers to the response."""
         response = await call_next(request)
 
-        if request.url.path in self.exclude_paths:
+        path = request.url.path
+        if path in self.exclude_paths or path.startswith(self.exclude_prefixes):
             return response
 
         csp_value = "; ".join(
@@ -95,5 +100,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             "accelerometer=(), camera=(), geolocation=(), gyroscope=(), "
             "magnetometer=(), microphone=(), payment=(), usb=()"
         )
+        if self.hsts:
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
 
         return response

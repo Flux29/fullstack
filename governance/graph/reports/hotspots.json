@@ -238,11 +238,11 @@
       "betweenness": [
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0197
+          "score": 0.0196
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0075
+          "score": 0.0074
         },
         {
           "id": "frontend/src/hooks/index.ts",
@@ -262,7 +262,7 @@
         },
         {
           "id": "frontend/src/components/states/index.ts",
-          "score": 0.0018
+          "score": 0.0017
         },
         {
           "id": "frontend/src/components/states/empty-state.tsx",
@@ -274,7 +274,7 @@
         },
         {
           "id": "frontend/src/components/chat/message-item.tsx",
-          "score": 0.0014
+          "score": 0.0013
         },
         {
           "id": "frontend/src/types/index.ts",
@@ -320,39 +320,39 @@
       "pagerank": [
         {
           "id": "frontend/src/lib/utils.ts",
-          "score": 0.1234
+          "score": 0.1229
         },
         {
           "id": "frontend/src/lib/server-api.ts",
-          "score": 0.0671
+          "score": 0.0668
         },
         {
           "id": "frontend/src/lib/constants.ts",
-          "score": 0.0383
+          "score": 0.0381
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0274
+          "score": 0.0273
         },
         {
           "id": "frontend/src/lib/api-client.ts",
-          "score": 0.0229
+          "score": 0.0228
         },
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.021
+          "score": 0.0209
         },
         {
           "id": "frontend/src/lib/seo.ts",
-          "score": 0.0153
+          "score": 0.0152
         },
         {
           "id": "frontend/src/i18n.ts",
-          "score": 0.0148
+          "score": 0.0147
         },
         {
           "id": "frontend/src/components/ui/button.tsx",
-          "score": 0.0113
+          "score": 0.0112
         },
         {
           "id": "frontend/src/components/chat/copy-button.tsx",
@@ -372,7 +372,7 @@
         },
         {
           "id": "frontend/src/components/marketing/brand-icon.tsx",
-          "score": 0.0064
+          "score": 0.0063
         },
         {
           "id": "frontend/src/lib/auth-cookies.ts",

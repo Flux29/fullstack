@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { FILE_PROXY_JSON_HEADERS } from "@/lib/proxy-headers";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
 
@@ -6,7 +7,10 @@ export async function POST(request: NextRequest) {
   try {
     const accessToken = request.cookies.get("access_token")?.value;
     if (!accessToken) {
-      return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
+      return NextResponse.json(
+        { detail: "Not authenticated" },
+        { status: 401, headers: FILE_PROXY_JSON_HEADERS },
+      );
     }
 
     const formData = await request.formData();
@@ -21,12 +25,15 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: "Upload failed" }));
-      return NextResponse.json(error, { status: response.status });
+      return NextResponse.json(error, { status: response.status, headers: FILE_PROXY_JSON_HEADERS });
     }
 
     const data = await response.json();
-    return NextResponse.json(data, { status: 201 });
+    return NextResponse.json(data, { status: 201, headers: FILE_PROXY_JSON_HEADERS });
   } catch {
-    return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
+    return NextResponse.json(
+      { detail: "Internal server error" },
+      { status: 500, headers: FILE_PROXY_JSON_HEADERS },
+    );
   }
 }

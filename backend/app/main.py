@@ -23,7 +23,7 @@ from app.core.logfire_setup import instrument_redis
 from app.core.logfire_setup import instrument_httpx
 from app.core.logfire_setup import instrument_pydantic_ai
 from app.core.logging import setup_logging
-from app.core.middleware import RequestIDMiddleware
+from app.core.middleware import RequestIDMiddleware, SecurityHeadersMiddleware
 from app.db.todo_pool import close_todo_pool, init_todo_pool
 from app.core.cache import setup_cache
 from app.clients.redis import RedisClient
@@ -219,6 +219,13 @@ Harness
     )
 
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY)
+
+    # Added last so it wraps outermost: every response — including CORS
+    # short-circuits and exception-handler responses — carries the headers.
+    # Routes that set their own (e.g. the file preview endpoint) win via
+    # setdefault. HSTS only in production, where TLS terminates at the edge.
+    app.add_middleware(SecurityHeadersMiddleware, hsts=settings.ENVIRONMENT == "production")
+
     ADMIN_ALLOWED_ENVIRONMENTS = ["development", "local", "staging"]
 
     if settings.ENVIRONMENT in ADMIN_ALLOWED_ENVIRONMENTS:

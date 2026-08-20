@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 122)
+## Recent changes (latest 20 of 123)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Redact live-host operational details from the Codecov deployment change record
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment.json`
+- **2026-08-20** — Install the backend security headers middleware and make SECURITY.md match it
+  - Components: backend-api, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-20-install-the-backend-security-headers-middleware-and-make-securit.json`
 - **2026-08-20** — Govern the LICENSE file in the read-surface so coverage analysis is clean again
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-govern-the-license-file-in-the-read-surface-so-coverage-analysis.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Run the Playwright end-to-end suite in CI against a real backend on pgvector and redis with the fake LLM provider, and retire the playwright-not-in-ci exception
   - Components: agent-operating-surface, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-18-run-the-playwright-end-to-end-suite-in-ci-against-a-real-backend.json`
-- **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em.json`
 
 ## Decisions (5)
 

@@ -1,0 +1,40 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "Backend API responses gain security headers; the admin UI and docs pages are excluded so their asset loading is untouched. The file-preview iframe contract is unchanged (SAMEORIGIN framing). One pre-existing defect observed while verifying, not fixed here: uploading text/html through the Next proxy fails with 400 because the proxy's formData round-trip appends charset=utf-8 and the backend allowlist matches exact strings - HTML upload currently only works against the backend directly.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "SECURITY.md",
+    "backend/app/core/middleware.py",
+    "backend/app/main.py",
+    "backend/tests/api/test_security_headers.py",
+    "frontend/next.config.ts",
+    "frontend/src/app/api/files/[id]/route.ts",
+    "frontend/src/app/api/files/upload/route.ts",
+    "frontend/src/lib/proxy-headers.ts",
+    "governance/graph/reports/hotspots.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-install-the-backend-security-headers-middleware-and-make-securit",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Security finding: SecurityHeadersMiddleware exists but is not installed in main.py, and SECURITY.md claims HSTS is set in production middleware while the middleware sets no HSTS - documentation and implementation disagree and backend responses carry no security headers",
+  "risks": [],
+  "rollback": "git revert removes the middleware installation, the HSTS header, the config exclusion, and the SECURITY.md alignment; reverting reopens both the missing-headers finding and the config-clobbers-sandbox hole.",
+  "schema_version": 1,
+  "security_impact": "Backend responses now actually carry security headers: SecurityHeadersMiddleware is installed outermost in main.py (CSP default-src self, nosniff, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy; docs and /admin excluded; per-route opt-downs preserved via setdefault) and sets Strict-Transport-Security max-age=31536000 includeSubDomains when ENVIRONMENT=production, making the SECURITY.md HSTS claim true. Session also closed a hole that silently defeated the previous session's fix: the next.config.ts header rule for /api/files replaced the handler's sandbox CSP, so /api/files is now excluded from the config catch-all and the handler alone owns file-response headers; JSON error paths on the file routes set an explicit strict header set. Live-verified end to end on a local dev server: uploaded text/html is served with 'sandbox; frame-ancestors self' through the proxy, and non-file paths keep the global headers.",
+  "summary": "Install the backend security headers middleware and make SECURITY.md match it",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

@@ -29,7 +29,8 @@ We aim to acknowledge within 48h and ship a fix within 7 days for high-severity 
 ### Transport / network
 
 - **CORS** — origin list from `settings.CORS_ORIGINS`. Restrict to your domains in production.
-- **HTTPS** — enforce via Traefik or the platform load balancer. Strict-Transport-Security header set in middleware when `ENVIRONMENT=production`.
+- **HTTPS** — enforce via Traefik or the platform load balancer. `SecurityHeadersMiddleware` (installed in `backend/app/main.py`) sets Strict-Transport-Security when `ENVIRONMENT=production`.
+- **Security headers** — `SecurityHeadersMiddleware` adds CSP, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, Referrer-Policy, and Permissions-Policy to every backend response (docs and `/admin` excluded). Routes may opt down via their own headers — the file-preview endpoint serves user uploads with `X-Frame-Options: SAMEORIGIN` and a `sandbox` CSP for active content.
 - **CSP** — frontend sets `frame-ancestors 'none'` by default to prevent click-jacking. See `frontend/next.config.ts` headers block.
 
 ### Data

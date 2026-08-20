@@ -62,22 +62,19 @@ const nextConfig: NextConfig = {
   output: "standalone",
   pageExtensions: ["ts", "tsx", "mdx"],
 
-  // Security headers
+  // Security headers. /api/files is excluded from the catch-all so its route
+  // handler alone owns those headers: it forwards the backend's
+  // per-file-type policy (X-Frame-Options: SAMEORIGIN for the same-origin
+  // preview iframe, plus a `sandbox` CSP for active content such as HTML/SVG
+  // so uploaded documents cannot run scripts on this origin). A config-level
+  // rule cannot express that per-type distinction, and two sources competing
+  // for the same header keys is exactly how the sandbox policy got silently
+  // replaced before.
   async headers() {
     return [
       {
-        source: "/(.*)",
+        source: "/((?!api/files/).*)",
         headers: securityHeaders,
-      },
-      // Relax framing for the file endpoint so the chat preview panel can
-      // embed PDFs/HTML in an iframe from the same origin. Listed AFTER the
-      // catch-all so its values win for matching headers.
-      {
-        source: "/api/files/:path*",
-        headers: [
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
-          { key: "Content-Security-Policy", value: "frame-ancestors 'self'" },
-        ],
       },
     ];
   },

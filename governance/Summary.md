@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 111)
+## Recent changes (latest 20 of 112)
 
+- **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
 - **2026-08-19** — Skip self-hosted Codecov uploads on Dependabot runs so dependency PRs stop failing CI on coverage telemetry
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-19-skip-self-hosted-codecov-uploads-on-dependabot-runs-so-dependenc.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Document whole-file Compose interpolation for Codecov-only hosts and record the live codecov.stikkihoney.com deployment
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-document-whole-file-compose-interpolation-for-codecov-only-hosts.json`
-- **2026-08-18** — Disable the hosted Slack-app notifier in the self-hosted Codecov instance config
-  - Components: codecov
-  - Record: `governance/history/changes/2026-08-18-disable-the-hosted-slack-app-notifier-in-the-self-hosted-codecov.json`
 
 ## Decisions (5)
 

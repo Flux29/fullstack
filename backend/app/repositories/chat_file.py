@@ -23,21 +23,39 @@ async def get_by_id(db: AsyncSession, file_id: UUID) -> ChatFile | None:
     return await db.get(ChatFile, file_id)
 
 
-async def get_many(db: AsyncSession, file_ids: Iterable[UUID]) -> list[ChatFile]:
-    """Batch-load multiple chat files by IDs."""
+async def get_many(
+    db: AsyncSession, file_ids: Iterable[UUID], *, user_id: UUID | None = None
+) -> list[ChatFile]:
+    """Batch-load multiple chat files by IDs.
+
+    When user_id is provided, only files owned by that user are returned; file_ids
+    are client-supplied on the chat path, so the filter is the IDOR guard.
+    """
     ids = list(file_ids)
     if not ids:
         return []
-    result = await db.execute(select(ChatFile).where(ChatFile.id.in_(ids)))
+    stmt = select(ChatFile).where(ChatFile.id.in_(ids))
+    if user_id is not None:
+        stmt = stmt.where(ChatFile.user_id == user_id)
+    result = await db.execute(stmt)
     return list(result.scalars().all())
 
 
-async def link_to_message(db: AsyncSession, *, message_id: UUID, file_ids: Iterable[UUID]) -> None:
-    """Link multiple chat files to a message by setting message_id on each."""
+async def link_to_message(
+    db: AsyncSession, *, message_id: UUID, file_ids: Iterable[UUID], user_id: UUID | None = None
+) -> None:
+    """Link multiple chat files to a message by setting message_id on each.
+
+    When user_id is provided, only files owned by that user are re-linked; file_ids
+    are client-supplied on the chat path, so the filter is the IDOR guard.
+    """
     ids = list(file_ids)
     if not ids:
         return
-    await db.execute(sql_update(ChatFile).where(ChatFile.id.in_(ids)).values(message_id=message_id))
+    stmt = sql_update(ChatFile).where(ChatFile.id.in_(ids))
+    if user_id is not None:
+        stmt = stmt.where(ChatFile.user_id == user_id)
+    await db.execute(stmt.values(message_id=message_id))
     await db.flush()
 
 

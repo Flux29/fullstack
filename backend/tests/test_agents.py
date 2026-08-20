@@ -539,6 +539,53 @@ class TestPersistedConversationHistory:
         service.create_conversation.assert_not_awaited()
 
     @pytest.mark.anyio
+    async def test_persist_links_files_scoped_to_the_acting_user(self):
+        """Client-supplied file_ids link only files the actor owns (IDOR guard)."""
+        user = SimpleNamespace(id=uuid4())
+        user_msg = SimpleNamespace(id=uuid4())
+        file_id = str(uuid4())
+        service = AsyncMock()
+        service.create_conversation = AsyncMock(return_value=SimpleNamespace(id=uuid4()))
+        service.add_message = AsyncMock(return_value=user_msg)
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent.get_db_context", db_context),
+            patch("app.services.agent.get_conversation_service", return_value=service),
+        ):
+            await persist_user_turn(user, "hello", [file_id], requested_conversation_id=None)
+
+        service.link_files_to_message.assert_awaited_once_with(
+            user_msg.id, [file_id], user_id=user.id
+        )
+
+    @pytest.mark.anyio
+    async def test_multimodal_input_loads_files_as_the_acting_user(self):
+        """The WS file-content lookup is scoped to the session user (IDOR guard)."""
+        user = SimpleNamespace(id=uuid4())
+        session = AgentSession(MagicMock(), user)
+        file_id = str(uuid4())
+        service = MagicMock()
+        service.list_attached_files = AsyncMock(return_value=[])
+
+        @contextlib.asynccontextmanager
+        async def db_context():
+            yield MagicMock()
+
+        with (
+            patch("app.services.agent_session.get_db_context", db_context),
+            patch("app.services.agent_session.get_conversation_service", return_value=service),
+            patch("app.services.agent_session.get_file_storage", return_value=MagicMock()),
+        ):
+            result = await session._build_multimodal_input("hi", [file_id])
+
+        assert result == "hi"
+        service.list_attached_files.assert_awaited_once_with([file_id], user_id=user.id)
+
+    @pytest.mark.anyio
     async def test_new_chat_over_a_live_session_creates_a_fresh_conversation(self):
         """The new-chat incident: conversation_id null means NEW CHAT, even mid-session.
 

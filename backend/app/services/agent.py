@@ -255,7 +255,7 @@ async def persist_user_turn(
             )
             if file_ids:
                 try:
-                    await conv_service.link_files_to_message(user_msg.id, file_ids)
+                    await conv_service.link_files_to_message(user_msg.id, file_ids, user_id=user.id)
                 except Exception as e:
                     logger.warning("Failed to link files: %s", e)
     except Exception as e:

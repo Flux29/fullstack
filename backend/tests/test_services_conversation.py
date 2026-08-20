@@ -1081,6 +1081,35 @@ class TestConversationServiceLinkFiles:
             service.db.execute.assert_called_once()
             service.db.flush.assert_called_once()
 
+    @pytest.mark.anyio
+    async def test_link_files_scopes_linking_to_the_acting_user(self, service: ConversationService):
+        """link_files_to_message forwards user_id so only the actor's own files link."""
+        msg_id, file_id, actor_id = uuid4(), uuid4(), uuid4()
+
+        with patch("app.services.conversation.chat_file_repo") as mock_repo:
+            mock_repo.link_to_message = AsyncMock()
+
+            await service.link_files_to_message(msg_id, [str(file_id)], user_id=actor_id)
+
+            mock_repo.link_to_message.assert_awaited_once_with(
+                service.db, message_id=msg_id, file_ids=[file_id], user_id=actor_id
+            )
+
+    @pytest.mark.anyio
+    async def test_list_attached_files_scopes_lookup_to_the_acting_user(
+        self, service: ConversationService
+    ):
+        """list_attached_files forwards user_id so foreign files never load."""
+        file_id, actor_id = uuid4(), uuid4()
+
+        with patch("app.services.conversation.chat_file_repo") as mock_repo:
+            mock_repo.get_many = AsyncMock(return_value=[])
+
+            result = await service.list_attached_files([str(file_id)], user_id=actor_id)
+
+            assert result == []
+            mock_repo.get_many.assert_awaited_once_with(service.db, [file_id], user_id=actor_id)
+
 
 class TestConversationServiceExportAll:
     """Tests for export_all."""

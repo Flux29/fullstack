@@ -509,12 +509,23 @@ class ConversationService:
             success=data.success,
         )
 
-    async def link_files_to_message(self, message_id: UUID, file_ids: list[str]) -> None:
+    async def link_files_to_message(
+        self, message_id: UUID, file_ids: list[str], *, user_id: UUID | None = None
+    ) -> None:
+        """When user_id is provided, only files owned by that user are linked;
+        None is the trusted path (admin routes, internal callers)."""
         await chat_file_repo.link_to_message(
             self.db,
             message_id=message_id,
             file_ids=[UUID(fid) for fid in file_ids],
+            user_id=user_id,
         )
 
-    async def list_attached_files(self, file_ids: list[str]) -> list[Any]:
-        return await chat_file_repo.get_many(self.db, [UUID(fid) for fid in file_ids])
+    async def list_attached_files(
+        self, file_ids: list[str], *, user_id: UUID | None = None
+    ) -> list[Any]:
+        """When user_id is provided, only files owned by that user are returned;
+        None is the trusted path (admin routes, internal callers)."""
+        return await chat_file_repo.get_many(
+            self.db, [UUID(fid) for fid in file_ids], user_id=user_id
+        )

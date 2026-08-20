@@ -618,7 +618,9 @@ class AgentSession:
         image_parts: list[BinaryContent] = []
         file_context_parts: list[str] = []
         async with get_db_context() as file_db:
-            attached_files = await get_conversation_service(file_db).list_attached_files(file_ids)
+            attached_files = await get_conversation_service(file_db).list_attached_files(
+                file_ids, user_id=self.user.id
+            )
             for chat_file in attached_files:
                 try:
                     if chat_file.file_type == "image":

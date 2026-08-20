@@ -1,0 +1,82 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A chat turn that names file_ids the actor does not own now silently drops those files from linking and from the model input instead of loading and re-linking them; the actor's own files behave exactly as before.",
+    "Eight regression tests pin the guard: test_get_many_with_user_id_filters_by_owner, test_get_many_without_user_id_is_the_trusted_path, test_link_to_message_with_user_id_filters_by_owner, test_link_to_message_without_user_id_is_the_trusted_path (test_repositories.py); test_link_files_scopes_linking_to_the_acting_user, test_list_attached_files_scopes_lookup_to_the_acting_user (test_services_conversation.py); test_persist_links_files_scoped_to_the_acting_user, test_multimodal_input_loads_files_as_the_acting_user (test_agents.py). All eight failed before the fix and pass after."
+  ],
+  "compatibility_impact": "No HTTP contract, schema, or WebSocket event changes. New keyword-only user_id parameters default to None, so all existing callers keep their behavior; only the two WS-path call sites now pass the actor.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/repositories/chat_file.py",
+    "backend/app/services/agent.py",
+    "backend/app/services/agent_session.py",
+    "backend/app/services/conversation.py",
+    "backend/tests/test_agents.py",
+    "backend/tests/test_repositories.py",
+    "backend/tests/test_services_conversation.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-scope-websocket-chat-file-access-to-the-acting-user",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Verified against the mocked-session unit suite only; not exercised against live Postgres or a live WebSocket turn. The filter is a WHERE clause on indexed columns, so the residual risk is a wiring mistake the eight pass-through tests already cover.",
+    "The companion HIGH finding (view-share could mutate/delete conversations) was verified already fixed by e34681a and is deliberately not part of this change."
+  ],
+  "manifests_changed": [],
+  "reason": "The WebSocket chat turn accepted client-supplied file_ids and both linked them to the new message and loaded their content into the model input with no ownership check, so any authenticated user could read other users uploaded file content (parsed text and image bytes) and re-link their files to foreign messages; chat file lookup and linking are now filtered to the acting users own files.",
+  "risks": [],
+  "rollback": "git revert of the single commit restores the unfiltered lookup and linking; the eight new regression tests then fail, flagging the reopened IDOR. Nothing outside the tree to restore.",
+  "schema_version": 1,
+  "security_impact": "Closes a HIGH IDOR on the WebSocket chat path: client-supplied file_ids were linked to the new message and their content (parsed text and image bytes) loaded into the model input with no ownership check, letting any authenticated user read other users' uploaded chat files and re-link them to foreign messages. chat_file_repo.get_many and link_to_message now take an optional user_id owner filter; the WS callers pass the acting user's id. Foreign IDs are silently dropped, matching the REST path's file-not-found semantics. The user_id=None trusted path is unchanged for internal callers.",
+  "summary": "Scope WebSocket chat file access to the acting user",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint exit 0; ruff clean, 22 pre-existing ty diagnostics unchanged",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "537 passed, 13 skipped in 11.44s; includes the eight new IDOR regression tests",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed in 0.82s",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 skipped (no live Postgres in this environment), exit 0",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "redis-data and docling-models present and protected",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check, vitest all green, exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "40 checks run, 0 blocking, 7 advisory after change-finish and sync",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

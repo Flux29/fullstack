@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 117)
+## Recent changes (latest 20 of 118)
 
+- **2026-08-20** — Scope WebSocket chat file access to the acting user
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-20-scope-websocket-chat-file-access-to-the-acting-user.json`
 - **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-rewrite-git-history-to-remove-the-three-dead-credential-strings.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Make the governance preflight report a missing pre-commit hook with its repair command
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-make-the-governance-preflight-report-a-missing-pre-commit-hook-w.json`
-- **2026-08-18** — Make the default-provider test independent of a real OPENROUTER_API_KEY in the environment
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-18-make-the-default-provider-test-independent-of-a-real-openrouter.json`
 
 ## Decisions (5)
 

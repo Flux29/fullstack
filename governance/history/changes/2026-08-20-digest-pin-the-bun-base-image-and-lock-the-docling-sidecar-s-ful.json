@@ -1,0 +1,33 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "docling-mcp",
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "No version changes anywhere: the digest is the current oven/bun:1 and the lock reproduces the running container's package set exactly (verified by diffing against pip freeze in the live sidecar). Future dependency updates edit requirements.in and recompile with the command documented in its header. Bun image bumps now require a deliberate digest update.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "docker/mcp/docling/requirements.in",
+    "docker/mcp/docling/requirements.lock",
+    "frontend/Dockerfile"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-digest-pin-the-bun-base-image-and-lock-the-docling-sidecar-s-ful",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Security finding: the frontend builds from floating oven/bun:1 while every other image is digest-pinned, and the Docling sidecar's requirements.lock pins only two direct dependencies, leaving the transitive graph to float at build time",
+  "risks": [],
+  "rollback": "git revert restores the floating tag and the two-line lock; images already built are unaffected.",
+  "schema_version": 1,
+  "security_impact": "Two floating supply-chain inputs are now pinned. The frontend base image oven/bun:1 is digest-pinned (sha256:5ff60936...), matching the repository's pinning convention, so a registry-side tag repoint can no longer change what the frontend builds from. The Docling sidecar's requirements.lock grows from 2 direct pins to the full 58-package transitive graph with sha256 hashes (compiled from a new requirements.in, constrained to the exact versions running in the healthy container), so pip installs in hash-checking mode and a tampered or substituted wheel fails the build. pip-audit over the full lock: no known vulnerabilities.",
+  "summary": "Digest-pin the bun base image and lock the Docling sidecar's full transitive dependency graph",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

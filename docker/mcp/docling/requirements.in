@@ -1,0 +1,8 @@
+# Direct dependencies of the Docling MCP sidecar. requirements.lock is
+# compiled from this file with the full transitive graph and hashes:
+#   uv pip compile docker/mcp/docling/requirements.in \
+#     -o docker/mcp/docling/requirements.lock \
+#     --python-version 3.13 --python-platform linux --generate-hashes
+docling-mcp==2.1.0
+# docling-mcp imports mcp.server.fastmcp, which was removed in MCP 2.x.
+mcp==1.29.0

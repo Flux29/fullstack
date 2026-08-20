@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 127)
+## Recent changes (latest 20 of 128)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -100,6 +100,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Drop unsafe-eval from the production frontend CSP and stop allowing plaintext websockets and localhost connects in production
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-20-drop-unsafe-eval-from-the-production-frontend-csp-and-stop-allow.json`
+- **2026-08-20** — Digest-pin the bun base image and lock the Docling sidecar's full transitive dependency graph
+  - Components: docling-mcp, frontend-app
+  - Record: `governance/history/changes/2026-08-20-digest-pin-the-bun-base-image-and-lock-the-docling-sidecar-s-ful.json`
 - **2026-08-20** — Close the three standing MCP security findings
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-19** — Fix email template resolution so welcome.html is found on plain uv sync installs
   - Components: backend-api, email
   - Record: `governance/history/changes/2026-08-19-fix-email-template-resolution-so-welcome-html-is-found-on-plain.json`
-- **2026-08-19** — Close the secrets-pushed-to-remote finding: both leaked credentials are rotated and revoked at their providers
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-19-close-the-secrets-pushed-to-remote-finding-both-leaked-credentia.json`
 
 ## Decisions (5)
 

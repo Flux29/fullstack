@@ -55,6 +55,11 @@ coverage.xml
 .env
 .env.local
 .env.*.local
+
+# Secret material — service-account keys, API credentials. Matches the
+# directories at any depth (repo root, backend/, ...). Never commit these.
+secrets/
+credentials/
 .venv
 env/
 venv/

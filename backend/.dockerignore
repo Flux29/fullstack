@@ -42,6 +42,11 @@ build/
 *.db
 *.sqlite
 
+# Secret material — keep keys out of the image build context entirely
+secrets/
+credentials/
+*.pem
+
 # Docker
 Dockerfile*
 docker-compose*.yml

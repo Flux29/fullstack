@@ -25,6 +25,11 @@ yarn-error.log*
 .env.test.local
 .env.production.local
 
+# Secret material — keep keys out of the image build context entirely
+secrets/
+credentials/
+*.pem
+
 # IDE
 .idea
 .vscode

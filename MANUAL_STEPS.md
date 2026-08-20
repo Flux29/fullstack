@@ -54,9 +54,11 @@ These are used to sign JWTs and authenticate service-to-service calls. Rotate at
 ### Google Drive sync source
 
 - [ ] Create a service account at https://console.cloud.google.com/iam-admin/serviceaccounts.
-- [ ] Download the JSON credentials → save to `secrets/gdrive-service-account.json`.
+- [ ] Download the JSON credentials → save to `credentials/google-drive-sa.json` (the
+      `GOOGLE_DRIVE_CREDENTIALS_FILE` default; the directory is gitignored and
+      docker-ignored — never commit the key).
 - [ ] Share the target Drive folder with the service-account email.
-- [ ] Set `GOOGLE_DRIVE_CREDENTIALS_FILE` in `.env`.
+- [ ] Set `GOOGLE_DRIVE_CREDENTIALS_FILE` in `.env` if the key lives elsewhere.
 
 ### S3 / MinIO sync source
 

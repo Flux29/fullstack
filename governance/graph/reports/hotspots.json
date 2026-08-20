@@ -16,7 +16,7 @@
         "Embedding dimension agrees across all five contract points"
       ],
       "invariants": 2,
-      "max_module_centrality": 0.0774,
+      "max_module_centrality": 0.0769,
       "uncovered": []
     },
     {
@@ -72,7 +72,7 @@
       "betweenness": [
         {
           "id": "app.api.deps",
-          "score": 0.0648
+          "score": 0.0646
         },
         {
           "id": "app.repositories",
@@ -154,27 +154,27 @@
       "pagerank": [
         {
           "id": "app.core.config",
-          "score": 0.0805
-        },
-        {
-          "id": "app.services.rag",
-          "score": 0.0774
+          "score": 0.0799
         },
         {
           "id": "app.db.base",
           "score": 0.0769
         },
         {
+          "id": "app.services.rag",
+          "score": 0.0769
+        },
+        {
           "id": "app.schemas.base",
-          "score": 0.0609
+          "score": 0.0613
         },
         {
           "id": "app.core.exceptions",
-          "score": 0.0241
+          "score": 0.0246
         },
         {
           "id": "app.api.deps",
-          "score": 0.0196
+          "score": 0.0193
         },
         {
           "id": "app.services.email.providers.base",
@@ -186,7 +186,7 @@
         },
         {
           "id": "app.clients.redis",
-          "score": 0.0095
+          "score": 0.0097
         },
         {
           "id": "app.worker.tasks.rag_tasks",

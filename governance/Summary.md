@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 129)
+## Recent changes (latest 20 of 130)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -73,6 +73,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Require edit shares for conversation update/archive and restrict delete to owners
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-require-edit-shares-for-conversation-update-archive-and-restrict.json`
+- **2026-08-20** — Replace the OAuth JWT-in-query redirect with a short-lived single-use sign-in code exchanged server-to-server
+  - Components: backend-api, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-20-replace-the-oauth-jwt-in-query-redirect-with-a-short-lived-singl.json`
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-19** — Skip self-hosted Codecov uploads on Dependabot runs so dependency PRs stop failing CI on coverage telemetry
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-19-skip-self-hosted-codecov-uploads-on-dependabot-runs-so-dependenc.json`
-- **2026-08-19** — Keep the cookie-consent banner from covering the auth form submit button on mobile viewports
-  - Components: frontend-app
-  - Record: `governance/history/changes/2026-08-19-keep-the-cookie-consent-banner-from-covering-the-auth-form-submi.json`
 
 ## Decisions (5)
 

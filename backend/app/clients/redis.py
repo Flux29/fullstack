@@ -62,6 +62,19 @@ class RedisClient:
             raise RuntimeError("Redis client not connected")
         await self.client.set(key, value, ex=ttl)
 
+    async def getdel(self, key: str) -> str | None:
+        """Atomically read and delete a key (single-use tokens and codes).
+
+        Same decode caveat as ``get``: decode_responses=True makes the value a
+        str, but redis-py's annotation still admits bytes.
+        """
+        if not self.client:
+            raise RuntimeError("Redis client not connected")
+        value: str | bytes | None = await self.client.getdel(key)
+        if isinstance(value, bytes):
+            return value.decode("utf-8")
+        return value
+
     async def delete(self, key: str) -> int:
         """Delete a key. Returns number of keys deleted."""
         if not self.client:

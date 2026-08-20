@@ -450,7 +450,8 @@
     },
     {
       "backend_modules": [
-        "app.api.routes.v1.auth"
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.oauth"
       ],
       "file": "frontend/src/app/[locale]/auth/callback/page.tsx",
       "proxy_handlers": [

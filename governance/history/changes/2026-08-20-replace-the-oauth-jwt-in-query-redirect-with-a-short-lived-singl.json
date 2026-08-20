@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "The frontend callback page and the /api/auth/oauth-callback proxy handler changed contract together in this commit: the page now sends {code} instead of {access_token, refresh_token}, and the backend redirect carries ?code= instead of token query params. No other consumer of the old contract exists (verified by repo-wide search). Sessions mid-OAuth-redirect during deploy would fail once and retry sign-in. RedisClient gains a getdel method; AUTH_LIMITS gains the oauth-exchange scope; neither changes existing behavior.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/api/routes/v1/oauth.py",
+    "backend/app/clients/redis.py",
+    "backend/app/core/rate_limit.py",
+    "backend/app/schemas/token.py",
+    "backend/tests/api/test_auth.py",
+    "backend/tests/conftest.py",
+    "frontend/src/app/[locale]/auth/callback/page.tsx",
+    "frontend/src/app/api/auth/oauth-callback/route.ts",
+    "governance/graph/reports/hotspots.json",
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-replace-the-oauth-jwt-in-query-redirect-with-a-short-lived-singl",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "reason": "The Google OAuth callback redirected to the frontend with both the access and the long-lived refresh JWT in the URL query string, exposing them to browser history, access logs, extensions, and referrer leakage, and bypassing the HttpOnly-cookie design used everywhere else. The backend now redirects with only an opaque 60-second single-use code bound to the user id in Redis; the Next.js proxy exchanges it server-to-server for tokens and sets the cookies, so no JWT ever appears in a URL.",
+  "risks": [],
+  "rollback": "git revert the single commit; the old query-param flow returns end-to-end since backend redirect, proxy handler, and callback page all change in the same commit. Redis keys under oauth:login-code: expire within 60 seconds on their own.",
+  "schema_version": 1,
+  "security_impact": "Removes both JWTs from the OAuth redirect URL. The Google callback now stores an opaque 32-byte urlsafe code in Redis (60s TTL, single-use via atomic GETDEL) mapped to the user id, and redirects with only that code. The new POST /api/v1/oauth/exchange endpoint - called server-to-server by the Next.js proxy - mints the token pair, creates the server-side session, and is rate-limited per client IP (10/300s, new oauth-exchange scope). Tokens therefore never appear in browser history, access logs, Referer headers, or extension-visible URLs, and the refresh token now exists only in the HttpOnly cookie, matching the password and magic-link flows. An inactive account is rejected at exchange time.",
+  "summary": "Replace the OAuth JWT-in-query redirect with a short-lived single-use sign-in code exchanged server-to-server",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

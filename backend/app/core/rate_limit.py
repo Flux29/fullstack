@@ -27,6 +27,7 @@ AUTH_LIMITS: dict[str, tuple[int, int]] = {
     "register": (5, 3600),
     "password-reset": (3, 900),
     "magic-link": (3, 900),
+    "oauth-exchange": (10, 300),
 }
 
 

@@ -2,6 +2,8 @@
 
 from typing import Literal
 
+from pydantic import Field
+
 from app.schemas.base import BaseSchema
 
 
@@ -25,3 +27,9 @@ class RefreshTokenRequest(BaseSchema):
     """Request body for token refresh."""
 
     refresh_token: str
+
+
+class OAuthCodeExchangeRequest(BaseSchema):
+    """Request body for exchanging a single-use OAuth sign-in code for tokens."""
+
+    code: str = Field(min_length=16, max_length=128)

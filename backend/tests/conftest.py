@@ -52,6 +52,7 @@ def mock_redis() -> MagicMock:
     mock = MagicMock(spec=RedisClient)
     mock.ping = AsyncMock(return_value=True)
     mock.get = AsyncMock(return_value=None)
+    mock.getdel = AsyncMock(return_value=None)
     mock.set = AsyncMock(return_value=True)
     mock.delete = AsyncMock(return_value=1)
     mock.exists = AsyncMock(return_value=0)

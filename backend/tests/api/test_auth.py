@@ -165,6 +165,121 @@ async def test_register_duplicate_email(
     assert response.status_code == 409
 
 
+@pytest.fixture
+def mock_session_service() -> MagicMock:
+    """Create a mock session service."""
+    service = MagicMock()
+    service.create_session = ServiceMock(return_value=None)
+    return service
+
+
+@pytest.fixture
+async def oauth_client(
+    mock_user_service: MagicMock,
+    mock_session_service: MagicMock,
+    mock_redis: MagicMock,
+    mock_db_session,
+) -> AsyncClient:
+    """Client with user, session, redis, and db dependencies mocked for OAuth flows."""
+    from app.api.deps import get_session_service
+
+    app.dependency_overrides[get_user_service] = lambda: mock_user_service
+    app.dependency_overrides[get_session_service] = lambda: mock_session_service
+    app.dependency_overrides[get_redis] = lambda: mock_redis
+    app.dependency_overrides[get_db_session] = lambda: mock_db_session
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as ac:
+        yield ac
+
+    app.dependency_overrides.clear()
+
+
+@pytest.mark.anyio
+async def test_oauth_exchange_valid_code_returns_token_pair(
+    oauth_client: AsyncClient,
+    mock_user: MockUser,
+    mock_redis: MagicMock,
+    mock_session_service: MagicMock,
+):
+    """A stored single-use code yields tokens and a server-side session."""
+    mock_redis.getdel = AsyncMock(return_value=str(mock_user.id))
+
+    response = await oauth_client.post(
+        f"{settings.API_V1_STR}/oauth/exchange",
+        json={"code": "c" * 43},
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert "refresh_token" in data
+    mock_redis.getdel.assert_awaited_once_with("oauth:login-code:" + "c" * 43)
+    mock_session_service.create_session.assert_awaited_once()
+
+
+@pytest.mark.anyio
+async def test_oauth_exchange_unknown_code_returns_401(oauth_client: AsyncClient):
+    """A code Redis has never seen (or already consumed) is rejected."""
+    response = await oauth_client.post(
+        f"{settings.API_V1_STR}/oauth/exchange",
+        json={"code": "x" * 43},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_oauth_exchange_inactive_user_returns_401(
+    oauth_client: AsyncClient,
+    mock_user: MockUser,
+    mock_redis: MagicMock,
+):
+    """A disabled account cannot complete sign-in even with a valid code."""
+    mock_user.is_active = False
+    mock_redis.getdel = AsyncMock(return_value=str(mock_user.id))
+
+    response = await oauth_client.post(
+        f"{settings.API_V1_STR}/oauth/exchange",
+        json={"code": "c" * 43},
+    )
+    assert response.status_code == 401
+
+
+@pytest.mark.anyio
+async def test_google_callback_redirects_with_code_and_never_with_tokens(
+    oauth_client: AsyncClient,
+    mock_user: MockUser,
+    mock_user_service: MagicMock,
+    mock_redis: MagicMock,
+):
+    """The OAuth callback URL carries only an opaque code — no JWTs in the query."""
+    from unittest.mock import patch as mock_patch
+
+    from app.api.routes.v1 import oauth as oauth_module
+
+    mock_user_service.get_or_create_oauth_user = ServiceMock(return_value=mock_user)
+    google = MagicMock()
+    google.authorize_access_token = AsyncMock(
+        return_value={"userinfo": {"sub": "gid", "email": mock_user.email, "name": "Test"}}
+    )
+
+    with mock_patch.object(oauth_module.oauth, "google", google):
+        response = await oauth_client.get(f"{settings.API_V1_STR}/oauth/google/callback")
+
+    assert response.status_code in (302, 307)
+    location = response.headers["location"]
+    assert "/auth/callback?code=" in location
+    assert "access_token" not in location
+    assert "refresh_token" not in location
+    # The code is stored single-use with a short TTL, keyed to the user id.
+    args, kwargs = mock_redis.set.await_args
+    assert args[0].startswith("oauth:login-code:")
+    assert args[1] == str(mock_user.id)
+    assert kwargs["ttl"] == 60
+
+
 @pytest.mark.anyio
 async def test_get_current_user(
     client_with_mock_service: AsyncClient,

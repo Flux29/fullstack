@@ -19,8 +19,8 @@
         "sources": ["backend/alembic/versions/"],
         "extractor_version": "1.0.0"
       },
-      "head_expected": ["0029_mcp_connect_url"],
-      "heads_observed": ["0029_mcp_connect_url"],
+      "head_expected": ["0030_mcp_url_origin_only"],
+      "heads_observed": ["0030_mcp_url_origin_only"],
       "revisions": [],
       "accepted_history_ref": "alembic-numbering-gaps-accepted"
     },

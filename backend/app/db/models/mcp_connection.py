@@ -5,11 +5,12 @@ Each row is one remote MCP server the user attached to their assistant.
 it must be recoverable to send as a Bearer header on every request, so
 hashing is not an option, but a DB dump alone must not leak it.
 
-The URL is stored twice: ``url`` holds the credential-stripped form (no
-query string, fragment, or userinfo) that the API returns and the UI
-shows, while ``connect_url`` holds the full URL Fernet-encrypted — some
-catalog servers place their API token in the URL itself, which makes the
-full URL a credential with the same at-rest requirements as the token.
+The URL is stored twice: ``url`` holds only the origin (scheme + host +
+port — no path, query string, fragment, or userinfo) that the API returns
+and the UI shows, while ``connect_url`` holds the full URL
+Fernet-encrypted — catalog servers place their API token in the query
+string *or* the path (Zapier personal links), which makes the full URL a
+credential with the same at-rest requirements as the token.
 
 ``allowed_tools`` is NULL when the user exposes every tool the server
 offers; otherwise it's the list of unprefixed tool names they picked.
@@ -54,8 +55,8 @@ class McpConnection(Base, TimestampMixin):
         index=True,
     )
     name: Mapped[str] = mapped_column(String(64), nullable=False)
-    # Credential-stripped form (no query string, fragment, or userinfo) — safe
-    # to return from the API, display, and log. Never used to connect.
+    # Origin only (scheme + host + port; no path, query, fragment, userinfo) —
+    # safe to return from the API, display, and log. Never used to connect.
     url: Mapped[str] = mapped_column(String(2048), nullable=False)
     # Fernet-encrypted full URL actually used to connect. Kept apart from
     # ``url`` because the catalog supports placing a token in the URL (e.g.

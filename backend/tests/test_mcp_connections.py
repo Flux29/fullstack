@@ -540,7 +540,9 @@ class TestProbeErrorScrubbing:
         )
         message = probe_error_message(exc)
         assert "s3cret" not in message
-        assert "https://mcp.example.co/mcp" in message
+        assert "https://mcp.example.co" in message
+        # Path segments can carry the token too (Zapier personal links).
+        assert "example.co/mcp" not in message
 
     @pytest.mark.anyio
     async def test_persisted_last_error_never_carries_the_token(self, monkeypatch):
@@ -1113,11 +1115,25 @@ class TestMcpConnectionService:
         await service.create(user_id=uuid4(), data=data)
 
         kwargs = repo.create.call_args.kwargs
-        assert kwargs["url"] == "https://mcp.example.co/mcp"
+        assert kwargs["url"] == "https://mcp.example.co"
         assert (
             decrypt_value(kwargs["connect_url"], settings.SECRET_KEY)
             == "https://mcp.example.co/mcp?apikey=s3cret"
         )
+
+    @pytest.mark.anyio
+    async def test_create_strips_a_path_embedded_token(self, service, repo, monkeypatch):
+        """Zapier-style personal links carry the whole secret in the path —
+        the plaintext column keeps only scheme and host."""
+        _allow_any_url(monkeypatch)
+        full = "https://mcp.zapier.com/api/mcp/s/NjJmMDY0-s3cret/mcp"
+        data = McpConnectionCreate(name="zapier", url=full)
+        await service.create(user_id=uuid4(), data=data)
+
+        kwargs = repo.create.call_args.kwargs
+        assert kwargs["url"] == "https://mcp.zapier.com"
+        assert "s3cret" not in kwargs["url"]
+        assert decrypt_value(kwargs["connect_url"], settings.SECRET_KEY) == full
 
     @pytest.mark.anyio
     async def test_update_url_reencrypts_connect_url(self, service, repo, monkeypatch):
@@ -1133,7 +1149,7 @@ class TestMcpConnectionService:
         )
 
         update_data = repo.update.call_args.kwargs["update_data"]
-        assert update_data["url"] == "https://new.example/mcp"
+        assert update_data["url"] == "https://new.example"
         assert (
             decrypt_value(update_data["connect_url"], settings.SECRET_KEY)
             == "https://new.example/mcp?apikey=tok"
@@ -1430,8 +1446,9 @@ class TestMcpConnectionService:
         assert update_data["oauth_state"] is None  # no longer pending
         assert update_data["oauth_pending_payload"] is None
         assert update_data["last_status"] == "ok"
-        # The URL the tokens were issued for is applied together with them.
-        assert update_data["url"] == "https://moved/mcp"
+        # The URL the tokens were issued for is applied together with them,
+        # reduced to its origin like every stored display URL.
+        assert update_data["url"] == "https://moved"
         payload = McpOAuthPayload.model_validate_json(
             decrypt_value(update_data["oauth_payload"], settings.SECRET_KEY)
         )

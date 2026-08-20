@@ -291,28 +291,29 @@ def validate_webhook_url(
 
 
 def strip_url_credentials(url: str) -> str:
-    """Strip the credential-bearing parts of a URL: query string, fragment, userinfo.
+    """Reduce a URL to its origin — scheme, host, and port only.
 
-    Used wherever a connection URL is stored, displayed, or logged in plaintext —
-    some providers place API tokens in the query string (e.g. ``?apikey=...``),
-    so only the scheme, host, port, and path survive.
+    Used wherever a connection URL is stored, displayed, or logged in plaintext.
+    Providers place API tokens in the query string (e.g. ``?apikey=...``) *and*
+    in the path (Zapier personal links: ``/api/mcp/s/<secret>/mcp``), so
+    everything after the authority is credential-bearing until proven otherwise.
 
     Args:
         url: The URL to strip.
 
     Returns:
-        The URL without query string, fragment, or userinfo.
+        The URL's origin, with no path, query string, fragment, or userinfo.
 
     Example:
         >>> strip_url_credentials("https://mcp.example.co/mcp?apikey=s3cret")
-        "https://mcp.example.co/mcp"
+        "https://mcp.example.co"
     """
     parsed = urlparse(url)
     hostname = parsed.hostname or ""
     if ":" in hostname:  # IPv6 literal — urlparse strips the brackets
         hostname = f"[{hostname}]"
     netloc = f"{hostname}:{parsed.port}" if parsed.port else hostname
-    return urlunparse((parsed.scheme, netloc, parsed.path, "", "", ""))
+    return urlunparse((parsed.scheme, netloc, "", "", "", ""))
 
 
 def sanitize_string(

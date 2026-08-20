@@ -52,11 +52,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 ## Active contracts
 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
-- **Migration head** — 0029_mcp_connect_url
+- **Migration head** — 0030_mcp_url_origin_only
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 119)
+## Recent changes (latest 20 of 120)
 
 - **2026-08-20** — Scope WebSocket chat file access to the acting user
   - Components: agents, backend-api
@@ -76,6 +76,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Fix critical security findings: registration role escalation and conversation message IDOR
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json`
+- **2026-08-20** — Finish MCP URL credential-stripping: drop path tokens from display URLs and scrub stale last_error
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-20-finish-mcp-url-credential-stripping-drop-path-tokens-from-displa.json`
 - **2026-08-20** — Close the three standing MCP security findings
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Mark chat messages with data-role and make the e2e chat and user-menu assertions hold when the model answers instantly
   - Components: chat-frontend, frontend-app
   - Record: `governance/history/changes/2026-08-18-mark-chat-messages-with-data-role-and-make-the-e2e-chat-and-user.json`
-- **2026-08-18** — Make the Makefile the single source of validator commands and have CI invoke it, with workflow hygiene and a repo codecov.yml
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-18-make-the-makefile-the-single-source-of-validator-commands-and-ha.json`
 
 ## Decisions (5)
 

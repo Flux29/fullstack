@@ -45,7 +45,7 @@ def test_truncation_is_drawn_never_silent() -> None:
         ("site", "/chat", ["/chat", "proxy bypass"]),
         ("site", None, ["/rag", "Backend route modules"]),
         ("configuration", "EMBEDDING_DIMENSION", ["EMBEDDING_DIMENSION"]),
-        ("migration", None, ["0027_embedding_cache", "Head: 0029_mcp_connect_url"]),
+        ("migration", None, ["0027_embedding_cache", "Head: 0030_mcp_url_origin_only"]),
         ("security", None, ["assistant", "github-internal", "mcp-approval-gating-asymmetry"]),
         ("impact", "frontend/src/lib/file-api.ts", ["backend-api", "files/upload"]),
     ],

@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 116)
+## Recent changes (latest 20 of 117)
 
 - **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
   - Components: none recorded
@@ -73,6 +73,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
+- **2026-08-20** — Govern the LICENSE file in the read-surface so coverage analysis is clean again
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-20-govern-the-license-file-in-the-read-surface-so-coverage-analysis.json`
 - **2026-08-20** — Fix critical security findings: registration role escalation and conversation message IDOR
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Make the default-provider test independent of a real OPENROUTER_API_KEY in the environment
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-18-make-the-default-provider-test-independent-of-a-real-openrouter.json`
-- **2026-08-18** — Make prod-codecov deploy standalone with Traefik and document the Linux host command
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-18-make-prod-codecov-deploy-standalone-with-traefik-and-document-th.json`
 
 ## Decisions (5)
 

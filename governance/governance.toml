@@ -80,6 +80,7 @@ always_allow = [
   "CLAUDE.md",
   "CONTRIBUTING.md",
   "ENV_VARS.md",
+  "LICENSE",
   "MANUAL_STEPS.md",
   "Makefile",
   "README.md",

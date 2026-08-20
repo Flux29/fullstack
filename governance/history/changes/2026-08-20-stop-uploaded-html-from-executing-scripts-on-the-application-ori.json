@@ -1,0 +1,33 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "The file download response contract gains X-Content-Type-Options and a stronger CSP on active types; Content-Disposition behavior is unchanged and covered by a test. HTML/SVG previews in the chat file-preview iframe now render sandboxed: markup displays, scripts and same-origin requests inside previews no longer run. PDF, image, text previews unchanged.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/api/routes/v1/files.py",
+    "backend/tests/api/test_files.py",
+    "frontend/src/app/api/files/[id]/route.ts"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-stop-uploaded-html-from-executing-scripts-on-the-application-ori",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Security finding: text/html is an allowed upload type and /api/files/[id] serves it inline while replacing the CSP with only frame-ancestors, so uploaded HTML runs JavaScript same-origin - the enabling step for refresh-token theft",
+  "risks": [],
+  "rollback": "git revert restores the permissive headers; doing so reopens the same-origin execution finding.",
+  "schema_version": 1,
+  "security_impact": "Closes the same-origin HTML execution finding: active content types (text/html, xhtml, xml, svg) are now served with CSP 'sandbox; frame-ancestors self', which renders them in a unique opaque origin with scripts disabled, on both the FastAPI route and the Next.js proxy handler (which previously replaced the backend CSP with only frame-ancestors). X-Content-Type-Options: nosniff added on both hops; the proxy fails closed to a sandbox CSP if the backend header is ever missing. This removes the demonstrated path to same-origin bearer-token theft via /api/auth/refresh. text/html remains an allowed upload type by design (preview and agent-reading use cases); it is inert when served.",
+  "summary": "Stop uploaded HTML from executing scripts on the application origin",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

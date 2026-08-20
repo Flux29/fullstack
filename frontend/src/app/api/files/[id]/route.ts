@@ -33,11 +33,16 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         "Content-Type": contentType,
         "Content-Disposition": disposition,
         "Cache-Control": "private, max-age=3600",
+        "X-Content-Type-Options": "nosniff",
         // Override the global X-Frame-Options: DENY from next.config.ts so
         // the chat file-preview panel can embed PDFs / HTML in an iframe
         // from the same origin. Without this, Firefox refuses to render.
-        "X-Frame-Options": "SAMEORIGIN",
-        "Content-Security-Policy": "frame-ancestors 'self'",
+        "X-Frame-Options": response.headers.get("x-frame-options") || "SAMEORIGIN",
+        // The backend decides the CSP per file type (a `sandbox` policy for
+        // active content such as HTML/SVG/XML, so uploaded pages cannot run
+        // scripts on this origin). Forward it; fail closed if it is missing.
+        "Content-Security-Policy":
+          response.headers.get("content-security-policy") || "sandbox; frame-ancestors 'self'",
       },
     });
   } catch {

@@ -12,6 +12,17 @@ from app.schemas.file import FileInfo, FileUploadResponse
 
 router = APIRouter(prefix="/files", tags=["files"])
 
+# MIME types browsers execute as active documents when rendered inline. These
+# are served with a CSP ``sandbox`` so an uploaded page renders as inert markup
+# in a unique opaque origin: no scripts, no same-origin API access.
+ACTIVE_CONTENT_MIME_TYPES = {
+    "text/html",
+    "application/xhtml+xml",
+    "text/xml",
+    "application/xml",
+    "image/svg+xml",
+}
+
 
 @router.post("/upload", response_model=FileUploadResponse, status_code=status.HTTP_201_CREATED)
 async def upload_file(
@@ -69,11 +80,16 @@ async def download_file(
     # etc). Default ``X-Frame-Options: DENY`` from SecurityHeadersMiddleware
     # would break that, so opt this endpoint down to SAMEORIGIN. The CSP
     # ``frame-ancestors 'self'`` is the modern equivalent — browsers honor
-    # whichever they recognize.
+    # whichever they recognize. Active content additionally gets ``sandbox``
+    # so an uploaded HTML/SVG/XML document cannot run scripts on this origin.
+    csp = "frame-ancestors 'self'"
+    if chat_file.mime_type in ACTIVE_CONTENT_MIME_TYPES:
+        csp = "sandbox; frame-ancestors 'self'"
     headers = {
         "Content-Disposition": f'{mode}; filename="{safe_name}"',
+        "X-Content-Type-Options": "nosniff",
         "X-Frame-Options": "SAMEORIGIN",
-        "Content-Security-Policy": "frame-ancestors 'self'",
+        "Content-Security-Policy": csp,
     }
     return FileResponse(path=file_path, media_type=chat_file.mime_type, headers=headers)
 

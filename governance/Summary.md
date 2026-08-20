@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 121)
+## Recent changes (latest 20 of 122)
 
+- **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
+  - Components: backend-api, frontend-app
+  - Record: `governance/history/changes/2026-08-20-stop-uploaded-html-from-executing-scripts-on-the-application-ori.json`
 - **2026-08-20** — Scope WebSocket chat file access to the acting user
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-20-scope-websocket-chat-file-access-to-the-acting-user.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Restore the codecov env-template wording reverted by the acme-email commit and re-placeholder ACME_EMAIL
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-18-restore-the-codecov-env-template-wording-reverted-by-the-acme-em.json`
-- **2026-08-18** — Move the hand-authored tests manifest from manifests/generated to manifests/curated
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-18-move-the-hand-authored-tests-manifest-from-manifests-generated-t.json`
 
 ## Decisions (5)
 

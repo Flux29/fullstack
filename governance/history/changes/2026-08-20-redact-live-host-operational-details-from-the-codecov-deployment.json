@@ -1,0 +1,31 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. Two history records reworded in place; no schema fields added or removed, no manifests, code, or contracts touched. governance-sync reports no bytes changed.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "governance/history/changes/2026-08-18-disable-the-hosted-slack-app-notifier-in-the-self-hosted-codecov.json",
+    "governance/history/changes/2026-08-18-document-whole-file-compose-interpolation-for-codecov-only-hosts.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Security finding: a governance change record aggregates live Codecov host reconnaissance data (origin IP, provider, OS/RAM, open ports, container counts, host paths, GitHub secret/variable names, webhook-secret history) that would become public with the repository",
+  "risks": [],
+  "rollback": "git revert restores the unredacted records; doing so reintroduces the operational-security finding, so a revert should only accompany a decision that the details may be public.",
+  "schema_version": 1,
+  "security_impact": "Reduces public reconnaissance surface: origin IP, hosting provider and sizing, deployed SHA, container inventory, certificate window, live-host file paths (including a named secrets backup file), file modes, and the GitHub webhook identifier are removed from two Codecov change records. The instance hostname stays: it is already public via the CODECOV_URL repository variable, DNS, and certificate-transparency logs. Residual risk: the unredacted text remains in git history; publishing the repository with history intact republishes it, so history scrubbing (or keeping the repo private) is a precondition to publication.",
+  "summary": "Redact live-host operational details from the Codecov deployment change record",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

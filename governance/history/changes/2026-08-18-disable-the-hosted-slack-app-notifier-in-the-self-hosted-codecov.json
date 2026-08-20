@@ -6,7 +6,7 @@
   "affected_contracts": [],
   "behavioral_effects": [
     "The worker no longer instantiates the codecov-slack-app notifier, so a notify for a commit runs status-patch and comment only and logs no ERROR traceback",
-    "Deployment state observed in this session, recorded here because the previous record deferred it: (a) first real CI upload on commit 88722a9, Actions run 32156446380 green; both Upload steps success against https://codecov.stikkihoney.com; on the instance the commit is state=complete with two uploads state=merged carrying flags backend and frontend (queried in codecov-postgres). (b) The repository is active=t/activated=t with hookid 667446792 in the instance database — the UI toggle that appeared off was misleading; the worker reached api.github.com (HTTP 200) using the owner OAuth token and GitHub shows commit status codecov/patch=success \"Coverage not affected\"; the comment notifier reported no_pull_request, as expected on a push to main. (c) The GitHub hook had been auto-created at 15:47:07Z with no secret while CODECOV_GITHUB_WEBHOOK_SECRET was empty, and both deliveries (ping, status) 403ed — the trap documented in backend/.env.example, now observed live. Fixed operationally: a 64-hex secret generated on the host into ~/fullstack/backend/.env (commented, value never printed), codecov-api and codecov-worker recreated healthy, the hook config PATCHed with the same secret via the GitHub API, and both deliveries redelivered: 200 and 200, matched by two 200s in the codecov-api access log."
+    "Deployment state observed in this session, recorded here because the previous record deferred it: (a) first real CI upload on commit 88722a9, Actions run 32156446380 green; both Upload steps success against the self-hosted instance; on the instance the commit is state=complete with two uploads state=merged carrying flags backend and frontend (queried in codecov-postgres). (b) The repository is active and activated in the instance database (webhook identifier redacted 2026-08-20 for operational security) — the UI toggle that appeared off was misleading; the worker reached api.github.com (HTTP 200) using the owner OAuth token and GitHub shows commit status codecov/patch=success \"Coverage not affected\"; the comment notifier reported no_pull_request, as expected on a push to main. (c) The GitHub hook had been auto-created with no secret while CODECOV_GITHUB_WEBHOOK_SECRET was empty, and both deliveries (ping, status) 403ed — the trap documented in backend/.env.example, now observed live. Fixed operationally: a strong secret generated on the host into its backend env file (value never printed; host path redacted 2026-08-20), codecov-api and codecov-worker recreated healthy, the hook config PATCHed with the same secret via the GitHub API, and both deliveries redelivered: 200 and 200, matched by two 200s in the codecov-api access log."
   ],
   "compatibility_impact": "None for uploads, statuses, or comments: the worker yields the Slack-app notifier only when setup.slack_app is truthy, and every other notifier is gated independently. Takes effect on the host after git pull and a restart of codecov-api and codecov-worker (the file is a bind mount read at process start).",
   "date": "2026-08-18",
@@ -14,10 +14,10 @@
     "docker/codecov/config/codecov.yml"
   ],
   "follow_up": [
-    "Tighten permissions on the host: chmod 600 /root/fullstack/backend/.env and remove /root/fullstack/backend/.env.bak-20260818T155717, which duplicates the secrets",
+    "Tighten permissions on the host's backend env file and remove the backup copy that duplicates the secrets (exact paths redacted 2026-08-20 for operational security; tracked operationally)",
     "A pre-commit governance sync --check for backend/.env.example and .governance.json edits; a stale-buffer commit already slipped through to CI once",
     "governance/manifests/generated/tests.json is hand-edited but lives in the generated directory and pipeline.render_all never renders it; give it a renderer or move it to manifests/curated and update ownership.json",
-    "Codecov prod memory ceilings total roughly 6.5 GB of limits on a 3.8 GB host; either lower them or size the host to them",
+    "Codecov prod memory ceilings total more than the host's available RAM; either lower them or size the host to them",
     "codecov-worker has no healthcheck and no recorded exception (standing advisory services-declare-healthchecks)"
   ],
   "id": "2026-08-18-disable-the-hosted-slack-app-notifier-in-the-self-hosted-codecov",
@@ -31,7 +31,7 @@
   "manifests_changed": [],
   "reason": "Codecov's worker enables the hosted Slack-app notifier by default (setup.slack_app defaults to true) and posts to a URL no self-hosted instance has, so every notify on codecov.stikkihoney.com logged an ERROR traceback (MissingSchema: Invalid URL 'None/notify') after the first real CI upload; turning it off at the install level removes a spurious error from every future notify without touching the GitHub status and comment notifiers that do work",
   "risks": [
-    "None from this change itself. Host-side: backend/.env (and the .env.bak-20260818T155717 copy made before editing it) are mode 644 under /root/fullstack; pre-existing, not tightened in this session"
+    "None from this change itself. Host-side: the backend env file (and the backup copy made before editing it) carried overly permissive modes at record time; pre-existing, not tightened in this session (paths and modes redacted 2026-08-20 for operational security)"
   ],
   "rollback": "git revert and restart codecov-api/codecov-worker on the host. Nothing else to restore.",
   "schema_version": 1,

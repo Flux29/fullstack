@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 120)
+## Recent changes (latest 20 of 121)
 
 - **2026-08-20** — Scope WebSocket chat file access to the acting user
   - Components: agents, backend-api
@@ -70,6 +70,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
+- **2026-08-20** — Redact live-host operational details from the Codecov deployment change record
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment.json`
 - **2026-08-20** — Govern the LICENSE file in the read-surface so coverage analysis is clean again
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-govern-the-license-file-in-the-read-surface-so-coverage-analysis.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Move the hand-authored tests manifest from manifests/generated to manifests/curated
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-move-the-hand-authored-tests-manifest-from-manifests-generated-t.json`
-- **2026-08-18** — Mark chat messages with data-role and make the e2e chat and user-menu assertions hold when the model answers instantly
-  - Components: chat-frontend, frontend-app
-  - Record: `governance/history/changes/2026-08-18-mark-chat-messages-with-data-role-and-make-the-e2e-chat-and-user.json`
 
 ## Decisions (5)
 

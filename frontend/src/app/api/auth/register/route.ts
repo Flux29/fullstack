@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, getClientIpHeaders } from "@/lib/server-api";
 import type { RegisterResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -8,6 +8,7 @@ export async function POST(request: NextRequest) {
 
     const data = await backendFetch<RegisterResponse>("/api/v1/auth/register", {
       method: "POST",
+      headers: getClientIpHeaders(request),
       body: JSON.stringify(body),
     });
 

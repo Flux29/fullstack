@@ -57,6 +57,7 @@ def mock_redis() -> MagicMock:
     mock.exists = AsyncMock(return_value=0)
     mock.incr = AsyncMock(return_value=1)
     mock.expire = AsyncMock(return_value=True)
+    mock.incr_with_ttl = AsyncMock(return_value=1)
     return mock
 
 

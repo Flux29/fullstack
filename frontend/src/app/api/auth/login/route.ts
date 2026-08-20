@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { setAuthCookies } from "@/lib/auth-cookies";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, getClientIpHeaders } from "@/lib/server-api";
 import type { LoginResponse } from "@/types";
 
 export async function POST(request: NextRequest) {
@@ -16,6 +16,7 @@ export async function POST(request: NextRequest) {
       method: "POST",
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
+        ...getClientIpHeaders(request),
       },
       body: formData.toString(),
     });
@@ -40,7 +41,8 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof BackendApiError) {
-      const detail = (error.data as { detail?: string })?.detail || "Login failed";
+      const data = error.data as { detail?: string; error?: { message?: string } } | undefined;
+      const detail = data?.detail || data?.error?.message || "Login failed";
       return NextResponse.json({ detail }, { status: error.status });
     }
     return NextResponse.json({ detail: "Internal server error" }, { status: 500 });

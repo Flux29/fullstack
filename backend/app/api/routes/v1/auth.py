@@ -6,9 +6,10 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 
-from app.api.deps import CurrentUser, SessionSvc, UserSvc
+from app.api.deps import CurrentUser, Redis, SessionSvc, UserSvc
 from app.core.config import settings
 from app.core.exceptions import AuthenticationError
+from app.core.rate_limit import enforce_auth_rate_limit
 from app.core.security import (
     create_access_token,
     create_refresh_token,
@@ -39,8 +40,10 @@ async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     user_service: UserSvc,
     session_service: SessionSvc,
+    redis: Redis,
 ) -> Any:
     """OAuth2 password login, returns access and refresh tokens."""
+    await enforce_auth_rate_limit(redis, scope="login", request=request, account=form_data.username)
     user = await user_service.authenticate(form_data.username, form_data.password)
     access_token = create_access_token(subject=str(user.id))
     refresh_token = create_refresh_token(subject=str(user.id))
@@ -61,10 +64,13 @@ async def login(
     status_code=status.HTTP_201_CREATED,
 )
 async def register(
+    request: Request,
     user_in: UserCreate,
     user_service: UserSvc,
+    redis: Redis,
 ) -> Any:
     """Register a new user."""
+    await enforce_auth_rate_limit(redis, scope="register", request=request)
     user = await user_service.register(user_in)
     return user
 
@@ -122,14 +128,19 @@ async def get_current_user_info(current_user: CurrentUser) -> Any:
     response_model=PasswordResetResponse,
 )
 async def request_password_reset(
+    request: Request,
     body: PasswordResetRequest,
     user_service: UserSvc,
+    redis: Redis,
 ) -> Any:
     """Email a single-use reset link to the address.
 
     Always returns 200 with the same body — we don't disclose whether the
     email is in our system. The caller (email service) is best-effort.
     """
+    await enforce_auth_rate_limit(
+        redis, scope="password-reset", request=request, account=body.email
+    )
     issued = await user_service.issue_password_reset_token(body.email)
     if issued is not None:
         reset_user, token = issued
@@ -160,13 +171,16 @@ async def confirm_password_reset(
     response_model=PasswordResetResponse,
 )
 async def request_magic_link(
+    request: Request,
     body: MagicLinkRequest,
     user_service: UserSvc,
+    redis: Redis,
 ) -> Any:
     """Email a single-use sign-in link.
 
     Symmetric response to request_password_reset to avoid email enumeration.
     """
+    await enforce_auth_rate_limit(redis, scope="magic-link", request=request, account=body.email)
     issued = await user_service.issue_magic_link_token(body.email)
     if issued is not None:
         link_user, token = issued

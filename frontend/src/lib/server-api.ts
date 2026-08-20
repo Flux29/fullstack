@@ -86,3 +86,17 @@ export function getAuthHeaders(authHeader: string | null): Record<string, string
   }
   return { Authorization: authHeader };
 }
+
+/**
+ * Forward the client address so backend rate limiting keys on the real
+ * client rather than this proxy. Trust the existing X-Forwarded-For chain
+ * (set by the edge in production); requests that arrive without one came
+ * to this server directly and carry no client identity worth forwarding.
+ */
+export function getClientIpHeaders(request: Request): Record<string, string> {
+  const forwarded = request.headers.get("x-forwarded-for");
+  if (!forwarded) {
+    return {};
+  }
+  return { "X-Forwarded-For": forwarded };
+}

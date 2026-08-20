@@ -68,6 +68,19 @@ class RedisClient:
             raise RuntimeError("Redis client not connected")
         return await self.client.delete(key)  # type: ignore[no-any-return]
 
+    async def incr_with_ttl(self, key: str, ttl: int) -> int:
+        """Increment a counter, starting its expiry window on first increment.
+
+        Returns the post-increment value. The TTL is only set when the key is
+        new, so the window is fixed from the first event rather than sliding.
+        """
+        if not self.client:
+            raise RuntimeError("Redis client not connected")
+        count = int(await self.client.incr(key))
+        if count == 1:
+            await self.client.expire(key, ttl)
+        return count
+
     async def exists(self, key: str) -> bool:
         """Check if key exists."""
         if not self.client:

@@ -62,8 +62,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 112)
+## Recent changes (latest 20 of 113)
 
+- **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-20-rewrite-git-history-to-remove-the-three-dead-credential-strings.json`
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Give the CI e2e job the placeholder GITHUB_MCP_TOKEN its MCP server list requires and a SECRET_KEY that is long enough regardless of run id
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-give-the-ci-e2e-job-the-placeholder-github-mcp-token-its-mcp-ser.json`
-- **2026-08-18** — Document whole-file Compose interpolation for Codecov-only hosts and record the live codecov.stikkihoney.com deployment
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-18-document-whole-file-compose-interpolation-for-codecov-only-hosts.json`
 
 ## Decisions (5)
 

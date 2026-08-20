@@ -1,0 +1,86 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "OpenAPI under /api/v1"
+  ],
+  "behavioral_effects": [
+    "A view-only share recipient can no longer rename, archive, or delete a shared conversation; an edit-share recipient can rename and archive but not delete; hard delete is owner-only.",
+    "The open finding view-share-can-modify-conversations in the 2026-08-20 fix-critical-security-findings change record is closed and Summary.md regenerated, open findings 7 to 6."
+  ],
+  "compatibility_impact": "No request or response shape changes and no proxy handler changes. PATCH /api/v1/conversations/{id} and POST /{id}/archive now return 403 for view-only share recipients; DELETE /{id} returns 403 for any non-owner share recipient. Owner behavior, edit-share rename and archive, and admin surfaces are unchanged. The WS agent auto-title path now rejects a view-only recipient at the title update instead of one call later at add_message - the same AuthorizationError outcome.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/services/conversation.py",
+    "backend/app/services/conversation_share.py",
+    "backend/tests/test_services_conversation.py",
+    "governance/Summary.md",
+    "governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json"
+  ],
+  "follow_up": [
+    "Govern the LICENSE file in the read-surface manifest so governance-selftest and the CI read-surface coverage check pass again."
+  ],
+  "id": "2026-08-20-require-edit-shares-for-conversation-update-archive-and-restrict",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "governance-selftest fails on pre-existing drift unrelated to this change: the LICENSE file is not governed by read-surface coverage; queued as its own follow-up session.",
+    "migrations validator self-skipped: no reachable database in this environment and no schema change in the session."
+  ],
+  "manifests_changed": [],
+  "reason": "ConversationService.get_conversation granted non-owner access whenever any share row existed, ignoring share.permission, so a view-only share recipient could rename, archive, or hard-delete the owner's conversation via PATCH, POST-archive, and DELETE /api/v1/conversations/{id}; update and archive now require an edit share and delete requires ownership, closing open finding view-share-can-modify-conversations",
+  "risks": [
+    "user_id=None remains the trusted unscoped path for admin routes and internal callers; a future caller that omits the actor silently bypasses every share check. Unchanged from the prior session, mitigated by the regression tests and docstrings on all three write paths."
+  ],
+  "rollback": "git revert of the single commit restores the vulnerable write paths, restores the deleted check_edit_permission, and reopens the finding in the prior change record; run make governance-sync afterwards to regenerate Summary.md. No schema or data migration involved.",
+  "schema_version": 1,
+  "security_impact": "Closes the high-severity view-share-can-modify-conversations finding. update_conversation and archive_conversation now authorize through get_conversation with require_edit=True, so a view-only share recipient receives 403 instead of renaming or archiving the shared conversation; delete_conversation passes the new require_owner flag, so hard delete is owner-only and every share tier receives 403. Users with no share still receive 404 so conversation existence is not disclosed. Admin routes and internal callers keep the deliberate user_id=None trusted path. The orphaned ConversationShareService.check_edit_permission was deleted, leaving get_conversation as the single conversation authorization primitive.",
+  "summary": "Require edit shares for conversation update/archive and restrict delete to owners",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make lint exit 0, ruff clean, 22 pre-existing ty warnings in untouched files",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make test 529 passed 13 skipped, includes 6 new view/edit-share regression tests across update, archive, delete",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check, vitest with coverage all pass, exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipping without a reachable database, session contains no schema change",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "redis-data and docling-models present",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "27 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "345 of 346 pass, test_read_surface_coverage_is_clean_in_the_real_repository fails because the tracked LICENSE file added in fbb992a before this session baseline is not governed by read-surface coverage, drift predates this session and is queued as its own session",
+      "id": "governance-selftest",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "40 checks run, 0 blocking, 7 advisory",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

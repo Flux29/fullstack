@@ -108,9 +108,9 @@
     {
       "id": "view-share-can-modify-conversations",
       "severity": "high",
-      "status": "open",
-      "disposition": "remediation-required",
-      "detail": "Pre-existing and surfaced by this session's adversarial review: get_conversation's share branch accepts any share row without inspecting share.permission, and update_conversation, archive_conversation, and delete_conversation authorize through it, so a view-only share recipient can rename, archive, or hard-delete the owner's conversation. The purpose-built ConversationShareService.check_edit_permission has zero callers. Link-share tokens are not affected (get_share matches shared_with, which is NULL for link shares). add_message was made permission-aware in this change; the remaining write paths need the same treatment plus a product decision on whether delete is owner-only. A follow-up session is queued."
+      "status": "resolved",
+      "disposition": "fixed-in-code",
+      "detail": "Pre-existing and surfaced by this session's adversarial review: get_conversation's share branch accepts any share row without inspecting share.permission, and update_conversation, archive_conversation, and delete_conversation authorize through it, so a view-only share recipient can rename, archive, or hard-delete the owner's conversation. The purpose-built ConversationShareService.check_edit_permission has zero callers. Link-share tokens are not affected (get_share matches shared_with, which is NULL for link shares). add_message was made permission-aware in this change. Fixed 2026-08-20 in the follow-up session (Require edit shares for conversation update/archive and restrict delete to owners): update_conversation and archive_conversation now authorize through get_conversation(require_edit=True) so a view-only share 403s, delete_conversation passes a new require_owner flag that rejects every share tier, and the orphaned check_edit_permission was deleted in favor of the single get_conversation primitive. Admin and internal callers keep the deliberate user_id=None trusted path. Six regression tests cover view and edit shares across all three write paths."
     }
   ]
 }

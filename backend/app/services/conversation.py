@@ -152,6 +152,7 @@ class ConversationService:
         include_messages: bool = False,
         user_id: UUID | None = None,
         require_edit: bool = False,
+        require_owner: bool = False,
     ) -> Conversation:
         conversation = await conversation_repo.get_conversation_by_id(
             self.db, conversation_id, include_messages=include_messages
@@ -176,6 +177,10 @@ class ConversationService:
                 )
             # The share's existence is already disclosed to its recipient, so an
             # explicit 403 here is honest rather than leaky.
+            if require_owner:
+                raise AuthorizationError(
+                    message="Only the conversation owner can perform this action"
+                )
             if require_edit and share.permission != "edit":
                 raise AuthorizationError(message="Edit permission required for this conversation")
         if include_messages and user_id is not None and conversation.messages:
@@ -299,9 +304,12 @@ class ConversationService:
         data: ConversationUpdate,
         user_id: UUID | None = None,
     ) -> Conversation:
+        """When user_id is provided, the actor must own the conversation or hold an
+        edit share; None is the trusted path (admin routes, internal callers)."""
         conversation = await self.get_conversation(
             conversation_id,
             user_id=user_id,
+            require_edit=True,
         )
         update_data = data.model_dump(exclude_unset=True)
         if (
@@ -320,9 +328,12 @@ class ConversationService:
         conversation_id: UUID,
         user_id: UUID | None = None,
     ) -> Conversation:
+        """When user_id is provided, the actor must own the conversation or hold an
+        edit share; None is the trusted path (admin routes, internal callers)."""
         conversation = await self.get_conversation(
             conversation_id,
             user_id=user_id,
+            require_edit=True,
         )
         return await conversation_repo.archive_conversation(self.db, db_conversation=conversation)
 
@@ -331,9 +342,12 @@ class ConversationService:
         conversation_id: UUID,
         user_id: UUID | None = None,
     ) -> bool:
+        """Hard delete is owner-only: no share tier grants it. A user_id of None is
+        the trusted path (admin routes, internal callers)."""
         conversation = await self.get_conversation(
             conversation_id,
             user_id=user_id,
+            require_owner=True,
         )
         await conversation_repo.delete_conversation(self.db, db_conversation=conversation)
         return True

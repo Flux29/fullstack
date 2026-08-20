@@ -326,6 +326,57 @@ class TestConversationServiceUpdate:
             with pytest.raises(NotFoundError):
                 await service.update_conversation(conv_id, mock_update, user_id=other_id)
 
+    @pytest.mark.anyio
+    async def test_update_with_view_only_share_raises_authorization_error(
+        self, service: ConversationService
+    ):
+        """A view-only share must not let the recipient rename the conversation."""
+        conv_id = uuid4()
+        owner_id = uuid4()
+        recipient_id = uuid4()
+        mock_conv = MockConversation(id=conv_id, user_id=owner_id)
+        view_share = MagicMock()
+        view_share.permission = "view"
+        mock_update = MagicMock()
+        mock_update.model_dump.return_value = {"title": "Hijacked Title"}
+
+        with (
+            patch("app.services.conversation.conversation_repo") as mock_repo,
+            patch("app.services.conversation.conversation_share_repo") as mock_share_repo,
+        ):
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_share_repo.get_share = AsyncMock(return_value=view_share)
+
+            with pytest.raises(AuthorizationError):
+                await service.update_conversation(conv_id, mock_update, user_id=recipient_id)
+            mock_repo.update_conversation.assert_not_called()
+
+    @pytest.mark.anyio
+    async def test_update_with_edit_share_succeeds(self, service: ConversationService):
+        """An edit share allows the recipient to update the conversation."""
+        conv_id = uuid4()
+        owner_id = uuid4()
+        recipient_id = uuid4()
+        mock_conv = MockConversation(id=conv_id, user_id=owner_id)
+        updated_conv = MockConversation(id=conv_id, user_id=owner_id, title="Updated Title")
+        edit_share = MagicMock()
+        edit_share.permission = "edit"
+        mock_update = MagicMock()
+        mock_update.model_dump.return_value = {"title": "Updated Title"}
+
+        with (
+            patch("app.services.conversation.conversation_repo") as mock_repo,
+            patch("app.services.conversation.conversation_share_repo") as mock_share_repo,
+        ):
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_share_repo.get_share = AsyncMock(return_value=edit_share)
+            mock_repo.update_conversation = AsyncMock(return_value=updated_conv)
+
+            result = await service.update_conversation(conv_id, mock_update, user_id=recipient_id)
+
+            assert result.title == "Updated Title"
+            mock_repo.update_conversation.assert_called_once()
+
 
 class TestConversationServiceArchive:
     """Tests for archive_conversation with ownership."""
@@ -385,6 +436,55 @@ class TestConversationServiceArchive:
             with pytest.raises(NotFoundError):
                 await service.archive_conversation(conv_id, user_id=other_id)
 
+    @pytest.mark.anyio
+    async def test_archive_with_view_only_share_raises_authorization_error(
+        self, service: ConversationService
+    ):
+        """A view-only share must not let the recipient archive the conversation."""
+        conv_id = uuid4()
+        owner_id = uuid4()
+        recipient_id = uuid4()
+        mock_conv = MockConversation(id=conv_id, user_id=owner_id)
+        view_share = MagicMock()
+        view_share.permission = "view"
+
+        with (
+            patch("app.services.conversation.conversation_repo") as mock_repo,
+            patch("app.services.conversation.conversation_share_repo") as mock_share_repo,
+        ):
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_share_repo.get_share = AsyncMock(return_value=view_share)
+
+            with pytest.raises(AuthorizationError):
+                await service.archive_conversation(conv_id, user_id=recipient_id)
+            mock_repo.archive_conversation.assert_not_called()
+
+    @pytest.mark.anyio
+    async def test_archive_with_edit_share_succeeds(self, service: ConversationService):
+        """An edit share allows the recipient to archive the conversation."""
+        conv_id = uuid4()
+        owner_id = uuid4()
+        recipient_id = uuid4()
+        mock_conv = MockConversation(id=conv_id, user_id=owner_id)
+        archived_conv = MockConversation(id=conv_id, user_id=owner_id, is_archived=True)
+        edit_share = MagicMock()
+        edit_share.permission = "edit"
+
+        with (
+            patch("app.services.conversation.conversation_repo") as mock_repo,
+            patch("app.services.conversation.conversation_share_repo") as mock_share_repo,
+        ):
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_share_repo.get_share = AsyncMock(return_value=edit_share)
+            mock_repo.archive_conversation = AsyncMock(return_value=archived_conv)
+
+            result = await service.archive_conversation(conv_id, user_id=recipient_id)
+
+            assert result.is_archived is True
+            mock_repo.archive_conversation.assert_called_once_with(
+                service.db, db_conversation=mock_conv
+            )
+
 
 class TestConversationServiceDelete:
     """Tests for delete_conversation with ownership."""
@@ -442,6 +542,52 @@ class TestConversationServiceDelete:
 
             with pytest.raises(NotFoundError):
                 await service.delete_conversation(conv_id, user_id=other_id)
+
+    @pytest.mark.anyio
+    async def test_delete_with_view_only_share_raises_authorization_error(
+        self, service: ConversationService
+    ):
+        """A view-only share must not let the recipient hard-delete the conversation."""
+        conv_id = uuid4()
+        owner_id = uuid4()
+        recipient_id = uuid4()
+        mock_conv = MockConversation(id=conv_id, user_id=owner_id)
+        view_share = MagicMock()
+        view_share.permission = "view"
+
+        with (
+            patch("app.services.conversation.conversation_repo") as mock_repo,
+            patch("app.services.conversation.conversation_share_repo") as mock_share_repo,
+        ):
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_share_repo.get_share = AsyncMock(return_value=view_share)
+
+            with pytest.raises(AuthorizationError):
+                await service.delete_conversation(conv_id, user_id=recipient_id)
+            mock_repo.delete_conversation.assert_not_called()
+
+    @pytest.mark.anyio
+    async def test_delete_with_edit_share_raises_authorization_error(
+        self, service: ConversationService
+    ):
+        """Delete is owner-only: even an edit share cannot destroy the conversation."""
+        conv_id = uuid4()
+        owner_id = uuid4()
+        recipient_id = uuid4()
+        mock_conv = MockConversation(id=conv_id, user_id=owner_id)
+        edit_share = MagicMock()
+        edit_share.permission = "edit"
+
+        with (
+            patch("app.services.conversation.conversation_repo") as mock_repo,
+            patch("app.services.conversation.conversation_share_repo") as mock_share_repo,
+        ):
+            mock_repo.get_conversation_by_id = AsyncMock(return_value=mock_conv)
+            mock_share_repo.get_share = AsyncMock(return_value=edit_share)
+
+            with pytest.raises(AuthorizationError):
+                await service.delete_conversation(conv_id, user_id=recipient_id)
+            mock_repo.delete_conversation.assert_not_called()
 
 
 class TestConversationServiceGetMessage:

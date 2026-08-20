@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 124)
+## Recent changes (latest 20 of 125)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -91,6 +91,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Finish MCP URL credential-stripping: drop path tokens from display URLs and scrub stale last_error
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-finish-mcp-url-credential-stripping-drop-path-tokens-from-displa.json`
+- **2026-08-20** — Drop unsafe-eval from the production frontend CSP and stop allowing plaintext websockets and localhost connects in production
+  - Components: frontend-app
+  - Record: `governance/history/changes/2026-08-20-drop-unsafe-eval-from-the-production-frontend-csp-and-stop-allow.json`
 - **2026-08-20** — Close the three standing MCP security findings
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Stop the backgrounded backend at the end of the CI e2e job so setup-uv's cache prune cannot hang on it
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-18-stop-the-backgrounded-backend-at-the-end-of-the-ci-e2e-job-so-se.json`
-- **2026-08-18** — Stop applying the staged-file scope to whole-repository facts in check --fast
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-18-stop-applying-the-staged-file-scope-to-whole-repository-facts-in.json`
 
 ## Decisions (5)
 

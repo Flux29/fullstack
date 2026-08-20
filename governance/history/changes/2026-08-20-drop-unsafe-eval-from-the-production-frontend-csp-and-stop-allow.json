@@ -1,0 +1,30 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "The chat-frontend invariant held: the WebSocket origin must be in connect-src, and the build-time derivation guarantees CSP and client fall back in step (client constants.ts defaults to ws://localhost:8100, compose/Dockerfile bake the same default). A production image built without NEXT_PUBLIC_WS_URL and served on a non-localhost domain would have a broken chat WS regardless of CSP - unchanged from before. Browser REST, i18n routing, and SSG page rendering verified unchanged in the production build.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "frontend/next.config.ts"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-drop-unsafe-eval-from-the-production-frontend-csp-and-stop-allow",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Security finding: the frontend CSP permits both unsafe-inline and unsafe-eval in every environment; unsafe-eval is only needed by dev tooling, and connect-src allows ws: and localhost origins that have no place in a production policy. Full unsafe-inline removal needs the nonce architecture and is recorded as the follow-up",
+  "risks": [],
+  "rollback": "git revert restores the permissive single CSP; reopens the unsafe-eval and open connect-src finding.",
+  "schema_version": 1,
+  "security_impact": "Production frontend CSP no longer permits unsafe-eval, and connect-src no longer allows arbitrary ws:, wss:, or localhost origins: it names exactly self plus the WebSocket origin derived at build time from NEXT_PUBLIC_WS_URL (which the Dockerfile always bakes), falling back to wss: only when the variable is absent. Dev builds keep the permissive policy for HMR. unsafe-inline for scripts remains: Next hydration requires it without the per-request nonce architecture, which forces dynamic rendering on every route and is recorded as the follow-up path. Verified in a production build: landing, login, full login flow, and dashboard render with zero CSP violations, and the chat WebSocket origin is admitted (construction previously threw SecurityError under the tightened policy until the origin derivation landed).",
+  "summary": "Drop unsafe-eval from the production frontend CSP and stop allowing plaintext websockets and localhost connects in production",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

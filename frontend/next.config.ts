@@ -14,16 +14,42 @@ const withAnalyzer = withBundleAnalyzer({
   enabled: process.env.ANALYZE === "true",
 });
 
-// Content Security Policy directives
+// Content Security Policy directives.
+//
+// Environment split: 'unsafe-eval' and the permissive localhost/ws connect
+// sources exist only for dev tooling (HMR, eval sourcemaps) and never reach a
+// production build. 'unsafe-inline' for scripts is still required by Next's
+// hydration bootstrap; removing it means the per-request nonce architecture
+// (headers set in middleware, which forces dynamic rendering on every route)
+// and is tracked as a follow-up, not attempted here.
+const isDev = process.env.NODE_ENV === "development";
+
+// The chat WebSocket is the documented proxy exception: it connects to the
+// backend origin directly, so the production policy must name that origin.
+// NEXT_PUBLIC_WS_URL is a build argument, so it is known at config time.
+const wsOrigin = (() => {
+  try {
+    const url = process.env.NEXT_PUBLIC_WS_URL;
+    return url ? new URL(url).origin.replace(/^http/, "ws") : "";
+  } catch {
+    return "";
+  }
+})();
+
 const _frameAncestors = "frame-ancestors 'none';";
+
+const scriptSrc = isDev ? "'self' 'unsafe-eval' 'unsafe-inline'" : "'self' 'unsafe-inline'";
+const connectSrc = isDev
+  ? "'self' ws: wss: http://localhost:* https://localhost:*"
+  : `'self' ${wsOrigin || "wss:"}`;
 
 const ContentSecurityPolicy = `
   default-src 'self';
-  script-src 'self' 'unsafe-eval' 'unsafe-inline';
+  script-src ${scriptSrc};
   style-src 'self' 'unsafe-inline';
   img-src 'self' blob: data: https:;
   font-src 'self' data:;
-  connect-src 'self' ws: wss: http://localhost:* https://localhost:*;
+  connect-src ${connectSrc};
   ${_frameAncestors}
   base-uri 'self';
   form-action 'self';

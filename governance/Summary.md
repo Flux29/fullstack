@@ -62,7 +62,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 68 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 113)
+## Recent changes (latest 20 of 114)
 
 - **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
   - Components: none recorded
@@ -70,6 +70,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
+- **2026-08-20** — Add the MIT LICENSE ahead of making the repository public
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public.json`
 - **2026-08-19** — Skip self-hosted Codecov uploads on Dependabot runs so dependency PRs stop failing CI on coverage telemetry
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-19-skip-self-hosted-codecov-uploads-on-dependabot-runs-so-dependenc.json`
@@ -121,9 +124,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-18** — Give the nightly full-history secret scan a redacted fingerprint baseline so the one known finding does not paint every nightly red
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-18-give-the-nightly-full-history-secret-scan-a-redacted-fingerprint.json`
-- **2026-08-18** — Give the CI e2e job the placeholder GITHUB_MCP_TOKEN its MCP server list requires and a SECRET_KEY that is long enough regardless of run id
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-18-give-the-ci-e2e-job-the-placeholder-github-mcp-token-its-mcp-ser.json`
 
 ## Decisions (5)
 

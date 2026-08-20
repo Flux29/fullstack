@@ -1,0 +1,42 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The repository root carries the standard MIT license with the owner as 2026 copyright holder, so making it public grants the intended rights instead of all-rights-reserved."
+  ],
+  "compatibility_impact": "None. The MIT text matches the license already declared in backend/pyproject.toml.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "LICENSE"
+  ],
+  "follow_up": [
+    "After the owner flips visibility to public: enable secret scanning and push protection, add a branch protection rule on main requiring CI OK, and only then consider Dependabot auto-merge."
+  ],
+  "id": "2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "GitHub-side hardening (secret scanning, push protection, branch protection with CI OK required) cannot be configured while the repository is private on the Free plan; delivered as a post-flip checklist instead."
+  ],
+  "manifests_changed": [],
+  "reason": "backend/pyproject.toml has declared MIT since adoption but no LICENSE file exists at the root; public-without-license is all-rights-reserved, which contradicts the declared intent and blocks license-aware tooling, so the standard MIT text is added with the owner as copyright holder as part of go-public preparation",
+  "risks": [],
+  "rollback": "git revert the commit; relicensing after publication cannot retract rights granted to prior copies.",
+  "schema_version": 1,
+  "security_impact": "None from the license itself. Verified as part of this session: the remote is fully clean post-rewrite, and all four GHCR container packages (backend, frontend, docling-mcp, chrome-devtools-mcp) are private and stay private when the repository flips public.",
+  "summary": "Add the MIT LICENSE ahead of making the repository public",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "fresh clone from github.com scanned by unbaselined gitleaks v8.30.1 - no leaks found across all 149 commits; origin has only refs/heads/main and 0 open PRs after the owner deleted the three pre-rewrite Dependabot branches",
+      "id": "secret-scan",
+      "result": "pass"
+    }
+  ]
+}

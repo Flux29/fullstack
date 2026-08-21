@@ -1,0 +1,86 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "GET /api/v1/rag/status/stream"
+  ],
+  "behavioral_effects": [
+    "GET /api/v1/rag/status/stream returns 200 and streams RAG ingestion status events to an admin instead of raising TypeError and returning 500 on every request.",
+    "RAGStatusService is now built from the shared lifespan RedisClient through the existing get_redis dependency, so each subscriber pub/sub connection comes from the one pool rather than a new client per request. No new lifespan wiring was added - main.py already created and stored the client, and deps.py already exposed it; only this one factory failed to use it.",
+    "Regression proven, not assumed: reverting deps.py to the prior version fails 5 of the 7 new tests with TypeError RAGStatusService.__init__() missing 1 required positional argument client. The 2 auth-gating tests still pass under the revert, because authorization rejects before the service is constructed.",
+    "Verified live against the running dev stack, inside fullstack-app-1 with real Redis - the real get_rag_status_service built the service, publish reported subscriber count 1, and the event arrived decoded as event status id 1. This is the leg a mocked pub/sub cannot prove, namely that RedisClient.raw works against a live connection."
+  ],
+  "compatibility_impact": "No wire-contract change. GET /api/v1/rag/status/stream keeps its path, its text/event-stream media type, and its event shape - event: status, an incrementing id, and the JSON body the worker publishes on the rag_status channel. The only observable difference is that it now returns 200 and streams instead of returning 500 on every request, so the browser EventSource behind frontend/src/app/api/v1/rag/status/stream/route.ts starts receiving events it previously never got. No frontend or proxy change is required.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/api/deps.py",
+    "backend/tests/api/test_rag_status_stream.py"
+  ],
+  "follow_up": [
+    "backend/app/worker/tasks/rag_tasks.py::_notify_ws builds its Redis URL from REDIS_HOST, REDIS_PORT and REDIS_DB without REDIS_PASSWORD, while config.py requires that password in production and settings.REDIS_URL already includes it. In production the publish fails AUTH and is swallowed by a broad except that only logs a warning, so this now-working stream would still show nothing. Separate reason, separate session.",
+    "Consider a test that pins the worker publish and the SSE subscribe against one real Redis, so the two halves of the rag_status channel are covered together rather than each against a mock."
+  ],
+  "id": "2026-08-20-inject-the-shared-lifespan-redis-client-into-ragstatusservice-so",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "No browser or Playwright check. Proving the 200 path through the Next.js proxy end to end needs a real admin JWT, which this session did not mint. The proxy handler was already correct and is unchanged.",
+    "The route tests fake Redis pub/sub. The real-Redis leg was proven by a scratchpad script run inside the app container, which is evidence but not a repository test - nothing in CI pins it.",
+    "The publish side is untouched. Worker-published events were simulated in both the tests and the live check; no test asserts that a real ingestion run reaches a subscriber."
+  ],
+  "manifests_changed": [],
+  "reason": "get_rag_status_service constructed RAGStatusService() with no arguments while its __init__ requires an aioredis.Redis client, so every GET /api/v1/rag/status/stream raised TypeError and returned 500; the browser EventSource silently reconnected, so live RAG ingestion status never reached the UI. Injecting the already-existing lifespan RedisClient via the get_redis dependency makes the stream deliver events without opening a second connection pool.",
+  "risks": [
+    "Each SSE subscriber holds a pub/sub connection from the shared pool for the lifetime of the stream, so many concurrent admin viewers put pressure on that pool. This is not new in kind, but it was previously unreachable because the endpoint always failed before opening anything."
+  ],
+  "rollback": "git revert restores both files and reinstates the 500 on every request to the stream endpoint. Nothing exists outside git to restore - no migration, no data backfill, no Redis state, no config, and no generated manifest moved (governance-sync reported Already in sync; no bytes changed).",
+  "schema_version": 1,
+  "security_impact": "None. Authorization on the endpoint is unchanged - it stays CurrentAdmin-gated, and the new tests pin that an unauthenticated request gets 401 with a WWW-Authenticate challenge and a non-admin request gets 403. No credential, secret, or payload handling changed. The injected client is the same shared lifespan Redis connection already consumed by the auth, health, and oauth routes through the pre-existing get_redis dependency, so no new connection, credential path, or trust boundary is introduced.",
+  "summary": "Inject the shared lifespan Redis client into RAGStatusService so the RAG status SSE stream works",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "ruff check and format clean, All checks passed. The 22 ty diagnostics are pre-existing warnings in unrelated Google-tool scripts; none reference the changed files.",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "605 passed, 13 skipped, 0 failed. Includes the 7 new tests in backend/tests/api/test_rag_status_stream.py.",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check and vitest with ratcheted coverage thresholds, exit 0. No frontend file changed in this session.",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0.",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "external volumes redis-data and docling-models present and protected.",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed.",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skips with no reachable database, which is its documented behaviour. This change alters no schema, so the skip costs no coverage.",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "40 checks, 0 blocking, 7 advisory, exit 0. All 7 advisories are pre-existing and unrelated - no-broken-site-chains on settings/account, two no-dependency-cycles, no-orphaned-surfaces, services-declare-healthchecks on codecov-worker, and two thick-domains-expose-a-facade on auth.py and user.py. None reference the changed files.",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

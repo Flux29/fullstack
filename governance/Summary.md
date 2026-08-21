@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 131)
+## Recent changes (latest 20 of 132)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -91,6 +91,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Install the backend security headers middleware and make SECURITY.md match it
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-install-the-backend-security-headers-middleware-and-make-securit.json`
+- **2026-08-20** — Inject the shared lifespan Redis client into RAGStatusService so the RAG status SSE stream works
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-20-inject-the-shared-lifespan-redis-client-into-ragstatusservice-so.json`
 - **2026-08-20** — Ignore secrets/ and credentials/ in git and Docker build contexts and standardize the Google Drive service-account path
   - Components: backend-api, frontend-app
   - Record: `governance/history/changes/2026-08-20-ignore-secrets-and-credentials-in-git-and-docker-build-contexts.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Close public API authorization gaps: is_demo mass-assignment, message role injection, unauthenticated RAG status stream
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-public-api-authorization-gaps-is-demo-mass-assignment-mess.json`
-- **2026-08-20** — Add the MIT LICENSE ahead of making the repository public
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public.json`
 
 ## Decisions (5)
 

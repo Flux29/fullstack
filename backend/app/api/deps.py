@@ -111,9 +111,14 @@ SyncSourceSvc = Annotated[SyncSourceService, Depends(get_sync_source_service)]
 from app.services.rag_status import RAGStatusService
 
 
-def get_rag_status_service() -> RAGStatusService:
-    """Create RAGStatusService instance (no DB)."""
-    return RAGStatusService()
+def get_rag_status_service(redis: Redis) -> RAGStatusService:
+    """Create RAGStatusService from the shared lifespan Redis client (no DB).
+
+    The SSE stream opens a pub/sub connection per subscriber; taking the
+    lifespan client means those come from the one shared pool rather than a
+    new connection per request.
+    """
+    return RAGStatusService(redis.raw)
 
 
 RAGStatusSvc = Annotated[RAGStatusService, Depends(get_rag_status_service)]

@@ -91,9 +91,15 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Put a least-privilege socket proxy between Traefik and the Docker API
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-put-a-least-privilege-socket-proxy-between-traefik-and-the-docke.json`
+- **2026-08-20** — Make the RAG worker publish status events through settings.REDIS_URL so it authenticates in production
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-20-make-the-rag-worker-publish-status-events-through-settings-redis.json`
 - **2026-08-20** — Install the backend security headers middleware and make SECURITY.md match it
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-install-the-backend-security-headers-middleware-and-make-securit.json`
+- **2026-08-20** — Inject the shared lifespan Redis client into RAGStatusService so the RAG status SSE stream works
+  - Components: backend-api
+  - Record: `governance/history/changes/2026-08-20-inject-the-shared-lifespan-redis-client-into-ragstatusservice-so.json`
 - **2026-08-20** — Ignore secrets/ and credentials/ in git and Docker build contexts and standardize the Google Drive service-account path
   - Components: backend-api, frontend-app
   - Record: `governance/history/changes/2026-08-20-ignore-secrets-and-credentials-in-git-and-docker-build-contexts.json`

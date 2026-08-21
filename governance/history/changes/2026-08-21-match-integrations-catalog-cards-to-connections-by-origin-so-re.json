@@ -1,0 +1,78 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Proxy routes under /api"
+  ],
+  "behavioral_effects": [
+    "A catalog card whose connection is stored with an origin-only URL now reports Connected instead of offering a Connect button that 409s (context7, huggingface, github, exa, deepwiki, coingecko, microsoft-docs, cloudflare-docs, alphavantage, stripe).",
+    "Google cards show Connected rather than a permanent Upgrade to standard API, and the connection row button reads Reauthorize rather than Upgrade, unless the connection really is on a superseded host.",
+    "A catalog entry is now matched to a connection by name first, which is the key the backend enforces uniqueness on, so a card can no longer offer a Connect the backend will reject."
+  ],
+  "compatibility_impact": "None to any wire contract. Frontend-internal helper rename only: catalogBaseUrl (query-stripping) is replaced by catalogOrigin, plus two new exports in the same module. No API, schema, or database change.",
+  "date": "2026-08-21",
+  "files_changed": [
+    "frontend/src/components/settings/mcp-connections-manager.test.tsx",
+    "frontend/src/components/settings/mcp-connections-manager.tsx",
+    "frontend/src/lib/mcp-catalog.test.ts",
+    "frontend/src/lib/mcp-catalog.ts",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [
+    "Forward the backends error body through the Next proxy handlers so a domain error reaches the toast instead of Backend API error: <status>."
+  ],
+  "id": "2026-08-21-match-integrations-catalog-cards-to-connections-by-origin-so-re",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The proxy handler at frontend/src/app/api/me/mcp-connections/route.ts still replaces the backends structured error with Backend API error: 409 Conflict, so any future duplicate-name 409 is still opaque. Same pattern in ~17 proxy handlers; left for its own session.",
+    "Not verified end to end in a browser against the running stack: the Playwright auth setup needs a seeded test user whose password this environment does not have. Verified instead by a jsdom render test of the actual component."
+  ],
+  "manifests_changed": [],
+  "reason": "Commit 60d82cc reduced the plaintext mcp_connections.url column to the origin only (scheme+host+port) and migration 0030 rewrote existing rows, but the Settings > Integrations UI still compares that display URL against the full catalog URL, which carries a path. Every non-OAuth catalog card therefore reports itself unconnected, so clicking Connect re-POSTs a name the backend already holds and the user sees an opaque 409 Conflict; every Google card permanently offers Upgrade to standard API instead of Connected. After this change the card matches the connection it already has.",
+  "risks": [
+    "catalogOrigin duplicates the backends strip_url_credentials rule in TypeScript; the two could drift. They disagree today only on an explicit default port (Python keeps :443, JS drops it), which no catalog URL carries."
+  ],
+  "rollback": "git revert restores the previous behaviour completely - the change is three frontend source files plus one new test file, with no data or schema component. Reverting reinstates the 409 on re-connecting any fixed-URL catalog plugin.",
+  "schema_version": 1,
+  "security_impact": "None. The stored display URL stays origin-only; nothing about credential handling, SSRF validation, or what the API returns changed. The frontend now compares origins rather than full URLs, which is strictly less information than it previously assumed it had.",
+  "summary": "Match Integrations catalog cards to connections by origin so re-connecting a catalog plugin stops 409ing",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "8 files / 47 tests, exit 0; 5 of the new tests fail against the pre-fix matching (verified by temporarily restoring it)",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "prettier --check clean",
+      "id": "frontend-format",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0, 22 pre-existing ty diagnostics unchanged",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "611 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 tests skipped - no live database available in this environment; the change touches no schema",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "external volumes present",
+      "id": "preflight-volumes",
+      "result": "pass"
+    }
+  ]
+}

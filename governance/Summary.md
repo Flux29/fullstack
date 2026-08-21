@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 137)
+## Recent changes (latest 20 of 138)
 
+- **2026-08-21** — Match Integrations catalog cards to connections by origin so re-connecting a catalog plugin stops 409ing
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-21-match-integrations-catalog-cards-to-connections-by-origin-so-re.json`
 - **2026-08-20** — Wire a simplify shrink pass into the gov-change close and make it a ship precondition
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-20-wire-a-simplify-shrink-pass-into-the-gov-change-close-and-make-i.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Format the file-upload proxy route so the frontend format gate passes
   - Components: frontend-app
   - Record: `governance/history/changes/2026-08-20-format-the-file-upload-proxy-route-so-the-frontend-format-gate-p.json`
-- **2026-08-20** — Fix critical security findings: registration role escalation and conversation message IDOR
-  - Components: agents, backend-api
-  - Record: `governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json`
 
 ## Decisions (5)
 

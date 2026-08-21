@@ -29,7 +29,8 @@ import { EmptyState } from "@/components/states";
 import { ApiError } from "@/lib/api-client";
 import { useMcpConnections } from "@/hooks";
 import {
-  catalogBaseUrl,
+  catalogUpgradeAvailable,
+  findCatalogConnection,
   logoDataUri,
   MCP_CATALOG,
   MCP_CATEGORIES,
@@ -255,16 +256,6 @@ export function McpConnectionsManager() {
     if (tools) openToolPicker(connection, tools);
   };
 
-  /** Connection already pointing at this catalog entry, if any.
-   * Fixed-URL entries match by base URL (query ignored); personal-url
-   * entries (e.g. Zapier) match by the connection name. */
-  const connectionFor = (entry: McpCatalogEntry) =>
-    connections.find((c) =>
-      entry.auth === "personal-url" || entry.auth === "oauth"
-        ? c.name === entry.id
-        : catalogBaseUrl(c.url) === catalogBaseUrl(entry.url),
-    ) ?? null;
-
   const doCatalogConnect = async (entry: McpCatalogEntry, secret?: string) => {
     setConnectingId(entry.id);
     try {
@@ -428,7 +419,7 @@ export function McpConnectionsManager() {
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {entries.map((entry) => {
-                      const existing = connectionFor(entry);
+                      const existing = findCatalogConnection(connections, entry);
                       const busy = connectingId === entry.id;
                       // A workspace server claims the tool prefix this entry
                       // would use, so a personal connection under the same name
@@ -438,9 +429,7 @@ export function McpConnectionsManager() {
                       // really connected yet — offer to finish signing in.
                       const needsAuth =
                         existing?.auth_type === "oauth" && !existing.oauth_authorized;
-                      const needsUpgrade = Boolean(
-                        existing && entry.auth === "oauth" && existing.url !== entry.url,
-                      );
+                      const needsUpgrade = existing !== null && catalogUpgradeAvailable(existing);
                       const isOAuth = entry.auth === "oauth";
                       return (
                         <div
@@ -599,10 +588,7 @@ export function McpConnectionsManager() {
                       >
                         {connectingId === connection.name
                           ? "Redirecting…"
-                          : MCP_CATALOG.some(
-                                (entry) =>
-                                  entry.id === connection.name && entry.url !== connection.url,
-                              )
+                          : catalogUpgradeAvailable(connection)
                             ? "Upgrade"
                             : "Reauthorize"}
                       </Button>

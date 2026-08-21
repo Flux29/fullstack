@@ -49,10 +49,61 @@ export interface McpCatalogEntry {
   allowedTools?: string[];
 }
 
-/** Base URL (no query string) — used to match catalog entries to connections. */
-export function catalogBaseUrl(url: string): string {
-  const queryStart = url.indexOf("?");
-  return queryStart === -1 ? url : url.slice(0, queryStart);
+/**
+ * Origin (scheme + host + port) of a connection URL — used to match catalog
+ * entries to connections.
+ *
+ * The backend stores only the origin in the plaintext `url` column that the
+ * API returns (`strip_url_credentials`): a provider's secret can sit in the
+ * query string *or* the path, so everything after the authority is treated as
+ * credential-bearing. Catalog URLs carry a path, so a stored URL can only be
+ * compared to one after both sides are reduced to their origin. Mirrors the
+ * backend helper — keep the two in step.
+ */
+export function catalogOrigin(url: string): string {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return url;
+  }
+}
+
+/** What a stored connection has to carry to be identified as a catalog entry. */
+export interface McpConnectionIdentity {
+  name: string;
+  url: string;
+}
+
+/**
+ * The user's existing connection for *entry*, or null.
+ *
+ * The name is checked first for every entry: the catalog always creates under
+ * the entry id, and the name is what the backend rejects duplicates on — a
+ * card that fails to find its own connection offers a Connect that 409s.
+ * Fixed-URL entries additionally match a hand-added connection by origin;
+ * origin alone would be wrong for the OAuth entries, several of which share
+ * `www.googleapis.com`. Personal-url entries (Zapier) have no catalog URL to
+ * compare at all.
+ */
+export function findCatalogConnection<T extends McpConnectionIdentity>(
+  connections: readonly T[],
+  entry: McpCatalogEntry,
+): T | null {
+  const byName = connections.find((c) => c.name === entry.id) ?? null;
+  if (byName || entry.auth === "oauth" || entry.auth === "personal-url") return byName;
+  return connections.find((c) => catalogOrigin(c.url) === catalogOrigin(entry.url)) ?? null;
+}
+
+/**
+ * True when *connection* still points at a different host than the catalog
+ * now lists for it — an OAuth connection made against a superseded endpoint
+ * (e.g. `mcp.googleapis.com` before the standard API roots), which the user
+ * is offered a one-click re-authorization to move.
+ */
+export function catalogUpgradeAvailable(connection: McpConnectionIdentity): boolean {
+  const entry = MCP_CATALOG.find((candidate) => candidate.id === connection.name);
+  if (!entry || entry.auth !== "oauth") return false;
+  return catalogOrigin(entry.url) !== catalogOrigin(connection.url);
 }
 
 /**

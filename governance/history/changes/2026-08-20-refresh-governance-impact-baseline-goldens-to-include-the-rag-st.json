@@ -1,0 +1,35 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. The goldens now match the live repository graph; the impact engine and its contracts are unchanged.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "tools/repo_governance/tests/golden/impact-baselines/add-route-and-proxy.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/change-nextjs-api-consumer.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-new-chat-new-conversation.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/introduce-dependency-cycle.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/move-governed-subsystem.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/rename-env-var.after.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-refresh-governance-impact-baseline-goldens-to-include-the-rag-st",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Commit 9739577 added frontend/src/app/api/v1/rag/status/stream/route.ts, which the impact engine now correctly reports in scenario answers, but the recorded impact-baseline goldens predate it, so governance-selftest fails 6 scenarios in CI and keeps every main run red",
+  "risks": [],
+  "rollback": "git revert the commit; the six .after.json files return to the pre-route baseline and governance-selftest fails again until re-recorded.",
+  "schema_version": 1,
+  "security_impact": "None. Test fixtures only: recorded impact-baseline goldens updated to include an already-shipped proxy route path; no runtime code, policy, or permission changed.",
+  "summary": "Refresh governance impact-baseline goldens to include the RAG status stream proxy route",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

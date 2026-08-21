@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 131)
+## Recent changes (latest 20 of 132)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -79,6 +79,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
+- **2026-08-20** — Refresh governance impact-baseline goldens to include the RAG status stream proxy route
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-20-refresh-governance-impact-baseline-goldens-to-include-the-rag-st.json`
 - **2026-08-20** — Redact live-host operational details from the Codecov deployment change record
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Close public API authorization gaps: is_demo mass-assignment, message role injection, unauthenticated RAG status stream
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-public-api-authorization-gaps-is-demo-mass-assignment-mess.json`
-- **2026-08-20** — Add the MIT LICENSE ahead of making the repository public
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-20-add-the-mit-license-ahead-of-making-the-repository-public.json`
 
 ## Decisions (5)
 

@@ -80,6 +80,7 @@
     "frontend/src/app/api/me/mcp-connections/route.ts",
     "frontend/src/app/api/v1/agent/models/route.ts",
     "frontend/src/app/api/v1/rag/search/route.ts",
+    "frontend/src/app/api/v1/rag/status/stream/route.ts",
     "frontend/src/app/api/v1/rag/sync/sources/route.ts"
   ],
   "seeds": [

@@ -48,7 +48,9 @@
   "notes": [
     "The chat WebSocket bypasses the proxy layer; see the ws-chat-bypasses-proxy exception. Its consumer is chat-frontend."
   ],
-  "proxy_routes": [],
+  "proxy_routes": [
+    "frontend/src/app/api/v1/rag/status/stream/route.ts"
+  ],
   "seeds": [
     "backend-api",
     "frontend-app"

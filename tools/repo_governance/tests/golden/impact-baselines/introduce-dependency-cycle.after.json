@@ -53,7 +53,9 @@
     "Import graph: 3 module(s) import the changed backend modules (depth <= 1).",
     "The chat WebSocket bypasses the proxy layer; see the ws-chat-bypasses-proxy exception. Its consumer is chat-frontend."
   ],
-  "proxy_routes": [],
+  "proxy_routes": [
+    "frontend/src/app/api/v1/rag/status/stream/route.ts"
+  ],
   "seeds": [
     "backend-api"
   ],

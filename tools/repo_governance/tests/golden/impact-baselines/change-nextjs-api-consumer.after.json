@@ -56,7 +56,8 @@
   ],
   "proxy_routes": [
     "frontend/src/app/api/files/[id]/route.ts",
-    "frontend/src/app/api/files/upload/route.ts"
+    "frontend/src/app/api/files/upload/route.ts",
+    "frontend/src/app/api/v1/rag/status/stream/route.ts"
   ],
   "seeds": [
     "backend-api",

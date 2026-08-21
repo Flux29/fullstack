@@ -21,11 +21,26 @@ from typing import Any
 from repo_governance.config import Context, iter_files
 from repo_governance.io_atomic import read_json
 
-#: The corpus. Everything scanned lives under these repo-relative roots.
-SCAN_ROOTS = (".claude/skills", ".claude/commands", ".claude/rules")
+#: The corpus. Everything scanned lives under these repo-relative roots. `docs/` joined the
+#: corpus because it cites the same territory the skills do and rots the same way, but with
+#: nothing checking it: five sites still named `app/rag/connectors/` two refactors after
+#: that package moved, a howto step instructed editing a file that belongs to the generator
+#: repository rather than this one, and the command reference listed twenty-four Make
+#: targets that do not exist. What is checked differs per root — see `_FENCED_PATH_ROOTS`
+#: and `_BARE_NAME_ROOTS`.
+SCAN_ROOTS = (".claude/skills", ".claude/commands", ".claude/rules", "docs")
 
 #: Checked-out worktree copies are other branches' content, not this tree's claims.
 SKIP_PREFIX = ".claude/worktrees/"
+
+#: Frozen records: documents that describe a past state on purpose, where a citation that
+#: no longer resolves is history rather than rot. The governance blueprint is the
+#: specification this system was adopted from; it describes the repository as it stood
+#: before adoption (pre-commit still under backend/, for one) and proposes the very move
+#: that invalidated the path. Editing it to match today would falsify the record ADR-001
+#: rests on. It also names MCP methods such as `tools/list`, which are wire protocol, not
+#: paths — a shape no positive-classification rule can tell from a deleted directory.
+SKIP_FILES = frozenset({"docs/Fullstack_Agentic_Governance_Blueprint.md"})
 
 #: A token containing any of these is a placeholder or shell fragment, never a citation.
 _PLACEHOLDER = re.compile(r"[<>$={}\[\]()\s]|\.\.\.|…")
@@ -47,6 +62,22 @@ _RELATIVE_ROOTS: dict[str, tuple[str, ...]] = {
 #: bare names as naming-convention examples.
 _BARE_NAME_ROOTS = (".claude/skills/", ".claude/commands/")
 _BARE_NAME = re.compile(r"^[A-Za-z0-9_*.-]+\.(?:py|md|ts|tsx|json|toml|yml|yaml)$")
+
+#: Roots whose fenced blocks hold instructions against files that already exist, so every
+#: word in them is a citation. Prose documentation is excluded: a howto's fenced example
+#: names the file you are about to create, and demanding that it already exist would force
+#: the procedure to be written about some unrelated file that happens to be present.
+_FENCED_PATH_ROOTS = (".claude/",)
+
+#: Fence info strings whose contents are commands a reader will actually run. A `make`
+#: token inside a python or json fence is prose or sample data — "Never make up
+#: information" in a prompt template is not a call to a Makefile target named `up`.
+_SHELL_FENCES = frozenset({"", "bash", "sh", "shell", "console", "shell-session", "zsh", "powershell", "ps1"})
+
+#: Suffixes marking a tracked template whose un-suffixed sibling is gitignored by design.
+#: Derived rather than listed: a hand-maintained set of absent paths grows a false positive
+#: every time a document names a new `.env` variant.
+_TEMPLATE_SUFFIXES = (".example", ".template", ".sample")
 
 _BACKTICK = re.compile(r"`([^`\n]+)`")
 _MD_LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)\)")
@@ -172,6 +203,15 @@ class _Resolver:
     def validator_known(self, slug: str) -> bool:
         return self.validator_ids is None or slug in self.validator_ids
 
+    def absent_by_construction(self, token: str) -> bool:
+        """True when a tracked template sibling explains the absence.
+
+        `backend/.env.example` is committed precisely so `backend/.env` can be gitignored,
+        and any document explaining configuration has to name the file you create from it.
+        Absence is the design here, not rot.
+        """
+        return any(f"{token}{suffix}" in self.files for suffix in _TEMPLATE_SUFFIXES)
+
 
 def _classify_path(token: str, resolver: _Resolver) -> tuple[str, str] | None:
     """Return (kind, detail) when a path-shaped token fails to resolve, else None."""
@@ -179,6 +219,8 @@ def _classify_path(token: str, resolver: _Resolver) -> tuple[str, str] | None:
     if not cleaned or _PLACEHOLDER.search(cleaned):
         return None
     if cleaned.startswith(("-", "/")) or "\\" in cleaned or "://" in cleaned:
+        return None
+    if resolver.absent_by_construction(cleaned):
         return None
     if "/" not in cleaned:
         return None
@@ -308,7 +350,12 @@ def _check_skill_integrity(ctx: Context, resolver: _Resolver) -> list[dict[str, 
     return findings
 
 
-def _scan_file(rel: str, text: str, resolver: _Resolver, *, bare_names: bool) -> list[dict[str, Any]]:
+def _scan_file(rel: str, text: str, resolver: _Resolver) -> list[dict[str, Any]]:
+    # Both policies are functions of the file's location, so they are derived here rather
+    # than passed in: a caller that forgot the keyword would silently apply skill
+    # semantics to a prose document, which is the exact confusion this split exists to end.
+    bare_names = rel.startswith(_BARE_NAME_ROOTS)
+    fenced_paths = rel.startswith(_FENCED_PATH_ROOTS)
     findings: list[dict[str, Any]] = []
     seen: set[tuple[int, str, str]] = set()
 
@@ -331,14 +378,21 @@ def _scan_file(rel: str, text: str, resolver: _Resolver, *, bare_names: bool) ->
                 record(lineno, "unknown-make-target", target, "no such Makefile target")
 
     fenced = False
+    shell_fence = False
     for lineno, line in enumerate(text.splitlines(), 1):
-        if line.lstrip().startswith("```"):
+        stripped = line.lstrip()
+        if stripped.startswith("```"):
+            # A closing fence carries no info string, so this reassignment is only ever
+            # read after the next opening fence has overwritten it.
+            shell_fence = stripped[3:].strip().lower() in _SHELL_FENCES
             fenced = not fenced
             continue
         if fenced:
-            for word in line.split():
-                check_token(lineno, word)
-            check_make(lineno, line)
+            if fenced_paths:
+                for word in line.split():
+                    check_token(lineno, word)
+            if shell_fence:
+                check_make(lineno, line)
             continue
         for span in _BACKTICK.findall(line):
             check_token(lineno, span)
@@ -364,22 +418,22 @@ def analyse_skill_references(ctx: Context) -> dict[str, Any]:
     resolver = _Resolver(files, _makefile_targets(ctx), _validator_ids(ctx))
     commands = _validator_commands(ctx)
 
+    # iter_files, not rglob: it honours EXCLUDED_DIRS and sorts POSIX-normalized, which
+    # matters now that a root is a human-writable tree where a node_modules or .venv could
+    # plausibly land.
     corpus: list[Path] = []
     for root in SCAN_ROOTS:
-        base = ctx.repo_root / Path(root)
-        if base.is_dir():
-            corpus.extend(sorted(base.rglob("*.md")))
+        corpus.extend(iter_files(ctx.repo_root / Path(root), suffixes=(".md",)))
 
     findings: list[dict[str, Any]] = []
     scanned = 0
     for path in corpus:
         rel = path.relative_to(ctx.repo_root).as_posix()
-        if rel.startswith(SKIP_PREFIX):
+        if rel.startswith(SKIP_PREFIX) or rel in SKIP_FILES:
             continue
         scanned += 1
         text = path.read_text(encoding="utf-8", errors="replace")
-        bare_names = rel.startswith(_BARE_NAME_ROOTS)
-        findings.extend(_scan_file(rel, text, resolver, bare_names=bare_names))
+        findings.extend(_scan_file(rel, text, resolver))
         findings.extend(_check_tables(rel, text.splitlines(), resolver, commands))
     findings.extend(_check_skill_integrity(ctx, resolver))
 

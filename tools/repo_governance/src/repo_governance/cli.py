@@ -630,14 +630,14 @@ def skills_check(strict: bool) -> None:
     registry. Unclassifiable tokens are ignored, never flagged: a checker that
     false-positives on prose gets switched off and then catches nothing.
     """
-    from repo_governance.skills import analyse_skill_references
+    from repo_governance.skills import SCAN_ROOTS, analyse_skill_references
 
     report = analyse_skill_references(_context())
     if report["status"] != "ok":
         click.echo(f"Skills check unknown: {report['reason']}")
         raise SystemExit(1)
 
-    click.echo(f"Scanned {report['files_scanned']} file(s) under .claude/")
+    click.echo(f"Scanned {report['files_scanned']} file(s) under {', '.join(SCAN_ROOTS)}")
     for finding in report["findings"]:
         click.echo(f"  {finding['file']}:{finding['line']} [{finding['kind']}] {finding['token']}")
         click.echo(f"    {finding['detail']}")

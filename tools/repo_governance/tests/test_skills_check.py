@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from repo_governance.config import Context
-from repo_governance.skills import analyse_skill_references
+from repo_governance.skills import SKIP_FILES, analyse_skill_references
 
 FRONTMATTER = "---\nname: {name}\ndescription: A test skill.\n---\n"
 
@@ -148,6 +148,76 @@ def test_report_is_deterministic(skills_repo: Path):
     first = json.dumps(_run(skills_repo), sort_keys=True)
     second = json.dumps(_run(skills_repo), sort_keys=True)
     assert first == second
+
+
+def test_docs_prose_citations_are_checked(skills_repo: Path):
+    """The regression this root was added for: a path that moved, still named in prose."""
+    _write(
+        skills_repo,
+        "docs/howto/sync.md",
+        "The registry lives in `app/rag/connectors/__init__.py` today.\n",
+    )
+    report = _run(skills_repo)
+    assert _kinds(report) == [("missing-path", "app/rag/connectors/__init__.py")]
+    assert report["findings"][0]["file"] == "docs/howto/sync.md"
+
+
+def test_docs_relative_paths_resolve_under_backend(skills_repo: Path):
+    _write(skills_repo, "docs/howto/sync.md", "Edit `app/real.py` to add the field.\n")
+    assert _run(skills_repo)["findings"] == []
+
+
+def test_docs_fenced_examples_are_not_citations(skills_repo: Path):
+    """Howtos scaffold files that do not exist yet; fences keep them illustrative."""
+    _write(
+        skills_repo,
+        "docs/howto/endpoint.md",
+        "Real file: `backend/app/real.py`.\n\n"
+        "```python\n# app/schemas/notification.py\nfrom app.db.models.notification import Note\n```\n\n"
+        "```bash\ncat backend/app/invented.py\n```\n",
+    )
+    assert _run(skills_repo)["findings"] == []
+
+
+def test_bare_filenames_are_not_checked_in_docs(skills_repo: Path):
+    """Same rule as rules/: only skills and commands treat a bare name as a citation."""
+    _write(skills_repo, "docs/howto/tasks.md", "Create `ghost_tasks.py` next to the worker.\n")
+    assert _run(skills_repo)["findings"] == []
+
+
+def test_make_token_in_a_non_shell_fence_is_prose(skills_repo: Path):
+    """`Never make up information` inside a prompt template is not a Makefile target."""
+    _skill(
+        skills_repo,
+        "demo",
+        '```python\nPROMPT = """\n- Never make up information\n"""\n```\n\n```bash\nmake lint\n```\n',
+    )
+    assert _run(skills_repo)["findings"] == []
+
+
+def test_a_tracked_template_sibling_explains_absence(skills_repo: Path):
+    """A doc explaining configuration must name backend/.env; it never exists in a checkout."""
+    _write(
+        skills_repo,
+        "docs/config.md",
+        "Copy `backend/.env.example` to `backend/.env`, then edit `backend/.env.local`.\n",
+    )
+    _write(skills_repo, "backend/.env.example", "KEY=\n")
+    _write(skills_repo, "backend/.env.local.example", "KEY=\n")
+    assert _run(skills_repo)["findings"] == []
+
+
+def test_absence_without_a_template_sibling_is_still_flagged(skills_repo: Path):
+    _write(skills_repo, "docs/config.md", "Edit `backend/.secrets` before starting.\n")
+    assert _kinds(_run(skills_repo)) == [("missing-path", "backend/.secrets")]
+
+
+def test_frozen_specifications_are_skipped(skills_repo: Path):
+    """A record of a past state is history, not rot — see SKIP_FILES."""
+    for rel in SKIP_FILES:
+        _write(skills_repo, rel, "Hooks live in `backend/.pre-commit-config.yaml`.\n")
+    report = _run(skills_repo)
+    assert report["findings"] == []
 
 
 def test_real_repository_corpus_has_zero_findings(real_context: Context):

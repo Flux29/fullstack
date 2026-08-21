@@ -125,18 +125,7 @@ Once registered, the connector is automatically available to:
 - **API** — `POST /api/v1/rag/sync/sources` endpoint
 - **UI** — appears in the sync source management interface
 
-### 4. Add to post_gen_project.py cleanup
-
-In `template/hooks/post_gen_project.py`, add a conditional removal so the
-connector file is deleted when the feature is not selected during project
-generation:
-
-```python
-if not use_my_source_ingestion:
-    remove_path("backend/app/services/rag/connectors/my_source.py")
-```
-
-### 5. Use it
+### 4. Use it
 
 **Via CLI:**
 

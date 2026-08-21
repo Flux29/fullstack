@@ -1,0 +1,96 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "make governance-skills-check, and the CI governance job that runs it, now scans docs/ - 44 files instead of 26 - and fails on any prose citation or markdown link naming a path, Make target, or validator ID that does not exist.",
+    "Inside fenced code blocks, path checks now apply only under .claude/, and Make-target checks only inside shell-tagged fences. A howto scaffold naming the file you are about to create, or a prompt template containing the word make, no longer reads as a citation.",
+    "A cited path whose .example, .template, or .sample sibling is tracked (backend/.env) is accepted as absent by construction instead of flagged.",
+    "docs/commands.md and docs/permissions.md no longer advertise 27 Make targets that do not exist; docs/testing.md describes the mocked anyio suite rather than a live db_session fixture and Starlette TestClient.",
+    "make quickstart's SOURCE_PLAN_AUDITED gate and make help point at MANUAL_STEPS.md instead of the deleted Docker integration plan.",
+    "docs/Critique_Response, docs/Full_Stack_Docker_Integration_Plan.md, and docs/Governance_Blueprint_Repo_Review.md are deleted; ADR-001 now carries the verified-evidence summary the review used to hold."
+  ],
+  "compatibility_impact": "Stricter gate, no contract break. The skills-check corpus widens from 26 to 44 files, so the CI governance job now fails on a stale citation under docs/ that previously passed silently. No schema, manifest shape or public interface changed; _scan_file lost two keyword parameters and derives them from rel instead, which is internal with one call site.",
+  "date": "2026-08-21",
+  "files_changed": [
+    ".claude/.governance.json",
+    "Makefile",
+    "README.md",
+    "docs/Critique_Response",
+    "docs/Full_Stack_Docker_Integration_Plan.md",
+    "docs/Governance_Blueprint_Repo_Review.md",
+    "docs/commands.md",
+    "docs/howto/add-rag-source.md",
+    "docs/howto/configure-sync-sources.md",
+    "docs/permissions.md",
+    "docs/testing.md",
+    "governance/history/decisions/ADR-001-governance-adoption-baseline.md",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/validators.json",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/skills.py",
+    "tools/repo_governance/tests/test_skills_check.py"
+  ],
+  "follow_up": [
+    "Documentation pipeline plan phases 1-3: ADR front matter becomes the authoritative ADR-to-component link, HOWTOs get front matter and a generated index, docs/ is restructured. Tracked in the owner-local plan file Documentation.md.",
+    "Teach _classify_path the MCP method-name shape (tools/list, resources/read, prompts/get) before Phase 3 adds docs/howto/add-mcp-server.md; then drop the blueprint from SKIP_FILES or move the exemption into exceptions.json with a review trigger.",
+    "exceptions.json has four consumers with two ad-hoc scope-matching implementations (checks/architecture.py substring, checks/graph.py prefix) and no shared helper. Extract one before adding a fifth consumer - its own governed change, since tightening the substring semantics may surface healthcheck findings currently excused by accident.",
+    "SKIP_PREFIX (.claude/worktrees/) is unreachable - no scan root contains it - and worktrees is absent from EXCLUDED_DIRS, so iter_files over .claude/ would index another branch's files once a worktree is populated. Pre-existing; fix alongside a per-root policy table when a fifth scan root lands.",
+    "_file_index spends roughly 58 percent of skills-check wall time on two sequential git subprocesses; a .git stat or a cached toplevel would halve it. Pre-existing and negligible at 44 files.",
+    "SOURCE_PLAN_AUDITED keeps its name although it now gates MANUAL_STEPS.md; renaming a documented command is a separate decision.",
+    "The locally-removed / discard-upstream generator_provenance values belong to Phase 3, which deletes generator-owned docs (adding_features.md, patterns.md, configuration.md)."
+  ],
+  "id": "2026-08-21-bring-docs-under-the-citation-checker-and-retire-three-supersede",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "governance-check was observed with exactly one blocking finding - this record's own absence, which governance-sync folds in; the clean post-finish run is reported in the session summary rather than here.",
+    "MCP wire-protocol method names such as tools/list are indistinguishable from a deleted tools/ subdirectory under positive classification, so the blueprint is skipped whole instead of the classifier learning the shape.",
+    "No template-upgrade dry-run was executed; the three new generator_provenance records are asserted from the 2026-08-10 upgrade's observed behaviour, not verified against a fresh upstream release.",
+    "Phase 0 as planned also added locally-removed / discard-upstream provenance values and a template-upgrade skill note. Both were dropped: all three deleted documents are local-origin, so upstream has nothing to re-propose, and the skill already routes unrecorded files correctly."
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "reason": "docs/ sat outside skills-check's scan roots, so stale citations accumulated uncaught: five sites in the sync-connector howtos name app/rag/connectors/ which moved to app/services/rag/connectors/, add-rag-source.md instructs editing template/hooks/post_gen_project.py which belongs to the generator repository rather than this one, and docs/testing.md documents a live db_session fixture and Starlette TestClient that the mocked anyio suite does not have and .claude/rules/testing.md forbids. Alongside them three review documents from the 2026-08-06 governance adoption still read as live references. Scanning docs/ makes a stale citation a check failure instead of a silent trap, and generator_provenance records let the next template upgrade classify these deletions instead of re-proposing the files.",
+  "risks": [
+    "SKIP_FILES exempts the whole governance blueprint from citation checks in checker source rather than in exceptions.json, so the exemption has no review trigger and is invisible to Summary.md. Accepted for this session because exceptions.json has no shared scope-matching API for a new consumer; see follow-up."
+  ],
+  "rollback": "git revert the commit, then make governance-sync to regenerate components.json and repository.json. The revert restores the three deleted documents and the stale citations with them, and reverts ownership.json and validators.json - both protected-kernel files, named deliberately. Nothing else a revert would not restore.",
+  "schema_version": 1,
+  "security_impact": "None. The citation checker is read-only and reports only file names, Make target names and validator IDs; no configuration value reaches governance output. The three deleted documents were review prose and held no credentials.",
+  "summary": "Bring docs/ under the citation checker and retire three superseded governance-adoption documents",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "governance-lint",
+      "result": "pass"
+    },
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

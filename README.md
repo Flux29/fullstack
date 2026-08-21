@@ -45,9 +45,9 @@ $env:ADMIN_PASSWORD="use-a-strong-local-password"
 make quickstart SOURCE_PLAN_AUDITED=1
 ```
 
-Set `SOURCE_PLAN_AUDITED=1` only after reconciling Sections 1–15 of
-`docs/Full_Stack_Docker_Integration_Plan.md`. After the first bootstrap, day-to-day is just
-`make dev`.
+Set `SOURCE_PLAN_AUDITED=1` only after working through `MANUAL_STEPS.md` — the secrets,
+database, model-runner, and sidecar prerequisites that no target can provision for you.
+After the first bootstrap, day-to-day is just `make dev`.
 
 ### Subsequent runs
 

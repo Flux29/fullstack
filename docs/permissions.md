@@ -212,15 +212,12 @@ uv run fullstack user create-admin --email admin@example.com --password secret
 
 # Change user role
 uv run fullstack user set-role user@example.com --role admin
+
+# List existing users
+uv run fullstack user list
 ```
 
-### Via Make
-
-```bash
-make create-admin    # Interactive admin creation
-make user-create     # Interactive user creation
-make user-list       # List all users
-```
+There are no Make targets for user management — the CLI above is the whole surface.
 
 ### Via Quickstart
 

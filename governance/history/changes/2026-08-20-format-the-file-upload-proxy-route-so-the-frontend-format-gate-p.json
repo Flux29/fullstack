@@ -1,0 +1,30 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. The compiled output is identical in behaviour; the change only satisfies the frontend format gate.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "frontend/src/app/api/files/upload/route.ts"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-format-the-file-upload-proxy-route-so-the-frontend-format-gate-p",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "The security-headers session (4cc50a8) edited frontend/src/app/api/files/upload/route.ts without running prettier, and the format-check CI step sat masked behind the failing Codecov upload step in every run since, so the debt only surfaced once Codecov was reactivated",
+  "risks": [],
+  "rollback": "git revert the commit; the file returns to its unformatted state and the format-check CI step fails again.",
+  "schema_version": 1,
+  "security_impact": "None. Whitespace-only prettier reflow of one proxy route; no logic, headers, or auth behaviour changed.",
+  "summary": "Format the file-upload proxy route so the frontend format gate passes",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

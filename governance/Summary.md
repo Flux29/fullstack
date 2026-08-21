@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 132)
+## Recent changes (latest 20 of 133)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -100,6 +100,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Govern the LICENSE file in the read-surface so coverage analysis is clean again
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-govern-the-license-file-in-the-read-surface-so-coverage-analysis.json`
+- **2026-08-20** — Format the file-upload proxy route so the frontend format gate passes
+  - Components: frontend-app
+  - Record: `governance/history/changes/2026-08-20-format-the-file-upload-proxy-route-so-the-frontend-format-gate-p.json`
 - **2026-08-20** — Fix critical security findings: registration role escalation and conversation message IDOR
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-20-fix-critical-security-findings-registration-role-escalation-and.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Close the three standing MCP security findings
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
-- **2026-08-20** — Close public API authorization gaps: is_demo mass-assignment, message role injection, unauthenticated RAG status stream
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-close-public-api-authorization-gaps-is-demo-mass-assignment-mess.json`
 
 ## Decisions (5)
 

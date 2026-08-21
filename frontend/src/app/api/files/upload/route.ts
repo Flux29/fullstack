@@ -25,7 +25,10 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ detail: "Upload failed" }));
-      return NextResponse.json(error, { status: response.status, headers: FILE_PROXY_JSON_HEADERS });
+      return NextResponse.json(error, {
+        status: response.status,
+        headers: FILE_PROXY_JSON_HEADERS,
+      });
     }
 
     const data = await response.json();

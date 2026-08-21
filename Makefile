@@ -128,9 +128,9 @@ prod-down:
 prod-logs:
 	$(COMPOSE_PROD) --profile frontend --profile edge --profile codecov logs -f
 
-# The authoritative source-plan audit is a deliberate human gate.
+# The manual-prerequisites audit is a deliberate human gate.
 quickstart:
-	@powershell.exe -NoProfile -Command "if ('$(SOURCE_PLAN_AUDITED)' -ne '1') { throw 'Set SOURCE_PLAN_AUDITED=1 only after the Sections 1-15 audit.' }"
+	@powershell.exe -NoProfile -Command "if ('$(SOURCE_PLAN_AUDITED)' -ne '1') { throw 'Set SOURCE_PLAN_AUDITED=1 only after working through MANUAL_STEPS.md.' }"
 	$(MAKE) bootstrap
 
 seed:
@@ -360,6 +360,6 @@ help:
 	@echo "Lifecycle: dev-down dev-logs stage prod prod-codecov docker-clean (preserves data)"
 	@echo "Validation: lint test test-cov frontend-test frontend-format-check frontend-build playwright audit compose-check hygiene secret-scan"
 	@echo "Governance: governance-preflight governance-context governance-sync governance-check (see AGENTS.md)"
-	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, audit source-plan Sections 1-15, then make quickstart SOURCE_PLAN_AUDITED=1"
+	@echo "First bootstrap: set ADMIN_EMAIL/ADMIN_PASSWORD, work through MANUAL_STEPS.md, then make quickstart SOURCE_PLAN_AUDITED=1"
 	@echo "Local API: make run (port 8100); Taskiq concurrency defaults to 1"
 	@echo "External redis-data and docling-models volumes are never removed by normal targets."

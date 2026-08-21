@@ -121,9 +121,40 @@ outside the repository tree.
 - The known findings registered alongside this ADR (see the adoption change record) are the
   honest starting state; checks report them as known, not as newly discovered drift.
 
+## Evidence at adoption
+
+The blueprint was reconciled against the working tree before adoption. These claims were
+verified in code, and each is the reason the corresponding check cross-checks rather than
+re-declares the fact:
+
+- **Redis logical databases** are allocated 0 general / 1 Taskiq broker / 2 results /
+  3 embedding cache — declared in `backend/app/core/config.py`, consumed in
+  `backend/app/worker/taskiq_app.py` and `backend/app/services/rag/embedding_cache.py`.
+- **The 1024-dimension embedding contract is already triple-enforced**: the settings
+  default, a hard guard plus `vector(1024)` DDL and HNSW index in
+  `backend/app/services/rag/vectorstore.py`, and a CHECK constraint in
+  `backend/alembic/versions/0027_embedding_cache_and_rag_metadata.py`. Per-collection
+  fingerprints are persisted and revalidated on open. This is what ADR-002 formalizes.
+- **General and RAG object storage are separate buckets** with separate credentials and
+  endpoints, not one bucket with prefixes.
+- **GitHub MCP read-only is enforced at three independent layers** — container command
+  flags in Compose, a settings-validator allowlist frozenset, and a runtime post-probe
+  assert in `backend/app/agents/mcp.py`. Drift between any two layers is the finding worth
+  reporting; re-stating the policy in governance would have created a fourth copy.
+- **The Compose profile matrix was already validated** by `make compose-check` and
+  `make compose-check-prod`, and production images were already digest-pinned. Governance
+  wraps these targets instead of reimplementing them.
+- **Structured evaluation already had a working beachhead** in `backend/evals/`
+  (pydantic-evals, exercised by the normal test run), which is why evaluation is treated
+  as an existing mechanism to extend rather than a new one to build.
+
+The blueprint also cited example paths that do not exist in this repository — notably
+`backend/app/rag/` (really `backend/app/services/rag/`) and `frontend/src/features/chat/`
+(the chat feature spans four roots, which is why `chat-frontend` is declared in
+`architectural-intent.json` rather than annotated in a directory).
+
 ## References
 
 - `docs/Fullstack_Agentic_Governance_Blueprint.md` — the specification.
-- `docs/Governance_Blueprint_Repo_Review.md` — the verified evidence trail behind it.
 - `governance/history/changes/2026-08-06-governance-adoption-baseline.json` — the findings
   registry and the file-level record of this commit.

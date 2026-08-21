@@ -18,21 +18,21 @@ Run these from the project root directory.
 
 | Command | Description |
 |---------|-------------|
-| `make run` | Start development server with hot reload |
-| `make run-prod` | Start production server (0.0.0.0:8000) |
-| `make routes` | Show all registered API routes |
+| `make run` | Start development server with hot reload (port 8100) |
+| `make run-prod` | Start server bound to all interfaces (0.0.0.0:8100) |
 | `make test` | Run tests with verbose output |
-| `make test-cov` | Run tests with coverage report (HTML + terminal) |
+| `make test-cov` | Run tests with coverage report (terminal + XML) |
 | `make format` | Auto-format code with ruff |
 | `make lint` | Lint and type-check code (ruff + ty) |
-| `make clean` | Remove cache files (__pycache__, .pytest_cache, etc.) |
+| `make hygiene` | Pre-commit hooks tree-wide, plus workflow and Dockerfile linting |
+
+To list registered API routes, use the project CLI: `uv run fullstack server routes`.
 
 
 ### Database
 
 | Command | Description |
 |---------|-------------|
-| `make db-init` | Start PostgreSQL + create initial migration + apply |
 | `make db-migrate` | Create new migration (prompts for message) |
 | `make db-upgrade` | Apply pending migrations |
 | `make db-downgrade` | Rollback last migration |
@@ -41,11 +41,14 @@ Run these from the project root directory.
 
 ### Users
 
+User management has no Make targets; it lives in the project CLI:
+
 | Command | Description |
 |---------|-------------|
-| `make create-admin` | Create admin user (interactive) |
-| `make user-create` | Create new user (interactive) |
-| `make user-list` | List all users |
+| `uv run fullstack user create` | Create a user (prompts for email/password) |
+| `uv run fullstack user create-admin` | Create an admin user |
+| `uv run fullstack user set-role` | Change a user's role |
+| `uv run fullstack user list` | List all users |
 
 ### Taskiq
 
@@ -54,38 +57,40 @@ Run these from the project root directory.
 | `make taskiq-worker` | Start Taskiq worker |
 | `make taskiq-scheduler` | Start Taskiq scheduler |
 
-### Docker (Development)
+### Compose stacks (development)
+
+Stacks are selected by target, not by profile flags you pass yourself.
 
 | Command | Description |
 |---------|-------------|
-| `make docker-up` | Start all backend services |
-| `make docker-down` | Stop all services |
-| `make docker-logs` | Follow backend logs |
-| `make docker-build` | Build backend images |
-| `make docker-shell` | Open shell in app container |
-| `make docker-frontend` | Start frontend (separate compose) |
-| `make docker-frontend-down` | Stop frontend |
-| `make docker-frontend-logs` | Follow frontend logs |
-| `make docker-frontend-build` | Build frontend image |
-| `make docker-db` | Start only PostgreSQL |
-| `make docker-db-stop` | Stop PostgreSQL |
-| `make docker-redis` | Start only Redis |
-| `make docker-redis-stop` | Stop Redis |
+| `make dev` | Start the development stack |
+| `make dev-frontend` | Start the development stack with the frontend |
+| `make dev-mcp` | Start the development stack with the MCP sidecars |
+| `make dev-all` | Start everything the development stack can run |
+| `make dev-db-ui` | Start the database UI alongside the development stack |
+| `make dev-logs` | Follow development stack logs |
+| `make dev-rebuild` | Rebuild and restart the development stack |
+| `make dev-down` | Stop the development stack |
 
-### Docker (Production with Traefik)
+### Compose stacks (staging and production)
 
 | Command | Description |
 |---------|-------------|
-| `make docker-prod` | Start production stack |
-| `make docker-prod-down` | Stop production stack |
-| `make docker-prod-logs` | Follow production logs |
-| `make docker-prod-build` | Build production images |
+| `make stage` | Start the staging stack |
+| `make stage-down` | Stop the staging stack |
+| `make prod` | Start the production stack (applies migrations) |
+| `make prod-logs` | Follow production logs |
+| `make prod-down` | Stop the production stack |
+| `make prod-codecov` | Start the production stack with the self-hosted Codecov profile |
 
-### Vercel (Frontend Deployment)
+### Cleanup
 
 | Command | Description |
 |---------|-------------|
-| `make vercel-deploy` | Deploy frontend to Vercel |
+| `make docker-clean` | Remove containers and unnamed volumes, preserving data volumes |
+| `make docker-reset` | Full reset — destroys stack state |
+
+The external `redis-data` and `docling-models` volumes are never removed by normal targets.
 
 ---
 

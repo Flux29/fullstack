@@ -1,0 +1,98 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "GET /api/v1/rag/status/stream"
+  ],
+  "behavioral_effects": [
+    "The RAG worker publishes rag_status events through settings.REDIS_URL, so it authenticates on a password-protected Redis instead of failing AUTH and swallowing the error into a warning log.",
+    "Proven decisively against a throwaway password-protected Redis on the fullstack_data-internal network - the old hand-built URL raised redis AuthenticationError while settings.REDIS_URL published successfully, and the real _notify_ws then delivered to a real subscriber.",
+    "Closes the loop opened by the 2026-08-20 consumer-side fix. GET /api/v1/rag/status/stream had a working subscriber but, in any password-protected deployment, no reachable publisher.",
+    "Regression proven, not assumed: reverting rag_tasks.py fails 2 of the 6 new tests with the password visibly absent - redis://redis:6379/0 against the expected redis://:<secret>@redis:6379/0. The other 4, covering channel, payload, connection close and error swallowing, correctly still pass because they do not concern the URL.",
+    "Net-negative diff: the three-line hand-built f-string becomes one call, and no import changed."
+  ],
+  "compatibility_impact": "None to any wire contract or message shape. The rag_status channel, the JSON payload of document_id, status and filename, and the best-effort semantics are all unchanged - only the connection URL differs. On an unauthenticated Redis settings.REDIS_URL produces exactly the string the hand-built expression produced, so local and development behaviour is byte-identical, and a test pins that. On a password-protected Redis the publish starts succeeding where it previously raised AuthenticationError.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "backend/app/worker/tasks/rag_tasks.py",
+    "backend/tests/test_worker_taskiq.py"
+  ],
+  "follow_up": [
+    "_notify_ws is called only once in the module, at the success path in _run_ingestion with status done. The except branch updates the database row to error but publishes nothing, so an admin watching the SSE stream sees completions appear and failures never arrive at all. Decide whether failures should publish, then wire it.",
+    "The best-effort except in _notify_ws logs at warning level without the document id in structured context, so a publish failure is hard to attribute to a document. Consider logger.exception or structured fields.",
+    "TASKIQ_BROKER_URL, TASKIQ_RESULT_BACKEND and EMBEDDING_CACHE_URL are separate settings carrying their own literal redis:// defaults that also omit credentials. They are configured explicitly per deployment rather than derived from REDIS_PASSWORD, so they are not the same defect, but they deserve an audit for the same class of misconfiguration."
+  ],
+  "id": "2026-08-20-make-the-rag-worker-publish-status-events-through-settings-redis",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Deliberately did not give the worker a shared or pooled Redis client, though the follow-up invited that. _notify_ws fires once per completed ingestion, which is negligible beside the ingestion itself; the worker has no request lifecycle, so a module-level client would need taskiq startup and shutdown wiring across both the worker and the scheduler process; and a fresh connection per notification means a stale pooled connection cannot silently break every subsequent notification, which is exactly the class of silent failure these two sessions have been repairing. Worth revisiting only if notification volume rises.",
+    "The password path is covered by a unit test and by the live throwaway-Redis check, but by nothing in CI - the repository suite has no password-protected Redis to run against, so a future regression would be caught by the unit test only.",
+    "No full ingestion was driven end to end. Both live checks called _notify_ws directly rather than pushing a document through _run_ingestion."
+  ],
+  "manifests_changed": [],
+  "reason": "_notify_ws in backend/app/worker/tasks/rag_tasks.py built its Redis URL by hand from REDIS_HOST, REDIS_PORT and REDIS_DB, omitting REDIS_PASSWORD, while config.py makes that password mandatory in production and settings.REDIS_URL already assembles it correctly. In any password-protected deployment the publish fails Redis AUTH, the failure is swallowed by a best-effort except that only logs a warning, and the admin SSE stream at GET /api/v1/rag/status/stream stays permanently empty even though the endpoint itself now works. Using settings.REDIS_URL makes the worker authenticate the same way every other Redis consumer in the codebase does.",
+  "risks": [
+    "Low. On an unauthenticated Redis the behaviour is unchanged and a test pins that. The residual risk is that the credential is now part of a connection URL inside this module, so a future change that logs the URL would leak it. The existing warning log does not include it."
+  ],
+  "rollback": "git revert restores both files and reinstates the anonymous connection. Nothing exists outside git to restore - no migration, no data backfill, no config, and no generated manifest moved (governance-sync reported Already in sync; no bytes changed). The throwaway password-protected Redis container used for verification was stopped and removed inside the session and forms no part of the change.",
+  "schema_version": 1,
+  "security_impact": "Positive and narrow. The worker now authenticates to Redis instead of connecting anonymously. No new secret is introduced or stored - settings.REDIS_URL is the existing canonical builder already used by the application lifespan client, and the credential comes from the existing REDIS_PASSWORD setting. The password is now present in a connection URL held in a local variable for the duration of one publish; it is never logged, and the live verification output masked it before printing. The failure mode this removes is worth naming: an operator could previously believe Redis was password-protected while this code path silently failed to authenticate, so a real misconfiguration stayed hidden behind a warning-level log line.",
+  "summary": "Make the RAG worker publish status events through settings.REDIS_URL so it authenticates in production",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "green after two ruff autofixes on the test file - import order (taskiq_app sorts before tasks) and formatting. The 22 ty diagnostics are pre-existing warnings in unrelated Google-tool scripts.",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "611 passed, 13 skipped, 0 failed - up from 605 by the 6 new tests in tests/test_worker_taskiq.py.",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint, type-check and vitest with coverage thresholds, exit 0. No frontend file changed.",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0.",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "external volumes redis-data and docling-models present and protected.",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "Docker Model Runner ready, native vector length 2560 against application target 1024, reranker loaded.",
+      "id": "preflight-model",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "10 passed.",
+      "id": "rag-docker-integration",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed.",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skips with no reachable database, its documented behaviour. This change alters no schema.",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "40 checks, 0 blocking, 7 advisory, exit 0. The 7 advisories are identical to the pre-change baseline. One names app.worker.tasks.rag_tasks as a member of a pre-existing import-time cycle, but this change adds and removes no import, so the cycle is untouched.",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

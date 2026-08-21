@@ -256,9 +256,7 @@ async def _update_status(
 
 async def _notify_ws(rag_document_id: str, status: str, filename: str) -> None:
     try:
-        r = aioredis.from_url(
-            f"redis://{settings.REDIS_HOST}:{settings.REDIS_PORT}/{settings.REDIS_DB}"
-        )  # type: ignore[no-untyped-call]
+        r = aioredis.from_url(settings.REDIS_URL)  # type: ignore[no-untyped-call]
         await r.publish(
             "rag_status",
             json.dumps(

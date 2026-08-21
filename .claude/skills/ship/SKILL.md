@@ -17,6 +17,8 @@ contain.
 2. No unfinished second session: one reason per commit, same as one reason per session.
 3. `git status` shows only the files this session touched. Anything unexpected is
    someone else's work — stop and ask, do not sweep it in.
+4. The shrink pass ran: `simplify` reviewed the session diff during GOV-CLOSE, and its
+   outcome — changes applied, or nothing to shrink — is stated in the session report.
 
 ## Sequence
 

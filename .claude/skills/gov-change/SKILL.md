@@ -54,6 +54,12 @@ is incomplete — widen the paths or say so in the final report.
 
 ## GOV-CLOSE
 
+**Shrink pass first.** Before anything else in the close, invoke the `simplify` skill on the
+session diff. It hunts reuse, consolidation, and dead weight in exactly the code this session
+touched — the diff is complete, so this is the cheapest moment to delete from it. If the pass
+changes nothing, say so in the report. If the session added files, this is where "why could
+nothing be extended instead" gets answered honestly rather than asserted.
+
 ```bash
 make governance-sync
 make governance-impact PATHS="<paths>"

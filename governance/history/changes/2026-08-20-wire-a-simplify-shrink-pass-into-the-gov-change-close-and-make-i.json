@@ -1,0 +1,31 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. The gov-change close sequence gains a review step; every existing command, validator ID, and Make target citation is unchanged.",
+  "date": "2026-08-20",
+  "files_changed": [
+    ".claude/skills/gov-change/SKILL.md",
+    ".claude/skills/ship/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-wire-a-simplify-shrink-pass-into-the-gov-change-close-and-make-i",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Sessions were adding files and leaving consolidation debt that only surfaced in later sessions as bugs and drift, because nothing in the close sequence forced a reuse-and-simplification review of the session diff before the record was written and the commit pushed",
+  "risks": [],
+  "rollback": "git revert the commit; the close sequence and ship preconditions return to having no shrink-pass step.",
+  "schema_version": 1,
+  "security_impact": "None. Prose-only edits to two agent skill files; no permission, policy, hook, or runtime surface changed.",
+  "summary": "Wire a simplify shrink pass into the gov-change close and make it a ship precondition",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, backendErrorDetail } from "@/lib/server-api";
 
 interface RouteParams {
   params: Promise<{ name: string }>;
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to fetch collection info" },
+        { detail: backendErrorDetail(error, "Failed to fetch collection info") },
         { status: error.status },
       );
     }
@@ -44,7 +44,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to delete collection" },
+        { detail: backendErrorDetail(error, "Failed to delete collection") },
         { status: error.status },
       );
     }

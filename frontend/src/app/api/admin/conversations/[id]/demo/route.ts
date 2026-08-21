@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, backendErrorDetail } from "@/lib/server-api";
 import { requireAdmin } from "@/lib/admin-auth";
 
 interface RouteParams {
@@ -26,7 +26,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to update demo status" },
+        { detail: backendErrorDetail(error, "Failed to update demo status") },
         { status: error.status },
       );
     }

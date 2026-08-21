@@ -1,0 +1,119 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Proxy routes under /api"
+  ],
+  "behavioral_effects": [
+    "A backend 4xx now reaches the browser with the backend's own message. Proved live against the running backend: POST /api/auth/password-reset/confirm with an invalid token returned {detail: 'Backend API error: 401 Unauthorized'} from the pre-change container on :3000 and {detail: 'Reset link is invalid or has expired'} from a source-backed Next dev server on :3100.",
+    "Request validation failures surface FastAPI's per-field messages joined with '; ' instead of 'Backend API error: 422 Unprocessable Entity'. Proved live on POST /api/contact with an invalid body.",
+    "5xx keeps the caller's generic message and ignores the backend body, so proxy handlers cannot leak internal detail on an unexpected server error.",
+    "auth/login, auth/register and auth/oauth-callback dropped their hand-rolled extraction for the shared helper. register gains the domain-message branch it never had, so an AlreadyExistsError on signup now shows 'Email already registered' rather than 'Registration failed'."
+  ],
+  "compatibility_impact": "None. The proxy response contract is unchanged: still {detail: string} at the same HTTP status, which is exactly what api-client.ts reads at frontend/src/lib/api-client.ts:108. Only the content of the string changes, so no caller needs updating.",
+  "date": "2026-08-21",
+  "files_changed": [
+    "frontend/src/app/api/admin/conversations/[id]/demo/route.ts",
+    "frontend/src/app/api/admin/conversations/[id]/route.ts",
+    "frontend/src/app/api/admin/conversations/route.ts",
+    "frontend/src/app/api/admin/conversations/users/route.ts",
+    "frontend/src/app/api/admin/ratings/export/route.ts",
+    "frontend/src/app/api/admin/ratings/route.ts",
+    "frontend/src/app/api/admin/ratings/summary/route.ts",
+    "frontend/src/app/api/admin/stats/route.ts",
+    "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+    "frontend/src/app/api/admin/users/[userId]/route.ts",
+    "frontend/src/app/api/admin/users/route.ts",
+    "frontend/src/app/api/auth/login/route.ts",
+    "frontend/src/app/api/auth/magic-link/request/route.ts",
+    "frontend/src/app/api/auth/magic-link/verify/route.ts",
+    "frontend/src/app/api/auth/oauth-callback/route.ts",
+    "frontend/src/app/api/auth/password-reset/confirm/route.ts",
+    "frontend/src/app/api/auth/password-reset/request/route.ts",
+    "frontend/src/app/api/auth/register/route.ts",
+    "frontend/src/app/api/contact/route.ts",
+    "frontend/src/app/api/conversations/[id]/messages/route.ts",
+    "frontend/src/app/api/conversations/[id]/route.ts",
+    "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+    "frontend/src/app/api/conversations/[id]/shares/route.ts",
+    "frontend/src/app/api/conversations/export/route.ts",
+    "frontend/src/app/api/conversations/route.ts",
+    "frontend/src/app/api/conversations/shared-with-me/route.ts",
+    "frontend/src/app/api/conversations/tool-stats/route.ts",
+    "frontend/src/app/api/me/mcp-connections/[id]/route.ts",
+    "frontend/src/app/api/me/mcp-connections/[id]/test/route.ts",
+    "frontend/src/app/api/me/mcp-connections/oauth/start/route.ts",
+    "frontend/src/app/api/me/mcp-connections/route.ts",
+    "frontend/src/app/api/me/mcp-connections/workspace/route.ts",
+    "frontend/src/app/api/me/slash-commands/[id]/route.ts",
+    "frontend/src/app/api/me/slash-commands/builtin/route.ts",
+    "frontend/src/app/api/me/slash-commands/custom/route.ts",
+    "frontend/src/app/api/me/slash-commands/route.ts",
+    "frontend/src/app/api/sessions/[id]/route.ts",
+    "frontend/src/app/api/sessions/route.ts",
+    "frontend/src/app/api/users/me/route.ts",
+    "frontend/src/app/api/v1/agent/models/route.ts",
+    "frontend/src/app/api/v1/rag/collections/[name]/documents/[documentId]/route.ts",
+    "frontend/src/app/api/v1/rag/collections/[name]/documents/route.ts",
+    "frontend/src/app/api/v1/rag/collections/[name]/info/route.ts",
+    "frontend/src/app/api/v1/rag/collections/[name]/route.ts",
+    "frontend/src/app/api/v1/rag/collections/route.ts",
+    "frontend/src/app/api/v1/rag/documents/[docId]/route.ts",
+    "frontend/src/app/api/v1/rag/documents/route.ts",
+    "frontend/src/app/api/v1/rag/search/route.ts",
+    "frontend/src/app/api/v1/rag/supported-formats/route.ts",
+    "frontend/src/app/api/v1/rag/sync/[syncId]/route.ts",
+    "frontend/src/app/api/v1/rag/sync/connectors/route.ts",
+    "frontend/src/app/api/v1/rag/sync/local/route.ts",
+    "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/clone/route.ts",
+    "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/route.ts",
+    "frontend/src/app/api/v1/rag/sync/sources/[sourceId]/trigger/route.ts",
+    "frontend/src/app/api/v1/rag/sync/sources/route.ts",
+    "frontend/src/lib/server-api.test.ts",
+    "frontend/src/lib/server-api.ts",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [
+    "About 73 catch blocks under frontend/src/app/api still repeat the same four-line shape (instanceof BackendApiError -> NextResponse.json, else a generic 500). A proxyErrorResponse(error, fallback) helper returning the whole response would delete roughly 280 lines. Left out here because it is a second reason and this envelope is one reason per session."
+  ],
+  "id": "2026-08-21-surface-the-backend-s-structured-error-message-through-the-next",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "No browser or Playwright run. The chain was verified at the HTTP boundary with curl through a source-backed Next dev server talking to the real running backend, so the proxy hop is proved end to end but toast rendering itself was not exercised.",
+    "The motivating MCP 409 was not reproduced directly because it needs an authenticated session. It is covered by proving the identical AppException envelope path on password-reset/confirm, plus a unit test that uses the 409 body verbatim.",
+    "The dev stack on port 3000 is a built container image and keeps serving the pre-change behaviour until it is rebuilt."
+  ],
+  "manifests_changed": [],
+  "reason": "Proxy handlers returned BackendApiError.message ('Backend API error: 409 Conflict') and discarded the parsed backend body held in .data, so every domain error message the backend worded for the user - e.g. 'MCP connection with this name already exists' on a duplicate Integrations connect - reached the browser toast as a bare HTTP status line. The handlers now forward the backend's error.message, while 5xx stays generic so internal detail is not leaked.",
+  "risks": [
+    "Any 4xx message the backend adds in future is now user-visible wherever a proxy handler surfaces it. Today's messages are all deliberately user-facing, but a future domain exception that embeds internal detail in a 4xx message would reach the browser without a second gate."
+  ],
+  "rollback": "git revert restores previous behaviour completely; no migration, persisted state, or configuration is involved. Note a revert also restores the three hand-rolled body extractions in auth/login, auth/register and auth/oauth-callback, including the missing domain-message branch in register.",
+  "schema_version": 1,
+  "security_impact": "Reduces leak surface rather than widening it. The helper discards the response body entirely for status >= 500, so an unexpected server error cannot carry internal detail into a browser toast; previously auth/login and auth/oauth-callback surfaced the backend body at any status including 5xx. Making 4xx domain messages user-visible is the point of the change, and those strings are already worded for end users by the domain layer; the four raw HTTPException details in the backend are likewise user-facing ('File not found', OAuth error text).",
+  "summary": "Surface the backend's structured error message through the Next.js proxy handlers instead of the generic BackendApiError status line",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "bun lint 0 errors (30 pre-existing warnings, none in changed files), type-check clean, 55 tests across 9 files, ratcheted coverage thresholds met",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "prettier --check clean over frontend after reformatting the 57 touched files",
+      "id": "frontend-format-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "40 checks; the only blocking finding during the session was the absent change record for this session, which this record closes",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

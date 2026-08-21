@@ -238,7 +238,7 @@
       "betweenness": [
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0195
+          "score": 0.0194
         },
         {
           "id": "frontend/src/stores/index.ts",
@@ -320,19 +320,19 @@
       "pagerank": [
         {
           "id": "frontend/src/lib/utils.ts",
-          "score": 0.1219
+          "score": 0.1216
         },
         {
           "id": "frontend/src/lib/server-api.ts",
-          "score": 0.0678
+          "score": 0.0688
         },
         {
           "id": "frontend/src/lib/constants.ts",
-          "score": 0.0377
+          "score": 0.0376
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0272
+          "score": 0.0271
         },
         {
           "id": "frontend/src/lib/api-client.ts",
@@ -340,15 +340,15 @@
         },
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0208
+          "score": 0.0207
         },
         {
           "id": "frontend/src/lib/seo.ts",
-          "score": 0.0151
+          "score": 0.015
         },
         {
           "id": "frontend/src/i18n.ts",
-          "score": 0.0146
+          "score": 0.0145
         },
         {
           "id": "frontend/src/components/ui/button.tsx",
@@ -372,11 +372,11 @@
         },
         {
           "id": "frontend/src/lib/auth-cookies.ts",
-          "score": 0.0066
+          "score": 0.0065
         },
         {
           "id": "frontend/src/components/marketing/brand-icon.tsx",
-          "score": 0.0063
+          "score": 0.0062
         },
         {
           "id": "frontend/src/components/states/index.ts",

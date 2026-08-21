@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { setAuthCookies } from "@/lib/auth-cookies";
-import { BackendApiError, backendFetch } from "@/lib/server-api";
+import { BackendApiError, backendFetch, backendErrorDetail } from "@/lib/server-api";
 
 interface TokenResponse {
   access_token: string;
@@ -34,7 +34,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof BackendApiError) {
-      return NextResponse.json({ detail: error.message }, { status: error.status });
+      return NextResponse.json({ detail: backendErrorDetail(error) }, { status: error.status });
     }
     return NextResponse.json({ detail: "Internal server error" }, { status: 500 });
   }

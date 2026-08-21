@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, backendErrorDetail } from "@/lib/server-api";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to fetch messages" },
+        { detail: backendErrorDetail(error, "Failed to fetch messages") },
         { status: error.status },
       );
     }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, backendErrorDetail } from "@/lib/server-api";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -25,7 +25,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to fetch conversation" },
+        { detail: backendErrorDetail(error, "Failed to fetch conversation") },
         { status: error.status },
       );
     }
@@ -57,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to update conversation" },
+        { detail: backendErrorDetail(error, "Failed to update conversation") },
         { status: error.status },
       );
     }
@@ -86,7 +86,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to delete conversation" },
+        { detail: backendErrorDetail(error, "Failed to delete conversation") },
         { status: error.status },
       );
     }

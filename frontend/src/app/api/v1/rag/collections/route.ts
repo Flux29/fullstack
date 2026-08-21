@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, backendErrorDetail } from "@/lib/server-api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to fetch collections" },
+        { detail: backendErrorDetail(error, "Failed to fetch collections") },
         { status: error.status },
       );
     }
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to create collection" },
+        { detail: backendErrorDetail(error, "Failed to create collection") },
         { status: error.status },
       );
     }

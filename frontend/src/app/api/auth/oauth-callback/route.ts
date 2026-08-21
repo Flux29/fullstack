@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { setAuthCookies } from "@/lib/auth-cookies";
-import { backendFetch, BackendApiError, getClientIpHeaders } from "@/lib/server-api";
+import {
+  backendFetch,
+  BackendApiError,
+  getClientIpHeaders,
+  backendErrorDetail,
+} from "@/lib/server-api";
 import type { LoginResponse } from "@/types";
 
 interface OAuthCallbackBody {
@@ -47,8 +52,7 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error) {
     if (error instanceof BackendApiError) {
-      const data = error.data as { detail?: string; error?: { message?: string } } | undefined;
-      const detail = data?.detail || data?.error?.message || "Sign-in failed";
+      const detail = backendErrorDetail(error, "Sign-in failed");
       return NextResponse.json({ detail }, { status: error.status });
     }
     return NextResponse.json({ detail: "Internal server error" }, { status: 500 });

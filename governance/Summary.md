@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 133)
+## Recent changes (latest 20 of 136)
 
 - **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
   - Components: backend-api, frontend-app
@@ -79,6 +79,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
+- **2026-08-20** — Regenerate governance Summary.md after the PR 21 merge combined two independently synced lineages
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-20-regenerate-governance-summary-md-after-the-pr-21-merge-combined.json`
 - **2026-08-20** — Refresh governance impact-baseline goldens to include the RAG status stream proxy route
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-refresh-governance-impact-baseline-goldens-to-include-the-rag-st.json`
@@ -115,15 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Finish MCP URL credential-stripping: drop path tokens from display URLs and scrub stale last_error
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-20-finish-mcp-url-credential-stripping-drop-path-tokens-from-displa.json`
-- **2026-08-20** — Drop unsafe-eval from the production frontend CSP and stop allowing plaintext websockets and localhost connects in production
-  - Components: frontend-app
-  - Record: `governance/history/changes/2026-08-20-drop-unsafe-eval-from-the-production-frontend-csp-and-stop-allow.json`
-- **2026-08-20** — Digest-pin the bun base image and lock the Docling sidecar's full transitive dependency graph
-  - Components: docling-mcp, frontend-app
-  - Record: `governance/history/changes/2026-08-20-digest-pin-the-bun-base-image-and-lock-the-docling-sidecar-s-ful.json`
-- **2026-08-20** — Close the three standing MCP security findings
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-close-the-three-standing-mcp-security-findings.json`
 
 ## Decisions (5)
 

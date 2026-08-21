@@ -1,0 +1,30 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. Summary.md is derived output; regenerating it restores the byte-reproducibility contract the merge broke.",
+  "date": "2026-08-20",
+  "files_changed": [
+    "governance/Summary.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-20-regenerate-governance-summary-md-after-the-pr-21-merge-combined",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Main and the PR 21 branch each ran governance-sync on their own change records, so the textual merge of governance/Summary.md matched neither lineage and the sync-idempotence check failed in the merge CI run",
+  "risks": [],
+  "rollback": "git revert the commit; Summary.md returns to the merged-text state and the sync-idempotence check fails again until regenerated.",
+  "schema_version": 1,
+  "security_impact": "None. Regeneration of a generated summary file; no policy, permission, or runtime surface changed.",
+  "summary": "Regenerate governance Summary.md after the PR 21 merge combined two independently synced lineages",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

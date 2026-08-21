@@ -19,6 +19,57 @@ export class BackendApiError extends Error {
   }
 }
 
+/**
+ * The backend's structured error envelope. ``error`` is what
+ * ``api/exception_handlers.py`` emits for every domain exception; ``detail`` is
+ * what FastAPI itself emits for a raw ``HTTPException`` (a string) or a request
+ * validation failure (a list of per-field errors).
+ */
+interface BackendErrorBody {
+  error?: { message?: string };
+  detail?: string | { msg?: string }[];
+}
+
+/**
+ * The message a user should actually see for a failed backend call.
+ *
+ * ``BackendApiError.message`` is only ever "Backend API error: 409 Conflict" —
+ * an HTTP status line, which tells a user nothing about what went wrong. The
+ * real message is the one the backend worded for them, carried in the parsed
+ * body on ``.data``, so prefer that and keep the status line as the fallback.
+ *
+ * 5xx bodies are deliberately ignored: an unexpected server error is exactly
+ * where an unreviewed string could carry internal detail, so those keep the
+ * caller's generic message.
+ */
+export function backendErrorDetail(error: BackendApiError, fallback?: string): string {
+  const generic = fallback || error.message;
+
+  if (error.status >= 500) {
+    return generic;
+  }
+
+  const body = error.data as BackendErrorBody | null | undefined;
+
+  const domainMessage = body?.error?.message;
+  if (domainMessage) {
+    return domainMessage;
+  }
+
+  const detail = body?.detail;
+  if (typeof detail === "string" && detail) {
+    return detail;
+  }
+  if (Array.isArray(detail)) {
+    const messages = detail.map((entry) => entry?.msg).filter((msg): msg is string => !!msg);
+    if (messages.length > 0) {
+      return messages.join("; ");
+    }
+  }
+
+  return generic;
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string>;
   /** Return raw text instead of parsing as JSON */

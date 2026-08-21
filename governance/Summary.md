@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 138)
+## Recent changes (latest 20 of 139)
 
+- **2026-08-21** — Surface the backend's structured error message through the Next.js proxy handlers instead of the generic BackendApiError status line
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-21-surface-the-backend-s-structured-error-message-through-the-next.json`
 - **2026-08-21** — Match Integrations catalog cards to connections by origin so re-connecting a catalog plugin stops 409ing
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-21-match-integrations-catalog-cards-to-connections-by-origin-so-re.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Govern the LICENSE file in the read-surface so coverage analysis is clean again
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-govern-the-license-file-in-the-read-surface-so-coverage-analysis.json`
-- **2026-08-20** — Format the file-upload proxy route so the frontend format gate passes
-  - Components: frontend-app
-  - Record: `governance/history/changes/2026-08-20-format-the-file-upload-proxy-route-so-the-frontend-format-gate-p.json`
 
 ## Decisions (5)
 

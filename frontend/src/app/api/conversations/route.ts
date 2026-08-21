@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { backendFetch, BackendApiError } from "@/lib/server-api";
+import { backendFetch, BackendApiError, backendErrorDetail } from "@/lib/server-api";
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to fetch conversations" },
+        { detail: backendErrorDetail(error, "Failed to fetch conversations") },
         { status: error.status },
       );
     }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof BackendApiError) {
       return NextResponse.json(
-        { detail: error.message || "Failed to create conversation" },
+        { detail: backendErrorDetail(error, "Failed to create conversation") },
         { status: error.status },
       );
     }

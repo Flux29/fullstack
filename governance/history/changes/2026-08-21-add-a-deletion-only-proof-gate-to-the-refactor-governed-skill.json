@@ -1,0 +1,30 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "None stated. An empty list is a claim that nothing observably changes."
+  ],
+  "compatibility_impact": "None. No contract, schema, route, event, or generated artifact changes. governance-sync reported no bytes changed, so no downstream manifest depends on this text.",
+  "date": "2026-08-21",
+  "files_changed": [
+    ".claude/skills/refactor-governed/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-21-add-a-deletion-only-proof-gate-to-the-refactor-governed-skill",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "refactor-governed routes dead-code deletion but carries no procedure for proving a line is dead, so the only evidence available was absence of a static importer. In this repo that excludes 129 framework-invoked modules and every string-keyed surface. The new section makes the orphan report and a dynamic-reference checklist the required evidence before any deletion.",
+  "risks": [],
+  "rollback": "Revert the commit. The change is 35 additive lines in .claude/skills/refactor-governed/SKILL.md with no generated output derived from it and no migration or state to undo.",
+  "schema_version": 1,
+  "security_impact": "None. The change adds prose to one agent skill file. No code, configuration, dependency, or exposure surface is touched. It makes an existing safety procedure explicit rather than granting any new capability.",
+  "summary": "Add a deletion-only proof gate to the refactor-governed skill",
+  "tool_version": "1.0.0",
+  "validators_run": []
+}

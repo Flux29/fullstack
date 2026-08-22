@@ -54,6 +54,41 @@ State before editing: **what will be deleted, merged, or moved.** If the answer 
 stop and reconsider — you are probably about to add an abstraction over the problem instead
 of removing it.
 
+### Deletion-only sessions
+
+The strictest shape this skill takes: the diff is all minus. Behaviour, tests, and the
+new-files rule are already governed above — what a deletion-only session adds is that every
+removed hunk carries a justification of **dead, duplicated, or superseded**, and that the
+opening reason says the session is deletion-only, so the record cannot later read as a
+restructure.
+
+The failure mode is not timidity. It is confident deletion of something reached by string,
+where no import edge exists to warn you. **Absence of a static importer is not proof of
+death.**
+
+1. Start from the graph's own answer, `governance/graph/reports/orphans.json`. Its exclusion
+   classes are named reasons a module legitimately has no importer — `package-root`,
+   `entrypoint`, `dynamic-subtree`, `feature-disabled`, `framework-invoked`, `test-module`,
+   `ambient-types`. A module inside one is unknowable, never dead, and `framework-invoked`
+   is the largest class in the TypeScript view by an order of magnitude.
+2. That report is **module-level**. `no-orphaned-surfaces` in
+   `governance/policies/architecture.json` is advisory for exactly that reason: it covers the
+   module slice, not routes, tools, or symbols. Below a module, the proof is yours.
+3. Grep the name as a **string**, not an identifier, in both languages. The string-keyed
+   surfaces here are Next.js convention filenames (`page.tsx`, `layout.tsx`, `route.ts`),
+   `next-intl` keys in `frontend/messages/en.json` and `pl.json`, taskiq `@broker.task`
+   names, Alembic `down_revision` ids, validator IDs in `governance/validators.json`, and
+   `check_impl` dotted paths in `governance/policies/*.json`.
+4. WebSocket events are hand-tracked in `governance/manifests/generated/interfaces.json` by
+   `producer_ref` and `consumer_ref`, because the payloads are untyped dicts with no schema.
+   A handler nothing imports can still be the live half of a contract.
+5. i18n keys are per-locale. Removing one from `en.json` and not `pl.json` desyncs silently,
+   and no type-checker sees it.
+
+**If you cannot prove a line is unused, leave it and say so in the report.** An unproven line
+left in place costs a line. An unproven line deleted costs an incident — and the change
+record will have claimed it was justified.
+
 ## 4. Execute
 
 Make the move. Then, in order:

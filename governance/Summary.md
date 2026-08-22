@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 140)
+## Recent changes (latest 20 of 141)
 
 - **2026-08-21** — Surface the backend's structured error message through the Next.js proxy handlers instead of the generic BackendApiError status line
   - Components: frontend-app, governance-kernel
@@ -67,6 +67,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-21** — Bring docs/ under the citation checker and retire three superseded governance-adoption documents
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-21-bring-docs-under-the-citation-checker-and-retire-three-supersede.json`
+- **2026-08-21** — Add a deletion-only proof gate to the refactor-governed skill
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-21-add-a-deletion-only-proof-gate-to-the-refactor-governed-skill.json`
 - **2026-08-20** — Wire a simplify shrink pass into the gov-change close and make it a ship precondition
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-20-wire-a-simplify-shrink-pass-into-the-gov-change-close-and-make-i.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Inject the shared lifespan Redis client into RAGStatusService so the RAG status SSE stream works
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-20-inject-the-shared-lifespan-redis-client-into-ragstatusservice-so.json`
-- **2026-08-20** — Ignore secrets/ and credentials/ in git and Docker build contexts and standardize the Google Drive service-account path
-  - Components: backend-api, frontend-app
-  - Record: `governance/history/changes/2026-08-20-ignore-secrets-and-credentials-in-git-and-docker-build-contexts.json`
 
 ## Decisions (5)
 

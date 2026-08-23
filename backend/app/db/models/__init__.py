@@ -13,6 +13,7 @@ from app.db.models.sync_source import SyncSource
 from app.db.models.conversation_share import ConversationShare
 from app.db.models.user_slash_command import UserSlashCommand
 from app.db.models.mcp_connection import McpConnection
+from app.db.models.workspace import Workspace
 
 __all__ = [
     "User",
@@ -30,4 +31,5 @@ __all__ = [
     "ConversationShare",
     "UserSlashCommand",
     "McpConnection",
+    "Workspace",
 ]

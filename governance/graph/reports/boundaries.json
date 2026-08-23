@@ -445,6 +445,36 @@
       "websocket": true
     },
     {
+      "backend_modules": [
+        "app.api.routes.v1.admin_conversations",
+        "app.api.routes.v1.admin_users",
+        "app.api.routes.v1.auth",
+        "app.api.routes.v1.conversations"
+      ],
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/workspaces/page.tsx",
+      "proxy_handlers": [
+        "frontend/src/app/api/admin/conversations/[id]/route.ts",
+        "frontend/src/app/api/admin/conversations/route.ts",
+        "frontend/src/app/api/admin/conversations/users/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/impersonate/route.ts",
+        "frontend/src/app/api/admin/users/[userId]/route.ts",
+        "frontend/src/app/api/admin/users/route.ts",
+        "frontend/src/app/api/auth/login/route.ts",
+        "frontend/src/app/api/auth/logout/route.ts",
+        "frontend/src/app/api/auth/me/route.ts",
+        "frontend/src/app/api/auth/refresh/route.ts",
+        "frontend/src/app/api/auth/register/route.ts",
+        "frontend/src/app/api/conversations/[id]/messages/route.ts",
+        "frontend/src/app/api/conversations/[id]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/[shareId]/route.ts",
+        "frontend/src/app/api/conversations/[id]/shares/route.ts",
+        "frontend/src/app/api/conversations/route.ts",
+        "frontend/src/app/api/conversations/shared-with-me/route.ts"
+      ],
+      "route": "/settings/workspaces",
+      "websocket": true
+    },
+    {
       "file": "frontend/src/app/[locale]/about/page.tsx",
       "route": "/about"
     },
@@ -607,9 +637,9 @@
   },
   "schema_version": 1,
   "summary": {
-    "pages": 42,
-    "pages_with_api_chains": 23,
+    "pages": 43,
+    "pages_with_api_chains": 24,
     "pages_with_broken_chains": 2,
-    "websocket_exception_pages": 10
+    "websocket_exception_pages": 11
   }
 }

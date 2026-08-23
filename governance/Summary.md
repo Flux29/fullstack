@@ -54,13 +54,16 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
 - **Migration head** — 0030_mcp_url_origin_only
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
-- **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
+- **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 145)
+## Recent changes (latest 20 of 146)
 
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
+- **2026-08-23** — Add the workspaces entity: model, migration, service, /api/v1/me/workspaces CRUD, proxy handler, and typed client
+  - Components: backend-api, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-add-the-workspaces-entity-model-migration-service-api-v1-me-work.json`
 - **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
   - Components: backend-api, governance-kernel, rag
   - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Redact live-host operational details from the Codecov deployment change record
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment.json`
-- **2026-08-20** — Rate-limit login, registration, password-reset and magic-link requests per client IP and per account
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-rate-limit-login-registration-password-reset-and-magic-link-requ.json`
 
 ## Decisions (6)
 

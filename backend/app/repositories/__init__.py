@@ -21,6 +21,7 @@ from app.repositories import message_rating as message_rating_repo
 from app.repositories import user_slash_command as user_slash_command_repo
 
 from app.repositories import mcp_connection as mcp_connection_repo
+from app.repositories import workspace as workspace_repo
 
 __all__ = [
     "user_repo",
@@ -35,4 +36,5 @@ __all__ = [
     "message_rating_repo",
     "user_slash_command_repo",
     "mcp_connection_repo",
+    "workspace_repo",
 ]

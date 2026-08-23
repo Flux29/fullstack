@@ -1,0 +1,122 @@
+{
+  "adr_refs": [
+    "ADR-005",
+    "ADR-006"
+  ],
+  "affected_components": [
+    "backend-api",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "DB: migration head moves 0030 -> 0031",
+    "HTTP: new /api/v1/me/workspaces family (additive)"
+  ],
+  "behavioral_effects": [
+    "A user can create, list, patch, and delete coding workspaces from Settings -> Workspaces; each carries a backend_kind, an opaque server-generated sandbox id, an optional repo_url, a ruleset, and an auto_approve flag",
+    "The strict/auto-approve contradiction is refused, and auto_approve is cleared on a readonly workspace because ADR-006 registers no write or execute tool there — one owner for the rule, in the service"
+  ],
+  "compatibility_impact": "Additive. New table (workspaces), new endpoint family /api/v1/me/workspaces with its two proxy handlers, new settings route. One shared signature widened compatibly: core.sanitize.strip_url_credentials gains a keyword-only keep_path=False, so all seven existing callers are unaffected (test_ssrf.py green, 46 tests). Migration 0031 chains onto 0030 as the single head. No response shape or existing contract changed.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "backend/alembic/versions/0031_create_workspaces.py",
+    "backend/app/api/deps.py",
+    "backend/app/api/routes/v1/__init__.py",
+    "backend/app/api/routes/v1/me_workspaces.py",
+    "backend/app/core/sanitize.py",
+    "backend/app/db/models/__init__.py",
+    "backend/app/db/models/workspace.py",
+    "backend/app/repositories/__init__.py",
+    "backend/app/repositories/workspace.py",
+    "backend/app/schemas/workspace.py",
+    "backend/app/services/workspace.py",
+    "backend/tests/test_workspaces.py",
+    "frontend/src/app/[locale]/(dashboard)/settings/layout.tsx",
+    "frontend/src/app/[locale]/(dashboard)/settings/workspaces/page.tsx",
+    "frontend/src/app/api/me/workspaces/[id]/route.ts",
+    "frontend/src/app/api/me/workspaces/route.ts",
+    "frontend/src/components/settings/workspaces-manager.test.tsx",
+    "frontend/src/components/settings/workspaces-manager.tsx",
+    "frontend/src/hooks/index.ts",
+    "frontend/src/hooks/use-workspaces.ts",
+    "frontend/src/lib/constants.ts",
+    "frontend/src/lib/query-keys.ts",
+    "frontend/src/lib/workspaces-api.ts",
+    "governance/Summary.md",
+    "governance/graph/reports/boundaries.json",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json",
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "follow_up": [
+    "Session A: pydantic-ai-backend CodingToolkit reading workspace.ruleset/auto_approve, ENABLE_CODING, workspace_id on the chat turn, frontend toggle; security-review before its record",
+    "Validate repo_url for SSRF at clone time, in the session that implements cloning",
+    "Sandbox service (sandboxd) as its own Compose service under the ADR-005 posture; decide ADR-006 open question 2 (egress) there",
+    "The same COUNT-without-pagination round trip exists in mcp_connection.list_for_user and user_slash_command.list_for_user"
+  ],
+  "id": "2026-08-23-add-the-workspaces-entity-model-migration-service-api-v1-me-work",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran (4 parallel reviewers over the session diff) and changed the code: dropped the redundant clear_repo_url flag across 6 files in favour of explicit null + exclude_unset; removed the unreachable schema-level strict validator so the service is the single owner; deleted the never-read eager user relationship (McpConnection needed lazyload() to undo the same join); removed the COUNT round trip from an unpaginated list; folded the duplicated IPv6/netloc stripper back into core.sanitize; adopted the existing SectionCard, IconButton, and getErrorMessage instead of three new local copies; deleted an unreachable toast guard",
+    "Shrink pass findings deliberately NOT applied: the create-path get_by_name pre-check (the documented pattern in .claude/rules/architecture.md, kept alongside the IntegrityError race guard); the route-level 409/404/204 tests (mandated by the endpoint-fullstack skill); a generic useEntityList hook (would require migrating use-mcp-connections and use-slash-commands in the same change); a proxyToBackend helper (repo-wide, 47 handlers); a Ruleset StrEnum (deferred to Session A, where tool-registration code will actually switch on it)",
+    "Inherited debt not fixed here: window.confirm instead of ConfirmDialog, and hardcoded English instead of next-intl — both match every sibling settings manager; fixing only workspaces would make it the odd one out",
+    "No browser or Playwright check was run: the settings page is verified by vitest and by the generated site-chain report (boundaries.json now records the page reaching 4 backend route modules through its proxy handlers), not by driving a browser"
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/interfaces.json"
+  ],
+  "reason": "ADR-006 makes a coding workspace the thing a chat turn names, but nothing in the data model can hold a user-owned sandbox identity, its repository URL, or its ruleset, so no turn can reference one; this adds the workspaces table and its full-stack CRUD so later sessions can attach tools to a workspace id rather than to a deployment-wide default.",
+  "risks": [
+    "auto_approve is stored but unenforced until Session A attaches the coding toolkit; a workspace can be marked auto-approving before anything can act on it",
+    "repo_url is not SSRF-validated at write time by design; the session that implements cloning must validate at clone time or the stored URL becomes an SSRF vector"
+  ],
+  "rollback": "git revert restores the code. The migration is already applied to the developer database: run 'alembic downgrade 0030_mcp_url_origin_only' (inside the app container — the host cannot reach Postgres) before or after reverting, which drops the workspaces table and any rows in it. Nothing else outside the repository is touched.",
+  "schema_version": 1,
+  "security_impact": "New user-supplied URL surface: repo_url. Stored with userinfo, query string, and fragment removed via core.sanitize.strip_url_credentials(keep_path=True), restricted to the shared WEBHOOK_ALLOWED_SCHEMES allowlist, so a clone token cannot reach the row. SSRF validation is deliberately NOT performed at write time (it resolves DNS and the URL is not fetched here) — it belongs at clone time and is a named follow-up for the session that implements cloning; until then no code reads repo_url. Rows are user-scoped with a CASCADE FK, and every service path authorizes through get_for_user, which raises NotFoundError rather than revealing another user's workspace. No tool, file, shell, or sandbox capability is added by this session; auto_approve is stored but nothing reads it yet.",
+  "summary": "Add the workspaces entity: model, migration, service, /api/v1/me/workspaces CRUD, proxy handler, and typed client",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "635 passed, 13 skipped (make test); 24 of them new in tests/test_workspaces.py",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff 'All checks passed!'; ty reports 22 warnings, all pre-existing in google_workspace_api/rag/taskiq/tavily adapters, none in workspace files; exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "lint 0 errors (31 pre-existing warnings), tsc --noEmit clean, vitest incl. 6 new workspaces-manager tests; exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped (4 skipped) — the base Compose stack publishes no host port for Postgres so alembic cannot reach it from the host. Manual evidence instead: inside fullstack-app-1, alembic upgrade head -> downgrade -1 -> upgrade head, ending at 0031_create_workspaces (head). Full downgrade-to-base was deliberately NOT run: it would destroy the developer database; CI runs it against a throwaway DB.",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "exit 0, no Compose change in this session",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "external volumes redis-data and docling-models present and protected",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking after record; 9 advisories all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -290,8 +290,12 @@ def validate_webhook_url(
     return url
 
 
-def strip_url_credentials(url: str) -> str:
+def strip_url_credentials(url: str, *, keep_path: bool = False) -> str:
     """Reduce a URL to its origin — scheme, host, and port only.
+
+    With ``keep_path=True`` the path survives: a repository URL is worthless
+    without ``/org/repo``, and its credentials live in the userinfo and query
+    string instead (see :func:`app.schemas.workspace.normalize_repo_url`).
 
     Used wherever a connection URL is stored, displayed, or logged in plaintext.
     Providers place API tokens in the query string (e.g. ``?apikey=...``) *and*
@@ -313,7 +317,8 @@ def strip_url_credentials(url: str) -> str:
     if ":" in hostname:  # IPv6 literal — urlparse strips the brackets
         hostname = f"[{hostname}]"
     netloc = f"{hostname}:{parsed.port}" if parsed.port else hostname
-    return urlunparse((parsed.scheme, netloc, "", "", "", ""))
+    path = parsed.path.rstrip("/") if keep_path else ""
+    return urlunparse((parsed.scheme, netloc, path, "", "", ""))
 
 
 def sanitize_string(

@@ -20,6 +20,7 @@ x-backend-environment: &backend-environment
   RERANKER_BASE_URL: http://model-runner.docker.internal
   EMBEDDING_CACHE_URL: redis://redis:6379/3
   DOCLING_SERVE_URL: http://docling-serve:5001
+  SANDBOX_SERVICE_URL: http://sandboxd:8080
 
 x-backend-volumes: &backend-volumes
   - media_data:/app/media
@@ -100,6 +101,7 @@ services:
     networks:
       - data-internal
       - service-egress
+      - sandbox-internal
     depends_on: *backend-depends
     healthcheck:
       test:
@@ -110,6 +112,58 @@ services:
       interval: 15s
       timeout: 5s
       start_period: 30s
+      retries: 5
+    restart: unless-stopped
+
+  # Coding workspaces (ADR-006). Behind a profile: a deployment that does not
+  # set ENABLE_CODING should not run a container holding the Docker socket.
+  sandboxd:
+    profiles: ["coding"]
+    build:
+      context: ./docker/sandboxd
+      dockerfile: Dockerfile
+    image: fullstack-sandboxd:local
+    environment:
+      # Empty is not a usable value: sandboxd refuses to start without a
+      # token, because a session it opens can run commands on this host.
+      # Left as a plain substitution so `compose config` still resolves
+      # for the stacks that do not run this profile.
+      SANDBOXD_TOKEN: ${SANDBOX_SERVICE_TOKEN:-}
+      SANDBOXD_WORKSPACE_ROOT: /workspaces
+      # A sandbox container gets no network unless the egress decision says
+      # otherwise - ADR-006 open question 2, deliberately still closed here.
+      #
+      # SANDBOXD_NETWORK_MODE alone is NOT enough, verified against 0.2.29: the
+      # shipped runtime allowlist leads with a "coding" runtime that hardcodes
+      # network_mode="bridge", and a runtime's own value overrides the service
+      # default. Left at the defaults, a sandbox reaches the internet while this
+      # variable says it cannot. So the allowlist is replaced with a single
+      # runtime that pins the isolation explicitly, and that runtime is the
+      # default. Widening egress is an edit here, and a decision in the ADR.
+      SANDBOXD_NETWORK_MODE: none
+      SANDBOXD_RUNTIMES: workspace=python:3.12-slim;network_mode=none
+      SANDBOXD_DEFAULT_RUNTIME: workspace
+      SANDBOXD_MEM_LIMIT: ${SANDBOX_MEM_LIMIT:-2g}
+      SANDBOXD_CPUS: ${SANDBOX_CPUS:-2.0}
+      SANDBOXD_UI_ENABLED: "false"
+    expose:
+      - "8080"
+    volumes:
+      # Root-equivalent by construction, which is the whole reason this is a
+      # separate container from the API.
+      - /var/run/docker.sock:/var/run/docker.sock
+      - sandbox_workspaces:/workspaces
+    networks:
+      - sandbox-internal
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=5)"
+      interval: 20s
+      timeout: 10s
+      start_period: 20s
       retries: 5
     restart: unless-stopped
 
@@ -559,6 +613,13 @@ networks:
   data-internal:
     driver: bridge
     internal: true
+  # The API reaches sandboxd here and nothing else does. Internal, so a sandbox
+  # service that holds the Docker socket has no route off the host, and it is a
+  # separate network from data-internal so it can never reach Postgres, Redis,
+  # or object storage (ADR-006 section 1, under the ADR-005 posture).
+  sandbox-internal:
+    driver: bridge
+    internal: true
   service-egress:
     driver: bridge
   codecov-internal:
@@ -566,6 +627,7 @@ networks:
     internal: true
 
 volumes:
+  sandbox_workspaces:
   postgres_data:
   minio_data:
   media_data:

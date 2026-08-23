@@ -150,7 +150,7 @@ appears here or in any other governance artifact.
 | `CODE_EXECUTION_MAX_ALLOCATIONS` | no | `50000000` | `unknown-consumer` | — |
 | `ENABLE_CODING` | no | `false` | `runtime` | Coding workspaces (ADR-006). Off by default: this gives the assistant file and shell tools inside a sandbox. With ENABLE_CODING=true you must also point at a sandboxd service (URL + token), or set SANDBOX_ALLOW_DOCKER=true when running the backend as a host process. |
 | `SANDBOX_SERVICE_URL` | no | `http://sandboxd:8080` | `runtime` | — |
-| `SANDBOX_SERVICE_TOKEN` | no | `` | `runtime` | — |
+| `SANDBOX_SERVICE_TOKEN` | no | `` | `runtime` | Required when ENABLE_CODING=true. A session sandboxd opens can run commands on the host, so generate a long random value: openssl rand -hex 32 |
 | `SANDBOX_TIMEOUT_SECS` | no | `60.0` | `runtime` | — |
 | `SANDBOX_ALLOW_DOCKER` | no | `false` | `runtime` | — |
 | `SANDBOX_DOCKER_IMAGE` | no | `python:3.12-slim` | `runtime` | — |
@@ -311,6 +311,14 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `REFRESH_TOKEN_EXPIRE_MINUTES` | no | — | `runtime` | — |
 | `RESEND_API_KEY` | no | — | `runtime` | — |
 | `RUN_ENV` | no | — | `compose-only` | — |
+| `SANDBOXD_CPUS` | no | — | `compose-only` | — |
+| `SANDBOXD_DEFAULT_RUNTIME` | no | — | `compose-only` | — |
+| `SANDBOXD_MEM_LIMIT` | no | — | `compose-only` | — |
+| `SANDBOXD_NETWORK_MODE` | no | — | `compose-only` | — |
+| `SANDBOXD_RUNTIMES` | no | — | `compose-only` | — |
+| `SANDBOXD_TOKEN` | no | — | `compose-only` | — |
+| `SANDBOXD_UI_ENABLED` | no | — | `compose-only` | — |
+| `SANDBOXD_WORKSPACE_ROOT` | no | — | `compose-only` | — |
 | `SERVICES__DATABASE_URL` | no | — | `compose-only` | — |
 | `SERVICES__MINIO__ACCESS_KEY_ID` | no | — | `compose-only` | — |
 | `SERVICES__MINIO__HOST` | no | — | `compose-only` | — |

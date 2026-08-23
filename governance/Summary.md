@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 147)
+## Recent changes (latest 20 of 148)
 
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
@@ -67,6 +67,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Add the workspaces entity: model, migration, service, /api/v1/me/workspaces CRUD, proxy handler, and typed client
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-23-add-the-workspaces-entity-model-migration-service-api-v1-me-work.json`
+- **2026-08-23** — Add the sandboxd service so coding workspaces have a sandbox to reach
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-add-the-sandboxd-service-so-coding-workspaces-have-a-sandbox-to.json`
 - **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
   - Components: backend-api, governance-kernel, rag
   - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Regenerate governance Summary.md after the PR 21 merge combined two independently synced lineages
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-regenerate-governance-summary-md-after-the-pr-21-merge-combined.json`
-- **2026-08-20** — Refresh governance impact-baseline goldens to include the RAG status stream proxy route
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-refresh-governance-impact-baseline-goldens-to-include-the-rag-st.json`
 
 ## Decisions (6)
 

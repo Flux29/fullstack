@@ -3147,6 +3147,142 @@
     },
     {
       "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_CPUS",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_DEFAULT_RUNTIME",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_MEM_LIMIT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_NETWORK_MODE",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_RUNTIMES",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_TOKEN",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_UI_ENABLED",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [
+        "compose:sandboxd"
+      ],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOXD_WORKSPACE_ROOT",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
         "runtime"
       ],
       "consumed_by": [],
@@ -3168,7 +3304,8 @@
       "consumed_by": [],
       "declared_in": [
         "backend/app/core/config.py",
-        "backend/.env.example"
+        "backend/.env.example",
+        "docker-compose.yml"
       ],
       "default": "2.0",
       "default_class": "literal",
@@ -3200,7 +3337,8 @@
       "consumed_by": [],
       "declared_in": [
         "backend/app/core/config.py",
-        "backend/.env.example"
+        "backend/.env.example",
+        "docker-compose.yml"
       ],
       "default": "2g",
       "default_class": "literal",
@@ -3232,10 +3370,12 @@
       "consumed_by": [],
       "declared_in": [
         "backend/app/core/config.py",
-        "backend/.env.example"
+        "backend/.env.example",
+        "docker-compose.yml"
       ],
       "default": "",
       "default_class": "literal",
+      "description": "Required when ENABLE_CODING=true. A session sandboxd opens can run commands on the host, so generate a long random value: openssl rand -hex 32",
       "name": "SANDBOX_SERVICE_TOKEN",
       "required": false,
       "surface": "backend",
@@ -3245,10 +3385,15 @@
       "classification": [
         "runtime"
       ],
-      "consumed_by": [],
+      "consumed_by": [
+        "compose:app",
+        "compose:taskiq-scheduler",
+        "compose:taskiq-worker"
+      ],
       "declared_in": [
         "backend/app/core/config.py",
-        "backend/.env.example"
+        "backend/.env.example",
+        "docker-compose.yml"
       ],
       "default": "http://sandboxd:8080",
       "default_class": "literal",

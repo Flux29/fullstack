@@ -8,10 +8,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ detail: "Not authenticated" }, { status: 401 });
   }
   try {
-    const data = await backendFetch<{ items: unknown[]; total: number }>(
-      "/api/v1/me/workspaces",
-      { headers: { Authorization: `Bearer ${accessToken}` } },
-    );
+    const data = await backendFetch<{ items: unknown[]; total: number }>("/api/v1/me/workspaces", {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    });
     return NextResponse.json(data);
   } catch (error) {
     if (error instanceof BackendApiError) {

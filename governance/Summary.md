@@ -56,7 +56,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 151)
+## Recent changes (latest 20 of 152)
 
 - **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
   - Components: governance-kernel
@@ -67,6 +67,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Stop click expanding argv globs on Windows so governance options accept path patterns
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-stop-click-expanding-argv-globs-on-windows-so-governance-options.json`
+- **2026-08-23** — Realign the coding-workspace branch's recorded expectations and formatting with the repository facts it changed
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-realign-the-coding-workspace-branch-s-recorded-expectations-and.json`
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Require same-origin fetch metadata and an explicit client header on the auth refresh route
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-require-same-origin-fetch-metadata-and-an-explicit-client-header.json`
-- **2026-08-20** — Require edit shares for conversation update/archive and restrict delete to owners
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-require-edit-shares-for-conversation-update-archive-and-restrict.json`
 
 ## Decisions (6)
 

@@ -30,7 +30,11 @@ import type { WorkspaceBackendKind, WorkspaceRecord, WorkspaceRuleset } from "@/
 const NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,31}$/;
 
 const RULESETS: { value: WorkspaceRuleset; label: string; hint: string }[] = [
-  { value: "readonly", label: "Read-only", hint: "Browse and search only — no write or shell tools." },
+  {
+    value: "readonly",
+    label: "Read-only",
+    hint: "Browse and search only — no write or shell tools.",
+  },
   { value: "default", label: "Default", hint: "Every write and command asks for approval." },
   {
     value: "strict",
@@ -170,8 +174,8 @@ export function WorkspacesManager() {
           <div>
             <h3 className="text-foreground text-sm font-semibold">Your workspaces</h3>
             <p className="text-foreground/55 mt-0.5 text-xs">
-              A sandboxed checkout the assistant can read, edit, and run commands in. Pick one
-              per chat turn from the chat controls.
+              A sandboxed checkout the assistant can read, edit, and run commands in. Pick one per
+              chat turn from the chat controls.
             </p>
           </div>
           <Button size="sm" onClick={openCreate}>

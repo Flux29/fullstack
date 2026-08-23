@@ -1,0 +1,49 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "GOV-CLOSE now names the three options governance change finish requires, so a close no longer costs a failed run and a --help round trip, and points at --help as the authority for the full list rather than carrying a copy. GOV-OPEN tells an agent resuming an interrupted session to compare branch and HEAD against the open session."
+  ],
+  "compatibility_impact": "None. No contract, schema, route, event, validator ID, or generated artifact changes. governance-sync reported no bytes changed, so no manifest derives from this text.",
+  "date": "2026-08-22",
+  "files_changed": [
+    ".claude/skills/gov-change/SKILL.md"
+  ],
+  "follow_up": [
+    "Consider recording the branch alongside start_commit in the change session state so the Stop hook or change finish can warn on a mismatch, retiring the manual check this change documents."
+  ],
+  "id": "2026-08-22-document-the-required-change-finish-options-and-the-branch-check",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The shrink pass (two reviewers: duplication/drift and simplification/altitude) cut the first draft by about a third. It found the draft restated the CLI help text near-verbatim and listed five optional flags as though exhaustive while the CLI has seven, dropping --contract and --adr - an incomplete copy presented as complete. The shipped version defers to --help instead. The ARGS line in the code block was reduced to a placeholder because the 105-character original demonstrated the nested quoting the following paragraph tells the reader to avoid.",
+    "Net-positive diff of 22 lines. Nothing could be deleted or consolidated: no other skill documents these options, and ship and pick-workflow reference the target only for sequencing. The one line removed is the bare command the change replaces.",
+    "Block A documents a workaround, not a fix. The durable repair is for the CLI to record the branch in the session state and warn on mismatch; that lives in tools/repo_governance and is out of scope here."
+  ],
+  "manifests_changed": [],
+  "reason": "GOV-CLOSE shows a bare 'make governance-change-finish', but the CLI exits without writing unless --security-impact, --compatibility-impact and --rollback are supplied, so every close pays a failed run and a --help round trip before the real call; the optional flags that carry the Report's content are never named. Separately, an open session records start_commit but not its branch, so an interruption can leave the tree on another branch carrying the governed edit with nothing flagging it - which happened in this session",
+  "risks": [
+    "The three required options are restated here and could drift if the CLI changes them. Mitigated by keeping the exhaustive list out: the text names only the three required flags plus the two tied to this skill own steps, and defers to ARGS=--help for the rest."
+  ],
+  "rollback": "Revert the commit. Prose in one skill file with no generated output derived from it and no state to undo. The staged copy at ~/.claude/skill-updates/2026-08-22/gov-change/ is outside the repository and a revert does not touch it.",
+  "schema_version": 1,
+  "security_impact": "None. Prose only, in one agent skill file. No code, configuration, dependency, hook, permission, or exposure surface changes. The text grants no capability; it documents options the CLI already requires and a check the agent performs by reading git state.",
+  "summary": "Document the required change-finish options and the branch check when resuming a session in gov-change",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "44 files scanned under .claude/skills, .claude/commands, .claude/rules, docs; every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "40 checks, 0 blocking, 7 pre-existing advisories (codecov-worker healthcheck, two email facade imports, settings/account chain, and the phase-3 not-yet-enforced set)",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

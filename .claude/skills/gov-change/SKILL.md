@@ -35,6 +35,12 @@ a causal claim — what was wrong, and what the change makes true instead. "Refa
 service" is not a reason. "Retrieval and ingestion shared a client whose lifecycle neither
 owned, so a failed ingest poisoned live search" is.
 
+**Resuming an interrupted session.** An open session records its summary, reason, and
+`start_commit` — but not the branch it was opened on. Before continuing one, compare the
+current branch and `HEAD` against it: an interruption can leave the working tree on a
+different branch still carrying the uncommitted governed edit, and nothing in the envelope
+flags the mismatch. Switch back, or say in the record why not.
+
 **`governance-context`** replaces reading `governance/` recursively. Pass the narrowest
 `PATHS` that covers the work. If it reports *unassigned paths*, the blast radius it returns
 is incomplete — widen the paths or say so in the final report.
@@ -64,9 +70,24 @@ nothing be extended instead" gets answered honestly rather than asserted.
 make governance-sync
 make governance-impact PATHS="<paths>"
 # run each validator ID returned, resolved through governance/validators.json
-make governance-change-finish
+make governance-change-finish ARGS="..."
 make governance-check
 ```
+
+**`governance-change-finish` refuses to guess:** it exits without writing unless
+`--security-impact`, `--compatibility-impact`, and `--rollback` are all supplied, and a
+fabricated answer is worse than an absent one. `None` is an acceptable security impact when
+stated deliberately. Put in `--rollback` whatever a revert would *not* restore: state
+outside the repository, an already-applied migration, an installed artifact. For the full
+flag list run `make governance-change-finish ARGS="--help"` — this file is not a second copy
+of it and will drift if treated as one.
+
+The optional flags are where the Report below actually lands, so fill them in rather than
+only in chat. Two are tied to this skill's own steps: `--validation` (one per validator ID
+`governance-impact` selected, as `id=result:evidence`) and `--limitation` (the shrink pass's
+honest answer to "why could nothing be removed"). Everything after `ARGS=` is passed through
+verbatim; when the nested quoting fights you on a long record, run
+`uv run --project tools/repo_governance governance change finish ...` directly instead.
 
 **Read the `governance-sync` diff.** It is evidence, not ceremony — it shows which manifests
 your change moved. A sync that touches manifests you did not expect means the blast radius

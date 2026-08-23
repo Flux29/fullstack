@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 142)
+## Recent changes (latest 20 of 143)
 
+- **2026-08-22** — Document the required change-finish options and the branch check when resuming a session in gov-change
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-22-document-the-required-change-finish-options-and-the-branch-check.json`
 - **2026-08-22** — Document the globally installed task-observer skill and its install rules for this repository
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-22-document-the-globally-installed-task-observer-skill-and-its-inst.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Make the RAG worker publish status events through settings.REDIS_URL so it authenticates in production
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-20-make-the-rag-worker-publish-status-events-through-settings-redis.json`
-- **2026-08-20** — Install the backend security headers middleware and make SECURITY.md match it
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-install-the-backend-security-headers-middleware-and-make-securit.json`
 
 ## Decisions (5)
 

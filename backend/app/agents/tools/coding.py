@@ -205,3 +205,156 @@ class CodingToolkit:
             backend.stop()
         except Exception as exc:  # a dead sandbox must not fail the turn
             logger.warning("Releasing sandbox for workspace %s failed: %s", self.policy.name, exc)
+
+
+# --- the target repository's own conventions (ADR-006 section 5) -------------
+
+#: Files a repository uses to tell an agent how to work in it, most specific
+#: first. Only the first one found is read — AGENTS.md is the vendor-neutral
+#: name and CLAUDE.md the Claude-specific one, and a repository carrying both
+#: means the first to point at the other.
+CONVENTION_FILES = ("AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md")
+
+#: Enough of the conventions file to carry its routing rules without spending
+#: the turn's context on it. This repository's own AGENTS.md is ~8.8 KB.
+MAX_CONVENTION_CHARS = 8000
+
+#: A skills index is a listing, not a payload: the agent reads the SKILL.md it
+#: actually needs with read_file, the same way a human would.
+MAX_SKILLS_LISTED = 40
+
+#: A repository may be checked out at the sandbox work dir or at the root.
+WORKSPACE_PREFIXES = ("/workspace/", "/")
+
+
+def _front_matter_field(text: str, field: str) -> str:
+    """Pull one scalar out of a leading YAML front-matter block, without a parser.
+
+    The skills format is fixed (``---``, ``name:``/``description:``, ``---``) and
+    this runs on untrusted repository content, so it stays a line scan rather
+    than a YAML load.
+    """
+    if not text.startswith("---"):
+        return ""
+    _, _, rest = text.partition("\n")
+    body, _, _ = rest.partition("\n---")
+    prefix = f"{field}:"
+    for line in body.splitlines():
+        stripped = line.strip()
+        if stripped.startswith(prefix):
+            return stripped[len(prefix) :].strip().strip("\"'")
+    return ""
+
+
+def _text_of(data: object) -> str:
+    """Decode what a backend hands back, whatever shape it uses.
+
+    ``read()`` is the model-facing tool and returns a line-numbered gutter
+    (``     1\tcontent``) on some backends and plain text on others — right for
+    a model, wrong for parsing, and the difference is invisible until a real
+    backend is swapped in. ``read_bytes()`` is the raw accessor: it never adds
+    a gutter and returns ``b""`` for anything it cannot read, so there is no
+    error-string to sniff for either.
+    """
+    if not data:
+        return ""
+    if isinstance(data, bytes):
+        return data.decode("utf-8", errors="replace")
+    return str(data)
+
+
+def _path_of(info: object) -> str:
+    """A glob result's path.
+
+    ``FileInfo`` is a ``TypedDict``, so most backends hand back a mapping;
+    accept an attribute-style object too rather than depending on which.
+    """
+    if isinstance(info, dict):
+        return str(info.get("path") or info.get("name") or "")
+    return str(getattr(info, "path", None) or getattr(info, "name", "") or "")
+
+
+async def _read_conventions(async_backend: object) -> str:
+    """The first conventions file the workspace actually has."""
+    for name in CONVENTION_FILES:
+        for prefix in WORKSPACE_PREFIXES:
+            content = _text_of(await async_backend.read_bytes(f"{prefix}{name}"))
+            if not content.strip():
+                continue
+            truncated = content[:MAX_CONVENTION_CHARS]
+            note = " (truncated)" if len(content) > MAX_CONVENTION_CHARS else ""
+            return f"### {name}{note}\n\n{truncated}"
+    return ""
+
+
+async def _read_skills_index(async_backend: object) -> str:
+    """List the target repository's skills by name and description.
+
+    A listing, not a payload: the agent reads the SKILL.md it actually needs
+    with ``read_file``, the same way a human would.
+    """
+    matches: list[object] = []
+    for prefix in WORKSPACE_PREFIXES:
+        root = prefix.rstrip("/") or "/"
+        found = await async_backend.glob_info("**/.claude/skills/*/SKILL.md", root)
+        if found and not isinstance(found, str):
+            matches = list(found)
+            break
+    if not matches:
+        return ""
+
+    lines: list[str] = []
+    unreadable = 0
+    for info in matches[:MAX_SKILLS_LISTED]:
+        path = _path_of(info)
+        head = _text_of(await async_backend.read_bytes(path)) if path else ""
+        if not head:
+            unreadable += 1
+            continue
+        # The directory name is the skill's name when front matter omits one.
+        parts = [p for p in path.split("/") if p]
+        fallback = parts[-2] if len(parts) >= 2 else path
+        name = _front_matter_field(head, "name") or fallback
+        description = _front_matter_field(head, "description")
+        lines.append(f"- `{name}` — {description}" if description else f"- `{name}`")
+
+    remaining = len(matches) - MAX_SKILLS_LISTED
+    if remaining > 0:
+        lines.append(f"- …and {remaining} more under `.claude/skills/`")
+    if unreadable and not lines:
+        return ""
+    return "\n".join(lines)
+
+
+async def read_repository_briefing(backend: object) -> str:
+    """Read the target repository's conventions out of the sandbox (ADR-006 §5).
+
+    Returns a block to append to the turn's instructions, or an empty string
+    when the workspace has nothing to report — an empty workspace, a repository
+    that documents nothing, or a sandbox that cannot be reached. A briefing is
+    a convenience, so every failure degrades to no briefing rather than failing
+    the turn.
+    """
+    from pydantic_ai_backends.adapter import ensure_async
+
+    try:
+        async_backend = ensure_async(backend)
+        sections: list[str] = []
+        conventions = await _read_conventions(async_backend)
+        if conventions:
+            sections.append(conventions)
+        skills = await _read_skills_index(async_backend)
+        if skills:
+            sections.append("### Available skills\n\n" + skills)
+        if not sections:
+            return ""
+        return (
+            "\n\n## The repository you are working in\n\n"
+            "This workspace has its own conventions. Follow them over your general "
+            "habits, and prefer a command or procedure it documents over improvising "
+            "one. Read any file named below with `read_file` before acting on it.\n\n"
+            + "\n\n".join(sections)
+        )
+    except Exception as exc:  # never fail a turn over a briefing
+        logger.warning("Could not read the workspace briefing: %s", exc)
+        return ""

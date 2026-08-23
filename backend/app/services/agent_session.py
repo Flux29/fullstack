@@ -34,7 +34,7 @@ from pydantic_ai.tools import (
 from app.agents.assistant import Deps, get_agent
 from app.agents.google_loadout import GoogleLoadout
 from app.agents.mcp import McpDiscoveries
-from app.agents.tools.coding import CodingToolkit, WorkspacePolicy
+from app.agents.tools.coding import CodingToolkit, WorkspacePolicy, read_repository_briefing
 from app.api.deps import get_conversation_service
 from app.core.config import settings
 from app.core.exceptions import AppException, NotFoundError
@@ -84,6 +84,9 @@ class AgentSession:
         self._approval_future: asyncio.Future[list[dict[str, Any]]] | None = None
         self._research: ResearchToolkit | None = None
         self._coding: CodingToolkit | None = None
+        # The target repository's own conventions, read out of the sandbox at
+        # attach time and appended to this turn's instructions (ADR-006 §5).
+        self._coding_briefing: str = ""
         # Tool names this turn's workspace resolves without asking the browser
         # (ADR-006 §4). Empty unless a workspace opted in.
         self._auto_approved_tools: frozenset[str] = frozenset()
@@ -242,6 +245,7 @@ class AgentSession:
             assistant = get_agent(
                 model_name=data.get("model"),
                 thinking_effort=data.get("thinking_effort"),
+                extra_instructions=self._coding_briefing or None,
                 extra_toolsets=mcp_toolsets + coding_toolsets,
                 deep_research=deep_research,
                 todo_capability=todo_cap,
@@ -291,6 +295,7 @@ class AgentSession:
                 if self._coding is not None:
                     await self._coding.aclose()
                     self._coding = None
+                self._coding_briefing = ""
                 self._auto_approved_tools = frozenset()
                 # Fold what was actually called into the sticky loadout, even
                 # when the turn was stopped — a product the user reached for
@@ -430,6 +435,7 @@ class AgentSession:
             return []
         self._coding = toolkit
         self._auto_approved_tools = tools.auto_approved_tools
+        self._coding_briefing = await read_repository_briefing(tools.backend)
         logger.info(
             "Coding workspace %r attached (ruleset=%s, auto_approve=%s)",
             policy.name,

@@ -1,0 +1,93 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agents",
+    "backend-api"
+  ],
+  "affected_contracts": [
+    "AssistantAgent/get_agent: new optional extra_instructions parameter"
+  ],
+  "behavioral_effects": [
+    "A coding turn arrives knowing the target repository's own entry point: its AGENTS.md (or CLAUDE.md, or CONTRIBUTING.md) and a listing of its .claude/skills by name and description, read out of the sandbox at attach time",
+    "Prompt selection moved into AssistantAgent, which already owned it; the session supplies only the extra text, so the deep-research and rag prompt choice has one owner again instead of two",
+    "Verified end to end against a running sandboxd: a mini repository (AGENTS.md, Makefile, .claude/skills/gov-change/SKILL.md) written into a real sandbox produced a briefing naming AGENTS.md, carrying its content, and listing the skill with its description"
+  ],
+  "compatibility_impact": "Additive. AssistantAgent and get_agent gain an optional extra_instructions parameter; every existing caller is unaffected. A turn without a workspace, or with a workspace whose repository documents nothing, gets exactly the prompt it got before. No schema, endpoint, config, or wire change.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "backend/app/agents/assistant.py",
+    "backend/app/agents/tools/coding.py",
+    "backend/app/services/agent_session.py",
+    "backend/tests/test_coding_tools.py"
+  ],
+  "follow_up": [
+    "Amend ADR-006 section 5 to describe the skills index as shipped, or record why a SkillsToolset is still wanted",
+    "Choose a sandbox runtime image carrying make, git, and uv, together with the ADR-006 open question 2 egress decision, then run the governance smoke test against a real clone",
+    "Consider caching the briefing per workspace across turns rather than re-reading it on every attach"
+  ],
+  "id": "2026-08-23-teach-a-coding-turn-the-target-repository-s-own-conventions-from",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The shrink pass caught a real defect this session would otherwise have shipped: a hand-written test fake returned attribute-style glob results and plain text, while the real backends return FileInfo mappings and a line-numbered gutter from read(). Against StateBackend the skills listing produced nothing and the conventions carried gutter characters, and ten passing tests said otherwise. Fixed by reading through read_bytes, accepting mapping-or-object glob results, and rewriting every briefing test to drive the real StateBackend; a test now pins that no gutter survives",
+    "ADR-006 section 5 says a SkillsToolset rooted at the workspace's .claude/skills. That is not what shipped: SkillsToolset reads local directories and the workspace is inside a remote sandbox, so copying skills out of the sandbox into the API container would be needed to use it. A text index the agent reads with read_file was chosen instead - the agent has file tools, so it can open the SKILL.md it needs. The ADR should be amended or this recorded as the interpretation",
+    "The governance smoke test named as this session's third goal did not run: the sandbox runtime is python:3.12-slim with no make, git, or uv, and no egress to install them, so a real make governance-* run in a sandbox is impossible today. Confirmed by running make check in a sandbox against a seeded Makefile - sh: 1: make: not found. This needs the runtime-image and egress decisions, not more code",
+    "The briefing is read once at attach time; a turn that edits AGENTS.md does not see the new version until the next turn"
+  ],
+  "manifests_changed": [],
+  "reason": "ADR-006 section 5 says the agent drives the target repository's own conventions, but a turn currently arrives with only this product's system prompt: it does not know the target has an AGENTS.md, a Makefile, or a .claude/skills directory, so it invents an approach instead of following the one the repository documents. This reads those conventions out of the sandbox at attach time and puts them in the turn's instructions.",
+  "risks": [
+    "The briefing spends turn context on every coding turn - up to 8000 characters of conventions plus a skills listing - which is charged against the model's window whether or not the turn needs it",
+    "Repository content reaches the model as instructions. It is fenced by being appended rather than substituted and by the length caps, but a repository that documents hostile instructions is still describing them to the agent; the approval gate on writes and commands is what stands behind that, not the briefing"
+  ],
+  "rollback": "git revert restores the code. Nothing outside the repository is touched and no state is written anywhere - the briefing is read-only and lives only in the turn that built it.",
+  "schema_version": 1,
+  "security_impact": "The briefing carries untrusted repository content into the turn's instructions, so two properties are structural rather than advisory. It is appended and can never substitute: extra_instructions is concatenated inside AssistantAgent after the base prompt is chosen, so a caller has no way to express a replacement and a target repository cannot displace the product's instructions - pinned by a test. And the front-matter scan stays a line scan rather than a YAML load, because it parses files that arrive from a sandbox; the governance CLI already draws the same line, hand-rolling this scan for SKILL.md while reserving yaml.safe_load for first-party ADRs. Content is bounded (8000 characters of conventions, 40 skills listed) so a hostile repository cannot flood the context. No new tool, permission, or network path is added: the briefing is read through the same sandbox backend and the same deny guard as any other read.",
+  "summary": "Teach a coding turn the target repository's own conventions from AGENTS.md and its skills index",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "671 passed, 13 skipped; 12 new briefing tests driving the real StateBackend",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped (4 skipped), no host-reachable Postgres; no migration in this session",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

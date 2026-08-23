@@ -16,7 +16,14 @@ from pydantic_ai.models.function import AgentInfo, FunctionModel
 from pydantic_ai.tools import DeferredToolRequests, DeferredToolResults, ToolApproved
 from pydantic_ai_backends import StateBackend
 
-from app.agents.tools.coding import CODING_WRITE_TOOLS, CodingToolkit, WorkspacePolicy
+from app.agents.tools.coding import (
+    CODING_WRITE_TOOLS,
+    MAX_CONVENTION_CHARS,
+    CodingToolkit,
+    WorkspacePolicy,
+    _front_matter_field,
+    read_repository_briefing,
+)
 from app.core.config import settings
 from app.core.exceptions import ValidationError
 
@@ -417,3 +424,127 @@ async def test_another_users_workspace_attaches_no_tools_and_does_not_error(monk
     )
 
     assert await session._build_coding_toolsets(str(uuid4())) == []
+
+
+# --- the target repository's conventions (ADR-006 section 5) -----------------
+#
+# These drive the real StateBackend rather than a hand-written fake. A fake got
+# this wrong once: the real backend returns FileInfo mappings from glob_info and
+# a line-numbered gutter from read(), and a fake that returned objects and plain
+# text made a briefing that produced nothing look like it worked.
+
+
+def _seed(files: dict[str, str]) -> StateBackend:
+    backend = StateBackend({})
+    for path, content in files.items():
+        backend.write(path, content)
+    return backend
+
+
+SKILL_MD = (
+    "---\nname: gov-change\ndescription: Wrap a change in the governance envelope.\n---\n# Body"
+)
+
+
+async def test_briefing_reads_agents_md_from_the_workspace():
+    briefing = await read_repository_briefing(
+        _seed({"/workspace/AGENTS.md": "# Entry point\nRun make check."})
+    )
+
+    assert "The repository you are working in" in briefing
+    assert "Run make check." in briefing
+    assert "### AGENTS.md" in briefing
+
+
+async def test_briefing_carries_no_line_number_gutter():
+    """read() adds one for the model; parsing must not inherit it."""
+    briefing = await read_repository_briefing(_seed({"/workspace/AGENTS.md": "alpha\nbeta"}))
+
+    assert "alpha\nbeta" in briefing
+    assert "\t" not in briefing
+
+
+async def test_briefing_prefers_agents_md_over_claude_md():
+    briefing = await read_repository_briefing(
+        _seed({"/workspace/AGENTS.md": "agents entry", "/workspace/CLAUDE.md": "claude entry"})
+    )
+
+    assert "agents entry" in briefing
+    assert "claude entry" not in briefing
+
+
+async def test_briefing_falls_back_to_a_repository_checked_out_at_the_root():
+    briefing = await read_repository_briefing(_seed({"/AGENTS.md": "root entry"}))
+    assert "root entry" in briefing
+
+
+async def test_briefing_lists_skills_by_name_and_description():
+    briefing = await read_repository_briefing(
+        _seed(
+            {
+                "/workspace/AGENTS.md": "entry",
+                "/workspace/.claude/skills/gov-change/SKILL.md": SKILL_MD,
+            }
+        )
+    )
+
+    assert "Available skills" in briefing
+    assert "`gov-change`" in briefing
+    assert "Wrap a change in the governance envelope." in briefing
+
+
+async def test_briefing_names_a_skill_by_its_directory_when_front_matter_omits_one():
+    briefing = await read_repository_briefing(
+        _seed({"/workspace/.claude/skills/my-skill/SKILL.md": "# No front matter here"})
+    )
+    assert "`my-skill`" in briefing
+
+
+async def test_briefing_is_empty_when_the_workspace_documents_nothing():
+    assert await read_repository_briefing(_seed({})) == ""
+
+
+async def test_briefing_truncates_a_huge_conventions_file():
+    briefing = await read_repository_briefing(
+        _seed({"/workspace/AGENTS.md": "x" * (MAX_CONVENTION_CHARS + 5000)})
+    )
+
+    assert "(truncated)" in briefing
+    assert len(briefing) < MAX_CONVENTION_CHARS + 2000
+
+
+async def test_briefing_degrades_to_nothing_when_the_sandbox_is_unreachable():
+    """A briefing is a convenience; losing it must not fail the turn."""
+
+    class _Dead:
+        def read_bytes(self, *a, **k):
+            raise RuntimeError("sandbox gone")
+
+        def glob_info(self, *a, **k):
+            raise RuntimeError("sandbox gone")
+
+    assert await read_repository_briefing(_Dead()) == ""
+
+
+def test_front_matter_scan_ignores_a_body_that_mimics_front_matter():
+    text = "---\nname: real\n---\n\nname: fake\ndescription: fake\n"
+    assert _front_matter_field(text, "name") == "real"
+    assert _front_matter_field(text, "description") == ""
+
+
+def test_a_workspace_briefing_is_appended_never_a_replacement():
+    """A target repository must not displace the product's own instructions."""
+    from app.agents.assistant import AssistantAgent
+    from app.agents.prompts import get_system_prompt_with_rag
+
+    agent = AssistantAgent(extra_instructions="\n\n## The repository\n\nfollow these")
+
+    assert agent.system_prompt.startswith(get_system_prompt_with_rag())
+    assert agent.system_prompt.endswith("follow these")
+
+
+def test_no_briefing_leaves_the_default_prompt_untouched():
+    from app.agents.assistant import AssistantAgent
+    from app.agents.prompts import get_system_prompt_with_rag
+
+    assert AssistantAgent().system_prompt == get_system_prompt_with_rag()

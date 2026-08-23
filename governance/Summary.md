@@ -56,11 +56,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 149)
+## Recent changes (latest 20 of 150)
 
 - **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-update-the-recorded-migration-head-expectation-to-0031-create-wo.json`
+- **2026-08-23** — Teach a coding turn the target repository's own conventions from AGENTS.md and its skills index
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-23-teach-a-coding-turn-the-target-repository-s-own-conventions-from.json`
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Replace the OAuth JWT-in-query redirect with a short-lived single-use sign-in code exchanged server-to-server
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-replace-the-oauth-jwt-in-query-redirect-with-a-short-lived-singl.json`
-- **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
 
 ## Decisions (6)
 

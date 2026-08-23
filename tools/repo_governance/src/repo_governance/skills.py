@@ -40,7 +40,18 @@ SKIP_PREFIX = ".claude/worktrees/"
 #: that invalidated the path. Editing it to match today would falsify the record ADR-001
 #: rests on. It also names MCP methods such as `tools/list`, which are wire protocol, not
 #: paths — a shape no positive-classification rule can tell from a deleted directory.
-SKIP_FILES = frozenset({"docs/Fullstack_Agentic_Governance_Blueprint.md"})
+SKIP_FILES = frozenset(
+    {
+        "docs/Fullstack_Agentic_Governance_Blueprint.md",
+        # The adoption baseline, frozen for the same reason as the blueprint it accepts: it
+        # records what was true on 2026-08-06, including the hook layout that has since
+        # moved, and one passage quotes a wrong path on purpose to contrast it with the
+        # right one. Editing it to satisfy the checker would falsify the record. It entered
+        # this corpus only because Phase 1 moved the ADRs under docs/; ADRs written from
+        # here on describe the present and are checked.
+        "docs/architecture/decisions/ADR-001-governance-adoption-baseline.md",
+    }
+)
 
 #: A token containing any of these is a placeholder or shell fragment, never a citation.
 _PLACEHOLDER = re.compile(r"[<>$={}\[\]()\s]|\.\.\.|…")

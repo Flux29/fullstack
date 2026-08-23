@@ -101,6 +101,45 @@
       "promotion_criteria": "Enforceable only as a review requirement. The scheduled automation now in place - .github/workflows/nightly.yml (report-only, contents: read, no write step) and .github/dependabot.yml (proposes PRs, never merges) - is what a reviewer checks this rule against; a check could assert that no scheduled workflow requests write permissions.",
       "exceptions_allowed": false,
       "exception_refs": []
+    },
+    {
+      "id": "adr-front-matter-is-well-formed",
+      "statement": "Every ADR opens with a YAML front-matter block carrying id, title, status, date, and components; the id matches the filename and is unique; no key outside the declared vocabulary appears.",
+      "rationale": "The front matter is read as data, not prose: components derive their decision_refs from it. A key governance does not read looks identical to one it does, so an unknown key is reported rather than skipped - otherwise an author believes they declared something that was never seen.",
+      "maturity": "advisory",
+      "check_impl": "checks.documentation.check_adr_front_matter",
+      "promotion_criteria": "Promote to blocking once the ADR set has grown past ten and `governance decision propose` is the normal way a new one is created, so a malformed block is an editing slip rather than a first-time author's mistake.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "adr-references-are-consistent",
+      "statement": "An ADR's components resolve to declared components, its supersedes targets exist and carry status superseded, a superseded ADR is named by some successor, its related_paths globs match at least one tracked file, and its policy_refs resolve.",
+      "rationale": "These are the failures that leave a decision looking governed while binding nothing: a component id that no longer exists, two ADRs claiming the same ground with no losing side, a glob pointing at deleted code. Checking that a reference resolves is not the same as checking that both sides agree, and only the second catches drift.",
+      "maturity": "advisory",
+      "check_impl": "checks.documentation.check_adr_consistency",
+      "promotion_criteria": "Promote to blocking after the first template upgrade and one debt sweep have passed with the rule clean, which is the evidence that component ids and ADR text move together.",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "decision-refs-are-derived-not-declared",
+      "statement": "No directory annotation or curated component declares decision_refs; the field is derived at sync from the components list in each ADR's front matter.",
+      "rationale": "The link was declared on both sides and drifted: five of thirteen links were one-directional and no check caught it, because the reference resolved perfectly well from the side that had it. A hand-declaration now survives until the next sync overwrites it, which is worse than being wrong loudly.",
+      "maturity": "blocking",
+      "check_impl": "checks.documentation.check_decision_refs_are_derived",
+      "exceptions_allowed": false,
+      "exception_refs": []
+    },
+    {
+      "id": "document-references-resolve",
+      "statement": "Every decision, exception, and finding reference in a governed document resolves to something that exists.",
+      "rationale": "The check has existed since the references module was written and never ran: no policy declared it, and rules are what drive execution, so a registered check with no rule is dead code that reads as an assurance. Declared here at advisory while the finding volume on the real tree is established.",
+      "maturity": "advisory",
+      "check_impl": "checks.references.check_document_references",
+      "promotion_criteria": "Promote to blocking once it has run clean across two consecutive governed changes; the reference kinds it covers are already blocking when they resolve through the validator registry, so the target maturity is blocking rather than warning.",
+      "exceptions_allowed": false,
+      "exception_refs": []
     }
   ]
 }

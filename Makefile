@@ -10,7 +10,8 @@
 	governance-install governance-preflight governance-scan governance-sync governance-check \
 	governance-check-fast governance-doctor governance-selftest governance-lint governance-sample governance-views governance-context \
 	governance-impact governance-explain governance-summary governance-gate-metrics \
-	governance-visualize governance-skills-check governance-change-start governance-change-finish
+	governance-visualize governance-skills-check governance-decision-propose \
+	governance-change-start governance-change-finish
 
 COMPOSE_BASE := docker compose -f docker-compose.yml
 COMPOSE_DEV := $(COMPOSE_BASE) -f docker-compose.dev.yml
@@ -336,6 +337,9 @@ governance-visualize:
 
 governance-skills-check:
 	$(GOVERNANCE) skills-check $(ARGS)
+
+governance-decision-propose:
+	$(GOVERNANCE) decision propose --title "$(TITLE)" --components "$(COMPONENTS)" $(ARGS)
 
 governance-change-start:
 	$(GOVERNANCE) change start --summary "$(SUMMARY)" --reason "$(REASON)"

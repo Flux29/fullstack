@@ -51,6 +51,9 @@
         "OPENROUTER_API_KEY",
         "TAVILY_API_KEY"
       ],
+      "decision_refs": [
+        "ADR-003"
+      ],
       "declared_in": "annotation",
       "entrypoints": [
         "backend/app/agents/assistant.py",
@@ -142,7 +145,7 @@
         "TIMEZONE"
       ],
       "decision_refs": [
-        "ADR-001"
+        "ADR-005"
       ],
       "declared_in": "annotation",
       "entrypoints": [
@@ -330,6 +333,9 @@
       ],
       "configuration_refs": [
         "DOCLING_SERVE_URL"
+      ],
+      "decision_refs": [
+        "ADR-004"
       ],
       "declared_in": "annotation",
       "entrypoints": [
@@ -643,7 +649,8 @@
         "POSTGRES_DB"
       ],
       "decision_refs": [
-        "ADR-002"
+        "ADR-002",
+        "ADR-005"
       ],
       "declared_in": "curated",
       "exceptions": [
@@ -694,7 +701,8 @@
         "RAG_DEFAULT_COLLECTION"
       ],
       "decision_refs": [
-        "ADR-002"
+        "ADR-002",
+        "ADR-004"
       ],
       "declared_in": "annotation",
       "entrypoints": [

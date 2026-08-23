@@ -107,11 +107,23 @@ class Paths:
 
     @property
     def decisions(self) -> Path:
-        return self.history / "decisions"
+        """Where the ADR prose lives.
+
+        Under `docs/` rather than `governance/history/`: an ADR is architecture
+        documentation a human or a non-Claude agent goes looking for, and burying it in the
+        corpus-gated history made it reachable only through a governance query. The
+        generated index stays in `governance/history/` — see `decision_index`.
+        """
+        return self.repo_root / "docs" / "architecture" / "decisions"
 
     @property
     def decision_index(self) -> Path:
-        return self.decisions / "index.json"
+        """The generated ADR index. Deliberately not derived from `decisions`.
+
+        The prose moved to `docs/`; the index is a generated governance artefact and stays
+        where sync owns it.
+        """
+        return self.history / "decisions" / "index.json"
 
     @property
     def evaluations(self) -> Path:

@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 143)
+## Recent changes (latest 20 of 144)
 
+- **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
+  - Components: backend-api, governance-kernel, rag
+  - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
 - **2026-08-22** — Document the required change-finish options and the branch check when resuming a session in gov-change
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-22-document-the-required-change-finish-options-and-the-branch-check.json`
@@ -115,14 +118,13 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Put a least-privilege socket proxy between Traefik and the Docker API
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-put-a-least-privilege-socket-proxy-between-traefik-and-the-docke.json`
-- **2026-08-20** — Make the RAG worker publish status events through settings.REDIS_URL so it authenticates in production
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-20-make-the-rag-worker-publish-status-events-through-settings-redis.json`
 
 ## Decisions (5)
 
-- **ADR-001** — Governance adoption baseline (accepted)
-- **ADR-002** — The embedding dimension is a five-point contract (accepted)
-- **ADR-003** — MCP connections are one abstraction with orthogonal dimensions (accepted)
-- **ADR-004** — Docling has two execution paths against one service (accepted)
-- **ADR-005** — Exposure posture is per-stack, and the edge is the only public surface (accepted)
+### Accepted
+
+- **ADR-001** — Governance adoption baseline — `docs/architecture/decisions/ADR-001-governance-adoption-baseline.md`
+- **ADR-002** — The embedding dimension is a five-point contract — `docs/architecture/decisions/ADR-002-embedding-dimension-contract.md`
+- **ADR-003** — MCP connections are one abstraction with orthogonal dimensions — `docs/architecture/decisions/ADR-003-mcp-connection-model.md`
+- **ADR-004** — Docling has two execution paths against one service — `docs/architecture/decisions/ADR-004-docling-two-paths.md`
+- **ADR-005** — Exposure posture is per-stack, and the edge is the only public surface — `docs/architecture/decisions/ADR-005-service-exposure-strategy.md`

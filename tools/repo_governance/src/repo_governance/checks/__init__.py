@@ -77,7 +77,16 @@ def _registry() -> dict[str, tuple[CheckFunction, bool]]:
     Imported lazily so a syntax error in one check module surfaces as a real traceback
     rather than an import-time failure of the whole CLI.
     """
-    from repo_governance.checks import architecture, compatibility, graph, process, references, schemas, security
+    from repo_governance.checks import (
+        architecture,
+        compatibility,
+        documentation,
+        graph,
+        process,
+        references,
+        schemas,
+        security,
+    )
 
     return {
         "checks.architecture.check_single_declaration": (architecture.check_single_declaration, False),
@@ -106,6 +115,9 @@ def _registry() -> dict[str, tuple[CheckFunction, bool]]:
         "checks.schemas.check_idempotence": (schemas.check_idempotence, False),
         "checks.schemas.check_curated_not_generated": (schemas.check_curated_not_generated, False),
         "checks.schemas.check_contract_version": (schemas.check_contract_version, True),
+        "checks.documentation.check_adr_front_matter": (documentation.check_adr_front_matter, True),
+        "checks.documentation.check_adr_consistency": (documentation.check_adr_consistency, False),
+        "checks.documentation.check_decision_refs_are_derived": (documentation.check_decision_refs_are_derived, True),
         "checks.references.check_validator_references": (references.check_validator_references, True),
         "checks.references.check_excluded_validators": (references.check_excluded_validators, True),
         "checks.references.check_document_references": (references.check_document_references, False),

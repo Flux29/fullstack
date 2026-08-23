@@ -116,7 +116,7 @@ Read these when the task touches them — not before.
 | --- | --- |
 | What exists, what owns it, what is unresolved | `governance/catalog.json`, then `governance/Summary.md` |
 | Conventions for the file you are editing | `.claude/rules/*.md` — path-scoped: `architecture`, `api-conventions`, `schemas-models`, `exceptions-security`, `code-style`, `testing`, `frontend` |
-| Why a durable decision was made | `governance/history/decisions/` (indexed in `index.json`) |
+| Why a durable decision was made | `docs/architecture/decisions/` (indexed in `governance/history/decisions/index.json`) |
 | Why a recent change was made | `governance/history/changes/` — query by component or path, do not read the directory |
 | What proves a change works | `governance/validators.json` |
 | Longer-form architecture and how-to | `docs/architecture.md`, `docs/adding_features.md`, `docs/testing.md`, `docs/patterns.md` |

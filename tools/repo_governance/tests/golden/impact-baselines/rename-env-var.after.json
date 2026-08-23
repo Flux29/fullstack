@@ -40,8 +40,8 @@
     "WS /api/v1/ws/agent"
   ],
   "decisions": [
-    "ADR-001",
-    "ADR-002"
+    "ADR-002",
+    "ADR-005"
   ],
   "findings": [],
   "graph_files": [],

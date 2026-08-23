@@ -79,12 +79,18 @@ def render_all(ctx: Context) -> dict[str, str]:
     """
     outputs: dict[str, str] = {}
 
+    from repo_governance.builders import build_decision_index
     from repo_governance.extractors.configuration import extract_configuration
     from repo_governance.merge import build_components, build_effective
     from repo_governance.renderers.env_vars import render_env_vars
 
-    components, _ = build_components(ctx)
-    effective = build_effective(ctx)
+    # The decision index is built first because components derive `decision_refs` from it.
+    # The ADR front matter is the single declaration of the ADR-to-component link, so the
+    # index has to exist before anything that reads that link is compiled.
+    decision_index = build_decision_index(ctx)
+
+    components, _ = build_components(ctx, decision_index)
+    effective = build_effective(ctx, decision_index)
     outputs[COMPONENTS_PATH] = canonical_json(components)
     outputs[EFFECTIVE_PATH] = canonical_json(effective)
 
@@ -93,7 +99,6 @@ def render_all(ctx: Context) -> dict[str, str]:
     outputs[ENV_VARS_PATH] = render_env_vars(ctx, configuration)
 
     from repo_governance.builders import (
-        build_decision_index,
         build_interfaces,
         build_read_surface,
         build_services,
@@ -101,7 +106,6 @@ def render_all(ctx: Context) -> dict[str, str]:
     from repo_governance.renderers.summary import render_summary
 
     interfaces = build_interfaces(ctx)
-    decision_index = build_decision_index(ctx)
     outputs[SERVICES_PATH] = canonical_json(build_services(ctx))
     outputs[INTERFACES_PATH] = canonical_json(interfaces)
     outputs[DECISION_INDEX_PATH] = canonical_json(decision_index)

@@ -91,13 +91,46 @@ def _ancestor_of(annotation_path: str, candidates: dict[str, str]) -> str | None
     return best[1] if best else None
 
 
-def build_components(ctx: Context) -> tuple[dict[str, Any], list[dict[str, str]]]:
+#: ADR statuses whose decisions still bind. A superseded, deprecated, or rejected decision
+#: is history: its successor carries the constraint, and surfacing it in a briefing would
+#: send a reader to a document that no longer describes the repository.
+BINDING_DECISION_STATUSES: frozenset[str] = frozenset({"accepted", "proposed"})
+
+
+def _derive_decision_refs(decision_index: dict[str, Any]) -> dict[str, list[str]]:
+    """Invert the ADR index into `{component id: [ADR ids]}`.
+
+    The ADR's `components` list is the single declaration of this link. Inverting it here
+    means a component's `decision_refs` cannot disagree with the ADR that names it — before
+    this, both sides declared the link and five of thirteen had drifted one-directional.
+    """
+    by_component: dict[str, list[str]] = {}
+    for decision in decision_index.get("decisions", []):
+        if decision.get("status") not in BINDING_DECISION_STATUSES:
+            continue
+        for component_id in decision.get("components", []):
+            by_component.setdefault(component_id, []).append(decision["id"])
+    return {component_id: sorted(set(refs)) for component_id, refs in by_component.items()}
+
+
+def build_components(
+    ctx: Context, decision_index: dict[str, Any] | None = None
+) -> tuple[dict[str, Any], list[dict[str, str]]]:
     """Compile every declaration into the components manifest.
 
     Returns the manifest and any conflicts found while compiling it.
+
+    `decision_index` is accepted so the sync pipeline can hand over the index it already
+    built rather than paying to parse the ADRs again; when it is omitted the index is built
+    here, so every caller gets derived `decision_refs` whether or not it knows about ADRs.
     """
+    from repo_governance.builders import build_decision_index
+
     annotations = _load_annotations(ctx)
     curated, defaults = _load_curated(ctx)
+    if decision_index is None:
+        decision_index = build_decision_index(ctx)
+    decision_refs = _derive_decision_refs(decision_index)
     conflicts: list[dict[str, str]] = []
 
     by_id: dict[str, dict[str, Any]] = {}
@@ -135,6 +168,16 @@ def build_components(ctx: Context) -> tuple[dict[str, Any], list[dict[str, str]]
             if field not in record and field in source:
                 record[field] = list(source[field])
 
+    # Derivation is assignment, not merge: a hand-declared `decision_refs` is replaced, and
+    # a component no ADR names loses the field entirely. Anything softer would let a stale
+    # declaration survive as the very drift this removes.
+    for component_id, record in by_id.items():
+        derived = decision_refs.get(component_id)
+        if derived:
+            record["decision_refs"] = derived
+        else:
+            record.pop("decision_refs", None)
+
     components = []
     for component_id in sorted(by_id):
         record = by_id[component_id]
@@ -156,9 +199,9 @@ def build_components(ctx: Context) -> tuple[dict[str, Any], list[dict[str, str]]
     return manifest, conflicts
 
 
-def build_effective(ctx: Context) -> dict[str, Any]:
+def build_effective(ctx: Context, decision_index: dict[str, Any] | None = None) -> dict[str, Any]:
     """Merge generated facts with curated intent and the exception overlay."""
-    components_manifest, conflicts = build_components(ctx)
+    components_manifest, conflicts = build_components(ctx, decision_index)
 
     exceptions_path = ctx.paths.curated_manifests / "exceptions.json"
     exceptions = read_json(exceptions_path).get("exceptions", []) if exceptions_path.is_file() else []

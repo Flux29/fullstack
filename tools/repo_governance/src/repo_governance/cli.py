@@ -345,10 +345,11 @@ def doctor() -> None:
         "manifests/generated/": ctx.paths.generated_manifests,
         "manifests/effective/": ctx.paths.effective_manifests,
         "history/changes/": ctx.paths.changes,
-        "history/decisions/": ctx.paths.decisions,
+        "history/decisions/index.json": ctx.paths.decision_index,
+        "docs/architecture/decisions/": ctx.paths.decisions,
     }
     for label, path in expected.items():
-        click.echo(f"  {label:<22} {'present' if path.exists() else 'missing'}")
+        click.echo(f"  {label:<29} {'present' if path.exists() else 'missing'}")
 
     click.echo("")
     click.echo("Cache")
@@ -726,6 +727,139 @@ def gate_metrics(as_json: bool) -> None:
     click.echo("Promotion/demotion of roots is a governed change to [gate] in governance/governance.toml.")
 
 
+def _slugify(text: str) -> str:
+    import re
+
+    slug = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return slug or "untitled"
+
+
+@main.group()
+def decision() -> None:
+    """Architecture decision records."""
+
+
+@decision.command("propose")
+@click.option("--title", required=True, help="A sentence that can be true or false.")
+@click.option("--components", "components", multiple=True, required=True, help="Component id it binds. Repeatable.")
+@click.option("--supersedes", "supersedes", multiple=True, help="ADR id this replaces. Repeatable.")
+@click.option("--related-path", "related_paths", multiple=True, help="Glob joined to changed paths. Repeatable.")
+@click.option("--date", "date_text", help="ISO date; defaults to today.")
+def decision_propose(
+    title: str,
+    components: tuple[str, ...],
+    supersedes: tuple[str, ...],
+    related_paths: tuple[str, ...],
+    date_text: str | None,
+) -> None:
+    """Scaffold a new ADR with status `proposed`.
+
+    Automation never writes an accepted decision. This produces a proposal, inside a change
+    session, for a human to argue with — the acceptance is a separate edit that a change
+    record has to cite.
+    """
+    from datetime import date as date_type
+
+    from repo_governance.builders import read_adr_front_matter
+    from repo_governance.config import iter_files
+    from repo_governance.session import SessionError, load
+
+    ctx = _context()
+    try:
+        load(ctx)
+    except SessionError as exc:
+        raise click.ClickException(
+            f"{exc} A new decision is a governed change: open the session first so the record explains why it exists."
+        ) from exc
+
+    # Same convention as --paths: the Make targets pass one quoted string, so
+    # COMPONENTS="a b" has to work as well as --components a --components b.
+    components = tuple(_split_paths(components))
+    supersedes = tuple(_split_paths(supersedes))
+    related_paths = tuple(_split_paths(related_paths))
+    if not components:
+        raise click.ClickException("--components must name at least one component.")
+
+    template_path = ctx.paths.governance / "templates" / "adr.md"
+    if not template_path.is_file():
+        raise click.ClickException(f"Missing {template_path.name}; expected the ADR scaffold at {template_path}.")
+
+    existing = {}
+    highest = 0
+    for path in iter_files(ctx.paths.decisions, suffixes=(".md",)):
+        if not path.name.startswith("ADR-"):
+            continue
+        fields, _ = read_adr_front_matter(path)
+        identifier = str(fields.get("id", "")).strip()
+        existing[identifier] = path
+        digits = identifier.removeprefix("ADR-")
+        if digits.isdigit():
+            highest = max(highest, int(digits))
+
+    for target in supersedes:
+        if target not in existing:
+            raise click.ClickException(f"--supersedes {target} does not resolve to an existing ADR.")
+
+    new_id = f"ADR-{highest + 1:03d}"
+    date_value = date_text or date_type.today().isoformat()
+
+    def block(name: str, values: tuple[str, ...]) -> str:
+        if not values:
+            return f"{name}: []\n"
+        return f"{name}:\n" + "".join(f"  - {value}\n" for value in values)
+
+    front_matter = (
+        "---\n"
+        f"id: {new_id}\n"
+        f"title: {title}\n"
+        "status: proposed\n"
+        f"date: {date_value}\n"
+        + block("components", components)
+        + block("supersedes", supersedes)
+        + block("related_paths", related_paths)
+        + "policy_refs: []\n"
+        "---\n"
+    )
+
+    template = template_path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    _, _, body = template.partition("---\n")
+    _, _, body = body.partition("---\n")
+    body = body.replace("ADR-NNN", new_id).replace("<title>", title).replace("YYYY-MM-DD", date_value)
+
+    target_path = ctx.paths.decisions / f"{new_id}-{_slugify(title)}.md"
+    if target_path.exists():
+        raise click.ClickException(f"{target_path} already exists.")
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    write_text_atomic(target_path, front_matter + body)
+
+    click.echo(f"Wrote {target_path.relative_to(ctx.repo_root).as_posix()}")
+    click.echo(f"  id:         {new_id} (status: proposed)")
+    click.echo(f"  components: {', '.join(components)}")
+
+    known = {component["id"] for component in _known_components(ctx)}
+    unknown = [component for component in components if component not in known]
+    if unknown:
+        click.echo(
+            f"  note: {', '.join(unknown)} does not resolve to a declared component; governance check will say so."
+        )
+    if supersedes:
+        click.echo(
+            f"  note: set {', '.join(supersedes)} to status `superseded` in this same change, "
+            "or the consistency check will report two decisions claiming the same ground."
+        )
+    click.echo("")
+    click.echo("Fill in the sections, then `make governance-sync` to index it.")
+
+
+def _known_components(ctx: Context) -> list[dict]:
+    path = ctx.paths.effective_repository
+    if not path.is_file():
+        return []
+    from repo_governance.io_atomic import read_json
+
+    return read_json(path).get("components", [])
+
+
 @main.group()
 def change() -> None:
     """Governed change sessions."""
@@ -837,6 +971,21 @@ def change_finish(
     click.echo(f"Wrote {target.relative_to(ctx.repo_root).as_posix()}")
     click.echo(f"  components: {', '.join(record['affected_components']) or 'none matched'}")
     click.echo(f"  files:      {len(record['files_changed'])}")
+
+    # Console only, never recorded: a decision that still holds is the normal case, and
+    # writing that into every record would bury the times it does not.
+    by_id = {component["id"]: component for component in _known_components(ctx)}
+    binding = {
+        ref
+        for component_id in record["affected_components"]
+        for ref in by_id.get(component_id, {}).get("decision_refs", [])
+    }
+    uncited = sorted(binding - set(judgement["adr_refs"]))
+    if uncited:
+        click.echo("")
+        click.echo(f"  Decisions binding what you changed, not cited with --adr: {', '.join(uncited)}")
+        click.echo("  Confirm each still holds, or `governance decision propose --supersedes <id>`.")
+
     click.echo("")
     click.echo("Now run `make governance-sync` to fold it into Summary.md, then `make governance-check`.")
 

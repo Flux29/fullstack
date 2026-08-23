@@ -1,0 +1,59 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance context and impact queries for .claude/** now surface the rule that user-level skills are not duplicated under .claude/skills/ and that task-observer-staged updates to repository skills land only through gov-change gated by skills-check."
+  ],
+  "compatibility_impact": "None. governance/manifests/generated/components.json and governance/manifests/effective/repository.json each gain one invariant string for agent-operating-surface; no contract, schema, route, event, or validator registry entry changes.",
+  "date": "2026-08-22",
+  "files_changed": [
+    ".claude/.governance.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "follow_up": [
+    "The skill review is not scheduled: cloud routines cannot reach ~/.claude, so the observer relies on its in-session 7-day fallback offer or an explicit request."
+  ],
+  "id": "2026-08-22-document-the-globally-installed-task-observer-skill-and-its-inst",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The originally planned CLAUDE.md bullet was dropped: the simplify pass (four reviewers: reuse, simplification, efficiency, altitude) found it restated the global ~/.claude/CLAUDE.md, which is loaded in every session here, and placed the one non-derivable fact at the wrong altitude. The invariant is the only repository-side text. Nothing could be deleted or consolidated: no existing text covered user-level skills.",
+    "Net-positive diff of one annotation line, because the rule is new to the repository."
+  ],
+  "manifests_changed": [
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "reason": "The task-observer skill is installed once at user level and activated from the global CLAUDE.md, but its default workspace rule and staging rules say nothing about this repository: an agent could re-anchor the observation log under the working directory or duplicate the observer into .claude/skills/, where skills-check would reject its non-repository path citations. The note pins the global workspace and states that staged updates to the repo's skills land only through gov-change plus skills-check",
+  "risks": [
+    "The invariant is prose, enforced by review, not by a check. skills-check is the de facto backstop: a repository copy of task-observer cites non-repository paths and would fail it."
+  ],
+  "rollback": "Revert the commit; the two manifests are in the same commit, so governance-sync is a no-op afterwards. A revert does not touch the user-level pieces outside the repository: ~/.claude/skills/task-observer/, the workspace ~/.claude/skill-observations/ and ~/.claude/skill-updates/, and the Task Observer section appended to ~/.claude/CLAUDE.md - remove those by hand if the observer is retired.",
+  "schema_version": 1,
+  "security_impact": "None. One invariant string added to a curated component annotation (.claude/.governance.json) and compiled into two manifests by governance-sync. No code, configuration, dependency, hook, permission, or exposure surface changes. The task-observer skill itself is installed at user level (~/.claude/skills/), outside the repository, and stages updates rather than writing to live skill directories.",
+  "summary": "Document the globally installed task-observer skill and its install rules for this repository",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "baseline substitute for preflight (preflight-ports failed because the dev stack is running); 15 checks, 0 blocking, 0 advisory",
+      "id": "governance-check-fast",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "pre-finish run, 40 checks, 1 blocking - governance-changes-are-recorded for the two synced manifests, which this record resolves; 8 advisories all pre-existing (codecov-worker healthcheck, email facade imports, settings/account chain). Re-run after finish",
+      "id": "governance-check",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "44 files scanned under .claude/skills, .claude/commands, .claude/rules, docs; every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    }
+  ]
+}

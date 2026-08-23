@@ -16,7 +16,8 @@
         "Skills, commands, and rules may cite only repository paths, Make targets, and validator IDs that exist; governance skills-check is the mechanical enforcement. Its corpus reaches beyond this component's ownership to the prose documentation under docs/, which cites the same territory and rots the same way",
         "The validator registry of record is governance/validators.json; skill text references validators by ID and never restates commands as a second source of truth",
         "Hooks under .claude/hooks/ are stdlib-only Python scripts, because a uv cold start would be paid on every gated tool call",
-        "skills-check proves citations, not prose: debt-sweep spot-checks one skill per sweep against the code it describes, and a template upgrade or a batch of new skills triggers a full audit (see evaluation 2026-08-10-agent-surface-audit-loop)"
+        "skills-check proves citations, not prose: debt-sweep spot-checks one skill per sweep against the code it describes, and a template upgrade or a batch of new skills triggers a full audit (see evaluation 2026-08-10-agent-surface-audit-loop)",
+        "User-level skills (~/.claude/skills/, e.g. task-observer) are not duplicated under .claude/skills/: a skill the harness already loads from the user profile gains nothing from a repository copy except drift. A skill update that task-observer stages for a skill here is installed like any other edit to this surface - inside gov-change and gated by skills-check - never written live"
       ],
       "kind": "governance",
       "owns": [

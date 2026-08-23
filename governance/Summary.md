@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 141)
+## Recent changes (latest 20 of 142)
 
+- **2026-08-22** — Document the globally installed task-observer skill and its install rules for this repository
+  - Components: agent-operating-surface, governance-kernel
+  - Record: `governance/history/changes/2026-08-22-document-the-globally-installed-task-observer-skill-and-its-inst.json`
 - **2026-08-21** — Surface the backend's structured error message through the Next.js proxy handlers instead of the generic BackendApiError status line
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-21-surface-the-backend-s-structured-error-message-through-the-next.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Install the backend security headers middleware and make SECURITY.md match it
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-install-the-backend-security-headers-middleware-and-make-securit.json`
-- **2026-08-20** — Inject the shared lifespan Redis client into RAGStatusService so the RAG status SSE stream works
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-20-inject-the-shared-lifespan-redis-client-into-ragstatusservice-so.json`
 
 ## Decisions (5)
 

@@ -52,7 +52,8 @@
         "TAVILY_API_KEY"
       ],
       "decision_refs": [
-        "ADR-003"
+        "ADR-003",
+        "ADR-006"
       ],
       "declared_in": "annotation",
       "entrypoints": [
@@ -145,7 +146,8 @@
         "TIMEZONE"
       ],
       "decision_refs": [
-        "ADR-005"
+        "ADR-005",
+        "ADR-006"
       ],
       "declared_in": "annotation",
       "entrypoints": [
@@ -199,6 +201,9 @@
       "configuration_refs": [
         "NEXT_PUBLIC_WS_URL",
         "NEXT_PUBLIC_API_URL"
+      ],
+      "decision_refs": [
+        "ADR-006"
       ],
       "declared_in": "curated",
       "exceptions": [
@@ -554,7 +559,8 @@
     {
       "configuration_refs": [],
       "decision_refs": [
-        "ADR-003"
+        "ADR-003",
+        "ADR-006"
       ],
       "declared_in": "curated",
       "forbidden_dependencies": [],

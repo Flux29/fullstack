@@ -57,6 +57,31 @@
       "id": "ADR-005",
       "status": "accepted",
       "title": "Exposure posture is per-stack, and the edge is the only public surface"
+    },
+    {
+      "components": [
+        "agents",
+        "backend-api",
+        "chat-frontend",
+        "mcp-user-connections"
+      ],
+      "date": "2026-08-23",
+      "file": "docs/architecture/decisions/ADR-006-coding-workspaces.md",
+      "id": "ADR-006",
+      "policy_refs": [
+        "exposure-posture",
+        "mcp-approval-parity",
+        "privilege-expansion-requires-approval"
+      ],
+      "related_paths": [
+        "backend/app/agents/tools/*.py",
+        "backend/app/services/agent_session.py",
+        "backend/app/services/research.py",
+        "docker-compose*.yml",
+        "frontend/src/components/chat/tool-approval-dialog.tsx"
+      ],
+      "status": "proposed",
+      "title": "Coding workspaces give the assistant sandboxed repository tools, and every write or execute is approval-gated unless the workspace ruleset auto-approves it"
     }
   ],
   "provenance": {

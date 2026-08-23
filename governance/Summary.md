@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 144)
+## Recent changes (latest 20 of 145)
 
+- **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
 - **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
   - Components: backend-api, governance-kernel, rag
   - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
@@ -115,11 +118,8 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Rate-limit login, registration, password-reset and magic-link requests per client IP and per account
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-rate-limit-login-registration-password-reset-and-magic-link-requ.json`
-- **2026-08-20** — Put a least-privilege socket proxy between Traefik and the Docker API
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-put-a-least-privilege-socket-proxy-between-traefik-and-the-docke.json`
 
-## Decisions (5)
+## Decisions (6)
 
 ### Accepted
 
@@ -128,3 +128,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **ADR-003** — MCP connections are one abstraction with orthogonal dimensions — `docs/architecture/decisions/ADR-003-mcp-connection-model.md`
 - **ADR-004** — Docling has two execution paths against one service — `docs/architecture/decisions/ADR-004-docling-two-paths.md`
 - **ADR-005** — Exposure posture is per-stack, and the edge is the only public surface — `docs/architecture/decisions/ADR-005-service-exposure-strategy.md`
+
+### Proposed (awaiting review)
+
+- **ADR-006** — Coding workspaces give the assistant sandboxed repository tools, and every write or execute is approval-gated unless the workspace ruleset auto-approves it — `docs/architecture/decisions/ADR-006-coding-workspaces.md`

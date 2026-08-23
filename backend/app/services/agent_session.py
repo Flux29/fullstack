@@ -4,6 +4,7 @@ import contextlib
 import logging
 from datetime import UTC, datetime
 from typing import Any
+from uuid import UUID
 
 from fastapi import WebSocket, WebSocketDisconnect
 from pydantic_ai import (
@@ -33,8 +34,10 @@ from pydantic_ai.tools import (
 from app.agents.assistant import Deps, get_agent
 from app.agents.google_loadout import GoogleLoadout
 from app.agents.mcp import McpDiscoveries
+from app.agents.tools.coding import CodingToolkit, WorkspacePolicy, read_repository_briefing
 from app.api.deps import get_conversation_service
 from app.core.config import settings
+from app.core.exceptions import AppException, NotFoundError
 from app.db.models.user import User
 from app.db.session import get_db_context
 from app.services.agent import (
@@ -49,6 +52,7 @@ from app.services.agent import (
 from app.services.file_storage import get_file_storage
 from app.services.mcp_connection import build_toolsets_for_user
 from app.services.research import RESEARCH_TOOL_NAMES, ResearchToolkit
+from app.services.workspace import WorkspaceService
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +83,13 @@ class AgentSession:
         self._ask_user_future: asyncio.Future[list[dict[str, Any]]] | None = None
         self._approval_future: asyncio.Future[list[dict[str, Any]]] | None = None
         self._research: ResearchToolkit | None = None
+        self._coding: CodingToolkit | None = None
+        # The target repository's own conventions, read out of the sandbox at
+        # attach time and appended to this turn's instructions (ADR-006 §5).
+        self._coding_briefing: str = ""
+        # Tool names this turn's workspace resolves without asking the browser
+        # (ADR-006 §4). Empty unless a workspace opted in.
+        self._auto_approved_tools: frozenset[str] = frozenset()
         self._subagent_task_manager: Any | None = None
         # Google loadouts are conversation-scoped, not run-scoped: a follow-up
         # turn inherits the products the previous turns actually used, so "send
@@ -218,6 +229,9 @@ class AgentSession:
                 ctx_manager_cap = caps.context_manager
             else:
                 deep_research = False
+
+            coding_toolsets = await self._build_coding_toolsets(data.get("workspace_id"))
+
             # Route this turn onto Google products before toolsets are built —
             # build_toolsets_for_user gates each integration against the result.
             loadout = self._google_loadout_for_turn(user_message)
@@ -231,7 +245,8 @@ class AgentSession:
             assistant = get_agent(
                 model_name=data.get("model"),
                 thinking_effort=data.get("thinking_effort"),
-                extra_toolsets=mcp_toolsets,
+                extra_instructions=self._coding_briefing or None,
+                extra_toolsets=mcp_toolsets + coding_toolsets,
                 deep_research=deep_research,
                 todo_capability=todo_cap,
                 subagent_capability=subagent_cap,
@@ -277,6 +292,11 @@ class AgentSession:
                     self._subagent_task_manager = None
                 if self._research is not None:
                     await self._research.flush()
+                if self._coding is not None:
+                    await self._coding.aclose()
+                    self._coding = None
+                self._coding_briefing = ""
+                self._auto_approved_tools = frozenset()
                 # Fold what was actually called into the sticky loadout, even
                 # when the turn was stopped — a product the user reached for
                 # before cancelling is still the right one to inherit.
@@ -383,8 +403,74 @@ class AgentSession:
         finally:
             self._ask_user_future = None
 
+    async def _build_coding_toolsets(self, workspace_id: Any) -> list[Any]:
+        """Attach this turn's workspace tools, or nothing (ADR-006).
+
+        Silent no-op when coding is disabled or the turn named no workspace.
+        A workspace the caller does not own resolves to nothing rather than an
+        error: the service raises NotFoundError, and a chat turn should not
+        become a probe for other users' workspace ids.
+        """
+        if not settings.ENABLE_CODING or not workspace_id:
+            return []
+        try:
+            parsed_id = UUID(str(workspace_id))
+        except (TypeError, ValueError):
+            logger.warning("Ignoring malformed workspace_id on a chat turn")
+            return []
+        try:
+            async with get_db_context() as db:
+                workspace = await WorkspaceService(db).get_for_user(
+                    user_id=self.user.id, workspace_id=parsed_id
+                )
+                # Copy what the toolkit needs while the session is still open.
+                policy = WorkspacePolicy.from_row(workspace)
+            toolkit = CodingToolkit(policy)
+            tools = toolkit.build()
+        except NotFoundError:
+            logger.info("Chat turn named a workspace the user does not own; no tools attached")
+            return []
+        except AppException as exc:
+            await send_event(self.websocket, "error", {"message": exc.message})
+            return []
+        self._coding = toolkit
+        self._auto_approved_tools = tools.auto_approved_tools
+        self._coding_briefing = await read_repository_briefing(tools.backend)
+        logger.info(
+            "Coding workspace %r attached (ruleset=%s, auto_approve=%s)",
+            policy.name,
+            policy.ruleset,
+            bool(tools.auto_approved_tools),
+        )
+        return [tools.toolset]
+
     async def _approve_tools(self, requests: DeferredToolRequests) -> DeferredToolResults:
         """Pause one run until the browser approves, edits, or rejects mutations."""
+        # ADR-006 §4: a workspace may resolve approval for its own coding tools
+        # without a round trip. It never covers anything else — a Google or MCP
+        # mutation in the same batch still reaches the browser.
+        auto_calls = [c for c in requests.approvals if c.tool_name in self._auto_approved_tools]
+        pending = [c for c in requests.approvals if c.tool_name not in self._auto_approved_tools]
+        auto_approved: dict[str, bool | ToolApproved | ToolDenied] = {
+            call.tool_call_id: ToolApproved() for call in auto_calls
+        }
+        if auto_calls:
+            # The only mutations with no human in the loop — say so in the
+            # transcript and in the log, so they are auditable after the fact.
+            logger.info(
+                "Auto-approved coding tools for this workspace: %s",
+                ", ".join(sorted({call.tool_name for call in auto_calls})),
+            )
+            await send_event(
+                self.websocket,
+                "tool_auto_approved",
+                {
+                    "tool_calls": [
+                        {"id": call.tool_call_id, "tool_name": call.tool_name}
+                        for call in auto_calls
+                    ]
+                },
+            )
         action_requests = [
             {
                 "id": call.tool_call_id,
@@ -392,14 +478,15 @@ class AgentSession:
                 "args": call.args_as_dict(raise_if_invalid=False),
                 "metadata": requests.metadata.get(call.tool_call_id, {}),
             }
-            for call in requests.approvals
+            for call in pending
         ]
         if not action_requests:
             return requests.build_results(
+                approvals=auto_approved,
                 calls={
                     call.tool_call_id: "External deferred tool execution is not supported."
                     for call in requests.calls
-                }
+                },
             )
 
         loop = asyncio.get_running_loop()
@@ -435,8 +522,8 @@ class AgentSession:
             else:
                 legacy.append(decision)
 
-        approvals: dict[str, bool | ToolApproved | ToolDenied] = {}
-        for index, call in enumerate(requests.approvals):
+        approvals: dict[str, bool | ToolApproved | ToolDenied] = dict(auto_approved)
+        for index, call in enumerate(pending):
             decision = by_id.get(call.tool_call_id)
             if decision is None and index < len(legacy):
                 decision = legacy[index]

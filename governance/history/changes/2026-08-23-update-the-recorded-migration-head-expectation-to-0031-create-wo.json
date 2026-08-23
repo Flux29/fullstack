@@ -1,0 +1,44 @@
+{
+  "adr_refs": [
+    "ADR-002"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The migration head contract matches the tree, so the check is meaningful again rather than permanently noisy"
+  ],
+  "compatibility_impact": "None to running code. This is the compatibility contract itself: head_expected now names 0031_create_workspaces, so migration-graph-is-connected compares against the real head and an unplanned one will be visible again.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "governance/Summary.md",
+    "governance/manifests/generated/data-stores.json"
+  ],
+  "follow_up": [],
+  "id": "2026-08-23-update-the-recorded-migration-head-expectation-to-0031-create-wo",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "This should have been part of the change that added 0031, which is what the check text asks for; that record was already written and closed, so it is a separate session here, following the 2026-08-12 precedent that did the same for 0028",
+    "head_expected sits inside a generated manifest but is not produced by any builder - sync leaves it alone, verified by running sync after the edit and seeing the value survive"
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/data-stores.json"
+  ],
+  "reason": "Migration 0031 moved the Alembic head, but the recorded expectation in data-stores.json still names 0030, so migration-graph-is-connected reports an unexpected head on every check. The contract exists to make an unplanned head visible; leaving it stale trains readers to ignore it.",
+  "risks": [],
+  "rollback": "git revert restores the previous value; nothing outside the repository is affected.",
+  "schema_version": 1,
+  "security_impact": "None. One recorded expectation value updated to match the head already in the tree.",
+  "summary": "Update the recorded migration head expectation to 0031_create_workspaces",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "44 checks, 0 blocking after record; the migration-graph-is-connected advisory that named the stale head is gone (9 advisories to 8)",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

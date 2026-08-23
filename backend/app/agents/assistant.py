@@ -141,6 +141,7 @@ class AssistantAgent:
         model_name: str | None = None,
         temperature: float | None = None,
         system_prompt: str | None = None,
+        extra_instructions: str | None = None,
         thinking_effort: str | None = None,
         extra_toolsets: list[Any] | None = None,
         deep_research: bool = False,
@@ -167,6 +168,10 @@ class AssistantAgent:
         self.system_prompt = system_prompt or get_system_prompt_with_rag()
         if deep_research:
             self.system_prompt = system_prompt or get_research_prompt()
+        # A workspace's conventions are appended, never substituted: a target
+        # repository must not be able to displace the product's instructions.
+        if extra_instructions:
+            self.system_prompt += extra_instructions
         self._agent: Agent[Deps, str] | None = None
 
     def _create_agent(self) -> Agent[Deps, str]:
@@ -455,6 +460,7 @@ def get_agent(
     temperature: float | None = None,
     extra_toolsets: list[Any] | None = None,
     deep_research: bool = False,
+    extra_instructions: str | None = None,
     todo_capability: "TodoCapability | None" = None,
     subagent_capability: "SubAgentCapability | None" = None,
     context_manager_capability: "ContextManagerCapability | None" = None,
@@ -463,6 +469,7 @@ def get_agent(
         model_name=model_name,
         thinking_effort=thinking_effort,
         temperature=temperature,
+        extra_instructions=extra_instructions,
         extra_toolsets=extra_toolsets,
         deep_research=deep_research,
         todo_capability=todo_capability,

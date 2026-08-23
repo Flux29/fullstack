@@ -53,6 +53,9 @@ export const qk = {
   slashCommands: {
     list: () => ["slash-commands", "list"] as const,
   },
+  workspaces: {
+    list: () => ["workspaces", "list"] as const,
+  },
   mcpConnections: {
     list: () => ["mcp-connections", "list"] as const,
     workspace: () => ["mcp-connections", "workspace"] as const,

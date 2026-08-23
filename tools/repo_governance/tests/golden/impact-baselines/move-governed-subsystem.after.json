@@ -59,7 +59,8 @@
   "decisions": [
     "ADR-002",
     "ADR-003",
-    "ADR-004"
+    "ADR-004",
+    "ADR-006"
   ],
   "findings": [
     "mcp-approval-gating-asymmetry",

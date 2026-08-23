@@ -17,6 +17,7 @@ from app.api.routes.v1 import rag
 from app.api.routes.v1 import files
 from app.api.routes.v1 import contact
 from app.api.routes.v1 import me_slash_commands
+from app.api.routes.v1 import me_workspaces
 from app.api.routes.v1 import admin_stats
 
 v1_router = APIRouter()
@@ -56,4 +57,5 @@ v1_router.include_router(contact.router, tags=["contact"])
 v1_router.include_router(
     me_slash_commands.router, prefix="/me/slash-commands", tags=["me:slash-commands"]
 )
+v1_router.include_router(me_workspaces.router, prefix="/me/workspaces", tags=["me:workspaces"])
 v1_router.include_router(admin_stats.router, prefix="/admin", tags=["admin:stats"])

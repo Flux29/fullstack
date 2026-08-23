@@ -89,6 +89,10 @@
       "route": "/settings/slash-commands"
     },
     {
+      "file": "frontend/src/app/[locale]/(dashboard)/settings/workspaces/page.tsx",
+      "route": "/settings/workspaces"
+    },
+    {
       "file": "frontend/src/app/[locale]/about/page.tsx",
       "route": "/about"
     },
@@ -424,6 +428,22 @@
         "path": "/api/v1/me/slash-commands/{command_id}"
       },
       {
+        "method": "GET",
+        "path": "/api/v1/me/workspaces"
+      },
+      {
+        "method": "POST",
+        "path": "/api/v1/me/workspaces"
+      },
+      {
+        "method": "DELETE",
+        "path": "/api/v1/me/workspaces/{workspace_id}"
+      },
+      {
+        "method": "PATCH",
+        "path": "/api/v1/me/workspaces/{workspace_id}"
+      },
+      {
         "method": "POST",
         "path": "/api/v1/oauth/exchange"
       },
@@ -612,7 +632,7 @@
         "path": "/api/v1/webhooks/{webhook_id}/test"
       }
     ],
-    "route_count": 109,
+    "route_count": 113,
     "status": "extracted"
   },
   "provenance": {
@@ -1219,6 +1239,34 @@
       "mechanism": "backendFetch",
       "methods": [
         "GET"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/workspaces/{param}"
+        }
+      ],
+      "file": "frontend/src/app/api/me/workspaces/[id]/route.ts",
+      "frontend_path": "/api/me/workspaces/{id}",
+      "mechanism": "backendFetch",
+      "methods": [
+        "DELETE",
+        "PATCH"
+      ]
+    },
+    {
+      "backend_targets": [
+        {
+          "path_template": "/api/v1/me/workspaces"
+        }
+      ],
+      "file": "frontend/src/app/api/me/workspaces/route.ts",
+      "frontend_path": "/api/me/workspaces",
+      "mechanism": "backendFetch",
+      "methods": [
+        "GET",
+        "POST"
       ]
     },
     {

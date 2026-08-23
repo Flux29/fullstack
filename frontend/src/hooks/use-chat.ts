@@ -438,6 +438,8 @@ export function useChat(options: UseChatOptions = {}) {
       if (temperatureRef.current !== null) payload.temperature = temperatureRef.current;
       if (thinkingEffortRef.current !== null) payload.thinking_effort = thinkingEffortRef.current;
       payload.deep_research = useChatModeStore.getState().deepResearch;
+      const workspaceId = useChatModeStore.getState().workspaceId;
+      if (workspaceId) payload.workspace_id = workspaceId;
       sendMessage(payload);
     },
     [addMessage, sendMessage, conversationId],

@@ -4,13 +4,22 @@ import { useEffect, useMemo, useState } from "react";
 import { Check, ChevronDown, Cpu, Settings2, Sliders, Plug, Telescope } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui";
 import { useConversationStore } from "@/stores";
 import { useChatModeStore } from "@/stores";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useMcpConnections } from "@/hooks";
+import { useMcpConnections, useWorkspaces } from "@/hooks";
 import { ROUTES } from "@/lib/constants";
 import type { McpConnectionRecord } from "@/lib/mcp-connections-api";
 
@@ -337,6 +346,61 @@ function PluginsPanel() {
   );
 }
 
+/** Coding workspace for the next turn (ADR-006).
+ *
+ * Selecting one attaches sandboxed file and shell tools to that turn. The
+ * workspace's ruleset decides what is registered and what asks for approval;
+ * an auto-approving workspace is called out here because the override lasts
+ * for the whole conversation. */
+const NO_WORKSPACE = "__none__";
+
+function WorkspacePicker() {
+  const { workspaces, isLoading } = useWorkspaces();
+  const workspaceId = useChatModeStore((s) => s.workspaceId);
+  const setWorkspaceId = useChatModeStore((s) => s.setWorkspaceId);
+  const selected = workspaces.find((w) => w.id === workspaceId) ?? null;
+
+  // Never leave a turn pointing at a workspace that no longer exists.
+  useEffect(() => {
+    if (workspaceId && !isLoading && !selected) setWorkspaceId(null);
+  }, [workspaceId, isLoading, selected, setWorkspaceId]);
+
+  if (!isLoading && workspaces.length === 0) return null;
+
+  return (
+    <div className="space-y-2.5">
+      <label htmlFor="chat-workspace" className="text-foreground text-sm font-semibold">
+        Coding workspace
+      </label>
+      <Select
+        value={workspaceId ?? NO_WORKSPACE}
+        onValueChange={(v) => setWorkspaceId(v === NO_WORKSPACE ? null : v)}
+      >
+        <SelectTrigger id="chat-workspace">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value={NO_WORKSPACE}>None — chat only</SelectItem>
+          {workspaces.map((w) => (
+            <SelectItem key={w.id} value={w.id}>
+              {w.name} ({w.ruleset})
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <p className="text-foreground/55 text-[11px] leading-relaxed">
+        {selected === null
+          ? "The assistant has no file or shell tools this turn."
+          : selected.auto_approve
+            ? `Writes and commands in ${selected.name} run without asking — for this whole conversation.`
+            : selected.ruleset === "readonly"
+              ? `${selected.name} is read-only: the assistant can browse and search, not change anything.`
+              : `Every write and command in ${selected.name} asks for your approval first.`}
+      </p>
+    </div>
+  );
+}
+
 /** Chat settings panel — temperature + thinking effort. */
 function SettingsPanel({
   temperature,
@@ -383,6 +447,7 @@ function SettingsPanel({
             : "Answers directly in a single fast pass, with no planning or delegation."}
         </p>
       </div>
+      <WorkspacePicker />
       <div className="space-y-2.5">
         <div className="flex items-baseline justify-between">
           <label htmlFor="chat-temp" className="text-foreground text-sm font-semibold">

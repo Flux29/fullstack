@@ -41,7 +41,8 @@
   ],
   "decisions": [
     "ADR-002",
-    "ADR-005"
+    "ADR-005",
+    "ADR-006"
   ],
   "findings": [],
   "graph_files": [],

@@ -52,15 +52,36 @@ Current state, what is unresolved, and recent material history. This is not the 
 ## Active contracts
 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
-- **Migration head** — 0030_mcp_url_origin_only
+- **Migration head** — 0031_create_workspaces
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
-- **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
+- **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 145)
+## Recent changes (latest 20 of 152)
 
+- **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-23-update-the-recorded-migration-head-expectation-to-0031-create-wo.json`
+- **2026-08-23** — Teach a coding turn the target repository's own conventions from AGENTS.md and its skills index
+  - Components: agents, backend-api
+  - Record: `governance/history/changes/2026-08-23-teach-a-coding-turn-the-target-repository-s-own-conventions-from.json`
 - **2026-08-23** — Stop click expanding argv globs on Windows so governance options accept path patterns
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-stop-click-expanding-argv-globs-on-windows-so-governance-options.json`
+- **2026-08-23** — Realign the coding-workspace branch's recorded expectations and formatting with the repository facts it changed
+  - Components: frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-realign-the-coding-workspace-branch-s-recorded-expectations-and.json`
+- **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
+- **2026-08-23** — Attach a sandboxed coding toolkit to a chat turn that names a workspace
+  - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-attach-a-sandboxed-coding-toolkit-to-a-chat-turn-that-names-a-wo.json`
+- **2026-08-23** — Add the workspaces entity: model, migration, service, /api/v1/me/workspaces CRUD, proxy handler, and typed client
+  - Components: backend-api, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-add-the-workspaces-entity-model-migration-service-api-v1-me-work.json`
+- **2026-08-23** — Add the sandboxd service so coding workspaces have a sandbox to reach
+  - Components: backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-add-the-sandboxd-service-so-coding-workspaces-have-a-sandbox-to.json`
 - **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
   - Components: backend-api, governance-kernel, rag
   - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
@@ -97,29 +118,8 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Require same-origin fetch metadata and an explicit client header on the auth refresh route
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-require-same-origin-fetch-metadata-and-an-explicit-client-header.json`
-- **2026-08-20** — Require edit shares for conversation update/archive and restrict delete to owners
-  - Components: backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-require-edit-shares-for-conversation-update-archive-and-restrict.json`
-- **2026-08-20** — Replace the OAuth JWT-in-query redirect with a short-lived single-use sign-in code exchanged server-to-server
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-replace-the-oauth-jwt-in-query-redirect-with-a-short-lived-singl.json`
-- **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
-- **2026-08-20** — Regenerate governance Summary.md after the PR 21 merge combined two independently synced lineages
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-regenerate-governance-summary-md-after-the-pr-21-merge-combined.json`
-- **2026-08-20** — Refresh governance impact-baseline goldens to include the RAG status stream proxy route
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-refresh-governance-impact-baseline-goldens-to-include-the-rag-st.json`
-- **2026-08-20** — Redact live-host operational details from the Codecov deployment change record
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment.json`
-- **2026-08-20** — Rate-limit login, registration, password-reset and magic-link requests per client IP and per account
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-rate-limit-login-registration-password-reset-and-magic-link-requ.json`
 
-## Decisions (5)
+## Decisions (6)
 
 ### Accepted
 
@@ -128,3 +128,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **ADR-003** — MCP connections are one abstraction with orthogonal dimensions — `docs/architecture/decisions/ADR-003-mcp-connection-model.md`
 - **ADR-004** — Docling has two execution paths against one service — `docs/architecture/decisions/ADR-004-docling-two-paths.md`
 - **ADR-005** — Exposure posture is per-stack, and the edge is the only public surface — `docs/architecture/decisions/ADR-005-service-exposure-strategy.md`
+
+### Proposed (awaiting review)
+
+- **ADR-006** — Coding workspaces give the assistant sandboxed repository tools, and every write or execute is approval-gated unless the workspace ruleset auto-approves it — `docs/architecture/decisions/ADR-006-coding-workspaces.md`

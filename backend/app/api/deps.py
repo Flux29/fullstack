@@ -461,3 +461,14 @@ def get_mcp_connection_service(db: DBSession) -> McpConnectionService:
 
 
 McpConnectionSvc = Annotated[McpConnectionService, Depends(get_mcp_connection_service)]
+
+
+from app.services.workspace import WorkspaceService
+
+
+def get_workspace_service(db: DBSession) -> WorkspaceService:
+    """Get WorkspaceService instance."""
+    return WorkspaceService(db)
+
+
+WorkspaceSvc = Annotated[WorkspaceService, Depends(get_workspace_service)]

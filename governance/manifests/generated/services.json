@@ -20,6 +20,10 @@
       "name": "data-internal"
     },
     {
+      "internal": true,
+      "name": "sandbox-internal"
+    },
+    {
       "internal": false,
       "name": "service-egress"
     }
@@ -71,6 +75,7 @@
       "name": "app",
       "networks": [
         "data-internal",
+        "sandbox-internal",
         "service-egress"
       ],
       "ports": [
@@ -1339,6 +1344,75 @@
       ]
     },
     {
+      "build": {
+        "args": [],
+        "context": "docker/sandboxd",
+        "dockerfile": "Dockerfile"
+      },
+      "depends_on": [],
+      "env_refs": [
+        "SANDBOX_CPUS",
+        "SANDBOX_MEM_LIMIT",
+        "SANDBOX_SERVICE_TOKEN"
+      ],
+      "expose": [
+        "8080"
+      ],
+      "gpu": false,
+      "healthcheck": {
+        "present": true
+      },
+      "image": {
+        "ref": "fullstack-sandboxd:local"
+      },
+      "name": "sandboxd",
+      "networks": [
+        "sandbox-internal"
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "/var/run/docker.sock",
+          "target": "/var/run/docker.sock"
+        },
+        {
+          "class": "named",
+          "name": "sandbox_workspaces",
+          "target": "/workspaces"
+        }
+      ]
+    },
+    {
       "depends_on": [
         "db",
         "redis"
@@ -1514,6 +1588,7 @@
       "profiles_always_on": [],
       "profiles_available": [
         "codecov",
+        "coding",
         "db-ui",
         "edge",
         "frontend",
@@ -1530,6 +1605,7 @@
       "profiles_always_on": [],
       "profiles_available": [
         "codecov",
+        "coding",
         "db-ui",
         "edge",
         "frontend",
@@ -1549,6 +1625,7 @@
       ],
       "profiles_available": [
         "codecov",
+        "coding",
         "db-ui",
         "edge",
         "frontend",
@@ -1565,6 +1642,7 @@
       "profiles_always_on": [],
       "profiles_available": [
         "codecov",
+        "coding",
         "db-ui",
         "edge",
         "frontend",
@@ -1616,6 +1694,10 @@
     {
       "class": "external-preserve",
       "name": "redis-data"
+    },
+    {
+      "class": "named",
+      "name": "sandbox_workspaces"
     }
   ]
 }

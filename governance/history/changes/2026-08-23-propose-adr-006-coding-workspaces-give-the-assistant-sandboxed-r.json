@@ -1,0 +1,68 @@
+{
+  "adr_refs": [
+    "ADR-003",
+    "ADR-005",
+    "ADR-006"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "decision-index (additive: one proposed ADR)"
+  ],
+  "behavioral_effects": [
+    "ADR-006 (proposed) fixes the sandbox boundary (RemoteSandbox/DockerSandbox, never LocalBackend in the API container), the workspaces model incl. ruleset and auto_approve, per-turn toolkit attachment, approval gating rules, and target-repo process for the coding capability",
+    "governance context for agents/backend-api/chat-frontend/mcp-user-connections now lists ADR-006 as a proposed decision constraining work in flight"
+  ],
+  "compatibility_impact": "None. Additive: decision index gains ADR-006 (proposed); decision_refs derived onto agents, backend-api, chat-frontend, mcp-user-connections. No schema, API, or config change.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "docs/architecture/decisions/ADR-006-coding-workspaces.md",
+    "governance/Summary.md",
+    "governance/history/decisions/index.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "follow_up": [
+    "Session A: add pydantic-ai-backend, CodingToolkit beside ResearchToolkit, ENABLE_CODING, workspace_id turn flag, frontend toggle; agent-tool skill, agent-evals + security-review",
+    "Session B: workspaces table + migration + /api/v1/me/workspaces + proxy handler + sandboxd Compose service under ADR-005 posture; endpoint-fullstack + alembic-migration + compose-check",
+    "Session C: SkillsToolset rooted at the workspace's .claude/skills, AGENTS.md injection, governance smoke test with this repository as the first target",
+    "Accept ADR-006 (status: accepted) in the session that lands the first write-capable tool, citing this record"
+  ],
+  "id": "2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "No code changed; the capability does not exist yet. Sessions A (toolkit), B (workspaces + sandbox service), C (skills/AGENTS injection) implement it",
+    "Shrink pass: nothing to remove or consolidate; an ADR is a new document by construction, scaffolded by the repository's own decision-propose command",
+    "governance-impact reported the ADR path as unassigned (no component owns docs/architecture/decisions), so its validator selection was governance-check only; skills-check was added by judgment",
+    "Full governance-check hung once in the OpenAPI exporter subprocess under load (Playwright test-server running) and was killed; the re-run completed in 202s and interfaces.json was untouched"
+  ],
+  "manifests_changed": [
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json"
+  ],
+  "reason": "The product was envisioned as a Claude-Code-like coding assistant with RAG attached, but the AssistantAgent has no file, shell, or git tool and no workspace concept, so it cannot perform coding tasks on any repository. ADR-003 and security.json already gate write-capable tools behind deferred approval and require a recorded decision before any write-capable tool source is added; this ADR is that recorded decision, fixing the sandbox boundary (RemoteSandbox/DockerSandbox, never the API container filesystem), the workspace model, and the per-workspace ruleset including auto-approve, before any toolkit code lands.",
+  "risks": [
+    "The ADR reverses Documentation plan decisions 0.11/7.10; if the plan is not amended, Phase 2b will re-record the old decision",
+    "Four open questions (private-repo credentials, sandbox egress, quotas, auto-approve lifetime) are deliberately unsettled; Session B Compose work must take the egress decision explicitly"
+  ],
+  "rollback": "git revert restores everything; the ADR, index entry, Summary section, and derived decision_refs are all in-tree. Nothing outside the repository is touched. The ~/.claude/plans/Documentation.md amendment note (outside git) would need removing by hand.",
+  "schema_version": 1,
+  "security_impact": "None in code: this session adds a proposed ADR and the manifests derived from it. The ADR is the recorded human approval that privilege-expansion-requires-approval demands before a write-capable tool source is added in later sessions; no tool surface changes here.",
+  "summary": "Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "44 checks, 0 blocking after record; 8 advisories all pre-existing (no-broken-site-chains, 2x no-dependency-cycles, no-orphaned-surfaces, services-declare-healthchecks, 2x thick-domains-expose-a-facade, material-changes-are-recorded pre-finish)",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "49 files scanned under .claude and docs; every citation resolves after rephrasing the non-existent skills directory reference",
+      "id": "skills-check",
+      "result": "pass"
+    }
+  ]
+}

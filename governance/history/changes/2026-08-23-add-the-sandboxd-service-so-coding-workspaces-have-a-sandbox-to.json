@@ -1,0 +1,97 @@
+{
+  "adr_refs": [
+    "ADR-005",
+    "ADR-006"
+  ],
+  "affected_components": [
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "Compose: new coding profile, sandboxd service, sandbox-internal network, sandbox_workspaces volume"
+  ],
+  "behavioral_effects": [
+    "sandboxd runs under the coding profile, holding the Docker socket the API container must never have, on an internal network with no route to the data stores",
+    "Sandbox containers are created with no network at all, pinned through an explicit single-entry runtime allowlist rather than the service-level default the shipped runtimes override",
+    "The service is built from a Dockerfile in this repository rather than pulled: the upstream ghcr.io/vstorm-co/sandboxd image is not publicly pullable (unauthorized), and building keeps the base image digest-pinned like every other image here",
+    "End-to-end verified against the running service: the real CodingToolkit wrote a file through RemoteSandbox over HTTP and read it back, executed python -c print(6*7) in a real container and got 42, was refused when writing .env despite the approval being granted, and a readonly workspace registered only glob/grep/ls/read_file"
+  ],
+  "compatibility_impact": "Additive and profile-gated. New service sandboxd (coding profile only), new network sandbox-internal, new volume sandbox_workspaces, and the app service joins the new network. SANDBOX_SERVICE_URL is added to the shared backend environment so the default points at the service. No existing service, port, or network changed; every stack that does not enable the coding profile resolves exactly as before, which compose-check confirms.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/.env.example",
+    "docker-compose.yml",
+    "docker/sandboxd/",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [
+    "Decide ADR-006 open question 2 (egress) properly: agents cannot install dependencies with network_mode none, so this needs an allowlist or a proxy rather than staying closed",
+    "Extend the runtime allowlist beyond python:3.12-slim once a workspace needs another toolchain",
+    "Add a healthcheck-gated dependency from app to sandboxd once the coding profile is a supported deployment shape rather than opt-in"
+  ],
+  "id": "2026-08-23-add-the-sandboxd-service-so-coding-workspaces-have-a-sandbox-to",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "compose-check-prod was NOT run: it fails on this machine interpolating MINIO_ROOT_USER, a required production variable unrelated to this change. Verified pre-existing by stashing the compose change and reproducing the identical failure on the baseline",
+    "The end-to-end run drove sandboxd as a standalone container on a published port, not through the Compose stack with the coding profile up, because bringing the full profile up would restart the running dev stack",
+    "No shrink pass agents were run on this diff: it is a Compose service definition and a Dockerfile, with no application code to consolidate. The reviewable duplication question (a second Dockerfile) is answered in the file itself",
+    "Egress isolation is proved by a socket connection failing from inside a sandbox, not by inspecting the container's network settings while it lived; the container is torn down with the turn"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "The coding toolkit builds a RemoteSandbox pointed at SANDBOX_SERVICE_URL, but no such service exists in any Compose stack, so ENABLE_CODING cannot be turned on in a Compose deployment at all and the new Settings validator refuses to start. This adds sandboxd as its own service holding the Docker socket the API container must never have, on its own network, under the ADR-005 per-stack exposure posture.",
+  "risks": [
+    "sandboxd is root-equivalent by construction. Its isolation rests on the internal network and the profile gate, not on the container itself being unprivileged",
+    "Sandboxes have no egress, so an agent cannot install project dependencies inside one. That is the conservative half of ADR-006 open question 2 and will not survive real use unchanged; widening it is an ADR decision, not a config tweak",
+    "The runtime allowlist is pinned to python:3.12-slim, so a workspace needing another toolchain (node, go) has nothing to run it until the allowlist is extended"
+  ],
+  "rollback": "git revert restores docker-compose.yml, deletes docker/sandboxd/, and removes the SANDBOX_ entries from .env.example. Outside the repository: docker compose --profile coding down removes the sandboxd container; the sandbox_workspaces volume and any per-workspace sandbox containers sandboxd created survive a revert and must be removed by hand (docker volume rm fullstack_sandbox_workspaces, and docker rm any leftover python:3.12-slim sandbox containers). The locally built fullstack-sandboxd:local image also survives.",
+  "schema_version": 1,
+  "security_impact": "This session moves the Docker socket into its own container and closes an egress hole that would otherwise have shipped. sandboxd holds /var/run/docker.sock, which is root-equivalent, and sits alone on a new internal network (sandbox-internal, internal: true) that the API joins and nothing else does - so it has no route to Postgres, Redis, or object storage, and no route off the host. It runs only under the coding profile, so a deployment that does not want coding never starts a socket-holding container. The token is not defaulted in Compose: sandboxd itself refuses to start without SANDBOXD_TOKEN, because a session it opens can run commands on the host. Verified against 0.2.29 and fixed here: SANDBOXD_NETWORK_MODE=none alone does NOT isolate a sandbox, because the shipped runtime allowlist leads with a coding runtime that hardcodes network_mode=bridge and a runtime overrides the service default. Measured before the fix, a sandbox opened a TCP connection to 1.1.1.1:80 successfully; after pinning a single explicit runtime it fails. Without this the deployment would have had internet-capable sandboxes while the configuration said otherwise.",
+  "summary": "Add the sandboxd service so coding workspaces have a sandbox to reach",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "exit 0 across the file-stack x profile matrix, with the coding profile added",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0; the new sandbox_workspaces volume is repo-managed, not external",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "659 passed, 13 skipped (unchanged from the previous session; no application code changed here)",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped (4 skipped), no host-reachable Postgres; no migration in this session",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

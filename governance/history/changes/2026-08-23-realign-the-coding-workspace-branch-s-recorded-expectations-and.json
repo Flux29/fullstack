@@ -1,0 +1,68 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The governance selftest goes from 7 failed and 373 passed to 380 passed.",
+    "The frontend format check goes from 2 files failing to clean."
+  ],
+  "compatibility_impact": "None. No contract moves. head_expected was already set to 0031_create_workspaces by an earlier commit on this branch and is unchanged here; only a hardcoded marker in a visualization test is realigned to it. No API, schema, event, or embedding contract is touched.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "frontend/src/app/api/me/workspaces/route.ts",
+    "frontend/src/components/settings/workspaces-manager.tsx",
+    "tools/repo_governance/tests/golden/impact-baselines/add-route-and-proxy.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/change-nextjs-api-consumer.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-new-chat-new-conversation.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/introduce-dependency-cycle.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/move-governed-subsystem.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/rename-env-var.after.json",
+    "tools/repo_governance/tests/test_visualizations.py"
+  ],
+  "follow_up": [
+    "heads_observed in governance/manifests/generated/data-stores.json still records 0030_mcp_url_origin_only while the real head is 0031_create_workspaces. No check reads that field, so it is not blocking, but it is misleading generated data that governance sync does not refresh."
+  ],
+  "id": "2026-08-23-realign-the-coding-workspace-branch-s-recorded-expectations-and",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The shrink pass found nothing to remove. The diff adds no logic: one corrected string literal, two prettier-formatted files, and six regenerated fixtures, so there was no new abstraction to reuse or consolidate.",
+    "The goldens were not regenerated blindly. Every changed line was read: ADR-006 entering six decisions lists, and the app.core.config importer count moving from 47 to 48. Both follow directly from files this branch adds."
+  ],
+  "manifests_changed": [],
+  "reason": "The branch changed repository facts that its own recorded expectations still contradict: it added routes and an environment variable so six scenario impact goldens diverge, it moved the migration head to 0031_create_workspaces while a hardcoded visualization marker still pins 0030_mcp_url_origin_only, and it left two frontend files unformatted. CI had never run on the branch, so none of this surfaced until merging main triggered the first run and all three failed at once.",
+  "risks": [
+    "Regenerating impact goldens can enshrine a genuine regression as the new expectation. Mitigated by reading every changed line, and by the separate guard test asserting recall never regresses from the before golden to the after golden, which passed."
+  ],
+  "rollback": "Revert the commit. Everything is inside the repository: the six impact goldens return to their pre-ADR-006 values, the visualization marker returns to 0030_mcp_url_origin_only, and the two frontend files return to unformatted. The seven selftest failures and the format failure return with them. No migration, external state, or installed artifact is involved.",
+  "schema_version": 1,
+  "security_impact": "None, stated deliberately. The change touches test expectations, generated impact fixtures, and whitespace only. No runtime code, dependency, permission, or exposure surface is altered.",
+  "summary": "Realign the coding-workspace branch's recorded expectations and formatting with the repository facts it changed",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "10 test files, 61 tests passed; prettier check clean across the tree",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "380 passed, 0 failed, coverage 77.42 percent against the 75 percent floor",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks run; the only blocking finding was governance-changes-are-recorded, which this record resolves; the 7 pre-existing advisories are unchanged",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "49 files scanned, every path, Make target and validator ID resolves",
+      "id": "skills-check",
+      "result": "pass"
+    }
+  ]
+}

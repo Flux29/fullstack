@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import SecretStr, ValidationInfo, computed_field, field_validator
+from pydantic import SecretStr, ValidationInfo, computed_field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from pydantic import BaseModel, Field
 
@@ -223,6 +223,49 @@ class Settings(BaseSettings):
 
     CODE_EXECUTION_TIMEOUT_SECS: float = 10.0
     CODE_EXECUTION_MAX_MEMORY_MB: int = 256
+
+    # Coding workspaces (ADR-006). Off by default: turning it on gives the
+    # assistant file and shell tools inside a sandbox, which is a privilege
+    # expansion the ADR records approval for.
+    ENABLE_CODING: bool = False
+    # sandboxd — the service that owns the Docker socket so this container
+    # never has to. See ADR-006: the API container holds a token, not a socket.
+    SANDBOX_SERVICE_URL: str = "http://sandboxd:8080"
+    SANDBOX_SERVICE_TOKEN: SecretStr = SecretStr("")
+    SANDBOX_TIMEOUT_SECS: float = 60.0
+    # Driving Docker from this process is for a developer running the backend
+    # outside Compose; every Compose stack uses the sandbox service instead.
+    SANDBOX_ALLOW_DOCKER: bool = False
+    SANDBOX_DOCKER_IMAGE: str = "python:3.12-slim"
+    # "none" keeps a sandbox off the network entirely; ADR-006 open question 2
+    # (egress) is decided with the Compose work, not here.
+    SANDBOX_NETWORK_MODE: str = "none"
+    SANDBOX_MEM_LIMIT: str = "2g"
+    SANDBOX_CPUS: float = 2.0
+
+    @model_validator(mode="after")
+    def _coding_needs_a_sandbox_to_reach(self) -> "Settings":
+        """Fail at startup, not inside a tool call.
+
+        ENABLE_CODING with no sandbox service configured builds a RemoteSandbox
+        with an empty token; the first write then fails deep inside an agent
+        turn, where the user reads it as the assistant being broken.
+        """
+        if self.ENABLE_CODING and not self.SANDBOX_ALLOW_DOCKER:
+            missing = [
+                name
+                for name, value in (
+                    ("SANDBOX_SERVICE_URL", self.SANDBOX_SERVICE_URL),
+                    ("SANDBOX_SERVICE_TOKEN", self.SANDBOX_SERVICE_TOKEN.get_secret_value()),
+                )
+                if not value
+            ]
+            if missing:
+                raise ValueError(
+                    f"ENABLE_CODING requires {' and '.join(missing)} "
+                    "(or SANDBOX_ALLOW_DOCKER for a host-process backend)"
+                )
+        return self
 
     ENABLE_DEEP_RESEARCH: bool = False
     DEEP_RESEARCH_MAX_TOKENS: int = 120_000

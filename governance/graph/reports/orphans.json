@@ -24,8 +24,8 @@
       "ambient-types": 1,
       "entrypoint": 0,
       "feature-disabled": 0,
-      "framework-invoked": 129,
-      "test-module": 9
+      "framework-invoked": 132,
+      "test-module": 10
     },
     "orphans": [
       "frontend/src/components/ui/radio-group.tsx",

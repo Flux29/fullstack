@@ -32,7 +32,11 @@ const NAME_PATTERN = /^[a-z0-9][a-z0-9-]{0,31}$/;
 const RULESETS: { value: WorkspaceRuleset; label: string; hint: string }[] = [
   { value: "readonly", label: "Read-only", hint: "Browse and search only — no write or shell tools." },
   { value: "default", label: "Default", hint: "Every write and command asks for approval." },
-  { value: "strict", label: "Strict", hint: "Every tool, including reads, asks for approval." },
+  {
+    value: "strict",
+    label: "Strict",
+    hint: "Like Default, and auto-approve can never be turned on for this workspace.",
+  },
 ];
 
 const BACKENDS: { value: WorkspaceBackendKind; label: string }[] = [

@@ -56,11 +56,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 146)
+## Recent changes (latest 20 of 147)
 
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
+- **2026-08-23** — Attach a sandboxed coding toolkit to a chat turn that names a workspace
+  - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-23-attach-a-sandboxed-coding-toolkit-to-a-chat-turn-that-names-a-wo.json`
 - **2026-08-23** — Add the workspaces entity: model, migration, service, /api/v1/me/workspaces CRUD, proxy handler, and typed client
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-23-add-the-workspaces-entity-model-migration-service-api-v1-me-work.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Refresh governance impact-baseline goldens to include the RAG status stream proxy route
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-20-refresh-governance-impact-baseline-goldens-to-include-the-rag-st.json`
-- **2026-08-20** — Redact live-host operational details from the Codecov deployment change record
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-redact-live-host-operational-details-from-the-codecov-deployment.json`
 
 ## Decisions (6)
 

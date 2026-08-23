@@ -148,6 +148,15 @@ appears here or in any other governance artifact.
 | `ENABLE_CODE_EXECUTION` | no | `true` | `unknown-consumer` | — |
 | `CODE_EXECUTION_TIMEOUT_SECS` | no | `10.0` | `runtime` | — |
 | `CODE_EXECUTION_MAX_ALLOCATIONS` | no | `50000000` | `unknown-consumer` | — |
+| `ENABLE_CODING` | no | `false` | `runtime` | Coding workspaces (ADR-006). Off by default: this gives the assistant file and shell tools inside a sandbox. With ENABLE_CODING=true you must also point at a sandboxd service (URL + token), or set SANDBOX_ALLOW_DOCKER=true when running the backend as a host process. |
+| `SANDBOX_SERVICE_URL` | no | `http://sandboxd:8080` | `runtime` | — |
+| `SANDBOX_SERVICE_TOKEN` | no | `` | `runtime` | — |
+| `SANDBOX_TIMEOUT_SECS` | no | `60.0` | `runtime` | — |
+| `SANDBOX_ALLOW_DOCKER` | no | `false` | `runtime` | — |
+| `SANDBOX_DOCKER_IMAGE` | no | `python:3.12-slim` | `runtime` | — |
+| `SANDBOX_NETWORK_MODE` | no | `none` | `runtime` | — |
+| `SANDBOX_MEM_LIMIT` | no | `2g` | `runtime` | — |
+| `SANDBOX_CPUS` | no | `2.0` | `runtime` | — |
 | `ENABLE_DEEP_RESEARCH` | no | `false` | `runtime` | — |
 | `DEEP_RESEARCH_MAX_TOKENS` | no | `120000` | `runtime` | — |
 | `DEEP_RESEARCH_COMPRESS_THRESHOLD` | no | `0.8` | `runtime` | — |

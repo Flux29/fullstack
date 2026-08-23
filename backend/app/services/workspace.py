@@ -91,8 +91,11 @@ class WorkspaceService:
             ruleset=ruleset,
             auto_approve=update_data.get("auto_approve", db_workspace.auto_approve),
         )
-        # A ruleset change can clear a flag the request never mentioned.
-        if auto_approve != db_workspace.auto_approve:
+        # Write the resolved value whenever the request touched the flag or the
+        # ruleset change moved it — otherwise a PATCH that sets auto_approve on a
+        # readonly workspace stores the raw `true` it asked for, because the
+        # resolved `False` happens to equal what the row already held.
+        if "auto_approve" in update_data or auto_approve != db_workspace.auto_approve:
             update_data["auto_approve"] = auto_approve
 
         if "name" in update_data and update_data["name"] != db_workspace.name:

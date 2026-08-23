@@ -16,7 +16,7 @@
         "Embedding dimension agrees across all five contract points"
       ],
       "invariants": 2,
-      "max_module_centrality": 0.0745,
+      "max_module_centrality": 0.0749,
       "uncovered": []
     },
     {
@@ -72,11 +72,11 @@
       "betweenness": [
         {
           "id": "app.api.deps",
-          "score": 0.067
+          "score": 0.0659
         },
         {
           "id": "app.repositories",
-          "score": 0.0241
+          "score": 0.0239
         },
         {
           "id": "app.api.routes.v1",
@@ -84,15 +84,15 @@
         },
         {
           "id": "app.services.user",
-          "score": 0.0099
-        },
-        {
-          "id": "app.services.mcp_connection",
           "score": 0.0098
         },
         {
+          "id": "app.services.mcp_connection",
+          "score": 0.0094
+        },
+        {
           "id": "app.worker.tasks.rag_tasks",
-          "score": 0.0084
+          "score": 0.0083
         },
         {
           "id": "app.services.email.service",
@@ -100,15 +100,15 @@
         },
         {
           "id": "app.services.rag_document",
-          "score": 0.0068
-        },
-        {
-          "id": "app.services.sync_source",
           "score": 0.0067
         },
         {
+          "id": "app.services.sync_source",
+          "score": 0.0066
+        },
+        {
           "id": "app.services.rag_sync",
-          "score": 0.0057
+          "score": 0.0056
         },
         {
           "id": "app.api.router",
@@ -116,7 +116,7 @@
         },
         {
           "id": "app.services.message_rating",
-          "score": 0.0036
+          "score": 0.0035
         },
         {
           "id": "app.agents.google_loadout",
@@ -127,54 +127,54 @@
           "score": 0.0032
         },
         {
-          "id": "app.agents.google_apis.products",
+          "id": "app.services.agent_session",
           "score": 0.003
+        },
+        {
+          "id": "app.agents.google_apis.products",
+          "score": 0.0029
         },
         {
           "id": "app.services.webhook",
-          "score": 0.003
+          "score": 0.0029
+        },
+        {
+          "id": "app.services.workspace",
+          "score": 0.0029
         },
         {
           "id": "app.agents.assistant",
-          "score": 0.0029
+          "score": 0.0028
         },
         {
           "id": "app.agents.google_workspace_api",
           "score": 0.0028
-        },
-        {
-          "id": "app.api.routes.v1.agent",
-          "score": 0.0027
-        },
-        {
-          "id": "app.services.agent_session",
-          "score": 0.0027
         }
       ],
       "pagerank": [
         {
           "id": "app.db.base",
-          "score": 0.0796
+          "score": 0.0792
         },
         {
           "id": "app.core.config",
-          "score": 0.0775
+          "score": 0.078
         },
         {
           "id": "app.services.rag",
-          "score": 0.0745
+          "score": 0.0749
         },
         {
           "id": "app.schemas.base",
-          "score": 0.0612
+          "score": 0.0609
         },
         {
           "id": "app.core.exceptions",
-          "score": 0.0246
+          "score": 0.0258
         },
         {
           "id": "app.api.deps",
-          "score": 0.0199
+          "score": 0.0197
         },
         {
           "id": "app.services.email.providers.base",
@@ -182,18 +182,18 @@
         },
         {
           "id": "app.db.models.user",
-          "score": 0.0111
+          "score": 0.011
         },
         {
           "id": "app.clients.redis",
-          "score": 0.0094
-        },
-        {
-          "id": "app.worker.tasks.rag_tasks",
-          "score": 0.0091
+          "score": 0.0093
         },
         {
           "id": "app.repositories",
+          "score": 0.009
+        },
+        {
+          "id": "app.worker.tasks.rag_tasks",
           "score": 0.009
         },
         {
@@ -206,7 +206,7 @@
         },
         {
           "id": "app.db.session",
-          "score": 0.008
+          "score": 0.0079
         },
         {
           "id": "app.commands",
@@ -221,12 +221,12 @@
           "score": 0.0076
         },
         {
-          "id": "app.db.models.chat_file",
+          "id": "app.services.rag.connectors",
           "score": 0.0075
         },
         {
-          "id": "app.services.rag.connectors",
-          "score": 0.0075
+          "id": "app.db.models.chat_file",
+          "score": 0.0074
         },
         {
           "id": "app.db.models.session",

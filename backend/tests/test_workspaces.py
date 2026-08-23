@@ -210,6 +210,24 @@ async def test_update_explicit_null_repo_url_detaches_repository(monkeypatch, mo
     assert update.call_args.kwargs["update_data"] == {"repo_url": None}
 
 
+async def test_patching_auto_approve_on_a_readonly_workspace_stores_false(
+    monkeypatch, mock_db_session
+):
+    """The resolved value is what gets written, not the value asked for."""
+    service = WorkspaceService(mock_db_session)
+    user_id = uuid4()
+    stored = _workspace(user_id=user_id, ruleset="readonly", auto_approve=False)
+    monkeypatch.setattr(workspace_repo, "get_by_id", AsyncMock(return_value=stored))
+    update = AsyncMock(return_value=stored)
+    monkeypatch.setattr(workspace_repo, "update", update)
+
+    await service.update(
+        user_id=user_id, workspace_id=stored.id, data=WorkspaceUpdate(auto_approve=True)
+    )
+
+    assert update.call_args.kwargs["update_data"]["auto_approve"] is False
+
+
 async def test_get_for_user_hides_another_users_workspace(monkeypatch, mock_db_session):
     service = WorkspaceService(mock_db_session)
     other = _workspace(user_id=uuid4())

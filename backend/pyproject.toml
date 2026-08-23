@@ -75,6 +75,7 @@ dependencies = [
     "cryptography>=44.0.0",
     "resend>=2.35.0",
     "aiosmtplib>=5.1.2",
+    "pydantic-ai-backend[console,docker,remote]>=0.2.29",
 ]
 
 # PEP 735 dependency group — installed by `uv sync` / `uv sync --dev` and

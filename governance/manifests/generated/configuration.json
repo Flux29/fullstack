@@ -1514,6 +1514,23 @@
       ],
       "default": "false",
       "default_class": "literal",
+      "description": "Coding workspaces (ADR-006). Off by default: this gives the assistant file and shell tools inside a sandbox. With ENABLE_CODING=true you must also point at a sandboxd service (URL + token), or set SANDBOX_ALLOW_DOCKER=true when running the backend as a host process.",
+      "name": "ENABLE_CODING",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "false",
+      "default_class": "literal",
       "name": "ENABLE_DEEP_RESEARCH",
       "required": false,
       "surface": "backend",
@@ -3127,6 +3144,134 @@
       "required": false,
       "surface": "backend",
       "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "false",
+      "default_class": "literal",
+      "name": "SANDBOX_ALLOW_DOCKER",
+      "required": false,
+      "surface": "backend",
+      "type": "bool"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "2.0",
+      "default_class": "literal",
+      "name": "SANDBOX_CPUS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "python:3.12-slim",
+      "default_class": "literal",
+      "name": "SANDBOX_DOCKER_IMAGE",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "2g",
+      "default_class": "literal",
+      "name": "SANDBOX_MEM_LIMIT",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "none",
+      "default_class": "literal",
+      "name": "SANDBOX_NETWORK_MODE",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "",
+      "default_class": "literal",
+      "name": "SANDBOX_SERVICE_TOKEN",
+      "required": false,
+      "surface": "backend",
+      "type": "SecretStr"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "http://sandboxd:8080",
+      "default_class": "literal",
+      "name": "SANDBOX_SERVICE_URL",
+      "required": false,
+      "surface": "backend",
+      "type": "str"
+    },
+    {
+      "classification": [
+        "runtime"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "backend/app/core/config.py",
+        "backend/.env.example"
+      ],
+      "default": "60.0",
+      "default_class": "literal",
+      "name": "SANDBOX_TIMEOUT_SECS",
+      "required": false,
+      "surface": "backend",
+      "type": "float"
     },
     {
       "classification": [

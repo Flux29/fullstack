@@ -56,8 +56,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 69 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 144)
+## Recent changes (latest 20 of 145)
 
+- **2026-08-23** — Stop click expanding argv globs on Windows so governance options accept path patterns
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-23-stop-click-expanding-argv-globs-on-windows-so-governance-options.json`
 - **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
   - Components: backend-api, governance-kernel, rag
   - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Rate-limit login, registration, password-reset and magic-link requests per client IP and per account
   - Components: backend-api, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-20-rate-limit-login-registration-password-reset-and-magic-link-requ.json`
-- **2026-08-20** — Put a least-privilege socket proxy between Traefik and the Docker API
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-put-a-least-privilege-socket-proxy-between-traefik-and-the-docke.json`
 
 ## Decisions (5)
 

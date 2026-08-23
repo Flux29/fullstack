@@ -16,6 +16,7 @@ from __future__ import annotations
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Any
 
 import click
 
@@ -110,7 +111,29 @@ def _split_paths(values: tuple[str, ...]) -> list[str]:
     return collected
 
 
-@click.group(context_settings={"help_option_names": ["-h", "--help"]})
+class VerbatimArgsGroup(click.Group):
+    """Take command line arguments exactly as written.
+
+    Click simulates Unix shell expansion on Windows: whenever it reads ``sys.argv`` itself
+    it runs every argument through ``glob()``, ``expanduser()`` and ``expandvars()``. This
+    command line carries glob *patterns* as data — ``--related-path``, ``--paths`` — so a
+    pattern that matched tracked files was replaced by the files it matched and then
+    rejected as unexpected positional arguments. A pattern has to reach the parser as
+    written; expansion is the shell's job on the platforms that do it.
+
+    Expansion happens only in whichever command the process starts from, so ``group_class``
+    carries the guard to nested groups: the property then survives one of them later being
+    promoted to an entry point of its own.
+    """
+
+    group_class = type
+
+    def main(self, *args: Any, **kwargs: Any) -> Any:
+        kwargs.setdefault("windows_expand_args", False)
+        return super().main(*args, **kwargs)
+
+
+@click.group(cls=VerbatimArgsGroup, context_settings={"help_option_names": ["-h", "--help"]})
 @click.version_option(__version__, prog_name="governance")
 def main() -> None:
     """Repository governance control plane."""

@@ -1,0 +1,60 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "make governance-*"
+  ],
+  "behavioral_effects": [
+    "A glob pattern given to any governance option on Windows now reaches the parser as written instead of being replaced by the files it matched.",
+    "A tilde or environment placeholder inside any argument is no longer substituted by the CLI on Windows."
+  ],
+  "compatibility_impact": "Windows only, and it restores the intended contract rather than changing it. Any invocation that relied on the CLI expanding a pattern into a file list, or on a tilde or environment placeholder being substituted inside an argument, now receives the literal text. No such invocation exists in the Makefile, the skills, or the hooks: every governance option that takes patterns stores them as patterns. POSIX shells already expand before the process starts, so behaviour there is unchanged.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/tests/test_decision_index.py"
+  ],
+  "follow_up": [
+    "If a second console script is ever added to pyproject.toml, give its group VerbatimArgsGroup, which needs the class moved out of cli.py first."
+  ],
+  "id": "2026-08-23-stop-click-expanding-argv-globs-on-windows-so-governance-options",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The shrink pass removed more from the tests than the fix added: the ADR-template-and-open-session setup the new test would have duplicated was extracted into a shared proposal_repo fixture and a PROPOSAL_DATE constant, and the pre-existing propose test was moved onto it, deleting the copy that already existed. A redundant second fixture file and a 17-line argv literal went too. The source side could not be reduced: the guard has no existing helper to extend, because the package had no click Group subclass and no argv preprocessing of its own.",
+    "VerbatimArgsGroup was left in cli.py rather than moved somewhere hooks.py could import it, so the hook group does not carry the guard. It is not a process entry point today, so nothing is broken; making it one is what would need the move."
+  ],
+  "manifests_changed": [],
+  "reason": "Click main() defaults windows_expand_args=True, so on Windows every argv entry is passed through glob(), expanduser() and expandvars() before parsing. Governance commands take glob patterns as data, so a --related-path or --paths pattern that matched tracked files was replaced by the matched file list and then rejected as unexpected extra arguments; patterns matching nothing fell through unchanged, which disguised the failure as shell-specific. Disabling the expansion makes every argument reach the parser verbatim.",
+  "risks": [
+    "Low and bounded: the flag is the documented opt-out of the argument-parsing library, applied once at the process entry point, so it cannot alter parsing of any individual option.",
+    "The guard is a property of whichever command starts the process. group_class carries it to nested groups, but the hook group in hooks.py is a plain click Group; promoting it to its own console script would silently reintroduce the bug on Windows."
+  ],
+  "rollback": "Revert the commit. Nothing outside the repository changes: no migration, no installed artifact, no external state. The tool runs through uv from source, so the next invocation picks up reverted code with no reinstall. An ADR written while the fix was in place keeps its verbatim related_paths values and stays valid; a revert only makes such patterns unenterable from a Windows command line again.",
+  "schema_version": 1,
+  "security_impact": "None. The change removes an implicit expansion of command line arguments; it grants no new permission, reads no new path, and touches no credential. It narrows rather than widens what the process acts on: previously an argument could expand into a file list drawn from the working directory, and a value containing a percent-delimited name or a leading tilde was rewritten from the environment before any code saw it.",
+  "summary": "Stop click expanding argv globs on Windows so governance options accept path patterns",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "380 tests passed, coverage 77.35 percent against the 75 percent ratcheted floor",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "48 files scanned under .claude and docs, every path, Make target and validator ID resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks run: 0 blocking, 7 advisory with this record in place, and all 7 advisories are pre-existing and unrelated to this change. Before the record the same run reported 1 blocking and 8 advisory; the two extra findings were governance-changes-are-recorded and material-changes-are-recorded, both naming only the two files this session changed.",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

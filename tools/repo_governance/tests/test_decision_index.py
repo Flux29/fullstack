@@ -345,6 +345,26 @@ def test_related_paths_reach_context_without_a_component(minimal_repo: Path) -> 
 
 # --- decision propose -----------------------------------------------------------------
 
+PROPOSAL_DATE = "2026-08-22"
+
+
+@pytest.fixture
+def proposal_repo(minimal_repo: Path) -> Path:
+    """The minimal kernel repo with the ADR scaffold present and a change session open.
+
+    `decision propose` refuses to run outside a session and copies the template to produce
+    the body, so every test of a successful proposal needs both. Pinning the date keeps the
+    written front matter comparable.
+    """
+    from repo_governance.session import start
+
+    ctx = Context.discover(minimal_repo)
+    template = ctx.paths.governance / "templates" / "adr.md"
+    template.parent.mkdir(parents=True, exist_ok=True)
+    template.write_text("---\nid: ADR-NNN\n---\n\n# ADR-NNN — <title>\n", encoding="utf-8")
+    start(ctx, summary="s", reason="r", date=PROPOSAL_DATE)
+    return minimal_repo
+
 
 def test_decision_propose_refuses_outside_a_change_session(minimal_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from click.testing import CliRunner
@@ -358,31 +378,78 @@ def test_decision_propose_refuses_outside_a_change_session(minimal_repo: Path, m
     assert "change session" in result.output
 
 
-def test_decision_propose_allocates_the_next_free_id(minimal_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_decision_propose_allocates_the_next_free_id(proposal_repo: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     from click.testing import CliRunner
 
     from repo_governance.cli import main
-    from repo_governance.session import start
 
-    ctx = Context.discover(minimal_repo)
     for number in (1, 2, 3, 4, 5):
-        write_adr(minimal_repo, f"ADR-00{number}", filename=f"ADR-00{number}-a-decision.md")
-    shutil_template = ctx.paths.governance / "templates" / "adr.md"
-    shutil_template.parent.mkdir(parents=True, exist_ok=True)
-    shutil_template.write_text("---\nid: ADR-NNN\n---\n\n# ADR-NNN — <title>\n", encoding="utf-8")
-    start(ctx, summary="s", reason="r", date="2026-08-22")
+        write_adr(proposal_repo, f"ADR-00{number}", filename=f"ADR-00{number}-a-decision.md")
 
-    monkeypatch.chdir(minimal_repo)
+    monkeypatch.chdir(proposal_repo)
     result = CliRunner().invoke(
         main,
-        ["decision", "propose", "--title", "Next one", "--components", "kernel-thing", "--date", "2026-08-22"],
+        ["decision", "propose", "--title", "Next one", "--components", "kernel-thing", "--date", PROPOSAL_DATE],
     )
 
     assert result.exit_code == 0, result.output
-    written = minimal_repo / "docs" / "architecture" / "decisions" / "ADR-006-next-one.md"
+    written = proposal_repo / "docs" / "architecture" / "decisions" / "ADR-006-next-one.md"
     assert written.is_file()
     fields, problems = read_adr_front_matter(written)
     assert problems == []
     assert fields["id"] == "ADR-006"
     assert fields["status"] == "proposed"
     assert fields["components"] == ["kernel-thing"]
+
+
+def test_decision_propose_keeps_a_matching_related_path_glob_verbatim(
+    proposal_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A `related_paths` glob must survive argument parsing as written.
+
+    Click simulates Unix shell expansion whenever it reads `sys.argv` itself on Windows, so
+    a pattern matching tracked files was replaced by the files it matched and then rejected
+    as unexpected positional arguments — while a pattern matching nothing came through
+    intact, which disguised a systematic failure as a shell quirk.
+
+    Two details matter for this to be a regression test rather than decoration. `CliRunner`
+    passes `args` explicitly and click only expands when `args is None`, so the runner used
+    by the tests above cannot see the bug; this drives `sys.argv` instead. And the expansion
+    is keyed on `os.name`, so the Windows branch is forced here — otherwise the guard would
+    only ever be exercised on a Windows runner.
+    """
+    import os as os_module
+    import sys
+
+    import click.core
+
+    from repo_governance.cli import main
+
+    # `**` expands to the directory plus everything under it, so the tree has to exist.
+    tools = proposal_repo / "backend" / "app" / "agents" / "tools"
+    tools.mkdir(parents=True)
+    (tools / "ask_user_tool.py").write_text("", encoding="utf-8")
+
+    pattern = "backend/app/agents/tools/**"
+    monkeypatch.chdir(proposal_repo)
+
+    class _WindowsOs:
+        """Report Windows to `click.core` alone; every other attribute is the real module."""
+
+        name = "nt"
+
+        def __getattr__(self, item: str) -> object:
+            return getattr(os_module, item)
+
+    argv = ["governance", "decision", "propose", "--title", "Verbatim", "--components", "kernel-thing"]
+    argv += ["--date", PROPOSAL_DATE, "--related-path", pattern]
+    monkeypatch.setattr(click.core, "os", _WindowsOs())
+    monkeypatch.setattr(sys, "argv", argv)
+
+    main.main(standalone_mode=False)
+
+    written = proposal_repo / "docs" / "architecture" / "decisions" / "ADR-001-verbatim.md"
+    assert written.is_file()
+    fields, problems = read_adr_front_matter(written)
+    assert problems == []
+    assert fields["related_paths"] == [pattern]

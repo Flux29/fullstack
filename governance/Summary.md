@@ -52,12 +52,15 @@ Current state, what is unresolved, and recent material history. This is not the 
 ## Active contracts
 
 - **Embedding dimension** — 1024 across 5 points that must agree; see ADR-002.
-- **Migration head** — 0030_mcp_url_origin_only
+- **Migration head** — 0031_create_workspaces
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 148)
+## Recent changes (latest 20 of 149)
 
+- **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-23-update-the-recorded-migration-head-expectation-to-0031-create-wo.json`
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
@@ -115,9 +118,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Register and close a finding for the Google OAuth client secret leaked in backend/.env.example history
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-register-and-close-a-finding-for-the-google-oauth-client-secret.json`
-- **2026-08-20** — Regenerate governance Summary.md after the PR 21 merge combined two independently synced lineages
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-20-regenerate-governance-summary-md-after-the-pr-21-merge-combined.json`
 
 ## Decisions (6)
 

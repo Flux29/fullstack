@@ -19,7 +19,7 @@
         "sources": ["backend/alembic/versions/"],
         "extractor_version": "1.0.0"
       },
-      "head_expected": ["0030_mcp_url_origin_only"],
+      "head_expected": ["0031_create_workspaces"],
       "heads_observed": ["0030_mcp_url_origin_only"],
       "revisions": [],
       "accepted_history_ref": "alembic-numbering-gaps-accepted"

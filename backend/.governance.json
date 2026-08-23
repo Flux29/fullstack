@@ -54,9 +54,6 @@
     "ENVIRONMENT",
     "TIMEZONE"
   ],
-  "decision_refs": [
-    "ADR-001"
-  ],
   "validation": [
     "backend-lint",
     "backend-unit"

@@ -246,7 +246,8 @@
           "items": {
             "type": "string",
             "pattern": "^ADR-\\d{3}$"
-          }
+          },
+          "description": "Derived at sync from the `components` list in each ADR's front matter — never declared here or in a directory annotation. Only ADRs with status `accepted` or `proposed` are carried, because a superseded decision's successor holds the constraint."
         },
         "finding_refs": {
           "type": "array",

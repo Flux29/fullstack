@@ -130,8 +130,27 @@ def render_summary(
     decisions = decision_index.get("decisions", [])
     if decisions:
         parts.append(f"\n## Decisions ({len(decisions)})\n\n")
-        for decision in decisions:
-            parts.append(f"- **{decision['id']}** — {decision['title']} ({decision['status']})\n")
+
+        # Grouped by what a reader has to do about them: accepted decisions bind now,
+        # proposed ones are waiting on somebody, and retired ones are a count because their
+        # successors already carry the constraint.
+        accepted = [item for item in decisions if item["status"] == "accepted"]
+        proposed = [item for item in decisions if item["status"] == "proposed"]
+        retired = [item for item in decisions if item["status"] in {"superseded", "deprecated", "rejected"}]
+
+        if accepted:
+            parts.append("### Accepted\n\n")
+            for decision in accepted:
+                parts.append(f"- **{decision['id']}** — {decision['title']} — `{decision['file']}`\n")
+
+        if proposed:
+            parts.append("\n### Proposed (awaiting review)\n\n")
+            for decision in proposed:
+                parts.append(f"- **{decision['id']}** — {decision['title']} — `{decision['file']}`\n")
+
+        if retired:
+            parts.append(f"\n### Superseded, deprecated, and rejected ({len(retired)})\n\n")
+            parts.append("Listed by count only; the successor decision carries the constraint.\n")
 
     return "".join(parts)
 

@@ -639,13 +639,32 @@ def governed_json_documents(ctx: Context) -> list[Path]:
     return sorted(documents, key=lambda item: relative_posix(item, ctx.repo_root))
 
 
+def _under_nested_checkout(path: Path, root: Path) -> bool:
+    """True when `path` sits inside a checkout nested within this one.
+
+    Git worktrees live under `.claude/worktrees/` here, and each is a full checkout of some
+    other commit. Their annotations describe that commit's repository, not this one, so
+    walking into them lets another branch's declarations compile into this tree's manifests.
+    Detected by the `.git` marker rather than by directory name, so a vendored clone or a
+    worktree created somewhere else is excluded for the same reason.
+    """
+    current = path.parent
+    while current != root and root in current.parents:
+        if (current / ".git").exists():
+            return True
+        current = current.parent
+    return False
+
+
 def annotation_files(ctx: Context) -> list[Path]:
-    """Every `.governance.json` directory annotation, in stable order."""
+    """Every `.governance.json` directory annotation in *this* checkout, in stable order."""
     from repo_governance.config import EXCLUDED_DIRS
 
     found: list[Path] = []
     for path in ctx.repo_root.rglob(".governance.json"):
         if any(part in EXCLUDED_DIRS for part in path.relative_to(ctx.repo_root).parts):
+            continue
+        if _under_nested_checkout(path, ctx.repo_root):
             continue
         found.append(path)
     return sorted(found, key=lambda item: relative_posix(item, ctx.repo_root))

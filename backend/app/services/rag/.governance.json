@@ -54,9 +54,6 @@
     "RAG_TOP_K",
     "RAG_DEFAULT_COLLECTION"
   ],
-  "decision_refs": [
-    "ADR-002"
-  ],
   "validation": [
     "backend-unit",
     "rag-docker-integration"

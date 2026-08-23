@@ -238,6 +238,34 @@ def _components(ctx: Context) -> list[dict[str, Any]]:
     return read_json(path).get("components", [])
 
 
+def _decisions(ctx: Context) -> dict[str, dict[str, Any]]:
+    """The ADR index keyed by id, or empty when it has not been generated yet."""
+    path = ctx.paths.decision_index
+    if not path.is_file():
+        return {}
+    return {entry["id"]: entry for entry in read_json(path).get("decisions", []) if "id" in entry}
+
+
+def _decisions_matching_paths(decisions: dict[str, dict[str, Any]], paths: list[str]) -> set[str]:
+    """ADRs whose `related_paths` globs cover any of `paths`.
+
+    The component route reaches a decision only when some component both owns the changed
+    file and is named by the ADR. A decision about a cross-cutting concern — a file pattern
+    that no single component owns — had no way to reach a briefing before this.
+    """
+    from repo_governance.merge import BINDING_DECISION_STATUSES
+
+    matched: set[str] = set()
+    for decision in decisions.values():
+        if decision.get("status") not in BINDING_DECISION_STATUSES:
+            continue
+        for pattern in decision.get("related_paths", []):
+            if any(fnmatch.fnmatch(path, pattern) or path.startswith(pattern.rstrip("*")) for path in paths):
+                matched.add(decision["id"])
+                break
+    return matched
+
+
 def owner_of(components: list[dict[str, Any]], path: str) -> str | None:
     """Longest matching `owns` pattern wins, so a subsystem beats the root containing it."""
     best: tuple[int, str] | None = None
@@ -338,8 +366,13 @@ def analyse_impact(ctx: Context, paths: list[str], depth: int = 1) -> Impact:
     result.validators = sorted(
         {validator for component_id in reached for validator in by_id.get(component_id, {}).get("validation", [])}
     )
+    # Two routes to a decision: the component that owns the changed file is named by the
+    # ADR, or the ADR's own related_paths globs cover the file directly. The second exists
+    # because a cross-cutting decision belongs to no single component.
+    decisions = _decisions(ctx)
     result.decisions = sorted(
         {ref for component_id in reached for ref in by_id.get(component_id, {}).get("decision_refs", [])}
+        | _decisions_matching_paths(decisions, sorted({*paths, *result.graph_files}))
     )
     result.findings = sorted(
         {ref for component_id in reached for ref in by_id.get(component_id, {}).get("finding_refs", [])}
@@ -458,10 +491,19 @@ def render_context(ctx: Context, paths: list[str], task: str | None, token_budge
         )
 
     if impact.decisions:
+        index = _decisions(ctx)
+        lines = []
+        for item in impact.decisions:
+            entry = index.get(item)
+            if entry is None:
+                lines.append(f"- **{item}** — not in the decision index; run `make governance-sync`\n")
+                continue
+            lines.append(f"- **{item}** — {entry['title']} ({entry['status']}) — `{entry['file']}`\n")
         sections.append(
             (
                 "decisions",
-                "\n## Decisions\n\n" + "".join(f"- {item}\n" for item in impact.decisions),
+                "\n## Decisions\n\nProposed decisions are listed too: they constrain work in flight.\n\n"
+                + "".join(lines),
             )
         )
 
@@ -481,7 +523,9 @@ def render_context(ctx: Context, paths: list[str], task: str | None, token_budge
 
     # Trim from the least load-bearing end until the budget is met. The graph section goes
     # second: cheap to re-derive with `governance impact`, unlike invariants and contracts.
-    priority = ["history", "graph", "decisions", "rules", "findings", "configuration", "notes", "proxy", "contracts"]
+    # Decisions now survive longer than conventions: a rule file is one `Read` away and says
+    # so, while a decision names a constraint whose reasoning exists nowhere in the code.
+    priority = ["history", "graph", "rules", "decisions", "findings", "configuration", "notes", "proxy", "contracts"]
     budget = token_budget * CHARS_PER_TOKEN
     while sum(len(text) for _, text in sections) > budget and priority:
         drop = priority.pop(0)

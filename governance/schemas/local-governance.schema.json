@@ -83,13 +83,6 @@
       },
       "description": "Compose service names this component is realized by."
     },
-    "decision_refs": {
-      "type": "array",
-      "items": {
-        "type": "string",
-        "pattern": "^ADR-\\d{3}$"
-      }
-    },
     "finding_refs": {
       "type": "array",
       "items": {

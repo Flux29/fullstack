@@ -7,6 +7,7 @@ manifest take".
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from repo_governance.config import Context
@@ -226,15 +227,105 @@ def build_interfaces(ctx: Context) -> dict[str, Any]:
     }
 
 
-def build_decision_index(ctx: Context) -> dict[str, Any]:
-    """Index the ADRs from their front matter.
+#: The complete front-matter vocabulary of an ADR. Closed on purpose: a key outside this
+#: set is a typo or an invention, and either way silently dropping it would let an author
+#: believe they had declared something governance never read.
+ADR_FRONT_MATTER_KEYS: frozenset[str] = frozenset(
+    {"id", "title", "status", "date", "components", "supersedes", "related_paths", "policy_refs"}
+)
 
-    Deliberately a small hand-rolled parser rather than a YAML dependency for the whole
-    document: the front matter here is a fixed set of scalars and one string list, and an
-    ADR whose front matter cannot be read is reported rather than skipped.
+#: Front-matter keys that must be lists of strings.
+ADR_LIST_KEYS: tuple[str, ...] = ("components", "supersedes", "related_paths", "policy_refs")
+
+#: Front-matter keys that must be present.
+ADR_REQUIRED_KEYS: tuple[str, ...] = ("id", "title", "status", "date", "components")
+
+
+def _scalar(value: Any) -> str:
+    """Render a front-matter scalar as the string the index stores.
+
+    YAML resolves an unquoted `2026-08-06` to a `datetime.date`. Generated output must be
+    byte-reproducible text, so dates are normalized back to ISO here rather than relying on
+    `str()` of whatever type the resolver picked.
+    """
+    from datetime import date as date_type
+    from datetime import datetime as datetime_type
+
+    if isinstance(value, datetime_type):
+        return value.date().isoformat()
+    if isinstance(value, date_type):
+        return value.isoformat()
+    return str(value)
+
+
+def read_adr_front_matter(path: Path) -> tuple[dict[str, Any], list[str]]:
+    """Parse one ADR's YAML front matter.
+
+    Returns `(fields, problems)`. Problems are human-readable strings describing what is
+    wrong with the block; the parser never raises and never silently drops a key. The
+    builder ignores problems so that a malformed ADR cannot break `sync`, and
+    `checks.documentation` reports them — detection and repair stay separate, the same way
+    they are for every other governance surface.
     """
     import re
 
+    import yaml
+
+    text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
+    match = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
+    if not match:
+        return {}, ["No YAML front-matter block. The file must open with `---`."]
+
+    try:
+        loaded = yaml.safe_load(match.group(1))
+    except yaml.YAMLError as error:
+        return {}, [f"Front matter is not valid YAML: {error}"]
+
+    if loaded is None:
+        return {}, ["Front-matter block is empty."]
+    if not isinstance(loaded, dict):
+        return {}, ["Front matter must be a mapping of keys to values."]
+
+    problems: list[str] = []
+    fields: dict[str, Any] = {}
+
+    for key in sorted(loaded):
+        if key not in ADR_FRONT_MATTER_KEYS:
+            problems.append(f"Unknown front-matter key {key!r}. Allowed: {', '.join(sorted(ADR_FRONT_MATTER_KEYS))}.")
+            continue
+        fields[key] = loaded[key]
+
+    for key in ADR_REQUIRED_KEYS:
+        if key not in fields or fields[key] in (None, "", []):
+            problems.append(f"Required front-matter key {key!r} is missing or empty.")
+
+    for key in ADR_LIST_KEYS:
+        if key not in fields:
+            continue
+        value = fields[key]
+        if value is None:
+            fields[key] = []
+            continue
+        if not isinstance(value, list):
+            problems.append(f"Front-matter key {key!r} must be a list.")
+            fields[key] = []
+            continue
+        fields[key] = [_scalar(item) for item in value]
+
+    return fields, problems
+
+
+def build_decision_index(ctx: Context) -> dict[str, Any]:
+    """Index the ADRs from their front matter.
+
+    The front matter is the authoritative ADR-to-component link: a component's
+    `decision_refs` is derived from it at sync (see `merge.build_components`), so this index
+    is the join table the rest of governance reads instead of opening five documents.
+
+    `superseded_by` is derived here rather than declared: an ADR that supersedes another
+    knows it, the superseded one should not have to be edited to agree, and two declarations
+    of one fact is exactly the drift this phase removes.
+    """
     from repo_governance.config import iter_files
     from repo_governance.io_atomic import relative_posix
 
@@ -242,46 +333,36 @@ def build_decision_index(ctx: Context) -> dict[str, Any]:
     for path in iter_files(ctx.paths.decisions, suffixes=(".md",)):
         if not path.name.startswith("ADR-"):
             continue
-        text = path.read_text(encoding="utf-8")
-        match = re.match(r"^---\n(.*?)\n---\n", text, re.DOTALL)
-        if not match:
+        fields, _problems = read_adr_front_matter(path)
+        if not fields:
             continue
 
-        fields: dict[str, Any] = {}
-        current_list: str | None = None
-        for line in match.group(1).splitlines():
-            if line.startswith("  - ") and current_list:
-                fields.setdefault(current_list, []).append(line[4:].strip())
-                continue
-            key, _, value = line.partition(":")
-            key, value = key.strip(), value.strip()
-            if not key:
-                continue
-            if value:
-                fields[key] = value
-                current_list = None
-            else:
-                current_list = key
-                fields.setdefault(key, [])
-
         entry = {
-            "id": str(fields.get("id", path.name.split("-title")[0][:7])),
-            "title": str(fields.get("title", path.stem)),
-            "status": str(fields.get("status", "proposed")),
-            "date": str(fields.get("date", "1970-01-01")),
+            "id": _scalar(fields.get("id", path.name.split("-")[0] + "-" + path.name.split("-")[1])),
+            "title": _scalar(fields.get("title", path.stem)),
+            "status": _scalar(fields.get("status", "proposed")),
+            "date": _scalar(fields.get("date", "1970-01-01")),
             "file": relative_posix(path, ctx.repo_root),
         }
-        if fields.get("components"):
-            entry["components"] = sorted(fields["components"])
-        if fields.get("supersedes"):
-            entry["supersedes"] = sorted(fields["supersedes"])
+        for key in ADR_LIST_KEYS:
+            if fields.get(key):
+                entry[key] = sorted(fields[key])
         decisions.append(entry)
+
+    superseded_by: dict[str, list[str]] = {}
+    for entry in decisions:
+        for target in entry.get("supersedes", []):
+            superseded_by.setdefault(target, []).append(entry["id"])
+    for entry in decisions:
+        successors = superseded_by.get(entry["id"])
+        if successors:
+            entry["superseded_by"] = sorted(successors)
 
     return {
         "schema_version": ctx.config.schema_version,
         "provenance": {
             "method": "extracted",
-            "sources": ["governance/history/decisions/ADR-*.md"],
+            "sources": ["docs/architecture/decisions/ADR-*.md"],
             "extractor_version": ctx.config.version,
         },
         "decisions": sorted(decisions, key=lambda item: item["id"]),

@@ -9,6 +9,14 @@
       "update": "sync"
     },
     {
+      "authority": "curated",
+      "description": "Architecture decision records for durable choices. The `components` list in each ADR's front matter is the authoritative decision-to-component link; a component's decision_refs is derived from it at sync.",
+      "kind": "history-decision",
+      "path": "docs/architecture/decisions/",
+      "read_when": "A component references an ADR, or you are about to revisit a durable decision.",
+      "update": "manual"
+    },
+    {
       "authority": "generated",
       "description": "Current architectural state, open findings, accepted exceptions, active contracts, and the most recent material changes.",
       "kind": "summary",
@@ -89,12 +97,12 @@
       "update": "cli-change"
     },
     {
-      "authority": "curated",
-      "description": "Architecture decision records for durable choices. Indexed in index.json.",
+      "authority": "generated",
+      "description": "Generated index of every ADR: id, title, status, date, components, supersedes, and the derived superseded_by.",
       "kind": "history-decision",
-      "path": "governance/history/decisions/",
-      "read_when": "A component references an ADR, or you are about to revisit a durable decision.",
-      "update": "manual"
+      "path": "governance/history/decisions/index.json",
+      "read_when": "Resolving an ADR id to file, status, and components without opening every ADR.",
+      "update": "sync"
     },
     {
       "authority": "curated",
@@ -246,6 +254,14 @@
       "kind": "schema",
       "path": "governance/schemas/",
       "read_when": "Authoring a new governance document by hand, or changing a document's shape.",
+      "update": "manual"
+    },
+    {
+      "authority": "curated",
+      "description": "Scaffolds the governance CLI writes from. Editing one changes the shape of every document created after it, never a document already written.",
+      "kind": "doc",
+      "path": "governance/templates/",
+      "read_when": "Writing a new ADR by hand, or changing what `governance decision propose` produces.",
       "update": "manual"
     },
     {

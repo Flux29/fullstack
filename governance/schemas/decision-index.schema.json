@@ -29,7 +29,8 @@
             "minLength": 1
           },
           "status": {
-            "enum": ["proposed", "accepted", "superseded", "rejected"]
+            "enum": ["proposed", "accepted", "superseded", "deprecated", "rejected"],
+            "description": "`deprecated` is a decision retired with no successor; `superseded` is one replaced by a named ADR. The distinction matters because a superseded decision has somewhere to send the reader and a deprecated one does not."
           },
           "date": {
             "type": "string",
@@ -47,7 +48,32 @@
             "items": {
               "type": "string",
               "pattern": "^ADR-\\d{3}$"
-            }
+            },
+            "description": "Declared in the superseding ADR's front matter."
+          },
+          "superseded_by": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^ADR-\\d{3}$"
+            },
+            "description": "Derived from every other ADR's `supersedes`, never declared. Two declarations of one relationship is the drift this index exists to remove."
+          },
+          "related_paths": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Optional globs. `governance context` joins them to the paths under change directly, so an ADR reaches a briefing even when no component carries it."
+          },
+          "policy_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"
+            },
+            "description": "Policy rule ids this decision is enforced by. Checked to resolve across governance/policies/*.json."
           },
           "file": {
             "type": "string",

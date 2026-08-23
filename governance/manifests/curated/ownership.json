@@ -9,8 +9,8 @@
     },
     {
       "id": "curated-wins-on-intent",
-      "statement": "Purpose, invariants, allowed and forbidden dependencies, and decision references come from curated declarations and annotations. Sync never overwrites them.",
-      "rationale": "Intent is exactly the thing code cannot express. If extraction could overwrite it, the system would lose the only information it uniquely holds."
+      "statement": "Purpose, invariants, and allowed and forbidden dependencies come from curated declarations and annotations. Sync never overwrites them. Decision references are the deliberate exception: they come from ADR front matter and are derived at sync; annotations do not declare them.",
+      "rationale": "Intent is exactly the thing code cannot express. If extraction could overwrite it, the system would lose the only information it uniquely holds. The exception earns itself: a decision's link to a component was declared on both sides and drifted one-directional in five of thirteen cases, so the ADR — which cannot be written without naming its components — became the single declaration."
     },
     {
       "id": "conflicts-are-findings",
@@ -51,7 +51,7 @@
     {
       "path": "governance/history/decisions/index.json",
       "regenerable": true,
-      "source": "Front matter of governance/history/decisions/ADR-*.md",
+      "source": "Front matter of docs/architecture/decisions/ADR-*.md",
       "repair": "make governance-sync"
     },
     {
@@ -101,7 +101,8 @@
     "governance/graph/node-types.json",
     "governance/graph/edge-types.json",
     "governance/views/definitions.json",
-    "governance/history/decisions/ADR-*.md",
+    "docs/architecture/decisions/ADR-*.md",
+    "governance/templates/",
     "governance/history/evaluations/",
     "**/.governance.json",
     ".claude/skills/",

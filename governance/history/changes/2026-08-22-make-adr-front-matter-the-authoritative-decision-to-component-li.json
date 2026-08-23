@@ -1,0 +1,135 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "backend-api",
+    "governance-kernel",
+    "rag"
+  ],
+  "affected_contracts": [
+    "ADR front matter components list is the authoritative decision-to-component link; components.json decision_refs is derived from it and must never be hand-declared."
+  ],
+  "behavioral_effects": [
+    "ADR front matter is now the single declaration of the ADR-to-component link; each component's decision_refs is derived at sync from the ADR components list and a hand-declaration is refused.",
+    "The five previously one-directional links now bind: agents->ADR-003, docling-mcp->ADR-004, rag->ADR-004, postgres-pgvector->ADR-005, backend-api->ADR-005. The annotation-only backend-api->ADR-001 link is dropped.",
+    "Only accepted and proposed decisions are derived onto components; superseded, deprecated, and rejected ones stop binding, because the successor carries the constraint.",
+    "ADR files live under docs/architecture/decisions/; the generated index stays at governance/history/decisions/index.json.",
+    "governance context names decisions as id, title, status, and path instead of a bare id, joins an ADR by its related_paths globs even when no component carries it, and trims decisions after conventions rather than before.",
+    "Summary.md groups decisions into Accepted, Proposed (awaiting review), and a count of retired ones.",
+    "New governance decision propose (make governance-decision-propose) scaffolds a proposed ADR with the next free id, only inside a change session; automation still never writes an accepted decision.",
+    "governance change finish prints, console-only, any decision binding the changed components that the record did not cite with --adr.",
+    "Fixed a pre-existing defect: annotation_files walked into nested git worktrees under .claude/worktrees/, so 8 of 19 components in the live components manifest were compiled from a stale checkout of another commit. Nested checkouts are now skipped by their .git marker.",
+    "Activated checks.references.check_document_references, which was registered but declared by no policy rule and therefore never ran."
+  ],
+  "compatibility_impact": "decision-index schema gains the deprecated status and three optional fields (superseded_by, related_paths, policy_refs) - additive. local-governance schema loses the decision_refs property - breaking for any out-of-tree annotation that declares it; none exist in this repository and the new blocking rule names the repair. build_components and build_effective take an optional decision_index argument, defaulted, so all eight existing callers are unchanged.",
+  "date": "2026-08-22",
+  "files_changed": [
+    "AGENTS.md",
+    "Makefile",
+    "backend/.governance.json",
+    "backend/app/services/rag/.governance.json",
+    "docs/architecture/decisions/ADR-001-governance-adoption-baseline.md",
+    "docs/architecture/decisions/ADR-002-embedding-dimension-contract.md",
+    "docs/architecture/decisions/ADR-003-mcp-connection-model.md",
+    "docs/architecture/decisions/ADR-004-docling-two-paths.md",
+    "docs/architecture/decisions/ADR-005-service-exposure-strategy.md",
+    "governance/Summary.md",
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/history/decisions/ADR-001-governance-adoption-baseline.md",
+    "governance/history/decisions/ADR-002-embedding-dimension-contract.md",
+    "governance/history/decisions/ADR-003-mcp-connection-model.md",
+    "governance/history/decisions/ADR-004-docling-two-paths.md",
+    "governance/history/decisions/ADR-005-service-exposure-strategy.md",
+    "governance/history/decisions/index.json",
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/read-surface.json",
+    "governance/policies/process.json",
+    "governance/schemas/component.schema.json",
+    "governance/schemas/decision-index.schema.json",
+    "governance/schemas/local-governance.schema.json",
+    "governance/templates/",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/checks/__init__.py",
+    "tools/repo_governance/src/repo_governance/checks/documentation.py",
+    "tools/repo_governance/src/repo_governance/cli.py",
+    "tools/repo_governance/src/repo_governance/config.py",
+    "tools/repo_governance/src/repo_governance/documents.py",
+    "tools/repo_governance/src/repo_governance/merge.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/src/repo_governance/renderers/context.py",
+    "tools/repo_governance/src/repo_governance/renderers/summary.py",
+    "tools/repo_governance/src/repo_governance/skills.py",
+    "tools/repo_governance/tests/golden/impact-baselines/add-route-and-proxy.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/change-nextjs-api-consumer.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/hist-new-chat-new-conversation.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/introduce-dependency-cycle.after.json",
+    "tools/repo_governance/tests/golden/impact-baselines/rename-env-var.after.json",
+    "tools/repo_governance/tests/test_decision_index.py"
+  ],
+  "follow_up": [
+    "checks.references.check_check_impl_resolves is still registered with no policy rule declaring it. It is largely redundant with the inline guard in run_checks, so decide whether to declare it or delete it.",
+    "Promote adr-front-matter-is-well-formed, adr-references-are-consistent, and document-references-resolve per their promotion_criteria once evidence accumulates.",
+    "SKIP_FILES silences a whole document. A partially-historical file such as ADR-001 would be better served by a per-section or per-line frozen marker; revisit in Phase 3 when more docs enter the corpus.",
+    "The four nested worktrees under .claude/worktrees/ are stale checkouts of other commits and one is locked. They are now ignored by governance, but they still cost disk and confuse repo-wide greps."
+  ],
+  "id": "2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Simplification pass: not run. The change is mechanical moves plus additive code, ruff check and format are clean, and a restructuring pass over new code with no second caller yet would be speculative.",
+    "governance/manifests/curated/architectural-intent.json held seven decision_refs declarations, not the eight the plan predicted; with the two annotations the real total was nine.",
+    "preflight-ports failed throughout this session because the development stack occupies ports 3000, 5001, 8090, 8100, and 8201-8203. Phase 1 starts no container, so the gate was recorded rather than satisfied; every other preflight signal was clean.",
+    "The hygiene Make target could not run as written on this Windows shell - it uses POSIX VAR=x cmd prefix syntax - so the underlying pre-commit command was run directly with SKIP set, per the CLAUDE.md instruction to run the underlying command rather than rewrite the target."
+  ],
+  "manifests_changed": [
+    "governance/manifests/curated/architectural-intent.json",
+    "governance/manifests/curated/ownership.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/components.json",
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "The ADR-to-component link is declared in two places (ADR front matter and component decision_refs) and has drifted: 5 of 13 links are one-directional and no check catches disagreement, only unresolved references. Making front matter the single declaration and deriving decision_refs at sync removes the second source of truth; moving the ADR files under docs/ puts them where humans and non-Claude agents look for architecture documentation, with the generated index staying in governance/history/.",
+  "risks": [
+    "Three of the four new rules are advisory, so a malformed ADR reports without blocking. Each carries promotion_criteria; decision-refs-are-derived-not-declared is blocking from the start because a hand-declaration is silently overwritten at the next sync.",
+    "ADR-001 is added to the skills-check frozen-record set. Its live sections stop being citation-checked as the price of not falsifying an adoption record that deliberately describes the pre-adoption tree.",
+    "The related_paths context join is exercised only by tests; no committed ADR declares related_paths yet, so its behaviour on the real tree is unproven until one does."
+  ],
+  "rollback": "git revert restores the ADR files to governance/history/decisions/ and every schema, then make governance-sync regenerates the index, components, effective manifest, catalog, read-surface, and Summary. Kernel files touched: governance/governance.toml and governance/manifests/curated/ownership.json - a revert restores both. Nothing a revert would not restore: the change writes no state outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None. No runtime, auth, secret, or network surface is touched. The ADR prose moves from the corpus-gated governance/history/ tree into docs/, which governance.toml already lists as always_allow; five files become readable without a governance query, and their content was never sensitive.",
+  "summary": "Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "379 passed, coverage 77.32% (floor 75%)",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "48 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff check and format clean across 75 files",
+      "id": "governance-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "pre-commit all-files; ty and governance-fast-check skipped by the target itself",
+      "id": "hygiene",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking with this record present",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

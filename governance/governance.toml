@@ -344,12 +344,28 @@ update = "cli-change"
 read_when = "Asking why something is the way it is, or what a recent change to this area did."
 
 [[catalog]]
-path = "governance/history/decisions/"
+path = "docs/architecture/decisions/"
 kind = "history-decision"
-description = "Architecture decision records for durable choices. Indexed in index.json."
+description = "Architecture decision records for durable choices. The `components` list in each ADR's front matter is the authoritative decision-to-component link; a component's decision_refs is derived from it at sync."
 authority = "curated"
 update = "manual"
 read_when = "A component references an ADR, or you are about to revisit a durable decision."
+
+[[catalog]]
+path = "governance/history/decisions/index.json"
+kind = "history-decision"
+description = "Generated index of every ADR: id, title, status, date, components, supersedes, and the derived superseded_by."
+authority = "generated"
+update = "sync"
+read_when = "Resolving an ADR id to file, status, and components without opening every ADR."
+
+[[catalog]]
+path = "governance/templates/"
+kind = "doc"
+description = "Scaffolds the governance CLI writes from. Editing one changes the shape of every document created after it, never a document already written."
+authority = "curated"
+update = "manual"
+read_when = "Writing a new ADR by hand, or changing what `governance decision propose` produces."
 
 [[catalog]]
 path = "governance/history/evaluations/"

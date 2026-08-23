@@ -11,9 +11,6 @@
         "POSTGRES_PASSWORD",
         "POSTGRES_DB"
       ],
-      "decision_refs": [
-        "ADR-002"
-      ],
       "declared_in": "curated",
       "id": "postgres-pgvector",
       "invariants": [
@@ -97,9 +94,6 @@
         "DOCLING_SERVE_TIMEOUT_SECONDS",
         "DOCLING_SERVE_MAX_RETRIES"
       ],
-      "decision_refs": [
-        "ADR-004"
-      ],
       "declared_in": "curated",
       "id": "docling-serve",
       "invariants": [
@@ -121,9 +115,6 @@
         "EMBEDDING_DIMENSION",
         "RERANKER_BASE_URL",
         "CROSS_ENCODER_MODEL"
-      ],
-      "decision_refs": [
-        "ADR-002"
       ],
       "declared_in": "curated",
       "id": "model-runner-host",
@@ -151,9 +142,6 @@
         "GITHUB_MCP_TOKEN",
         "MCP_SERVERS"
       ],
-      "decision_refs": [
-        "ADR-003"
-      ],
       "declared_in": "curated",
       "id": "github-mcp",
       "invariants": [
@@ -173,9 +161,6 @@
     },
     {
       "configuration_refs": [],
-      "decision_refs": [
-        "ADR-003"
-      ],
       "declared_in": "curated",
       "id": "mcp-user-connections",
       "invariants": [
@@ -241,9 +226,6 @@
         "TRAEFIK_DASHBOARD_PORT",
         "TRAEFIK_DASHBOARD_AUTH"
       ],
-      "decision_refs": [
-        "ADR-005"
-      ],
       "declared_in": "curated",
       "id": "traefik",
       "invariants": [
@@ -263,9 +245,6 @@
       ]
     },
     {
-      "decision_refs": [
-        "ADR-001"
-      ],
       "declared_in": "curated",
       "id": "governance-kernel",
       "invariants": [

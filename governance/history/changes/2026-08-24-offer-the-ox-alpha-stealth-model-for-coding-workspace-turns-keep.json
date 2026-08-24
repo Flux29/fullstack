@@ -1,0 +1,74 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "backend-api"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A chat turn can select stealth/ox-alpha (verified against the running dev backend: settings list the bare slug and the container is healthy)",
+    "The ADR-006 governance smoke test named in Session C's follow_up ran and PASSED: a real sandbox session on the workspace runtime cloned github.com/Flux29/fullstack over the dev bridge egress and ran make governance-check-fast inside it - 17 checks, 0 blocking, 0 advisory, matching the host - via the same RemoteSandbox construction coding.py uses, then stopped cleanly",
+    "The dev backend runs with ENABLE_CODING on via environment, sandboxd healthy, workspace runtime image present"
+  ],
+  "compatibility_impact": "Additive: one entry appended to AI_AVAILABLE_MODELS. No schema, endpoint, or wire change; existing model selections are unaffected. The rejected alternative (flipping ENABLE_CODING's code default) would have broken every tokenless environment at Settings() import, including CI, which boots from the placeholder .env.example.",
+  "date": "2026-08-24",
+  "files_changed": [
+    "backend/app/core/config.py"
+  ],
+  "follow_up": [
+    "Run one throwaway coding turn with stealth/ox-alpha against a scratch workspace before trusting it with bootstrap work; consider agent-evals against it",
+    "Session C's briefing-caching follow-up remains open"
+  ],
+  "id": "2026-08-24-offer-the-ox-alpha-stealth-model-for-coding-workspace-turns-keep",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Nothing could be removed or consolidated: the diff is a single list entry appended to an existing setting; no new file, no new mechanism",
+    "The smoke test drove the sandbox through the backend client directly, not through a chat turn, so the approval loop and toolkit attach path were not exercised end to end",
+    "The original slug openrouter:stealth/ox-alpha would have been sent verbatim to OpenRouter and rejected; corrected to the bare slug the OpenRouterModel constructor expects"
+  ],
+  "manifests_changed": [],
+  "reason": "Bootstrapping work is about to run through ADR-006 coding workspaces with OpenRouter's free stealth model Ox Alpha, but AI_AVAILABLE_MODELS did not offer it, so a chat turn could not select it. The initial local edit also flipped ENABLE_CODING's code default to True, which crashed the running dev backend on its own startup guard and would fail CI the same way, since CI boots from the placeholder .env.example with no sandbox token - so the flag stays default-off in code and dev enablement moves to the environment, which is what the guard was designed to demand.",
+  "risks": [
+    "Ox Alpha's function calling has not been exercised against the approval-gated coding toolkit; a model that fumbles deferred-approval tool calls will read as the assistant being broken"
+  ],
+  "rollback": "git revert removes the model from the list. Outside the repository and untouched by a revert: backend/.env (gitignored) now carries SANDBOX_SERVICE_TOKEN and ENABLE_CODING=true for this dev machine; the app image was rebuilt twice (first to pick up the pydantic-ai-backend dependency the old image predated, then from corrected source); the adr006-smoke sandbox session was created and stopped.",
+  "schema_version": 1,
+  "security_impact": "One new model id is offered for per-turn selection: stealth/ox-alpha, routed through the existing OpenRouterProvider path with no new tool, permission, or network surface. The provider behind the stealth slug is anonymous and the preview is free, so prompt and completion retention must be assumed: coding turns will carry repository content (public), chat and RAG content (not necessarily public) to that provider - a standing caution, not a code property. ENABLE_CODING stays default-off in code; dev enablement lives in the gitignored backend/.env alongside the sandbox token, and the startup guard that demands the token was exercised for real this session - the initial default-flip crash-looped the dev backend exactly as the guard intends.",
+  "summary": "Offer the Ox Alpha stealth model for coding-workspace turns, keeping coding enablement environment-scoped",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "ruff clean, 210 files formatted; ty reports 26 pre-existing warnings in files this change does not touch",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "671 passed, 13 skipped",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 errors; 31 pre-existing lint warnings",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "self-skipped (4 skipped), no host-reachable Postgres and no schema change in this session",
+      "id": "migrations",
+      "result": "skipped"
+    },
+    {
+      "evidence_ref": "external volumes present and protected",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

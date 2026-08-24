@@ -201,6 +201,7 @@ class Settings(BaseSettings):
         "openai/gpt-5.5",
         "google/gemini-2.5-flash",
         "deepseek/deepseek-r1",
+        "stealth/ox-alpha",
     ]
     AI_FRAMEWORK: str = "pydantic_ai"
     # "test" builds every agent on pydantic-ai's TestModel: deterministic replies, no

@@ -58,8 +58,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 153)
+## Recent changes (latest 20 of 154)
 
+- **2026-08-24** — Correct the governance trail around Session C's SkillsToolset limitation
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-24-correct-the-governance-trail-around-session-c-s-skillstoolset-li.json`
 - **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-update-the-recorded-migration-head-expectation-to-0031-create-wo.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Scope WebSocket chat file access to the acting user
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-20-scope-websocket-chat-file-access-to-the-acting-user.json`
-- **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
-  - Components: none recorded
-  - Record: `governance/history/changes/2026-08-20-rewrite-git-history-to-remove-the-three-dead-credential-strings.json`
 
 ## Decisions (6)
 

@@ -27,8 +27,10 @@ policy_refs:
 
 Proposed, 2026-08-23. This settles *where* repository tools execute, *what* a workspace is,
 *how* mutations are gated, and — amended 2026-08-23 — *what network* a sandbox gets, per
-stack (Decision rule 7). It deliberately does not settle private-repository credentials or
-per-workspace resource quotas (see Open questions).
+stack (Decision rule 7). Amended 2026-08-24: rule 5 records the shipped read-only skills
+index as the standing interpretation and the backend-rooted skills directory as the
+deferred, priced upgrade path. It deliberately does not settle private-repository
+credentials or per-workspace resource quotas (see Open questions).
 
 ## Context
 
@@ -123,10 +125,28 @@ Rules an agent can check a change against:
    `auto_approved=true` attribute on its tool span so telemetry can distinguish them.
    Auto-approval never extends to a tool outside the workspace toolkit (Google mutations
    and MCP tools keep their own gating).
-5. **Target-repository process.** Inside a workspace the agent drives the target
-   repository's own conventions — its `AGENTS.md`, its Make targets, its `.claude/skills`
-   — through `execute` and, when present, a `SkillsToolset` rooted at the workspace's
-   `.claude/skills`. This repository's `.claude/settings.json` hooks (read gate,
+5. **Target-repository process** (amended 2026-08-24). Inside a workspace the agent drives
+   the target repository's own conventions — its `AGENTS.md`, its Make targets, its
+   `.claude/skills` — through `execute` and a **read-only skills index**: the standing
+   interpretation, shipped 2026-08-23, is that the attach-time briefing carries the
+   repository's entry-point document plus a listing of its skills by name and description,
+   and the agent opens the skill files it needs with its own read tools. The original
+   phrasing — a `SkillsToolset` rooted at the workspace's `.claude/skills` — could not ship
+   against the pinned skills library, whose directory implementation reads only local
+   filesystems while the workspace lives in a remote sandbox. That is a fact about the
+   pinned library, not an inherent limit: the reference design demonstrates a backend-rooted
+   skills directory that discovers skills through the sandbox backend's file protocol and
+   executes skill scripts through the sandbox's execute protocol (see evaluation
+   `2026-08-24-skillstoolset-limitation-over-scoped`). Adopting it is the priced upgrade
+   path, **deferred** because the package breaks compatibility at patch level (a patch
+   release moved its required pydantic-ai major version), has a single-maintainer bus
+   factor, duck-types its backend dependency and fails silently when it is absent, and does
+   synchronous discovery I/O at construction — a poor fit for a per-turn toolkit over an
+   HTTP `RemoteSandbox` — while this ADR's Alternatives already reject depending on
+   `pydantic-deep` wholesale and its reconsider condition (a server mode) is unmet. Revisit
+   when skill *execution* inside a workspace becomes a requirement; that work runs through
+   the `agent-tool` workflow, is gated by `agent-evals` and `security-review`, and pins the
+   dependency exactly (`==`). This repository's `.claude/settings.json` hooks (read gate,
    touched-file log, `Stop` check) are Claude Code hooks and do not apply inside a
    workspace; the target repository's own gates (pre-commit, CI, change records) are what
    hold. When the target is this repository, that is the same guarantee every non-Claude
@@ -225,4 +245,6 @@ capability.
   `mcp-approval-parity`, `connection-urls-are-stripped`, `exposure-posture`
 - Open findings: `mcp-approval-gating-asymmetry`, `mcp-no-connection-time-ssrf-revalidation`
 - `pydantic-ai-backend` (PyPI, 0.2.29 at time of writing); `pydantic-deep` as reference design
+- Evaluation record on rule 5's skills surface:
+  `2026-08-24-skillstoolset-limitation-over-scoped`
 - Documentation pipeline plan §0.11 / §7.10 (decision reversed here)

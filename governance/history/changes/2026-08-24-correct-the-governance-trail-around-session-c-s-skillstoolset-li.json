@@ -1,0 +1,57 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "ADR-006 rule 5 now records what actually shipped - the read-only attach-time skills index - as the standing interpretation instead of a SkillsToolset phrasing that the pinned library cannot satisfy",
+    "The governance trail now distinguishes the library-scoped fact (pydantic-ai-skills 1.3.0 is filesystem-only) from the over-scoped impossibility claim in Session C's limitation, via evaluation 2026-08-24-skillstoolset-limitation-over-scoped",
+    "The backend-rooted skills directory with in-sandbox script execution is named as the priced, deferred upgrade path with its revisit trigger: skill execution inside workspaces becoming a requirement"
+  ],
+  "compatibility_impact": "None at runtime. ADR-006 stays status proposed and is amended in place - no supersession, so existing citations of ADR-006 and its rule numbering keep resolving. The evaluation record is additive history.",
+  "date": "2026-08-24",
+  "files_changed": [
+    "docs/architecture/decisions/ADR-006-coding-workspaces.md",
+    "governance/history/evaluations/2026-08-24-skillstoolset-limitation-over-scoped.json"
+  ],
+  "follow_up": [
+    "Session C's remaining follow_up items (sandbox runtime smoke test against a real clone, briefing caching per workspace) are untouched by this session and still open"
+  ],
+  "id": "2026-08-24-correct-the-governance-trail-around-session-c-s-skillstoolset-li",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Nothing could be deleted or consolidated: change records are immutable history, so the correction had to be a new evaluation record plus an in-place ADR amendment; the deferral reasons appear in both documents deliberately, since the ADR is the standing reference and the evaluation is self-contained evidence",
+    "The shrink pass ran inline rather than as the four-agent simplify fan-out - the session diff is two prose documents where the reuse and efficiency angles do not apply; it found the duplication noted above and judged it intentional",
+    "The intended kind 'context-quality' does not exist in the internal evaluations schema enum; 'impact-quality' was chosen as the closest fit and the naming gap is left unaddressed"
+  ],
+  "manifests_changed": [],
+  "reason": "Session C's change record presented a one-library fact as an inherent impossibility: it said a SkillsToolset could not be rooted at the remote workspace's .claude/skills because SkillsToolset reads local directories, which is true of the pinned pydantic-ai-skills 1.3.0 but not inherent - the reference design pydantic-deep ships a backend-rooted skills directory with sandboxed script execution. Change records are history and are not edited, so the trail needs an evaluation record naming the over-scoped limitation and an ADR-006 amendment that records the shipped skills index as the standing interpretation and the backend-rooted directory as the priced, deferred upgrade path.",
+  "risks": [],
+  "rollback": "git revert restores both documents. Nothing outside the repository is touched. The 2026-08-23 change record itself was never edited, so there is no history state to restore.",
+  "schema_version": 1,
+  "security_impact": "None. Two prose/JSON governance documents changed; no code, dependency, tool, permission, or network path. The amendment explicitly defers the write-capable upgrade (backend-rooted skill execution) and routes any future adoption through agent-tool with agent-evals and security-review, exact-pinned.",
+  "summary": "Correct the governance trail around Session C's SkillsToolset limitation",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "380 passed, coverage 77.42% over the 75% floor; first run failed 2 schema tests because the record's kind 'context-quality' is not in the internal enum - corrected to 'impact-quality', clean on rerun",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "49 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks; the single blocking finding pre-finish was this session's own record-pending state (governance-changes-are-recorded on the new evaluation file), resolved by this record; 8 advisory findings pre-exist the session",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -1346,6 +1346,56 @@
     {
       "build": {
         "args": [],
+        "context": "docker/sandbox-runtime",
+        "dockerfile": "Dockerfile"
+      },
+      "depends_on": [],
+      "env_refs": [],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": false
+      },
+      "image": {
+        "ref": "${SANDBOX_RUNTIME_IMAGE:-fullstack-sandbox-runtime:local}"
+      },
+      "name": "sandbox-runtime",
+      "networks": [],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "base"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "frontend"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "prod"
+        }
+      ],
+      "volumes": []
+    },
+    {
+      "build": {
+        "args": [],
         "context": "docker/sandboxd",
         "dockerfile": "Dockerfile"
       },
@@ -1353,6 +1403,7 @@
       "env_refs": [
         "SANDBOX_CPUS",
         "SANDBOX_MEM_LIMIT",
+        "SANDBOX_RUNTIME_IMAGE",
         "SANDBOX_SERVICE_TOKEN"
       ],
       "expose": [

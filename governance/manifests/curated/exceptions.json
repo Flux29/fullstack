@@ -128,6 +128,17 @@
       "component_refs": ["model-runner-host"]
     },
     {
+      "id": "build-only-services-have-no-healthcheck",
+      "statement": "The sandbox-runtime service declares no healthcheck.",
+      "reason": "It is a build-only service: its container runs `true` and exits, existing solely so `compose --profile coding build/up` keeps the workspace runtime image current in the host daemon (ADR-006 Decision rule 7). There is no readiness to observe and nothing depends on it; the image, not the container, is the artifact. A healthcheck would probe a process that is deliberately already gone.",
+      "scope": [
+        "docker-compose.yml service sandbox-runtime"
+      ],
+      "status": "active",
+      "review_trigger": "The service grows a long-running process, or another service starts depending on it beyond image availability.",
+      "policy_refs": ["services-declare-healthchecks"]
+    },
+    {
       "id": "coverage-floors-are-ratchets",
       "statement": "Coverage thresholds are set at measured levels — 54 percent on the backend and single digits to seventeen percent on the frontend — rather than at an aspirational target.",
       "reason": "The generator shipped 100 percent thresholds against roughly 55 percent and 4 percent actuals, so the gate had never passed and every CI run failed on it. A floor at the measured level catches regressions immediately, which is what a gate is for. It is a ratchet: raise it when real tests are added, never lower it to make a red build green.",

@@ -81,3 +81,9 @@ services:
   codecov-gateway:
     ports:
       - "127.0.0.1:8090:8090"
+
+  # ADR-006 Decision rule 7: dev grants the workspace runtime the bridge so an
+  # agent can clone and install; the isolation argument lives in the ADR.
+  sandboxd:
+    environment:
+      SANDBOXD_RUNTIMES: workspace=${SANDBOX_RUNTIME_IMAGE:-fullstack-sandbox-runtime:local};network_mode=bridge

@@ -3365,6 +3365,21 @@
     },
     {
       "classification": [
+        "compose-only"
+      ],
+      "consumed_by": [],
+      "declared_in": [
+        "docker-compose.yml"
+      ],
+      "default": null,
+      "default_class": "none",
+      "name": "SANDBOX_RUNTIME_IMAGE",
+      "required": false,
+      "surface": "compose",
+      "type": null
+    },
+    {
+      "classification": [
         "runtime"
       ],
       "consumed_by": [],

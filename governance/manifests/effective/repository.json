@@ -826,6 +826,7 @@
   "exceptions_applied": [
     "alembic-numbering-gaps-accepted",
     "billing-generator-feature-disabled",
+    "build-only-services-have-no-healthcheck",
     "coverage-floors-are-ratchets",
     "google-live-suites-excluded-from-registry",
     "preflights-are-host-only",

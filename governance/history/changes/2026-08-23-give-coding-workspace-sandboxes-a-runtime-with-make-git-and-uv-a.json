@@ -1,0 +1,76 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A coding sandbox starts from a repository-owned runtime image carrying git, GNU make, and uv (plus ripgrep, fd, jq, less, procps), so a target repository's documented entry points can run",
+    "The deferred ADR-006 governance smoke test now passes: inside a dev-stack sandbox, git clone --depth 1 of Flux29/fullstack then make governance-check-fast completed with '17 checks run, 0 blocking', matching the host baseline",
+    "ADR-006 open question 2 is resolved: egress is a per-stack property of the runtime allowlist entry (base none, dev bridge, prod closed until an allowlist proxy exists)"
+  ],
+  "compatibility_impact": "None for existing surfaces. The runtime allowlist alias (workspace) and the default runtime are unchanged, so the RemoteSandbox client path is unaffected; the runtime image swap adds tools without removing anything bare python:3.12-slim offered. New compose-only variable SANDBOX_RUNTIME_IMAGE defaults to the previous image name when unset.",
+  "date": "2026-08-23",
+  "files_changed": [
+    "ENV_VARS.md",
+    "docker-compose.dev.yml",
+    "docker-compose.yml",
+    "docker/sandbox-runtime/",
+    "docs/architecture/decisions/ADR-006-coding-workspaces.md",
+    "governance/Summary.md",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [
+    "Design the production egress allowlist proxy and point the prod runtime entry at it; ADR-006 rule 7 names it as the only path to prod egress",
+    "No Make target passes --profile coding; add it to the dev flow so sandboxd and the runtime image build without a hand-typed profile flag",
+    "Consider pointing the host-process DockerSandbox default SANDBOX_DOCKER_IMAGE at the workspace runtime image for parity"
+  ],
+  "id": "2026-08-23-give-coding-workspace-sandboxes-a-runtime-with-make-git-and-uv-a",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The shrink pass deduplicated rationale prose (each fact keeps one canonical home across ADR, compose, Dockerfile) and hoisted the image name into SANDBOX_RUNTIME_IMAGE; the new Dockerfile could not extend an existing file because no other image carries the workspace toolchain, and the build-only service is the smallest compose mechanism for keeping a non-running image current",
+    "make governance-preflight cannot run inside a Linux sandbox because preflight-ports shells out to PowerShell; the smoke test targets governance-check-fast, which is POSIX-clean. Full validator parity inside a sandbox was not attempted",
+    "The running fullstack-app-1 container predates the sandbox-internal network and was attached to it manually for verification; the next compose recreation of app makes that permanent"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/curated/exceptions.json",
+    "governance/manifests/effective/repository.json",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "A coding workspace sandbox runs bare python:3.12-slim with no make, git, or uv, and no egress to install them - confirmed by 'sh: 1: make: not found' inside a real sandbox - so the agent cannot clone a repository or run its Make targets, and the deferred ADR-006 governance smoke test cannot run. A pinned runtime image carrying those tools, registered as sandboxd's default runtime with an explicitly decided per-stack egress posture, makes a real clone-and-make run possible.",
+  "risks": [
+    "Dev-stack sandboxes reach the public internet and the LAN through the daemon bridge; the standing mitigations are the human approval gate on execute and the workspace ruleset, not the network",
+    "SANDBOXD_NETWORK_MODE=none never decides anything while every runtime entry pins its own mode; kept as a fail-closed backstop for a future entry that omits one"
+  ],
+  "rollback": "git revert restores the compose files, Dockerfile, ADR, and manifests. A revert does not remove the fullstack-sandbox-runtime:local image from the host daemon (docker rmi separately), does not re-read env into a running sandboxd (compose up -d sandboxd does), and does not delete sandbox workspace state under the sandbox_workspaces volume, including the bootstrap-smoke clone.",
+  "schema_version": 1,
+  "security_impact": "Widens sandbox egress in the dev stack only, proven behaviorally in both directions rather than by configuration read. Base and prod pin the single runtime allowlist entry to network_mode=none: verified by git ls-remote from inside a sandbox opened through the deployed sandboxd failing with 'Could not resolve host: github.com' (exit 128). The dev overlay grants that entry the daemon default bridge: the same call succeeds (exit 0, HEAD sha returned). A bridged sandbox joins no Compose network, so data-internal services stay unreachable (dev publishes them loopback-only); the Docker socket stays mounted only in sandboxd; the build-only sandbox-runtime service runs true with network_mode none and mounts nothing. The runtime image is digest-pinned (base and uv), replacing the library's build-from-latest coding runtime. Security review of the diff: no findings.",
+  "summary": "Give coding workspace sandboxes a runtime with make, git, and uv, and decide sandbox egress per stack (ADR-006 open question 2)",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "exit 0 (base, dev, frontend stacks)",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "pre-existing environment gap, MINIO_ROOT_USER/PASSWORD unset in backend/.env; prod config resolves clean with dummy values for exactly those two and pins the sandbox runtime to network_mode=none",
+      "id": "compose-check-prod",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking after record",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

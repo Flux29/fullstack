@@ -26,8 +26,9 @@ policy_refs:
 ## Status
 
 Proposed, 2026-08-23. This settles *where* repository tools execute, *what* a workspace is,
-and *how* mutations are gated. It deliberately does not settle private-repository
-credentials, sandbox egress, or per-workspace resource quotas (see Open questions).
+*how* mutations are gated, and — amended 2026-08-23 — *what network* a sandbox gets, per
+stack (Decision rule 7). It deliberately does not settle private-repository credentials or
+per-workspace resource quotas (see Open questions).
 
 ## Context
 
@@ -134,6 +135,20 @@ Rules an agent can check a change against:
    demands for adding a write-capable tool source. Each implementing session cites it with
    `--adr ADR-006`; the first one that lands write-capable code also runs
    `security-review` before its change record is written.
+7. **Egress is a per-stack property of the runtime allowlist entry** (added 2026-08-23,
+   resolving Open question 2). A sandbox's network is set by its allowlist entry's
+   `network_mode`, which overrides the service-wide default — the mechanism note lives
+   beside the allowlist in `docker-compose.yml`. The workspace runtime is a
+   repository-owned, digest-pinned image (`docker/sandbox-runtime/`) carrying the
+   baseline toolchain a repository process needs — without git, make, and uv a coding
+   sandbox dead-ends before any documented entry point can run. The base stack pins
+   `network_mode=none`: no egress. The dev stack grants the workspace runtime the
+   daemon's default bridge, so an agent can clone the repository a workspace names and
+   install what that project declares; the sandbox still joins no Compose network, so
+   PostgreSQL, Redis, and MinIO stay unreachable. A production stack keeps `none` until
+   an egress allowlist — a filtering proxy the runtime entry points at — exists;
+   blanket egress in production is not an option this ADR grants. Every widening is a
+   per-stack edit to the runtime entry, visible in `compose config` diffs.
 
 ## Consequences
 
@@ -154,8 +169,9 @@ Rules an agent can check a change against:
 - The Documentation plan's decision that "backend PydanticAI agents stay out" of
   repository work (its §0.11 / §7.10) is reversed by this ADR. Plans stay out of the
   agents' scope; repository *tools* no longer do.
-- To maintain: the `workspaces` migration, the sandbox service's image digest, and the
-  ruleset presets as `pydantic-ai-backend` evolves them.
+- To maintain: the `workspaces` migration, the sandbox service's and workspace runtime's
+  image digests (including the pinned uv the runtime carries), and the ruleset presets as
+  `pydantic-ai-backend` evolves them.
 
 ## Alternatives considered
 
@@ -191,9 +207,10 @@ capability.
    per-workspace Fernet-encrypted token as `mcp_connections` does, the user's existing
    GitHub connection, or SSH agent forwarding — is not decided. Until it is, `repo_url`
    must be reachable without credentials.
-2. **Sandbox egress.** Whether the sandbox service may reach the public internet (package
-   installs, `git push`) or only an allowlist is an ADR-005-shaped decision to be taken
-   with the Compose work.
+2. **Sandbox egress.** *Resolved 2026-08-23 by Decision rule 7*: per stack — `none` in the
+   base stack, the daemon's bridge for the dev workspace runtime, and production closed
+   until an egress allowlist proxy exists. Kept in this list under its number so existing
+   citations of "open question 2" keep resolving.
 3. **Quotas.** Per-workspace disk, CPU, and wall-clock limits for `execute`; whether a
    workspace's sandbox state persists across turns indefinitely or is garbage-collected.
 4. **Auto-approve lifetime.** Whether `auto_approve` should expire or require

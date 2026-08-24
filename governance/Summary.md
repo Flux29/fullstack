@@ -26,12 +26,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **env-example-unknown-consumers** (low) — Three variables remain genuinely unread: OPENAI_API_KEY, ENABLE_CODE_EXECUTION, and CODE_EXECUTION_MAX_ALLOCATIONS all appear in backend/.env.example with no Settings field and no Compose consumer. Setting any of them has no effect and produces no warning, because Settings uses extra="ignore". Now surfaced automatically by the configuration extractor rather than depending on someone noticing.
   - Disposition: app-fix-required
 
-## Accepted exceptions (10)
+## Accepted exceptions (11)
 
 - **alembic-numbering-gaps-accepted** — Migration filenames are not contiguously numbered: 0017 and 0019 through 0021 do not exist, and 0004_5 is interleaved.
   - Revisit when: The revision graph itself becomes disconnected or grows an unexpected head.
 - **billing-generator-feature-disabled** — Migrations create organization, plan, subscription, seat, Stripe event, and credits-usage tables that no ORM model, service, or route uses.
   - Revisit when: Billing is enabled, or the generator drops the schema for disabled features.
+- **build-only-services-have-no-healthcheck** — The sandbox-runtime service declares no healthcheck.
+  - Revisit when: The service grows a long-running process, or another service starts depending on it beyond image availability.
 - **coverage-floors-are-ratchets** — Coverage thresholds are set at measured levels — 54 percent on the backend and single digits to seventeen percent on the frontend — rather than at an aspirational target.
   - Revisit when: A meaningful body of tests lands without the floor moving, which means the ratchet is not being maintained.
 - **google-live-suites-excluded-from-registry** — The live Google Workspace test suite is absent from the validator registry rather than present and marked destructive.
@@ -56,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 152)
+## Recent changes (latest 20 of 153)
 
 - **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
   - Components: governance-kernel
@@ -73,6 +75,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
+- **2026-08-23** — Give coding workspace sandboxes a runtime with make, git, and uv, and decide sandbox egress per stack (ADR-006 open question 2)
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-23-give-coding-workspace-sandboxes-a-runtime-with-make-git-and-uv-a.json`
 - **2026-08-23** — Attach a sandboxed coding toolkit to a chat turn that names a workspace
   - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-23-attach-a-sandboxed-coding-toolkit-to-a-chat-turn-that-names-a-wo.json`
@@ -115,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Rewrite git history to remove the three dead credential strings from backend/.env.example and empty the gitleaks baseline
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-20-rewrite-git-history-to-remove-the-three-dead-credential-strings.json`
-- **2026-08-20** — Require same-origin fetch metadata and an explicit client header on the auth refresh route
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-20-require-same-origin-fetch-metadata-and-an-explicit-client-header.json`
 
 ## Decisions (6)
 

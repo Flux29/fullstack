@@ -319,6 +319,7 @@ Variables that appear in the settings module, the Compose files, or the frontend
 | `SANDBOXD_TOKEN` | no | — | `compose-only` | — |
 | `SANDBOXD_UI_ENABLED` | no | — | `compose-only` | — |
 | `SANDBOXD_WORKSPACE_ROOT` | no | — | `compose-only` | — |
+| `SANDBOX_RUNTIME_IMAGE` | no | — | `compose-only` | — |
 | `SERVICES__DATABASE_URL` | no | — | `compose-only` | — |
 | `SERVICES__MINIO__ACCESS_KEY_ID` | no | — | `compose-only` | — |
 | `SERVICES__MINIO__HOST` | no | — | `compose-only` | — |

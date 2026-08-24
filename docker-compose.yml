@@ -130,18 +130,13 @@ services:
       # for the stacks that do not run this profile.
       SANDBOXD_TOKEN: ${SANDBOX_SERVICE_TOKEN:-}
       SANDBOXD_WORKSPACE_ROOT: /workspaces
-      # A sandbox container gets no network unless the egress decision says
-      # otherwise - ADR-006 open question 2, deliberately still closed here.
-      #
-      # SANDBOXD_NETWORK_MODE alone is NOT enough, verified against 0.2.29: the
-      # shipped runtime allowlist leads with a "coding" runtime that hardcodes
-      # network_mode="bridge", and a runtime's own value overrides the service
-      # default. Left at the defaults, a sandbox reaches the internet while this
-      # variable says it cannot. So the allowlist is replaced with a single
-      # runtime that pins the isolation explicitly, and that runtime is the
-      # default. Widening egress is an edit here, and a decision in the ADR.
+      # Egress is a per-stack edit on the runtime entry below (ADR-006 Decision
+      # rule 7): the entry's network_mode overrides SANDBOXD_NETWORK_MODE
+      # (verified against 0.2.29, whose shipped allowlist hardcodes bridge), so
+      # isolation is pinned where it is decided. The service-wide default stays
+      # as the backstop - a future entry that omits network_mode fails closed.
       SANDBOXD_NETWORK_MODE: none
-      SANDBOXD_RUNTIMES: workspace=python:3.12-slim;network_mode=none
+      SANDBOXD_RUNTIMES: workspace=${SANDBOX_RUNTIME_IMAGE:-fullstack-sandbox-runtime:local};network_mode=none
       SANDBOXD_DEFAULT_RUNTIME: workspace
       SANDBOXD_MEM_LIMIT: ${SANDBOX_MEM_LIMIT:-2g}
       SANDBOXD_CPUS: ${SANDBOX_CPUS:-2.0}
@@ -166,6 +161,21 @@ services:
       start_period: 20s
       retries: 5
     restart: unless-stopped
+
+  # Build-only: puts the workspace runtime image (docker/sandbox-runtime/) into
+  # the host daemon, where sandboxd starts it for each coding session. The
+  # container itself runs `true` and exits - the image is the artifact. It is a
+  # service so `compose --profile coding up/build` keeps it current alongside
+  # sandboxd, rather than a hand-run docker build that drifts.
+  sandbox-runtime:
+    profiles: ["coding"]
+    build:
+      context: ./docker/sandbox-runtime
+      dockerfile: Dockerfile
+    image: ${SANDBOX_RUNTIME_IMAGE:-fullstack-sandbox-runtime:local}
+    command: ["true"]
+    restart: "no"
+    network_mode: none
 
   db:
     image: pgvector/pgvector@sha256:7ae6051efd0e60444282c27c7e141af07f322ce033300e727a49c3dd11075e38

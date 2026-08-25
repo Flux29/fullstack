@@ -1,0 +1,62 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Compose long-syntax (mapping) volume entries of type volume or bind are now parsed into service volume facts instead of being silently dropped",
+    "Volume entries the extractor cannot parse are recorded in unknowns, matching the existing ports behaviour",
+    "The sandboxd workspace mount now references the x-sandbox-workspace-root anchor directly, ending the comment-discipline duplication the 2026-08-25 change record flagged as follow-up"
+  ],
+  "compatibility_impact": "None: services.json is byte-identical after sync (the long-syntax mount extracts to the same name/target/class entry), the volume entry shape is unchanged, and unparseable volume entries that were previously dropped silently now surface in unknowns - a reporting addition, not a contract change.",
+  "date": "2026-08-25",
+  "files_changed": [
+    "docker-compose.yml",
+    "tools/repo_governance/src/repo_governance/extractors/compose.py",
+    "tools/repo_governance/tests/test_extractors.py"
+  ],
+  "follow_up": [],
+  "id": "2026-08-25-parse-compose-long-syntax-volume-mounts-in-the-services-extracto",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The extractor still implements only the Compose subset this repository uses: tmpfs/npipe mounts and single-path short-syntax entries are reported as unknowns, not classified",
+    "The unknown message says 'could not parse' even for a well-formed entry of an unsupported type; wording kept for consistency with the adjacent ports message",
+    "Shrink pass applied three findings (merged the two external-name sets into one built once, bound the long-syntax type lookup once, dropped an unused dummy Makefile target from the test helper); nothing further could be deleted because the module had no competing volume parser to consolidate",
+    "tools/repo_governance and docker-compose.yml are unassigned paths, so governance-impact's blast radius may be incomplete"
+  ],
+  "manifests_changed": [],
+  "reason": "The services manifest extractor only understood short-form volume strings, so a long-syntax mount vanished from services.json while docker compose config still rendered it - silent omission that forced the 2026-08-25 sandboxd fix to keep short syntax and duplicate the workspace-root path by comment discipline instead of a YAML anchor",
+  "risks": [],
+  "rollback": "git revert of the single commit restores everything; no state lives outside the repository (no migration, no installed artifact, no volume rename - the fullstack_sandbox_workspaces volume and its data are untouched).",
+  "schema_version": 1,
+  "security_impact": "None, deliberately: the extractor change only widens what the manifest records; the compose change re-expresses the sandboxd workspace mount in long syntax with a byte-identical rendered config (docker compose config output and governance-sync were both unchanged). The root-equivalent docker.sock mount is untouched.",
+  "summary": "Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "every file-stack x profile combination resolved, exit 0",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "382 passed, coverage 77.44 percent against the 75 percent floor",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "49 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "re-run after change-finish; during the session its only blocking finding was the expected open-session record gap",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

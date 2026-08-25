@@ -91,13 +91,25 @@ def _merge(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
 
 
 def _parse_volume(entry: Any, external_names: set[str]) -> dict[str, str] | None:
-    if not isinstance(entry, str):
+    """Parse a service volume entry in short or long (mapping) syntax.
+
+    None means unparseable — the caller must record it as an unknown, because a silently
+    dropped mount is indistinguishable from a service that never declared one.
+    """
+    if isinstance(entry, str):
+        parts = entry.split(":")
+        if len(parts) < 2:
+            return None
+        source, target = parts[0], parts[1]
+        is_bind = source.startswith((".", "/"))
+    elif isinstance(entry, dict) and (mount_type := entry.get("type")) in ("volume", "bind"):
+        source, target = entry.get("source"), entry.get("target")
+        if not isinstance(source, str) or not isinstance(target, str):
+            return None
+        is_bind = mount_type == "bind"
+    else:
         return None
-    parts = entry.split(":")
-    if len(parts) < 2:
-        return None
-    source, target = parts[0], parts[1]
-    if source.startswith((".", "/")):
+    if is_bind:
         volume_class = "bind"
     elif source in external_names:
         volume_class = "external-preserve"
@@ -132,13 +144,12 @@ def extract_compose(ctx: Context) -> ComposeExtraction:
 
     base_document = documents.get("docker-compose.yml", {})
     declared_volumes = base_document.get("volumes") or {}
+    # Both the compose-file key and any `name:` override count as external.
     external_names = {
-        name for name, spec in declared_volumes.items() if isinstance(spec, dict) and spec.get("external")
-    }
-    external_real_names = {
-        (spec.get("name") or name)
+        alias
         for name, spec in declared_volumes.items()
         if isinstance(spec, dict) and spec.get("external")
+        for alias in (name, spec.get("name") or name)
     }
 
     for name, spec in sorted(declared_volumes.items()):
@@ -195,9 +206,13 @@ def extract_compose(ctx: Context) -> ComposeExtraction:
 
             volumes = []
             for entry in definition.get("volumes") or []:
-                parsed = _parse_volume(entry, external_names | external_real_names)
+                parsed = _parse_volume(entry, external_names)
                 if parsed:
                     volumes.append(parsed)
+                else:
+                    result.unknowns.append(
+                        f"could not parse volume entry {entry!r} on service {service_name} in stack {stack.id}"
+                    )
             if volumes:
                 facts.volumes = volumes
 

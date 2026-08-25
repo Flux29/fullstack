@@ -11,6 +11,7 @@ from pathlib import Path
 
 from repo_governance.config import Context
 from repo_governance.extractors.alembic import extract_revisions
+from repo_governance.extractors.compose import extract_compose
 from repo_governance.extractors.configuration import parse_env_template, template_sections
 from repo_governance.extractors.makefile import extract_makefile
 from repo_governance.extractors.python_ast import extract_frozenset_members, extract_settings
@@ -265,6 +266,68 @@ def test_the_real_makefile_defines_four_canonical_stacks(real_context: Context) 
 
     assert [stack.id for stack in result.stacks] == ["base", "dev", "frontend", "prod"]
     assert result.unknowns == []
+
+
+# ------------------------------------------------------------------- compose volume mounts
+
+
+def _compose_repo(minimal_repo: Path, compose_yaml: str) -> Context:
+    (minimal_repo / "Makefile").write_text(
+        "COMPOSE_BASE := docker compose -f docker-compose.yml\n",
+        encoding="utf-8",
+    )
+    (minimal_repo / "docker-compose.yml").write_text(compose_yaml, encoding="utf-8")
+    return Context.discover(minimal_repo)
+
+
+def test_long_syntax_volume_mounts_are_parsed_not_dropped(minimal_repo: Path) -> None:
+    """A long-syntax mount vanished from services.json while `docker compose config` still
+    rendered it — the 2026-08-25 sandboxd change had to keep short syntax because of this.
+    The anchor alias in the target is part of the regression: resolving it is what makes
+    long syntax worth using there."""
+    ctx = _compose_repo(
+        minimal_repo,
+        "x-workspace-root: &workspace-root /var/lib/docker/volumes/example/_data\n"
+        "services:\n"
+        "  app:\n"
+        "    image: example:latest\n"
+        "    volumes:\n"
+        "      - ./src:/app/src\n"
+        "      - type: volume\n"
+        "        source: workspaces\n"
+        "        target: *workspace-root\n"
+        "      - type: bind\n"
+        "        source: /var/run/docker.sock\n"
+        "        target: /var/run/docker.sock\n"
+        "volumes:\n"
+        "  workspaces: {}\n",
+    )
+
+    result = extract_compose(ctx)
+
+    assert result.services["app"].volumes == [
+        {"name": "./src", "target": "/app/src", "class": "bind"},
+        {"name": "workspaces", "target": "/var/lib/docker/volumes/example/_data", "class": "named"},
+        {"name": "/var/run/docker.sock", "target": "/var/run/docker.sock", "class": "bind"},
+    ]
+    assert result.unknowns == []
+
+
+def test_an_unparseable_volume_entry_is_an_unknown_not_an_absence(minimal_repo: Path) -> None:
+    ctx = _compose_repo(
+        minimal_repo,
+        "services:\n"
+        "  app:\n"
+        "    image: example:latest\n"
+        "    volumes:\n"
+        "      - type: tmpfs\n"
+        "        target: /scratch\n",
+    )
+
+    result = extract_compose(ctx)
+
+    assert result.services["app"].volumes == []
+    assert any("could not parse volume entry" in u and "app" in u for u in result.unknowns)
 
 
 # --- the invariant scanner and the map-vs-territory sampler ---------------------------

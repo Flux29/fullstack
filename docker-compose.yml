@@ -162,9 +162,12 @@ services:
       # Root-equivalent by construction, which is the whole reason this is a
       # separate container from the API.
       - /var/run/docker.sock:/var/run/docker.sock
-      # Target must stay identical to the x-sandbox-workspace-root anchor —
-      # the workspace-root note above says why.
-      - sandbox_workspaces:/var/lib/docker/volumes/fullstack_sandbox_workspaces/_data
+      # Long syntax so the target references the x-sandbox-workspace-root
+      # anchor instead of restating the path — the workspace-root note above
+      # says why the two must match.
+      - type: volume
+        source: sandbox_workspaces
+        target: *sandbox-workspace-root
     networks:
       - sandbox-internal
     healthcheck:

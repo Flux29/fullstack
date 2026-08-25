@@ -70,6 +70,52 @@ export function useChat(options: UseChatOptions = {}) {
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [pendingQuestions, setPendingQuestions] = useState<AskUserQuestion[] | null>(null);
 
+  // Clear every piece of local in-flight turn state. Shared by stopGeneration
+  // (user-initiated) and reconcileOrphanedTurn (server-side turn gone) so the
+  // two "the turn is over locally" paths cannot drift apart.
+  const resetTurnState = useCallback(() => {
+    setCurrentMessageId(null);
+    currentGroupIdRef.current = null;
+    setIsProcessing(false);
+    setPendingApproval(null);
+    setPendingQuestions(null);
+    useResearchStore.getState().markCurrentTurnStopped();
+  }, [setCurrentMessageId]);
+
+  // Reset all in-flight turn state after the server-side turn is gone — the
+  // backend cancels a turn when its socket goes away, so blocks left showing
+  // "running"/"waiting for approval" belong to a turn that no longer exists.
+  // Marks orphaned tool blocks as errored, closes the streaming message with a
+  // visible note, and re-enables the input. Safe to call when nothing is in
+  // flight (everything it touches is already in its idle state).
+  const reconcileOrphanedTurn = useCallback(
+    (note: string) => {
+      const id = currentMessageIdRef.current;
+      if (id) {
+        const msg = useChatStore.getState().messages.find((m) => m.id === id);
+        for (const tc of msg?.toolCalls ?? []) {
+          if (tc.status === "running" || tc.status === "pending") {
+            updateToolCallPart(id, tc.id, {
+              status: "error",
+              result: "Interrupted — the turn is no longer running.",
+            });
+          }
+        }
+        if (msg) {
+          const text = `\n\n⚠️ ${note}`;
+          if (msg.parts) {
+            appendTextDelta(id, text);
+            updateMessage(id, (m) => ({ ...m, isStreaming: false }));
+          } else {
+            updateMessage(id, (m) => ({ ...m, content: m.content + text, isStreaming: false }));
+          }
+        }
+      }
+      resetTurnState();
+    },
+    [appendTextDelta, updateMessage, updateToolCallPart, resetTurnState],
+  );
+
   const handleWebSocketMessage = useCallback(
     (event: MessageEvent) => {
       const wsEvent: WSEvent = JSON.parse(event.data);
@@ -332,6 +378,16 @@ export function useChat(options: UseChatOptions = {}) {
           break;
         }
 
+        case "turn_not_active": {
+          // The server had no turn/future to receive a stop, resume, or
+          // ask_user_response frame — the turn it addressed died (typically a
+          // reconnect). Reconcile instead of leaving the UI waiting forever.
+          reconcileOrphanedTurn(
+            "The turn this action belonged to is no longer running on the server. Send your request again to continue.",
+          );
+          break;
+        }
+
         case "complete": {
           setIsProcessing(false);
           // Clear currentMessageId after complete (message_saved should have handled ID mapping)
@@ -359,6 +415,7 @@ export function useChat(options: UseChatOptions = {}) {
       onConversationCreated,
       currentConversationIdFromStore,
       conversationId,
+      reconcileOrphanedTurn,
     ],
   );
 
@@ -367,20 +424,44 @@ export function useChat(options: UseChatOptions = {}) {
   // string so it does not end up in access logs or Referer headers.
   const accessToken = useAuthStore((state) => state.accessToken);
 
+  // The token the socket actually connects with. Deliberately lags accessToken:
+  // the WS authenticates only at upgrade, so an open socket stays valid after
+  // the scheduled refresh rotates the in-memory token — but swapping the socket
+  // mid-turn makes the backend cancel the running turn, release the coding
+  // sandbox, and orphan any pending approval. The effect below applies a new
+  // token immediately when idle or offline and defers it while a turn is in
+  // flight on a live socket.
+  const [connectToken, setConnectToken] = useState<string | null>(null);
+
   const wsUrl = `${WS_URL}/api/v1/ws/agent`;
   const wsProtocols = useMemo(
-    () => (accessToken ? [`access_token.${accessToken}`, "chat"] : undefined),
-    [accessToken],
+    () => (connectToken ? [`access_token.${connectToken}`, "chat"] : undefined),
+    [connectToken],
   );
 
   // Guards against firing a token refresh on every backoff attempt — one
   // in-flight /me at a time is enough to recover a stale access token.
   const refreshingRef = useRef(false);
 
+  // The one definition of "a turn is in flight": the token-hold gate below and
+  // the reopen reconcile must agree on it, or a reconnect could clear state the
+  // hold still depends on (and vice versa).
+  const turnInFlight = isProcessing || pendingApproval !== null || pendingQuestions !== null;
+
   const { isConnected, connect, disconnect, sendMessage } = useWebSocket({
     url: wsUrl,
     protocols: wsProtocols,
     onMessage: handleWebSocketMessage,
+    // A fresh socket owns no server-side turn. Anything still marked in-flight
+    // locally belongs to a previous socket whose turn the backend cancelled on
+    // disconnect — reconcile it instead of waiting for events that can't come.
+    onOpen: () => {
+      if (turnInFlight) {
+        reconcileOrphanedTurn(
+          "The connection was reset and the running turn did not survive. Send your request again to continue.",
+        );
+      }
+    },
     // A dropped socket is often a stale access token. Refresh it so the
     // auto-reconnect (and the token-gated connect effect) uses a fresh one.
     // The hook only calls this on genuine drops (not deliberate disconnects),
@@ -404,16 +485,34 @@ export function useChat(options: UseChatOptions = {}) {
     },
   });
 
-  // Own the socket lifecycle here: only open once the in-memory access token is
+  // Decide when a rotated access token is allowed to reach the socket. While a
+  // turn is in flight on a live socket, hold the old token — the socket already
+  // authenticated at upgrade, and swapping it would kill the turn (this is what
+  // used to strand approval-gated coding turns whenever the 10-minute refresh
+  // fired). Once the turn settles, or if the socket dropped anyway (in which
+  // case the turn is already dead and the fresh token is what recovery needs),
+  // apply it. Re-runs when any of the three inputs flips.
+  useEffect(() => {
+    if (!accessToken) {
+      // Logout (or auth loss): drop the applied token so the lifecycle effect
+      // below tears the socket down instead of keeping an orphaned session.
+      setConnectToken(null);
+      return;
+    }
+    if (turnInFlight && isConnected) return;
+    setConnectToken(accessToken);
+  }, [accessToken, turnInFlight, isConnected]);
+
+  // Own the socket lifecycle here: only open once the connect token is
   // available (the WS authenticates via Sec-WebSocket-Protocol). Connecting
   // before the token loads used to open a token-less socket that the server
   // rejects, triggering a reconnect storm + console errors on every page load.
-  // When the token refreshes, `connect` changes identity → reconnect with it.
+  // When the applied token changes, `connect` changes identity → reconnect.
   useEffect(() => {
-    if (!accessToken) return;
+    if (!connectToken) return;
     connect();
     return () => disconnect();
-  }, [accessToken, connect, disconnect]);
+  }, [connectToken, connect, disconnect]);
 
   const doSend = useCallback(
     (content: string, fileIds?: string[], files?: ChatMessageFile[]) => {
@@ -522,13 +621,8 @@ export function useChat(options: UseChatOptions = {}) {
     if (currentMessageIdRef.current) {
       updateMessage(currentMessageIdRef.current, (msg) => ({ ...msg, isStreaming: false }));
     }
-    setCurrentMessageId(null);
-    currentGroupIdRef.current = null;
-    setIsProcessing(false);
-    setPendingApproval(null);
-    setPendingQuestions(null);
-    useResearchStore.getState().markCurrentTurnStopped();
-  }, [sendMessage, updateMessage, setCurrentMessageId]);
+    resetTurnState();
+  }, [sendMessage, updateMessage, resetTurnState]);
 
   // Drain message queue when processing finishes AND we're back online.
   // Re-runs on either flip so a reconnect after offline → drains; a busy turn

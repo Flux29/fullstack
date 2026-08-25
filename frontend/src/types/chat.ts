@@ -142,7 +142,8 @@ export type WSEventType =
   | "context_usage"
   | "context_compacted"
   | "llm_started"
-  | "llm_completed";
+  | "llm_completed"
+  | "turn_not_active";
 
 export interface WSEvent {
   type: WSEventType;

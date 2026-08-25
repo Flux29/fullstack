@@ -301,6 +301,51 @@ class TestAgentSessionApproval:
         assert isinstance(result.approvals["reject"], ToolDenied)
 
 
+class TestOrphanedControlFrames:
+    """A control frame with no in-flight addressee is answered, never dropped.
+
+    After a reconnect the new socket owns no turn task and no pending futures
+    (the old socket's teardown cancelled the turn); resume/stop frames sent for
+    the dead turn must produce ``turn_not_active`` so the browser can reconcile
+    instead of showing "waiting for approval" forever.
+    """
+
+    @pytest.mark.anyio
+    async def test_resume_without_pending_approval_emits_turn_not_active(self):
+        session = AgentSession(MagicMock(), SimpleNamespace(id=uuid4()))
+        with patch("app.services.agent_session.send_event", AsyncMock()) as send:
+            await session.handle_frame(
+                {"type": "resume", "decisions": [{"id": "call-1", "decision": "approve"}]}
+            )
+        assert send.await_args.args[1] == "turn_not_active"
+        assert send.await_args.args[2]["frame_type"] == "resume"
+
+    @pytest.mark.anyio
+    async def test_stop_without_running_turn_emits_turn_not_active(self):
+        session = AgentSession(MagicMock(), SimpleNamespace(id=uuid4()))
+        with patch("app.services.agent_session.send_event", AsyncMock()) as send:
+            await session.handle_frame({"type": "stop"})
+        assert send.await_args.args[1] == "turn_not_active"
+        assert send.await_args.args[2]["frame_type"] == "stop"
+
+    @pytest.mark.anyio
+    async def test_ask_user_response_without_pending_question_emits_turn_not_active(self):
+        session = AgentSession(MagicMock(), SimpleNamespace(id=uuid4()))
+        with patch("app.services.agent_session.send_event", AsyncMock()) as send:
+            await session.handle_frame({"type": "ask_user_response", "answers": []})
+        assert send.await_args.args[1] == "turn_not_active"
+        assert send.await_args.args[2]["frame_type"] == "ask_user_response"
+
+    @pytest.mark.anyio
+    async def test_stop_with_running_turn_cancels_it_without_turn_not_active(self):
+        session = AgentSession(MagicMock(), SimpleNamespace(id=uuid4()))
+        session._turn_task = asyncio.create_task(asyncio.sleep(30))
+        with patch("app.services.agent_session.send_event", AsyncMock()) as send:
+            await session.handle_frame({"type": "stop"})
+        assert session._turn_task.cancelled()
+        assert send.await_count == 0
+
+
 class TestHistoryConversion:
     """Tests for conversation history conversion."""
 

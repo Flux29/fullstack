@@ -238,11 +238,11 @@
       "betweenness": [
         {
           "id": "frontend/src/components/ui/index.ts",
-          "score": 0.0193
+          "score": 0.0192
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0075
+          "score": 0.0076
         },
         {
           "id": "frontend/src/hooks/index.ts",
@@ -257,15 +257,15 @@
           "score": 0.0021
         },
         {
+          "id": "frontend/src/hooks/use-chat.ts",
+          "score": 0.0018
+        },
+        {
           "id": "frontend/src/components/auth/index.ts",
           "score": 0.0017
         },
         {
           "id": "frontend/src/components/states/index.ts",
-          "score": 0.0017
-        },
-        {
-          "id": "frontend/src/hooks/use-chat.ts",
           "score": 0.0017
         },
         {
@@ -320,23 +320,23 @@
       "pagerank": [
         {
           "id": "frontend/src/lib/utils.ts",
-          "score": 0.1211
+          "score": 0.1207
         },
         {
           "id": "frontend/src/lib/server-api.ts",
-          "score": 0.0693
+          "score": 0.069
         },
         {
           "id": "frontend/src/lib/constants.ts",
-          "score": 0.0367
+          "score": 0.0366
         },
         {
           "id": "frontend/src/stores/index.ts",
-          "score": 0.0278
+          "score": 0.0284
         },
         {
           "id": "frontend/src/lib/api-client.ts",
-          "score": 0.0238
+          "score": 0.0237
         },
         {
           "id": "frontend/src/components/ui/index.ts",
@@ -348,11 +348,11 @@
         },
         {
           "id": "frontend/src/i18n.ts",
-          "score": 0.0142
+          "score": 0.0141
         },
         {
           "id": "frontend/src/components/ui/button.tsx",
-          "score": 0.0109
+          "score": 0.0108
         },
         {
           "id": "frontend/src/hooks/index.ts",
@@ -360,7 +360,7 @@
         },
         {
           "id": "frontend/src/components/chat/copy-button.tsx",
-          "score": 0.0082
+          "score": 0.0081
         },
         {
           "id": "frontend/src/lib/admin-auth.ts",
@@ -372,7 +372,7 @@
         },
         {
           "id": "frontend/src/lib/auth-cookies.ts",
-          "score": 0.0064
+          "score": 0.0063
         },
         {
           "id": "frontend/src/components/states/index.ts",
@@ -388,15 +388,15 @@
         },
         {
           "id": "frontend/src/components/marketing/animated-number.tsx",
-          "score": 0.0052
+          "score": 0.0051
         },
         {
           "id": "frontend/src/lib/query-keys.ts",
           "score": 0.0047
         },
         {
-          "id": "frontend/src/components/chat/markdown-content.tsx",
-          "score": 0.0046
+          "id": "frontend/src/stores/auth-store.ts",
+          "score": 0.0047
         }
       ]
     }

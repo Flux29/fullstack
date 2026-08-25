@@ -111,6 +111,9 @@ class AgentSession:
         msg_type = data.get("type")
 
         if msg_type == "stop":
+            if self._turn_task is None or self._turn_task.done():
+                await self._notify_turn_not_active("stop")
+                return
             await self._cancel_turn()
             return
 
@@ -119,6 +122,8 @@ class AgentSession:
             if fut is not None and not fut.done():
                 answers = data.get("answers")
                 fut.set_result(answers if isinstance(answers, list) else [])
+            else:
+                await self._notify_turn_not_active("ask_user_response")
             return
 
         if msg_type == "resume":
@@ -126,6 +131,8 @@ class AgentSession:
             if fut is not None and not fut.done():
                 decisions = data.get("decisions")
                 fut.set_result(decisions if isinstance(decisions, list) else [])
+            else:
+                await self._notify_turn_not_active("resume")
             return
 
         if msg_type is not None:
@@ -137,6 +144,24 @@ class AgentSession:
         task = asyncio.create_task(self._run_turn(data))
         self._turn_task = task
         task.add_done_callback(self._on_turn_done)
+
+    async def _notify_turn_not_active(self, frame_type: str) -> None:
+        """Answer a control frame that has no in-flight addressee.
+
+        A reconnected socket owns no turn task and no pending futures, so a
+        ``stop``, ``resume``, or ``ask_user_response`` from before the reconnect
+        would otherwise vanish while the browser keeps showing a turn that no
+        longer exists. The explicit event lets the frontend reconcile.
+        """
+        logger.warning("Dropping %r frame: no in-flight turn on this connection", frame_type)
+        await send_event(
+            self.websocket,
+            "turn_not_active",
+            {
+                "frame_type": frame_type,
+                "conversation_id": self.current_conversation_id,
+            },
+        )
 
     def _on_turn_done(self, task: asyncio.Task[None]) -> None:
         """Clear the turn slot and surface unexpected crashes."""

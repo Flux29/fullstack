@@ -1,0 +1,92 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "chat-frontend",
+    "frontend-app",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "WS /api/v1/ws/agent"
+  ],
+  "behavioral_effects": [
+    "A scheduled access-token refresh no longer tears down the chat WebSocket while a turn is streaming or waiting on approval; the rotated token is applied lazily after the turn settles (immediately when idle or when the socket already dropped).",
+    "stop, resume, and ask_user_response frames arriving on a socket with no in-flight turn are answered with turn_not_active instead of being dropped silently; the frontend reconciles by erroring orphaned tool blocks, closing the streaming message with a visible note, and re-enabling input. The same reconcile runs when a fresh socket opens while local state still claims a turn is in flight.",
+    "Logout still tears the socket down (the applied connect token is cleared when the in-memory token goes null)."
+  ],
+  "compatibility_impact": "Additive WebSocket event turn_not_active (producer backend/app/services/agent_session.py, consumer frontend/src/hooks/use-chat.ts) - both sides ship together, so the websocket-events-have-producers-and-consumers contract is satisfied; older frontends ignore unknown event types. No REST, schema, or migration changes.",
+  "date": "2026-08-25",
+  "files_changed": [
+    "backend/app/services/agent_session.py",
+    "backend/tests/test_agents.py",
+    "frontend/src/hooks/use-chat.test.ts",
+    "frontend/src/hooks/use-chat.ts",
+    "frontend/src/types/chat.ts",
+    "governance/graph/reports/hotspots.json",
+    "governance/graph/reports/orphans.json"
+  ],
+  "follow_up": [
+    "Backend turn survival across reconnect (resume a live turn on a new socket) remains the larger fix if long turns must survive genuine network drops, not just scheduled refreshes."
+  ],
+  "id": "2026-08-25-keep-in-flight-agent-turns-alive-across-scheduled-token-refresh",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The generated WebSocket event inventory (interfaces.json websocket.events) lists only the hand-seeded reviewed-baseline entry; turn_not_active is not added there because the file is generated and the event extractor is phase-3 - the advisory websocket-events contract tracks this gap for all 25 live events, not just this one.",
+    "Browser check covered a streaming turn crossing a real token rotation (held socket, completed turn, deferred reconnect observed in backend logs); an approval-gated coding-workspace turn crossing a rotation was validated at the unit level only.",
+    "Shrink pass consolidated the turn-reset duplication into resetTurnState shared with stopGeneration; the parts-vs-content append idiom now exists in three call sites and was deliberately not extracted to keep the diff scoped - noted for a future cleanup."
+  ],
+  "manifests_changed": [],
+  "reason": "The frontend's 10-minute access-token refresh rotates the in-memory token, and use-chat's socket-lifecycle effect keys on it, so the live chat WebSocket is torn down and reopened mid-turn; the backend cancels the running turn, releases the sandbox handle, and clears the approval future, after which resume and stop frames on the new socket are silently dropped - the UI shows Running/Waiting-for-approval forever (reproduced 2026-08-25 16:08 UTC, fullstack-app-1 logs). The WS authenticates only at upgrade, so the fix defers the token-swap reconnect until the turn settles, and makes the backend answer no-addressee control frames with an explicit turn_not_active event the frontend reconciles on.",
+  "risks": [],
+  "rollback": "git revert restores everything; no state outside the repository. In-flight sessions pick the old behaviour up on next page load.",
+  "schema_version": 1,
+  "security_impact": "None deliberate: no auth logic changed. The WS still authenticates only at upgrade; deferring the reconnect means an open socket keeps operating on the token it authenticated with until the turn settles, which was already the socket's lifetime semantics. turn_not_active carries only frame_type and conversation_id, no token or user data.",
+  "summary": "Keep in-flight agent turns alive across scheduled token refresh; answer orphaned WS control frames explicitly",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make test, 679 passed 13 skipped, includes new TestOrphanedControlFrames (4 tests) and existing approval-resume tests",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make lint, 0 errors, 26 pre-existing warnings",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "make frontend-test, lint 0 errors, type-check clean, vitest 66 passed incl. 6 new use-chat lifecycle tests",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 skipped, self-skipping without reachable DB from host; no schema change in this diff",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "after restoring untracked env files into the worktree",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run after finish, see report",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

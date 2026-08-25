@@ -58,11 +58,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 160)
+## Recent changes (latest 20 of 161)
 
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-parse-compose-long-syntax-volume-mounts-in-the-services-extracto.json`
+- **2026-08-25** — Keep in-flight agent turns alive across scheduled token refresh; answer orphaned WS control frames explicitly
+  - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
+  - Record: `governance/history/changes/2026-08-25-keep-in-flight-agent-turns-alive-across-scheduled-token-refresh.json`
 - **2026-08-25** — Give the sandbox runtime pwsh, Node, and bun so frontend work is bootstrappable
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-give-the-sandbox-runtime-pwsh-node-and-bun-so-frontend-work-is-b.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-22** — Document the globally installed task-observer skill and its install rules for this repository
   - Components: agent-operating-surface, governance-kernel
   - Record: `governance/history/changes/2026-08-22-document-the-globally-installed-task-observer-skill-and-its-inst.json`
-- **2026-08-21** — Surface the backend's structured error message through the Next.js proxy handlers instead of the generic BackendApiError status line
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-21-surface-the-backend-s-structured-error-message-through-the-next.json`
 
 ## Decisions (6)
 

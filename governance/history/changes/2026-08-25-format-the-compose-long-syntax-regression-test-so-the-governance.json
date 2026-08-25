@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance-lint passes again, unblocking the CI gate on main that failed on run 32857230539 and would fail every subsequent push",
+    "governance-sync repaired the stale Summary.md change count (157 vs 158) inherited from commit c240643, clearing the two blocking generated-file findings present at session baseline"
+  ],
+  "compatibility_impact": "None: no code path changes; ruff format collapsed an implicit string concatenation in one test, and the regenerated Summary.md corrected its change count.",
+  "date": "2026-08-25",
+  "files_changed": [
+    "governance/Summary.md",
+    "tools/repo_governance/tests/test_extractors.py"
+  ],
+  "follow_up": [
+    "Extend local pre-commit to check tools/repo_governance formatting with the project's own ruff (uv run --project tools/repo_governance ruff format --check) so this class of failure fires before push"
+  ],
+  "id": "2026-08-25-format-the-compose-long-syntax-regression-test-so-the-governance",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass: formatting-only diff produced by the formatter itself, nothing to shrink by construction",
+    "The local enforcement gap remains: pre-commit ruff hooks still cover only backend/, so governance-tool formatting is CI-only until a hook is added (proposed as follow-up)"
+  ],
+  "manifests_changed": [],
+  "reason": "The 2026-08-25 long-syntax extractor change shipped a test string ruff format would collapse, and the pre-commit ruff hooks only cover backend/ so nothing enforced governance-tool formatting locally - CI's governance-lint gate failed on main and blocks every subsequent push",
+  "risks": [],
+  "rollback": "git revert restores everything; no state outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None, deliberately: whitespace-only reformatting of one test file plus regeneration of the generated Summary.md.",
+  "summary": "Format the compose long-syntax regression test so the governance-lint CI gate passes",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "re-run after finish, 0 blocking",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

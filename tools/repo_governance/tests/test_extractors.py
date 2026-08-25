@@ -316,12 +316,7 @@ def test_long_syntax_volume_mounts_are_parsed_not_dropped(minimal_repo: Path) ->
 def test_an_unparseable_volume_entry_is_an_unknown_not_an_absence(minimal_repo: Path) -> None:
     ctx = _compose_repo(
         minimal_repo,
-        "services:\n"
-        "  app:\n"
-        "    image: example:latest\n"
-        "    volumes:\n"
-        "      - type: tmpfs\n"
-        "        target: /scratch\n",
+        "services:\n  app:\n    image: example:latest\n    volumes:\n      - type: tmpfs\n        target: /scratch\n",
     )
 
     result = extract_compose(ctx)

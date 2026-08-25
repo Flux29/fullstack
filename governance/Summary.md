@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 159)
+## Recent changes (latest 20 of 160)
 
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
@@ -66,6 +66,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Give the sandbox runtime pwsh, Node, and bun so frontend work is bootstrappable
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-give-the-sandbox-runtime-pwsh-node-and-bun-so-frontend-work-is-b.json`
+- **2026-08-25** — Format the compose long-syntax regression test so the governance-lint CI gate passes
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-25-format-the-compose-long-syntax-regression-test-so-the-governance.json`
 - **2026-08-25** — Fix the sandboxd workspace bind so session files actually land in the named volume
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-fix-the-sandboxd-workspace-bind-so-session-files-actually-land-i.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-21** — Surface the backend's structured error message through the Next.js proxy handlers instead of the generic BackendApiError status line
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-21-surface-the-backend-s-structured-error-message-through-the-next.json`
-- **2026-08-21** — Match Integrations catalog cards to connections by origin so re-connecting a catalog plugin stops 409ing
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-21-match-integrations-catalog-cards-to-connections-by-origin-so-re.json`
 
 ## Decisions (6)
 

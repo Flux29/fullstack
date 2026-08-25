@@ -151,7 +151,7 @@ appears here or in any other governance artifact.
 | `ENABLE_CODING` | no | `false` | `runtime` | Coding workspaces (ADR-006). Off by default: this gives the assistant file and shell tools inside a sandbox. With ENABLE_CODING=true you must also point at a sandboxd service (URL + token), or set SANDBOX_ALLOW_DOCKER=true when running the backend as a host process. |
 | `SANDBOX_SERVICE_URL` | no | `http://sandboxd:8080` | `runtime` | — |
 | `SANDBOX_SERVICE_TOKEN` | no | `` | `runtime` | Required when ENABLE_CODING=true. A session sandboxd opens can run commands on the host, so generate a long random value: openssl rand -hex 32 |
-| `SANDBOX_TIMEOUT_SECS` | no | `60.0` | `runtime` | — |
+| `SANDBOX_TIMEOUT_SECS` | no | `60.0` | `runtime` | Client-side ceiling on one sandbox call. sandboxd's own execute timeout is 300s; a value far below it cuts long commands off client-side while the sandbox keeps running them (the dev overlay sets 300 for this reason). |
 | `SANDBOX_ALLOW_DOCKER` | no | `false` | `runtime` | — |
 | `SANDBOX_DOCKER_IMAGE` | no | `python:3.12-slim` | `runtime` | — |
 | `SANDBOX_NETWORK_MODE` | no | `none` | `runtime` | — |

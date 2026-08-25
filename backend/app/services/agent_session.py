@@ -435,7 +435,9 @@ class AgentSession:
             return []
         self._coding = toolkit
         self._auto_approved_tools = tools.auto_approved_tools
-        self._coding_briefing = await read_repository_briefing(tools.backend)
+        self._coding_briefing = await read_repository_briefing(
+            tools.backend, repo_url=policy.repo_url
+        )
         logger.info(
             "Coding workspace %r attached (ruleset=%s, auto_approve=%s)",
             policy.name,

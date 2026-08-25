@@ -74,6 +74,12 @@ def test_normalize_repo_url_rejects_non_http_or_hostless(url):
         normalize_repo_url(url)
 
 
+def test_normalize_repo_url_accepts_git_scheme_with_port_and_path():
+    """The dev-stack local daemon URL (ADR-006 rule 7 note) must survive intact."""
+    url = "git://host.docker.internal:9418/FullStack/fullstack"
+    assert normalize_repo_url(url) == url
+
+
 def test_workspace_create_normalizes_repo_url():
     data = WorkspaceCreate(name="app", repo_url="https://me:pw@example.com/a/b?token=1")
     assert data.repo_url == "https://example.com/a/b"

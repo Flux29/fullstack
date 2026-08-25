@@ -1070,6 +1070,62 @@
       "volumes": []
     },
     {
+      "build": {
+        "args": [],
+        "context": "docker/git-daemon",
+        "dockerfile": "Dockerfile"
+      },
+      "depends_on": [],
+      "env_refs": [],
+      "expose": [],
+      "gpu": false,
+      "healthcheck": {
+        "present": false
+      },
+      "image": {
+        "ref": "fullstack-git-daemon:local"
+      },
+      "name": "git-local",
+      "networks": [],
+      "ports": [
+        {
+          "container_port": "9418",
+          "host_ip": "127.0.0.1",
+          "host_port": "9418",
+          "stack": "dev"
+        },
+        {
+          "container_port": "9418",
+          "host_ip": "127.0.0.1",
+          "host_port": "9418",
+          "stack": "frontend"
+        }
+      ],
+      "presence": [
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "dev"
+        },
+        {
+          "active_without_profile": false,
+          "profiles": [
+            "coding"
+          ],
+          "stack": "frontend"
+        }
+      ],
+      "volumes": [
+        {
+          "class": "bind",
+          "name": "../..",
+          "target": "/repos"
+        }
+      ]
+    },
+    {
       "depends_on": [],
       "env_refs": [],
       "expose": [

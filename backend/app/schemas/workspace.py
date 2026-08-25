@@ -20,6 +20,13 @@ Ruleset = Literal["readonly", "default", "strict"]
 
 STRICT_AUTO_APPROVE_MESSAGE = "auto_approve cannot be combined with the strict ruleset"
 
+# The webhook allowlist plus git://, which by construction carries no
+# credential material for :func:`strip_url_credentials` to miss — the protocol
+# has no userinfo or auth exchange at all. It exists for the dev-stack local
+# daemon (ADR-006 rule 7 / open question 1 note); ssh:// stays out because it
+# does carry identity.
+REPO_URL_ALLOWED_SCHEMES = WEBHOOK_ALLOWED_SCHEMES | {"git"}
+
 
 def normalize_repo_url(url: str) -> str:
     """Reduce a repository URL to scheme + host + path.
@@ -27,17 +34,17 @@ def normalize_repo_url(url: str) -> str:
     Userinfo (``https://user:token@host/...``), the query string, and the
     fragment are dropped: a clone token must never reach the row, and ADR-006
     leaves private-repository credentials as an open question. The scheme
-    allowlist is the same one webhooks use; widening it (``ssh://`` is one of
-    the mechanisms ADR-006 open question 1 may choose) is an edit to
-    ``WEBHOOK_ALLOWED_SCHEMES``'s caller here, not to this reasoning.
+    allowlist is the webhook one plus ``git://``; widening it further
+    (``ssh://`` is one of the mechanisms ADR-006 open question 1 may choose)
+    is an edit to ``REPO_URL_ALLOWED_SCHEMES``, not to this reasoning.
 
     SSRF validation is deliberately *not* done here — it resolves DNS, so it
     belongs at the moment the sandbox is told to clone, not at write time.
     """
     url = url.strip()
     parsed = urlparse(url)
-    if parsed.scheme not in WEBHOOK_ALLOWED_SCHEMES:
-        raise ValueError("repo_url must start with http:// or https://")
+    if parsed.scheme not in REPO_URL_ALLOWED_SCHEMES:
+        raise ValueError("repo_url must start with http://, https://, or git://")
     if not parsed.hostname:
         raise ValueError("repo_url must include a host")
     return strip_url_credentials(url, keep_path=True)

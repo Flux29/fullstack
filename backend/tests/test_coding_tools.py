@@ -504,6 +504,23 @@ async def test_briefing_is_empty_when_the_workspace_documents_nothing():
     assert await read_repository_briefing(_seed({})) == ""
 
 
+REPO_URL = "git://host.docker.internal:9418/FullStack/fullstack"
+
+
+async def test_briefing_names_the_workspace_repo_url():
+    briefing = await read_repository_briefing(
+        _seed({"/workspace/AGENTS.md": "entry"}), repo_url=REPO_URL
+    )
+    assert REPO_URL in briefing
+
+
+async def test_briefing_carries_the_repo_url_even_when_the_workspace_is_empty():
+    """The first turn — nothing cloned yet — is exactly when the URL is needed."""
+    briefing = await read_repository_briefing(_seed({}), repo_url=REPO_URL)
+    assert REPO_URL in briefing
+    assert "cloning that URL is the first step" in briefing
+
+
 async def test_briefing_truncates_a_huge_conventions_file():
     briefing = await read_repository_briefing(
         _seed({"/workspace/AGENTS.md": "x" * (MAX_CONVENTION_CHARS + 5000)})
@@ -524,6 +541,20 @@ async def test_briefing_degrades_to_nothing_when_the_sandbox_is_unreachable():
             raise RuntimeError("sandbox gone")
 
     assert await read_repository_briefing(_Dead()) == ""
+
+
+async def test_briefing_keeps_the_repo_url_when_the_sandbox_is_unreachable():
+    """A dead sandbox costs the conventions, never the URL the row already holds."""
+
+    class _Dead:
+        def read_bytes(self, *a, **k):
+            raise RuntimeError("sandbox gone")
+
+        def glob_info(self, *a, **k):
+            raise RuntimeError("sandbox gone")
+
+    briefing = await read_repository_briefing(_Dead(), repo_url=REPO_URL)
+    assert REPO_URL in briefing
 
 
 def test_front_matter_scan_ignores_a_body_that_mimics_front_matter():

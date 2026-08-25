@@ -66,6 +66,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Fix the sandboxd workspace bind so session files actually land in the named volume
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-fix-the-sandboxd-workspace-bind-so-session-files-actually-land-i.json`
+- **2026-08-25** — Add a dev-profile git daemon so coding sandboxes can clone and push the host repos
+  - Components: agents, backend-api, governance-kernel
+  - Record: `governance/history/changes/2026-08-25-add-a-dev-profile-git-daemon-so-coding-sandboxes-can-clone-and-p.json`
 - **2026-08-24** — Offer the Ox Alpha stealth model for coding-workspace turns, keeping coding enablement environment-scoped
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-24-offer-the-ox-alpha-stealth-model-for-coding-workspace-turns-keep.json`

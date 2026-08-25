@@ -1,0 +1,102 @@
+{
+  "adr_refs": [
+    "ADR-005",
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agents",
+    "backend-api",
+    "governance-kernel"
+  ],
+  "affected_contracts": [
+    "connection-urls-are-stripped"
+  ],
+  "behavioral_effects": [
+    "Coding workspaces can name git://host.docker.internal:9418/<dir>/<repo> and the attach-time briefing tells the model the URL, so the first turn can clone without being pasted it",
+    "Dev sandbox commands get 300s client-side, matching sandboxd's execute timeout, so a backend pytest run is no longer cut off mid-command"
+  ],
+  "compatibility_impact": "repo_url validation widened (accepts git:// in addition to http/https) — strictly additive; read_repository_briefing gains a keyword-only repo_url param defaulting to None; briefing text now includes the workspace repo_url when set. No HTTP contract shape change",
+  "date": "2026-08-25",
+  "files_changed": [
+    "ENV_VARS.md",
+    "backend/.env.example",
+    "backend/app/agents/tools/coding.py",
+    "backend/app/schemas/workspace.py",
+    "backend/app/services/agent_session.py",
+    "backend/tests/test_coding_tools.py",
+    "backend/tests/test_workspaces.py",
+    "docker-compose.dev.yml",
+    "docker/git-daemon/",
+    "docs/architecture/decisions/ADR-006-coding-workspaces.md",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [
+    "Fix the services.json extractor to parse volume short syntax containing \\ (and long syntax, per the standing follow-up), then restore the HOST_REPOS_ROOT override",
+    "Run the phase-2 bootstrap smoke: workspace fullstack-self against the daemon URL, confirm briefing carries the URL end-to-end and files persist across turns"
+  ],
+  "id": "2026-08-25-add-a-dev-profile-git-daemon-so-coding-sandboxes-can-clone-and-p",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "HOST_REPOS_ROOT env override omitted: the services.json extractor mis-parses \\ volume short syntax into a garbage named-volume entry, so the bind is the literal ../.. until the extractor is fixed",
+    "App container not yet recreated; SANDBOX_TIMEOUT_SECS=300 takes effect on next compose up of app (phase-2 bring-up)"
+  ],
+  "manifests_changed": [
+    "ENV_VARS.md",
+    "governance/manifests/generated/configuration.json",
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "The coding sandbox has no path to a repository: workspace repo_url rejects git://, the agent is never told the URL, and the 60s client timeout kills long commands. A loopback git daemon over the dev bridge (ADR-006 rule 7 egress already granted in dev; recorded as a note on rule 7 / open question 1) plus these three client-side fixes completes the local bootstrap loop without any GitHub credential in the product.",
+  "risks": [
+    "Any local container, not only the sandbox, can read every repository under the mounted root; accepted and documented as dev-machine posture in the ADR rule 7 note"
+  ],
+  "rollback": "git revert restores validation, briefing, compose, and ADR text. A revert does not restore: the built fullstack-git-daemon:local image and the running fullstack-git-local-1 container (docker compose --profile coding down git-local and docker rmi remove them), and the app container still needs a recreate to pick SANDBOX_TIMEOUT_SECS=300 up (or drop it) either way",
+  "schema_version": 1,
+  "security_impact": "Dev-only anonymous git daemon on 127.0.0.1:9418 exports the host Repositories root read to any local container via host.docker.internal; write surface enforced in-image to new refs/heads/sandbox/* only, and pushes cannot execute repository-owned hooks (hooksPath shadowing). git:// added to repo_url allowlist carries no credentials, so connection-urls-are-stripped posture is unchanged; ssh:// deliberately still excluded. Base and prod stacks: no service, runtime has no network to reach one",
+  "summary": "Add a dev-profile git daemon so coding sandboxes can clone and push the host repos",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "ruff clean, 210 files formatted; ty warnings pre-existing only",
+      "id": "backend-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "675 passed, 13 skipped, includes 4 new tests (git:// acceptance; briefing repo_url present, survives empty workspace and dead sandbox)",
+      "id": "backend-unit",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "all stacks+profiles config --quiet, includes prod with validation dummies",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "external volumes protected",
+      "id": "preflight-volumes",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "no schema change; suite green",
+      "id": "migrations",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "4 passed 4 skipped",
+      "id": "agent-evals",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "exit 0, 10 files, 61 tests; no frontend change (repo_url input has no client-side scheme gate)",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "one Medium finding confirmed at 8/10 (declared sandbox/* write surface was unenforced and the host gateway is reachable from every local container) and remediated in-session: update hook admits only new refs/heads/sandbox/*, denyDeletes+denyNonFastForwards, core.hooksPath shadows per-repo hooks; live-verified sandbox push OK, evil-branch push refused, deletion refused. Whole-root anonymous read accepted as documented dev posture",
+      "id": "security-review",
+      "result": "pass"
+    }
+  ]
+}

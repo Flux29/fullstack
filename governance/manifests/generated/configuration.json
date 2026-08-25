@@ -3421,13 +3421,17 @@
       "classification": [
         "runtime"
       ],
-      "consumed_by": [],
+      "consumed_by": [
+        "compose:app"
+      ],
       "declared_in": [
         "backend/app/core/config.py",
-        "backend/.env.example"
+        "backend/.env.example",
+        "docker-compose.yml"
       ],
       "default": "60.0",
       "default_class": "literal",
+      "description": "Client-side ceiling on one sandbox call. sandboxd's own execute timeout is 300s; a value far below it cuts long commands off client-side while the sandbox keeps running them (the dev overlay sets 300 for this reason).",
       "name": "SANDBOX_TIMEOUT_SECS",
       "required": false,
       "surface": "backend",

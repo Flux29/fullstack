@@ -3,6 +3,11 @@ services:
     environment:
       DEBUG: "true"
       ENVIRONMENT: local
+      # Client-side ceiling on one sandbox call. The library default (60s) sits
+      # far under sandboxd's own 300s execute timeout, so a long command — a
+      # backend pytest run — died client-side while the sandbox kept running
+      # it. Matching the server keeps one timeout authoritative.
+      SANDBOX_TIMEOUT_SECS: "300"
     command:
       - uvicorn
       - app.main:app
@@ -87,3 +92,32 @@ services:
   sandboxd:
     environment:
       SANDBOXD_RUNTIMES: workspace=${SANDBOX_RUNTIME_IMAGE:-fullstack-sandbox-runtime:local};network_mode=bridge
+
+  # ADR-006 rule 7 / open question 1, dev interpretation (see the ADR's note):
+  # the workspace runtime already has the bridge, so exporting the host's
+  # repositories over git:// adds a destination, not a privilege. Sandboxes
+  # clone and push git://host.docker.internal:9418/<dir>/<repo>; the port is
+  # published to 127.0.0.1 only (ADR-005 dev loopback posture) and Docker
+  # Desktop's host gateway is what lets a container reach it — note that
+  # gateway is resolvable from every local container, not only the sandbox,
+  # which is why the write surface is enforced rather than assumed: the
+  # image's update hook accepts only new refs/heads/sandbox/* refs (no
+  # deletes, no rewinds, no other branches — see docker/git-daemon/Dockerfile).
+  # Anonymous whole-root *read* is the accepted dev posture in the ADR note.
+  git-local:
+    profiles: ["coding"]
+    build:
+      context: ./docker/git-daemon
+      dockerfile: Dockerfile
+    image: fullstack-git-daemon:local
+    ports:
+      - "127.0.0.1:9418:9418"
+    volumes:
+      # The host directory whose children are served as /<dir>/<repo>: two
+      # levels above this repository, i.e. the Repositories root that contains
+      # FullStack/fullstack. Not env-overridable for now — the services.json
+      # extractor mis-parses a ${VAR:-default} inside volume short syntax (the
+      # standing extractor follow-up); a different root is a compose override
+      # file away.
+      - ../..:/repos
+    restart: unless-stopped

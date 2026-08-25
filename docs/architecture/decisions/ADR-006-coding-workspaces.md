@@ -29,8 +29,11 @@ Proposed, 2026-08-23. This settles *where* repository tools execute, *what* a wo
 *how* mutations are gated, and — amended 2026-08-23 — *what network* a sandbox gets, per
 stack (Decision rule 7). Amended 2026-08-24: rule 5 records the shipped read-only skills
 index as the standing interpretation and the backend-rooted skills directory as the
-deferred, priced upgrade path. It deliberately does not settle private-repository
-credentials or per-workspace resource quotas (see Open questions).
+deferred, priced upgrade path. Amended 2026-08-25: rule 7 carries a note recording the
+dev-stack local git daemon as an interpretation of the egress already granted, and open
+question 1 notes the credential-free `git://` scheme it rides on. It deliberately does not
+settle private-repository credentials or per-workspace resource quotas (see Open
+questions).
 
 ## Context
 
@@ -169,6 +172,23 @@ Rules an agent can check a change against:
    an egress allowlist — a filtering proxy the runtime entry points at — exists;
    blanket egress in production is not an option this ADR grants. Every widening is a
    per-stack edit to the runtime entry, visible in `compose config` diffs.
+   *Note (2026-08-25):* the dev stack's `git-local` service (`docker-compose.dev.yml`,
+   profile `coding`) exports the host's repositories over `git://` on `127.0.0.1:9418`,
+   reached from a sandbox as `git://host.docker.internal:9418/<dir>/<repo>` through
+   Docker Desktop's host gateway. This is an *interpretation* of the egress this rule
+   already grants dev — the runtime has the bridge; the daemon adds a destination on
+   the loopback the dev posture already owns — not a new privilege, and it exists so
+   the bootstrap loop (clone, work, push `sandbox/<topic>` branches, merge host-side)
+   needs no GitHub credential anywhere in the product. It is dev-only by construction:
+   the base and production stacks define no such service, and their runtimes have no
+   network to reach one with. Two boundaries the security review of this note drew:
+   the host gateway is resolvable from *every* local container, so the daemon image
+   itself enforces the write surface (an `update` hook admits only new
+   `refs/heads/sandbox/*` refs, denies deletes and rewinds, and `core.hooksPath`
+   shadows any per-repo hooks, so a push never executes repository-owned code); and
+   the anonymous *read* of every repository under the mounted root is accepted
+   knowingly as dev-machine posture — a developer who keeps repositories that must
+   not be readable this way narrows the bind in a compose override.
 
 ## Consequences
 
@@ -226,7 +246,12 @@ capability.
 1. **Private repositories.** How clone credentials are supplied to the sandbox — a
    per-workspace Fernet-encrypted token as `mcp_connections` does, the user's existing
    GitHub connection, or SSH agent forwarding — is not decided. Until it is, `repo_url`
-   must be reachable without credentials.
+   must be reachable without credentials. *Note (2026-08-25):* the dev stack satisfies
+   this credential-free constraint with the `git://` scheme (added to the `repo_url`
+   allowlist; the protocol has no userinfo or auth exchange, so the
+   `connection-urls-are-stripped` posture is unchanged) pointed at the rule 7 note's
+   local daemon. `ssh://` remains excluded because it carries identity — adopting it is
+   this question's decision to make, not the allowlist's.
 2. **Sandbox egress.** *Resolved 2026-08-23 by Decision rule 7*: per stack — `none` in the
    base stack, the daemon's bridge for the dev workspace runtime, and production closed
    until an egress allowlist proxy exists. Kept in this list under its number so existing

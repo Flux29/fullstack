@@ -89,6 +89,9 @@ class WorkspacePolicy:
     root: str
     ruleset: str
     auto_approve: bool
+    #: Already normalized at write time (scheme allowlist, credentials
+    #: stripped), so it is safe to hand to the model verbatim.
+    repo_url: str | None = None
 
     @classmethod
     def from_row(cls, workspace: Any) -> WorkspacePolicy:
@@ -98,6 +101,7 @@ class WorkspacePolicy:
             root=workspace.root,
             ruleset=workspace.ruleset,
             auto_approve=workspace.auto_approve,
+            repo_url=workspace.repo_url,
         )
 
 
@@ -326,35 +330,46 @@ async def _read_skills_index(async_backend: object) -> str:
     return "\n".join(lines)
 
 
-async def read_repository_briefing(backend: object) -> str:
+async def read_repository_briefing(backend: object, *, repo_url: str | None = None) -> str:
     """Read the target repository's conventions out of the sandbox (ADR-006 §5).
 
     Returns a block to append to the turn's instructions, or an empty string
-    when the workspace has nothing to report — an empty workspace, a repository
-    that documents nothing, or a sandbox that cannot be reached. A briefing is
-    a convenience, so every failure degrades to no briefing rather than failing
-    the turn.
+    when the workspace has nothing to report — an empty workspace with no
+    configured repository, a repository that documents nothing, or a sandbox
+    that cannot be reached. A briefing is a convenience, so every failure
+    degrades to a smaller briefing rather than failing the turn.
+
+    ``repo_url`` is the workspace row's normalized repository URL. It goes
+    first and survives sandbox failures deliberately: the turn that needs it
+    most is the very first one, when the sandbox is empty (nothing to clone
+    the URL *from*) — without it every conversation would have to be told the
+    URL by hand before the initial clone.
     """
     from pydantic_ai_backends.adapter import ensure_async
 
+    sections: list[str] = []
+    if repo_url:
+        sections.append(
+            "### Repository\n\n"
+            f"This workspace names `{repo_url}` as its repository. If the working "
+            "directory does not hold a checkout yet, cloning that URL is the first step."
+        )
     try:
         async_backend = ensure_async(backend)
-        sections: list[str] = []
         conventions = await _read_conventions(async_backend)
         if conventions:
             sections.append(conventions)
         skills = await _read_skills_index(async_backend)
         if skills:
             sections.append("### Available skills\n\n" + skills)
-        if not sections:
-            return ""
-        return (
-            "\n\n## The repository you are working in\n\n"
-            "This workspace has its own conventions. Follow them over your general "
-            "habits, and prefer a command or procedure it documents over improvising "
-            "one. Read any file named below with `read_file` before acting on it.\n\n"
-            + "\n\n".join(sections)
-        )
     except Exception as exc:  # never fail a turn over a briefing
         logger.warning("Could not read the workspace briefing: %s", exc)
+    if not sections:
         return ""
+    return (
+        "\n\n## The repository you are working in\n\n"
+        "This workspace has its own conventions. Follow what it documents over "
+        "your general habits, and prefer a command or procedure it documents over "
+        "improvising one. Read any file named below with `read_file` before acting "
+        "on it.\n\n" + "\n\n".join(sections)
+    )

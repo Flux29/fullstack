@@ -32,6 +32,14 @@ updates:
     groups:
       frontend-js:
         patterns: ["*"]
+        update-types: ["minor", "patch"]
+    # Majors are excluded entirely, not split into their own group: a grouped majors PR
+    # bundles framework migrations (Next, TypeScript, ESLint) that can never pass CI
+    # together, and a standing red PR re-runs the full matrix on billed minutes every
+    # weekly rebase. Majors are taken as deliberate migration sessions instead.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
 
   # docker/mcp/docling/requirements.lock is not a filename the pip ecosystem discovers
   # (it wants requirements*.txt, pyproject.toml, or Pipfile), so that set is covered by

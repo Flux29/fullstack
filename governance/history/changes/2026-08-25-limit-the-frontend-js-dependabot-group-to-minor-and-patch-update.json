@@ -1,0 +1,39 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The weekly frontend-js group is limited to minor and patch update-types, and semver-major updates for the bun ecosystem are ignored entirely with the rationale recorded in the config comment"
+  ],
+  "compatibility_impact": "None for the application. Dependabot's next frontend-js PR will contain only minor and patch bumps; the currently pending majors (Next 16, next-intl 4, TypeScript 7, ESLint 10, vitest 4, lucide-react 1.x, and peers) stop being proposed automatically and await deliberate migration sessions.",
+  "date": "2026-08-25",
+  "files_changed": [
+    ".github/dependabot.yml"
+  ],
+  "follow_up": [
+    "Run the frontend majors migration as its own governed session: Next 15 to 16, next-intl 3 to 4, TypeScript and typescript-eslint when TS 7 is supported, ESLint 10, vitest 4, and replace the removed lucide-react brand icons (Github, Linkedin, Twitter) with simple-icons or @lucide/lab equivalents"
+  ],
+  "id": "2026-08-25-limit-the-frontend-js-dependabot-group-to-minor-and-patch-update",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass: nine-line config addition whose comment carries the policy rationale; nothing to remove",
+    "The pending majors now have no automated reminder; the Next 16 / TypeScript / ESLint toolchain migration (including replacing lucide-react brand icons) must be scheduled deliberately"
+  ],
+  "manifests_changed": [],
+  "reason": "The weekly frontend-js group bundled every pending major (Next 16, TypeScript 7, ESLint 10, lucide-react 1.x) into one PR that fails three independent ways and can never merge - majors need deliberate migration sessions, so the automated group must stop proposing them",
+  "risks": [],
+  "rollback": "git revert restores the previous config; Dependabot resumes proposing grouped majors on its next weekly run. Already-closed PR 32 stays closed either way.",
+  "schema_version": 1,
+  "security_impact": "None, deliberately: narrows what automation proposes; no code or dependency actually changes.",
+  "summary": "Limit the frontend-js Dependabot group to minor and patch updates so grouped PRs stay mergeable",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "0 blocking",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

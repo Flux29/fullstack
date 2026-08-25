@@ -196,8 +196,10 @@ Rules an agent can check a change against:
    the container, a size-bounded volume or tmpfs for the workspace root — so every limit
    is visible in `compose config` diffs exactly as egress is under rule 7, and no limit
    has to be enforced by code running inside the sandbox it constrains. Wall-clock is
-   the one quota enforced in code: the toolkit wrapper applies a fixed timeout to every
-   `execute` call (10 minutes, not user-configurable), because a runaway process must be
+   the one quota enforced in code: sandboxd caps every `execute` at its own 300-second
+   ceiling, and the toolkit client applies the matching `SANDBOX_TIMEOUT_SECS` (a
+   per-stack setting — dev pins it to the same 300 seconds so one timeout stays
+   authoritative; never per-workspace or per-user), because a runaway process must be
    stopped by its caller rather than by the kernel. Sandbox state persists across turns
    of one conversation and is garbage-collected by a taskiq periodic task after an idle
    TTL (7 days default); the `workspaces` row survives collection, and the next turn

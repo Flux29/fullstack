@@ -31,8 +31,9 @@ stack (Decision rule 7). Amended 2026-08-24: rule 5 records the shipped read-onl
 index as the standing interpretation and the backend-rooted skills directory as the
 deferred, priced upgrade path. Amended 2026-08-25: rule 7 carries a note recording the
 dev-stack local git daemon as an interpretation of the egress already granted, and open
-question 1 notes the credential-free `git://` scheme it rides on. It deliberately does not
-settle private-repository credentials or per-workspace resource quotas (see Open
+question 1 notes the credential-free `git://` scheme it rides on; rules 8 and 9 resolve
+open questions 3 and 4. It deliberately does not
+settle private-repository credentials (see Open
 questions).
 
 ## Context
@@ -189,6 +190,29 @@ Rules an agent can check a change against:
    the anonymous *read* of every repository under the mounted root is accepted
    knowingly as dev-machine posture — a developer who keeps repositories that must
    not be readable this way narrows the bind in a compose override.
+8. **Quotas are a per-stack property of the runtime allowlist entry, not a column in
+   the workspace model** (added 2026-08-25, resolving Open question 3). Disk, CPU, and
+   memory limits ride on the workspace runtime's Compose entry — CPU and memory caps on
+   the container, a size-bounded volume or tmpfs for the workspace root — so every limit
+   is visible in `compose config` diffs exactly as egress is under rule 7, and no limit
+   has to be enforced by code running inside the sandbox it constrains. Wall-clock is
+   the one quota enforced in code: the toolkit wrapper applies a fixed timeout to every
+   `execute` call (10 minutes, not user-configurable), because a runaway process must be
+   stopped by its caller rather than by the kernel. Sandbox state persists across turns
+   of one conversation and is garbage-collected by a taskiq periodic task after an idle
+   TTL (7 days default); the `workspaces` row survives collection, and the next turn
+   recreates state by re-cloning `repo_url`, so GC loses only derived bytes. Dev ships
+   generous defaults; production keeps coding disabled until these entries exist.
+9. **`auto_approve` is stored as the user's standing preference, but grants expire with
+   the conversation** (added 2026-08-25, resolving Open question 4). The boolean on the
+   `workspaces` row says what the user wants; activation happens per conversation through
+   the chat-controls toggle rule 4 already requires, and deactivates when the
+   conversation ends — a new conversation starts unprivileged even though the preference
+   persists. This answers the question's failure mode (a stale grant silently approving
+   writes weeks later) without adding statefulness: no TTL column, no expiry scheduler;
+   expiry falls out of the conversation lifecycle the toolkit already tears down per
+   turn. `ruleset=strict` continues to refuse the combination outright, and the
+   `auto_approved=true` span attribute remains the audit trail either way.
 
 ## Consequences
 
@@ -210,8 +234,9 @@ Rules an agent can check a change against:
   repository work (its §0.11 / §7.10) is reversed by this ADR. Plans stay out of the
   agents' scope; repository *tools* no longer do.
 - To maintain: the `workspaces` migration, the sandbox service's and workspace runtime's
-  image digests (including the pinned uv the runtime carries), and the ruleset presets as
-  `pydantic-ai-backend` evolves them.
+  image digests (including the pinned uv the runtime carries), the ruleset presets as
+  `pydantic-ai-backend` evolves them, the per-stack quota entries rule 8 adds to the
+  runtime allowlist, and the sandbox-state GC task's TTL.
 
 ## Alternatives considered
 
@@ -256,10 +281,15 @@ capability.
    base stack, the daemon's bridge for the dev workspace runtime, and production closed
    until an egress allowlist proxy exists. Kept in this list under its number so existing
    citations of "open question 2" keep resolving.
-3. **Quotas.** Per-workspace disk, CPU, and wall-clock limits for `execute`; whether a
-   workspace's sandbox state persists across turns indefinitely or is garbage-collected.
-4. **Auto-approve lifetime.** Whether `auto_approve` should expire or require
-   re-assertion per conversation rather than being a stored workspace property.
+3. **Quotas.** *Resolved 2026-08-25 by Decision rule 8*: disk, CPU, and memory limits
+   are per-stack properties of the runtime allowlist entry; wall-clock is a fixed
+   toolkit-level timeout on `execute`; sandbox state persists for one conversation and
+   is garbage-collected after an idle TTL, the `workspaces` row surviving. Kept in this
+   list under its number so existing citations of "open question 3" keep resolving.
+4. **Auto-approve lifetime.** *Resolved 2026-08-25 by Decision rule 9*: `auto_approve`
+   stays a stored workspace preference, but the grant activates per conversation through
+   chat controls and expires when that conversation ends. Kept in this list under its
+   number so existing citations of "open question 4" keep resolving.
 
 ## References
 

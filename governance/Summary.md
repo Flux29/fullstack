@@ -58,8 +58,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 155)
+## Recent changes (latest 20 of 156)
 
+- **2026-08-25** — Fix the sandboxd workspace bind so session files actually land in the named volume
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-25-fix-the-sandboxd-workspace-bind-so-session-files-actually-land-i.json`
 - **2026-08-24** — Offer the Ox Alpha stealth model for coding-workspace turns, keeping coding enablement environment-scoped
   - Components: backend-api
   - Record: `governance/history/changes/2026-08-24-offer-the-ox-alpha-stealth-model-for-coding-workspace-turns-keep.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-20** — Wire a simplify shrink pass into the gov-change close and make it a ship precondition
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-20-wire-a-simplify-shrink-pass-into-the-gov-change-close-and-make-i.json`
-- **2026-08-20** — Stop uploaded HTML from executing scripts on the application origin
-  - Components: backend-api, frontend-app
-  - Record: `governance/history/changes/2026-08-20-stop-uploaded-html-from-executing-scripts-on-the-application-ori.json`
 
 ## Decisions (6)
 

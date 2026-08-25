@@ -1,0 +1,66 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Session files written through sandboxd now land in the fullstack_sandbox_workspaces named volume. Verified empirically: a file written through a live session is listed by the offline /workspaces/{id}/ls route (which returned [] for every workspace before the fix), appears in the volume, creates nothing under the daemon VM /workspaces, and survives a sandboxd restart through session reattach.",
+    "Offline workspace reads - the surface hibernation, workspace TTL sweeps, and the /workspaces/{id} routes depend on - now serve real content; before the fix they served the permanently empty volume view while sessions wrote to an unmanaged VM directory that a Docker Desktop reset would silently destroy."
+  ],
+  "compatibility_impact": "Wire protocol and workspace ids unchanged; RemoteSandbox clients unaffected. The one real workspace (ws-a4c06bf0b73b) had its files migrated into the volume before the switch. The volume name is now pinned to fullstack_sandbox_workspaces regardless of COMPOSE_PROJECT_NAME. A daemon with a non-default data-root must adjust the x-sandbox-workspace-root anchor per the compose comment.",
+  "date": "2026-08-25",
+  "files_changed": [
+    "docker-compose.yml",
+    "docker/sandboxd/Dockerfile",
+    "governance/manifests/generated/services.json"
+  ],
+  "follow_up": [
+    "Add a sandbox smoke validator that writes through a live session and reads the same file back through the offline workspace API, so the DooD identity cannot silently regress.",
+    "Fix the services.json extractor to parse long-syntax volume mounts or fail loudly on them.",
+    "Consider an upstream pydantic-ai-backend issue proposing a separate daemon-side workspace-root variable for docker-outside-of-docker deployments."
+  ],
+  "id": "2026-08-25-fix-the-sandboxd-workspace-bind-so-session-files-actually-land-i",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The upstream library still conflates the path sandboxd reads with the path the daemon binds in one SANDBOXD_WORKSPACE_ROOT; the durable fix is a second daemon-side path variable upstream, not filed yet.",
+    "No registered validator asserts cross-view persistence (write through a live session, read through the offline API); this session verified it manually.",
+    "The services manifest extractor silently drops long-syntax service volume entries; worked around by keeping the mount in short syntax, extractor not fixed."
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/services.json"
+  ],
+  "reason": "Empirically verified docker-outside-of-docker path mismatch: sandboxd resolves SANDBOXD_WORKSPACE_ROOT in its own mount namespace but passes the string as a bind source to the host daemon, so session files land in an unmanaged docker-desktop VM directory while the sandbox_workspaces named volume stays empty and the offline workspace read API returns empty for workspaces that have files (ADR-006)",
+  "risks": [
+    "The mountpoint path hardcodes the local volume driver layout (/var/lib/docker/volumes/<name>/_data); a daemon with a custom data-root silently re-creates the mismatch. The compose comment names docker volume inspect --format {{.Mountpoint}} as the source of truth for such hosts."
+  ],
+  "rollback": "Revert the docker-compose.yml and docker/sandboxd/Dockerfile edits and recreate sandboxd with SANDBOX_SERVICE_TOKEN set. A revert does not restore: files written after this fix live in the named volume, which a reverted sandboxd neither reads nor binds (it would return to the mismatched /workspaces path), and the stale pre-fix data in the daemon VM /workspaces tree (smoke-session clones and probe files) was removed after migration and cannot be recovered.",
+  "schema_version": 1,
+  "security_impact": "None added: sandboxd already held the Docker socket (root-equivalent by construction). Session data now lands inside the Docker-managed named volume instead of an unmanaged directory in the daemon VM root, which improves containment and auditability. Network posture, approval gating, and the wire protocol are unchanged.",
+  "summary": "Fix the sandboxd workspace bind so session files actually land in the named volume",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "passes with MINIO_ROOT_USER/MINIO_ROOT_PASSWORD supplied as CI does; fails without them for reasons unrelated to this change",
+      "id": "compose-check-prod",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "380 passed, coverage 77.42%",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "id": "skills-check",
+      "result": "pass"
+    }
+  ]
+}

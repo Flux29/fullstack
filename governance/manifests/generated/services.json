@@ -1459,7 +1459,7 @@
         {
           "class": "named",
           "name": "sandbox_workspaces",
-          "target": "/workspaces"
+          "target": "/var/lib/docker/volumes/fullstack_sandbox_workspaces/_data"
         }
       ]
     },
@@ -1748,7 +1748,7 @@
     },
     {
       "class": "named",
-      "name": "sandbox_workspaces"
+      "name": "fullstack_sandbox_workspaces"
     }
   ]
 }

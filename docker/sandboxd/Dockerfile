@@ -18,10 +18,9 @@ ENV PYTHONUNBUFFERED=1 \
 # RemoteSandbox client speaks cannot drift from the server that answers it.
 RUN pip install --no-cache-dir "pydantic-ai-backend[server]==0.2.29"
 
-# The workspace root sandboxd hands to each session. Bind-mounted from a named
-# volume so a workspace survives a container restart.
-RUN mkdir -p /workspaces
-VOLUME ["/workspaces"]
+# The workspace root and its volume come from Compose (the workspace-root note
+# in docker-compose.yml). No VOLUME declaration — it would spawn an unused
+# anonymous volume wherever Compose does not override it.
 
 EXPOSE 8080
 

@@ -27,6 +27,12 @@ x-backend-volumes: &backend-volumes
   - models_cache:/app/models_cache
   - ./emails:/app/emails:ro
 
+# The sandbox_workspaces volume's own daemon-side mountpoint — why sandboxd
+# must see the volume at exactly this path is the workspace-root note on the
+# service. On a daemon with a non-default data-root, set this to
+# `docker volume inspect fullstack_sandbox_workspaces --format {{.Mountpoint}}`.
+x-sandbox-workspace-root: &sandbox-workspace-root /var/lib/docker/volumes/fullstack_sandbox_workspaces/_data
+
 x-backend-depends: &backend-depends
   db:
     condition: service_healthy
@@ -129,7 +135,16 @@ services:
       # Left as a plain substitution so `compose config` still resolves
       # for the stacks that do not run this profile.
       SANDBOXD_TOKEN: ${SANDBOX_SERVICE_TOKEN:-}
-      SANDBOXD_WORKSPACE_ROOT: /workspaces
+      # The workspace root is used twice: sandboxd mkdirs and reads it in its
+      # own mount namespace, and hands the same string to the host daemon as
+      # each session's bind-mount source. The two views name the same directory
+      # only when the volume is mounted at the path the daemon itself keeps it
+      # at, so the target below is the volume's own mountpoint. With any other
+      # target (verified against 0.2.29 with a /workspaces target) the daemon
+      # silently auto-creates the source path on its own filesystem: session
+      # files bypass the volume, and the offline workspace reads that
+      # hibernation and the /workspaces/{id} routes serve come back empty.
+      SANDBOXD_WORKSPACE_ROOT: *sandbox-workspace-root
       # Egress is a per-stack edit on the runtime entry below (ADR-006 Decision
       # rule 7): the entry's network_mode overrides SANDBOXD_NETWORK_MODE
       # (verified against 0.2.29, whose shipped allowlist hardcodes bridge), so
@@ -147,7 +162,9 @@ services:
       # Root-equivalent by construction, which is the whole reason this is a
       # separate container from the API.
       - /var/run/docker.sock:/var/run/docker.sock
-      - sandbox_workspaces:/workspaces
+      # Target must stay identical to the x-sandbox-workspace-root anchor —
+      # the workspace-root note above says why.
+      - sandbox_workspaces:/var/lib/docker/volumes/fullstack_sandbox_workspaces/_data
     networks:
       - sandbox-internal
     healthcheck:
@@ -637,7 +654,11 @@ networks:
     internal: true
 
 volumes:
+  # Name pinned because the sandbox workspace-root path spells it literally: a
+  # COMPOSE_PROJECT_NAME override must not move the volume out from under the
+  # mountpoint sandboxd binds sessions to.
   sandbox_workspaces:
+    name: fullstack_sandbox_workspaces
   postgres_data:
   minio_data:
   media_data:

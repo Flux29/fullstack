@@ -58,11 +58,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 157)
+## Recent changes (latest 20 of 159)
 
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-parse-compose-long-syntax-volume-mounts-in-the-services-extracto.json`
+- **2026-08-25** — Give the sandbox runtime pwsh, Node, and bun so frontend work is bootstrappable
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-25-give-the-sandbox-runtime-pwsh-node-and-bun-so-frontend-work-is-b.json`
 - **2026-08-25** — Fix the sandboxd workspace bind so session files actually land in the named volume
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-fix-the-sandboxd-workspace-bind-so-session-files-actually-land-i.json`
@@ -117,12 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-21** — Match Integrations catalog cards to connections by origin so re-connecting a catalog plugin stops 409ing
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-21-match-integrations-catalog-cards-to-connections-by-origin-so-re.json`
-- **2026-08-21** — Bring docs/ under the citation checker and retire three superseded governance-adoption documents
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-21-bring-docs-under-the-citation-checker-and-retire-three-supersede.json`
-- **2026-08-21** — Add a deletion-only proof gate to the refactor-governed skill
-  - Components: agent-operating-surface
-  - Record: `governance/history/changes/2026-08-21-add-a-deletion-only-proof-gate-to-the-refactor-governed-skill.json`
 
 ## Decisions (6)
 

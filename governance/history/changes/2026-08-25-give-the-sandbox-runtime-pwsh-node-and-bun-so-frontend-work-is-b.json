@@ -1,0 +1,49 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A workspace sandbox can now run the frontend toolchain (bun lint/type-check/test, Next.js tooling via node) and PowerShell-flavoured Make recipe bodies via pwsh, so frontend-touching work is bootstrappable through the ADR-006 loop"
+  ],
+  "compatibility_impact": "Runtime image grows (~250MB of toolchain layers); existing sandbox sessions keep their running containers until recreated. No API or schema change",
+  "date": "2026-08-25",
+  "files_changed": [
+    "docker/sandbox-runtime/Dockerfile",
+    "governance/Summary.md"
+  ],
+  "follow_up": [
+    "State the Linux-runtime constraints (pwsh not powershell.exe, no browser, no database) in the fullstack-self workspace working agreement at phase-2 creation"
+  ],
+  "id": "2026-08-25-give-the-sandbox-runtime-pwsh-node-and-bun-so-frontend-work-is-b",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "frontend e2e (playwright) and anything needing a browser or database still runs host-side after push; CI on push covers them",
+    "pwsh is present but Make targets that shell out to powershell.exe by name still fail on Linux; agents use pwsh or the underlying commands per the workspace working agreement"
+  ],
+  "manifests_changed": [],
+  "reason": "The workspace runtime carries only the Python-side toolchain, so a sandbox agent can run backend validators but dead-ends on anything frontend: no Node runtime for Next.js tooling, no bun (the repository's registered frontend toolchain), and no pwsh for the PowerShell-flavoured Make surface. Adding the three is the priced upgrade ADR-006 rule 7's runtime paragraph anticipated, chosen now because the bootstrap loop should be able to take frontend-touching work.",
+  "risks": [],
+  "rollback": "git revert the Dockerfile and rebuild sandbox-runtime; the previously built local image layers remain until pruned. Donor images node:22-bookworm-slim, oven/bun:1-slim, mcr.microsoft.com/powershell:lts-ubuntu-22.04 stay in the local daemon cache",
+  "schema_version": 1,
+  "security_impact": "None beyond image contents: three toolchains copied from digest-pinned donor images into the workspace runtime. No new network exposure, no new service, no change to the sandbox network posture (still none in base, bridge in dev)",
+  "summary": "Give the sandbox runtime pwsh, Node, and bun so frontend work is bootstrappable",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "all stacks+profiles config --quiet",
+      "id": "compose-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "image rebuilt; node v22.23.2, npm 10.9.8, bun 1.4.0, pwsh 7.4.7, git 2.47.3, uv 0.8.3 all execute; end-to-end: clone via git-local daemon, bun install --frozen-lockfile (834 packages, 8.5s), bun run type-check (tsc --noEmit) exit 0 inside the runtime",
+      "id": "sandbox-runtime-smoke",
+      "result": "pass"
+    }
+  ]
+}

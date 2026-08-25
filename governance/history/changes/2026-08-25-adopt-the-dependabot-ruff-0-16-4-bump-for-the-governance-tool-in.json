@@ -1,0 +1,44 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "tools/repo_governance/uv.lock pins ruff 0.16.4, adopting Dependabot PR 30 with the change record its CI run was blocked on"
+  ],
+  "compatibility_impact": "None: ruff 0.16.4 formats the tree identically to 0.16.3 (governance-lint clean on unchanged sources), and the pyproject constraint ruff>=0.15 already admitted it - only the lock pin moved.",
+  "date": "2026-08-25",
+  "files_changed": [
+    "tools/repo_governance/uv.lock"
+  ],
+  "follow_up": [],
+  "id": "2026-08-25-adopt-the-dependabot-ruff-0-16-4-bump-for-the-governance-tool-in",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass: lockfile-only diff produced by uv lock, nothing to shrink by construction",
+    "This adoption is manual by design; every governance-python Dependabot PR will need the same treatment until a policy decision either accepts that friction or scopes a curated exception for lockfile-only automation changes"
+  ],
+  "manifests_changed": [],
+  "reason": "Dependabot PR 30 bumps ruff in tools/repo_governance but its CI run blocks on governance-changes-are-recorded because Dependabot cannot write a change record - the bump has to be adopted by a governed session that records it",
+  "risks": [],
+  "rollback": "git revert restores the previous lock pin; no state outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None, deliberately: a patch-level bump of a dev-dependency linter in the governance tool's lockfile; no runtime code path changes.",
+  "summary": "Adopt the Dependabot ruff 0.16.4 bump for the governance tool inside a governed session",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "0 blocking after finish",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "382 passed, coverage 77.44 percent against the 75 percent floor, run under ruff 0.16.4",
+      "id": "governance-selftest",
+      "result": "pass"
+    }
+  ]
+}

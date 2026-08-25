@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 161)
+## Recent changes (latest 20 of 162)
 
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
@@ -75,6 +75,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Fix the sandboxd workspace bind so session files actually land in the named volume
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-fix-the-sandboxd-workspace-bind-so-session-files-actually-land-i.json`
+- **2026-08-25** — Adopt the Dependabot ruff 0.16.4 bump for the governance tool inside a governed session
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-25-adopt-the-dependabot-ruff-0-16-4-bump-for-the-governance-tool-in.json`
 - **2026-08-25** — Add a dev-profile git daemon so coding sandboxes can clone and push the host repos
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-25-add-a-dev-profile-git-daemon-so-coding-sandboxes-can-clone-and-p.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-22** — Document the required change-finish options and the branch check when resuming a session in gov-change
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-22-document-the-required-change-finish-options-and-the-branch-check.json`
-- **2026-08-22** — Document the globally installed task-observer skill and its install rules for this repository
-  - Components: agent-operating-surface, governance-kernel
-  - Record: `governance/history/changes/2026-08-22-document-the-globally-installed-task-observer-skill-and-its-inst.json`
 
 ## Decisions (6)
 

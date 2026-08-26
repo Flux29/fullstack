@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 163)
+## Recent changes (latest 20 of 164)
 
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
@@ -81,6 +81,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Adopt the Dependabot ruff 0.16.4 bump for the governance tool inside a governed session
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-adopt-the-dependabot-ruff-0-16-4-bump-for-the-governance-tool-in.json`
+- **2026-08-25** — Add the phased-delivery skill and phase-gate script so planned work flows plan-to-sandbox-to-review-to-PR without per-phase improvisation
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-25-add-the-phased-delivery-skill-and-phase-gate-script-so-planned-w.json`
 - **2026-08-25** — Add a dev-profile git daemon so coding sandboxes can clone and push the host repos
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-25-add-a-dev-profile-git-daemon-so-coding-sandboxes-can-clone-and-p.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Add the sandboxd service so coding workspaces have a sandbox to reach
   - Components: backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-23-add-the-sandboxd-service-so-coding-workspaces-have-a-sandbox-to.json`
-- **2026-08-22** — Make ADR front matter the authoritative decision-to-component link and move ADRs under docs/architecture/decisions
-  - Components: backend-api, governance-kernel, rag
-  - Record: `governance/history/changes/2026-08-22-make-adr-front-matter-the-authoritative-decision-to-component-li.json`
 
 ## Decisions (6)
 

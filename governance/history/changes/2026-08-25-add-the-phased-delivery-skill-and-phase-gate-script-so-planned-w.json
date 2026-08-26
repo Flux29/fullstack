@@ -1,0 +1,49 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "A repeatable phased-delivery pipeline exists: host Claude plans (ADR only when a decision is involved), the sandboxed fullstack agent implements one phase per sandbox branch with one commit per plan step, host Claude reviews and corrects under the plan-approval consent boundary, and the PR to main is the only merge path.",
+    "The CI gap costs zero model tokens: watch-phase-gate.ps1 polls PR checks via gh in one round trip per interval, merges on green with --delete-branch, fast-forwards local main, bumps the plan Status line, and stages the next phase prompt on the clipboard; on red, conflict, closed, or timeout it alarms and stops without merging."
+  ],
+  "compatibility_impact": "None at runtime - agent-operating-surface only. The plan-file contract (Status line, '## Phase N' headings, optional prompt fence) is introduced by this change and consumed only by the bundled script.",
+  "date": "2026-08-25",
+  "files_changed": [
+    ".claude/skills/phased-delivery/"
+  ],
+  "follow_up": [
+    "If driving the fullstack agent's next phase without a human paste becomes worth it, that is a governed backend feature (an authenticated enqueue-message surface), not a script change."
+  ],
+  "id": "2026-08-25-add-the-phased-delivery-skill-and-phase-gate-script-so-planned-w",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The gate script's kickoff and prompt-extraction paths are tested against a fixture plan (fence override, synthesized default, plan-complete); the gate loop's gh interactions (checks rollup parsing, merge, conflict and failure stops) are untested against a live PR until the first real delivery runs - treat the first gated phase as the integration test.",
+    "Shrink pass applied before landing: per-phase prompt fences became an optional override with the script synthesizing the default (removing per-plan duplication), duplicate gh round trips were merged into one call per poll, and SKILL.md prose that restated gov-change/ship mechanics was cut to references. All three files are new because no existing skill or script owns cross-actor delivery orchestration; skills-check gates their citations."
+  ],
+  "manifests_changed": [],
+  "reason": "The plan-to-sandbox-to-review-to-merge loop proven by hand on the ADR-006 amendment (plan on main picked up by the sandbox clone, per-phase sandbox branch, host-side review with direct corrections, PR merged on green CI) has no recorded procedure and no automation for its CI gate, so each phase costs improvised commands and inference-priced polling; a repo skill records the procedure and roles, and a gh-based script closes the loop (watch checks, merge, pull, hand the next phase prompt to the user) at zero token cost.",
+  "risks": [],
+  "rollback": "git revert removes skill, script, and template; no state outside the repository. Plans already written to docs/plans by users would remain but reference a deleted skill.",
+  "schema_version": 1,
+  "security_impact": "None deliberate: the skill and script grant no new privilege. The gate script only automates gh/git operations the operator already performs authenticated as themselves, merges nothing while any check is failing or pending, and never touches main except by fast-forward pull after a GitHub-side merge.",
+  "summary": "Add the phased-delivery skill and phase-gate script so planned work flows plan-to-sandbox-to-review-to-PR without per-phase improvisation",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make governance-skills-check, 51 files scanned, every citation resolves (an earlier draft cited the not-yet-existing docs/plans/ and failed advisory scan; rewritten to placeholder form)",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run after finish, 0 blocking",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

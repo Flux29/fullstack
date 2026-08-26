@@ -1,0 +1,36 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance/Summary.md again matches what governance-sync produces from the record history (166 records)."
+  ],
+  "compatibility_impact": "None.",
+  "date": "2026-08-26",
+  "files_changed": [
+    "governance/Summary.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-26-resync-the-generated-summary-staled-by-a-conflict-free-rebase",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [],
+  "manifests_changed": [],
+  "reason": "Rebasing the previous governed commit onto origin/main picked up the ADR-006 amendment's change record without any merge conflict, so nothing forced a regeneration and the committed Summary silently described 165 records instead of 166; regenerating after the rebase makes the generated surface match its sources again.",
+  "risks": [],
+  "rollback": "git revert; the Summary would again lag its sources until the next sync.",
+  "schema_version": 1,
+  "security_impact": "None - generated documentation regeneration only.",
+  "summary": "Resync the generated Summary staled by a conflict-free rebase",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "check-fast clean after commit",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

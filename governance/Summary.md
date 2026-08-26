@@ -58,11 +58,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 165)
+## Recent changes (latest 20 of 167)
 
 - **2026-08-26** — Route red-CI fixes in phased-delivery back to the sandbox agent instead of the host reviewer
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-26-route-red-ci-fixes-in-phased-delivery-back-to-the-sandbox-agent.json`
+- **2026-08-26** — Resync the generated Summary staled by a conflict-free rebase
+  - Components: governance-kernel
+  - Record: `governance/history/changes/2026-08-26-resync-the-generated-summary-staled-by-a-conflict-free-rebase.json`
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-parse-compose-long-syntax-volume-mounts-in-the-services-extracto.json`
@@ -117,12 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Give coding workspace sandboxes a runtime with make, git, and uv, and decide sandbox egress per stack (ADR-006 open question 2)
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-give-coding-workspace-sandboxes-a-runtime-with-make-git-and-uv-a.json`
-- **2026-08-23** — Attach a sandboxed coding toolkit to a chat turn that names a workspace
-  - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-23-attach-a-sandboxed-coding-toolkit-to-a-chat-turn-that-names-a-wo.json`
-- **2026-08-23** — Add the workspaces entity: model, migration, service, /api/v1/me/workspaces CRUD, proxy handler, and typed client
-  - Components: backend-api, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-23-add-the-workspaces-entity-model-migration-service-api-v1-me-work.json`
 
 ## Decisions (6)
 

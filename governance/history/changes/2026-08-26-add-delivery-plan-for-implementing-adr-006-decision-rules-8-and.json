@@ -1,0 +1,41 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "docs/plans/ gains the first phased-delivery plan: 4 phases implementing ADR-006 rules 8 (quota entries on the runtime allowlist, tmpfs-bounded workspace root, 300s execute ceiling on both sandbox paths, taskiq idle-TTL GC) and 9 (per-conversation auto-approve activation, chat-controls toggle, auto_approved span attribute)"
+  ],
+  "compatibility_impact": "None — adds docs/plans/001-adr006-rules-8-9.md; no code, schema, or contract touched",
+  "date": "2026-08-26",
+  "files_changed": [
+    "docs/plans/001-adr006-rules-8-9.md"
+  ],
+  "follow_up": [
+    "Kick off Phase 1 via watch-phase-gate.ps1 after user approves the plan"
+  ],
+  "id": "2026-08-26-add-delivery-plan-for-implementing-adr-006-decision-rules-8-and",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The plan is unexecuted; ADR-006 stays proposed until the last phase merges",
+    "preflight-ports failed because the dev stack is up (all ports held by com.docker.backend) — expected state for phased delivery, not remediated"
+  ],
+  "manifests_changed": [],
+  "reason": "First phased-delivery run: rules 8 (per-stack quotas, execute timeout, sandbox-state GC) and 9 (per-conversation auto-approve activation) are resolved in ADR-006 but unimplemented; the plan is the Stage 1 artifact the sandbox agent executes from",
+  "risks": [],
+  "rollback": "Delete docs/plans/001-adr006-rules-8-9.md; nothing else changed",
+  "schema_version": 1,
+  "security_impact": "None — documentation only; the plan directs later governed changes whose security review happens in their own sessions (phase 3 changes approval gating and will be reviewed then)",
+  "summary": "Add delivery plan for implementing ADR-006 decision rules 8 and 9",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 pre-existing advisories",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

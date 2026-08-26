@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 168)
+## Recent changes (latest 20 of 169)
 
 - **2026-08-26** — Route red-CI fixes in phased-delivery back to the sandbox agent instead of the host reviewer
   - Components: agent-operating-surface
@@ -66,6 +66,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-26** — Resync the generated Summary staled by a conflict-free rebase
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-26-resync-the-generated-summary-staled-by-a-conflict-free-rebase.json`
+- **2026-08-26** — Add delivery plan for implementing ADR-006 decision rules 8 and 9
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-08-26-add-delivery-plan-for-implementing-adr-006-decision-rules-8-and.json`
 - **2026-08-26** — Add a telemetry review step to phased-delivery and seed docs/plans before the first delivery
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-26-add-a-telemetry-review-step-to-phased-delivery-and-seed-docs-pla.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Realign the coding-workspace branch's recorded expectations and formatting with the repository facts it changed
   - Components: frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-23-realign-the-coding-workspace-branch-s-recorded-expectations-and.json`
-- **2026-08-23** — Propose ADR-006: coding workspaces give the assistant sandboxed repository tools under the existing approval model
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-23-propose-adr-006-coding-workspaces-give-the-assistant-sandboxed-r.json`
 
 ## Decisions (6)
 

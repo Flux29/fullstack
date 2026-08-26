@@ -1,0 +1,47 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Stage 3 review now includes reading the phase's Logfire trace before any GitHub push (token curve, tool failures and retries, approval latency, exceptions), and Stage 5 aggregates those dimensions per phase in the delivery report, routing governance-behaviour evidence to governance/history/evaluations/ and plan or prompt lessons into the next plan.",
+    "docs/plans exists with a README naming the template, the load-bearing plan markers, and the owning skill, so the skill's plan-location citation resolves before the first delivery depends on it."
+  ],
+  "compatibility_impact": "None.",
+  "date": "2026-08-26",
+  "files_changed": [
+    ".claude/skills/phased-delivery/SKILL.md",
+    "docs/plans/README.md"
+  ],
+  "follow_up": [],
+  "id": "2026-08-26-add-a-telemetry-review-step-to-phased-delivery-and-seed-docs-pla",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran as a single consolidated review agent (proportionality deviation per observation 35, precedent from the prior session); its four findings - a duplicated correction rule, a restated dimension list, workflow doctrine duplicated into the README, and a missing prod-debug pointer - were all applied."
+  ],
+  "manifests_changed": [],
+  "reason": "The phased-delivery review stage judged only the diff, but the run that produced it is fully traced in Logfire and yesterday's ADR-006 run showed the trace carries review-relevant evidence the diff hides (retry loops, tool failures, approval friction, factual claims contradicted by config); a telemetry read before each GitHub push, and an aggregate retro at close-out, turns each delivery into feedback for the plans, the prompts, and the governance surface. docs/plans is seeded with a README now because git cannot track an empty directory and the skill's plan-location citation should resolve before the first run depends on it.",
+  "risks": [],
+  "rollback": "git revert removes the telemetry step and the docs/plans README; nothing outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None - skill prose and a directory README; no privilege or executable surface changes.",
+  "summary": "Add a telemetry review step to phased-delivery and seed docs/plans before the first delivery",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make governance-skills-check, 52 files, every citation resolves (the checker resolves cited paths against the git index, so the README needed staging first)",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run after finish, 0 blocking",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

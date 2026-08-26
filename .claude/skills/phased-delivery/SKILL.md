@@ -24,8 +24,8 @@ phase. Write an ADR (in `docs/architecture/decisions/`, status `proposed`) only 
 the work embodies an architectural choice, and have the plan cite it. Every delivery
 gets a plan.
 
-Plans are named `docs/plans/NNN-<topic>.md` (create the directory with the first
-plan), shaped exactly like [references/plan-template.md](references/plan-template.md):
+Plans live in `docs/plans/` (see its README), named `NNN-<topic>.md` and shaped
+exactly like [references/plan-template.md](references/plan-template.md):
 a `Status:` line, standing rules, and one `## Phase N: <name>` heading per phase with
 a Goal, a Validation line, and numbered steps. The heading format is load-bearing —
 the gate script parses it and synthesizes each phase's chat prompt from it; a
@@ -66,6 +66,13 @@ The push lands the branch in the local repository. Review it host-side:
   report.
 - **Ambiguous intent or a design fork → stop and ask the user.** Never guess on
   something the plan does not settle.
+- **Read the run's telemetry before anything is pushed to GitHub.** The diff shows
+  what landed; the Logfire trace (project `fullstack`; query mechanics: `prod-debug`)
+  shows how — query the phase's window for token curve, tool failures and retry
+  loops, approval latency, and exceptions. Telemetry findings are review input even
+  when the diff is correct: a retry loop means the plan or prompt needs sharpening
+  for later phases, and an output claim the trace contradicts is a correction like
+  any other.
 
 ## Stage 4 — PR and the automated gate
 
@@ -95,6 +102,10 @@ phase no model is involved. It polls the checks, and:
 ## Stage 5 — Close out
 
 After the last phase merges: flip the ADR to `accepted` if one was written, and
-finish with a delivery report — phases landed, corrections made, validators run.
+finish with a delivery report — phases landed, corrections made, validators run,
+and the delivery's aggregate telemetry (the Stage 3 dimensions, summed per
+phase). Durable lessons go where
+they persist: plan and prompt adjustments into the next plan, and evidence about
+governance behaviour itself into `governance/history/evaluations/`.
 Plan edits mid-delivery (re-scoping later phases from what earlier phases taught)
 are normal; land them like any other governed edit so the sandbox sees them.

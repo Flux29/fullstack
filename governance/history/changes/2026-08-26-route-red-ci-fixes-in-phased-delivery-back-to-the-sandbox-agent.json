@@ -1,0 +1,46 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "On CI failure the gate now stages a branch-sync-and-fix prompt for the sandbox agent (naming the failing checks and including the git fetch/checkout/reset steps that absorb host review commits) instead of leaving the fix to the host reviewer; the fix passes Stage 3 review and a host branch push before the gate is rerun, so the red path uses the same actor separation and consent boundary as the green path."
+  ],
+  "compatibility_impact": "None - the change is internal to the phased-delivery skill and its bundled script; the plan-file contract is unchanged.",
+  "date": "2026-08-26",
+  "files_changed": [
+    ".claude/skills/phased-delivery/SKILL.md",
+    ".claude/skills/phased-delivery/scripts/watch-phase-gate.ps1"
+  ],
+  "follow_up": [],
+  "id": "2026-08-26-route-red-ci-fixes-in-phased-delivery-back-to-the-sandbox-agent",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran as a single consolidated review agent rather than simplify's four-agent fan-out - a deliberate proportionality deviation for a ~25-line diff, logged as observation 35 in the skill-observation log; its one finding (a duplicated failure-classification predicate) was applied. The red path itself remains untested against a live failing PR; the parser and kickoff paths were regression-tested."
+  ],
+  "manifests_changed": [],
+  "reason": "The phased-delivery gate treated CI failure as a host-side fix, but implementation errors belong in the sandbox where mistakes are disposable and the phase's author has the context; the gate now stages a branch-sync-and-fix prompt for the fullstack agent on CI failure, and the skill routes that fix through host review before the PR updates, so the red path uses the same actor separation as the green path.",
+  "risks": [],
+  "rollback": "git revert restores the host-fixes-red-CI behaviour; no state outside the repository.",
+  "schema_version": 1,
+  "security_impact": "None deliberate: the red path adds no privilege. The fix prompt instructs the sandbox agent to sync and push its own sandbox branch through the git daemon's existing fast-forward-only write surface; the sandbox still holds no GitHub credential, and the host push to GitHub remains a reviewed manual step.",
+  "summary": "Route red-CI fixes in phased-delivery back to the sandbox agent instead of the host reviewer",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "make governance-skills-check, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run after finish, 0 blocking",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

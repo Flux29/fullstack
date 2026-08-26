@@ -60,6 +60,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 
 ## Recent changes (latest 20 of 165)
 
+- **2026-08-26** — Route red-CI fixes in phased-delivery back to the sandbox agent instead of the host reviewer
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-08-26-route-red-ci-fixes-in-phased-delivery-back-to-the-sandbox-agent.json`
 - **2026-08-25** — Parse Compose long-syntax volume mounts in the services extractor instead of silently dropping them
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-parse-compose-long-syntax-volume-mounts-in-the-services-extracto.json`

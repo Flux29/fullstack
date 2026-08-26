@@ -85,7 +85,10 @@ phase no model is involved. It polls the checks, and:
 - **green** → merges (`--merge --delete-branch`), fast-forwards local main, deletes
   the local branch, bumps the plan's Status line, and puts the *next* phase's prompt
   on the clipboard with an audible alert — the "move on" signal is the user pasting it;
-- **red** → alarms and stops **without merging**; you review the failed run;
+- **red** → alarms and stops **without merging**, with a branch-sync-and-fix prompt
+  for the *sandbox agent* on the clipboard: the user pastes it, the agent fixes on
+  the same branch, the fix passes Stage 3 review, you push the branch update to
+  GitHub, and the gate is rerun;
 - **conflict** → alarms and stops; rebase the sandbox branch onto main host-side,
   force-push the branch (never main), and rerun the gate.
 

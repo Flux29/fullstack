@@ -84,17 +84,34 @@ while ($true) {
         Stop-WithAlarm "PR #$Pr conflicts with main. Rebase branch '$($view.headRefName)' host-side, force-push the branch (never main), and rerun the gate."
     }
 
-    # Normalize the rollup: CheckRun rows carry status/conclusion, StatusContext
-    # rows carry state; fold both into SUCCESS-ish / bad / pending buckets.
-    $states = @(@($view.statusCheckRollup) | ForEach-Object {
-            if ($_.state) { $_.state }
-            elseif ($_.status -and $_.status -ne 'COMPLETED') { 'PENDING' }
-            elseif ($_.conclusion) { $_.conclusion }
-            else { 'PENDING' }
+    # Normalize the rollup once: CheckRun rows carry name+status/conclusion,
+    # StatusContext rows carry context+state; fold both into Name/State pairs so
+    # gating and failure reporting share one classification.
+    $rollup = @(@($view.statusCheckRollup) | ForEach-Object {
+            [pscustomobject]@{
+                Name  = if ($_.name) { $_.name } else { $_.context }
+                State = if ($_.state) { $_.state }
+                elseif ($_.status -and $_.status -ne 'COMPLETED') { 'PENDING' }
+                elseif ($_.conclusion) { $_.conclusion }
+                else { 'PENDING' }
+            }
         })
-    $bad = @($states | Where-Object { $_ -in @('FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED') })
+    $states = @($rollup.State)
+    $bad = @($rollup | Where-Object { $_.State -in @('FAILURE', 'ERROR', 'CANCELLED', 'TIMED_OUT', 'ACTION_REQUIRED') })
     if ($bad.Count -gt 0) {
-        Stop-WithAlarm "CI failed on PR #$Pr - nothing merged. Review the failed run, fix on the branch, and rerun the gate."
+        # Red path: the fix belongs to the sandbox agent, not the host reviewer.
+        # Stage a branch-sync-and-fix prompt; the fix still passes host review
+        # (and a branch push to GitHub) before the gate is rerun.
+        $branch = $view.headRefName
+        $failing = @($bad.Name) -join ', '
+        $fix = ("CI failed for Phase $Phase of $PlanPath on branch $branch (failing: $failing).`n" +
+            "In this workspace: run ``git fetch origin``, ``git checkout $branch``, and " +
+            "``git reset --hard origin/$branch`` (host review may have added commits you do not have). " +
+            "Reproduce and fix the failure, run the phase's Validation, push the branch again " +
+            "(fast-forward - never force), and summarize the fix.")
+        Set-Clipboard -Value $fix
+        Write-Host $fix
+        Stop-WithAlarm "CI failed on PR #$Pr - nothing merged. A fix prompt for the sandbox agent is on the clipboard; after its push, review the fix, push the branch to GitHub, and rerun the gate."
     }
     $unsettled = @($states | Where-Object { $_ -notin @('SUCCESS', 'SKIPPED', 'NEUTRAL') })
     if ($states.Count -gt 0 -and $unsettled.Count -eq 0) {

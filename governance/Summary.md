@@ -58,8 +58,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 169)
+## Recent changes (latest 20 of 170)
 
+- **2026-08-27** — Controls window: free-text custom model entry and default thinking effort high
+  - Components: agent-operating-surface, chat-frontend, frontend-app
+  - Record: `governance/history/changes/2026-08-27-controls-window-free-text-custom-model-entry-and-default-thinkin.json`
 - **2026-08-26** — Route red-CI fixes in phased-delivery back to the sandbox agent instead of the host reviewer
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-26-route-red-ci-fixes-in-phased-delivery-back-to-the-sandbox-agent.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Stop click expanding argv globs on Windows so governance options accept path patterns
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-stop-click-expanding-argv-globs-on-windows-so-governance-options.json`
-- **2026-08-23** — Realign the coding-workspace branch's recorded expectations and formatting with the repository facts it changed
-  - Components: frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-23-realign-the-coding-workspace-branch-s-recorded-expectations-and.json`
 
 ## Decisions (6)
 

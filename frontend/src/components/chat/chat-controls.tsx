@@ -5,6 +5,8 @@ import { Check, ChevronDown, Cpu, Settings2, Sliders, Plug, Telescope } from "lu
 import type { LucideIcon } from "lucide-react";
 
 import {
+  FormField,
+  Input,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -20,7 +22,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useMcpConnections, useWorkspaces } from "@/hooks";
-import { ROUTES } from "@/lib/constants";
+import { DEFAULT_THINKING_EFFORT, ROUTES } from "@/lib/constants";
 import type { McpConnectionRecord } from "@/lib/mcp-connections-api";
 
 type ThinkingEffort = "off" | "low" | "medium" | "high";
@@ -79,9 +81,31 @@ export function ChatControls({
       .catch(() => {});
   }, []);
 
+  // The latest model name the user typed in rather than picked from the server
+  // list — persisted in the chat-mode store so it stays available across chats.
+  const customModel = useChatModeStore((s) => s.customModel);
+  const setCustomModel = useChatModeStore((s) => s.setCustomModel);
+
+  const modelOptions =
+    customModel && !availableModels.some((m) => m.value === customModel)
+      ? [...availableModels, { value: customModel, label: customModel }]
+      : availableModels;
+
+  const pickModel = (m: { value: string; label: string }) => {
+    setSelectedModel(m);
+    onModelChange?.(m.value || null);
+  };
+
+  const applyCustomModel = (name: string) => {
+    const value = name.trim();
+    if (!value) return;
+    if (value !== customModel) setCustomModel(value);
+    pickModel({ value, label: value });
+  };
+
   const [temperature, setTemperature] = useState<number | null>(null);
-  const [effort, setEffort] = useState<ThinkingEffort>("off");
-  const settingsOverridden = temperature !== null || effort !== "off";
+  const [effort, setEffort] = useState<ThinkingEffort>(DEFAULT_THINKING_EFFORT);
+  const settingsOverridden = temperature !== null || effort !== DEFAULT_THINKING_EFFORT;
   const deepResearch = useChatModeStore((s) => s.deepResearch);
 
   const triggerSummary = useMemo(() => {
@@ -147,12 +171,10 @@ export function ChatControls({
         <div className="max-h-[420px] scrollbar-thin overflow-y-auto p-4">
           {tab === "model" && (
             <ModelPanel
-              models={availableModels}
+              models={modelOptions}
               selected={selectedModel}
-              onPick={(m) => {
-                setSelectedModel(m);
-                onModelChange?.(m.value || null);
-              }}
+              onPick={pickModel}
+              onCustomSubmit={applyCustomModel}
             />
           )}
           {tab === "settings" && (
@@ -220,11 +242,14 @@ function ModelPanel({
   models,
   selected,
   onPick,
+  onCustomSubmit,
 }: {
   models: { value: string; label: string }[];
   selected: { value: string; label: string };
   onPick: (m: { value: string; label: string }) => void;
+  onCustomSubmit: (name: string) => void;
 }) {
+  const [draft, setDraft] = useState("");
   return (
     <div>
       <p className="text-foreground mb-1 text-sm font-semibold">Model</p>
@@ -253,6 +278,27 @@ function ModelPanel({
           );
         })}
       </ul>
+      <FormField
+        htmlFor="chat-custom-model"
+        label="Custom model"
+        description="Press Enter to use a model that isn't listed. Your latest custom model is kept in this list for future chats."
+        className="mt-4"
+      >
+        <Input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              onCustomSubmit(draft);
+              setDraft("");
+            }
+          }}
+          placeholder="provider/model-name"
+          spellCheck={false}
+          autoComplete="off"
+        />
+      </FormField>
     </div>
   );
 }

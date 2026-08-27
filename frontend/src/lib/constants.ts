@@ -64,6 +64,10 @@ export const ROUTES = {
 } as const;
 
 // WebSocket URL (for chat - direct to backend, use wss:// in production)
+/** Default thinking effort for chat turns. The controls panel starts here and
+ * the WS payload sends it unless the user picks Off (null = server default). */
+export const DEFAULT_THINKING_EFFORT = "high" as const;
+
 export const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:8100";
 
 // Backend API URL (public, for direct links like API docs)

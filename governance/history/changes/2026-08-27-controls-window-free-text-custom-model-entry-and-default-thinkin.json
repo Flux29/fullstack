@@ -1,0 +1,59 @@
+{
+  "adr_refs": [
+    "ADR-006"
+  ],
+  "affected_components": [
+    "agent-operating-surface",
+    "chat-frontend",
+    "frontend-app"
+  ],
+  "affected_contracts": [
+    "/[locale]/chat"
+  ],
+  "behavioral_effects": [
+    "Model tab of the chat controls gains a free-text Custom model input: Enter selects the typed model for the conversation and remembers it as an extra list entry across chats (persisted in the chat-mode store).",
+    "Default thinking effort changed from Off to High: the panel starts at High and the WS payload carries thinking_effort=high by default; Off now means 'omit the field, server default applies'."
+  ],
+  "compatibility_impact": "No WS event or REST contract change: 'model' and 'thinking_effort' payload fields already existed. Behavioural default change: the client now sends thinking_effort=high on every turn unless the user picks Off, so the server-side AI_THINKING_ENABLED/AI_THINKING_EFFORT defaults are no longer reached from the chat UI except via Off; the zustand chat-mode persisted store gains a customModel field (additive, no version bump needed - persist merges missing keys from initial state).",
+  "date": "2026-08-27",
+  "files_changed": [
+    ".claude/launch.json",
+    "frontend/src/components/chat/chat-controls.tsx",
+    "frontend/src/hooks/use-chat.ts",
+    "frontend/src/lib/constants.ts",
+    "frontend/src/stores/chat-mode-store.ts"
+  ],
+  "follow_up": [
+    "The effort options hint 'Off - Direct answer, no reasoning' is only true while AI_THINKING_ENABLED=False server-side; if that config ever flips, Off silently means 'server default' and the copy should change."
+  ],
+  "id": "2026-08-27-controls-window-free-text-custom-model-entry-and-default-thinkin",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass (4-agent simplify review) applied: replaced hand-rolled localStorage persistence with the existing zustand persist store, replaced a raw input with the ui FormField+Input primitives, removed a provably dead availableModels lookup and an idle useMemo, and centralised the high default in DEFAULT_THINKING_EFFORT (lib/constants) imported by both the panel and use-chat - net: the feature reuses three existing mechanisms instead of adding parallel ones.",
+    "Only the latest custom model is remembered (single value, matching the UI copy); no list management or validation of the typed name - a typo fails per-turn at the provider and can be replaced by typing a new name.",
+    "New file .claude/launch.json (frontend-dev on port 3001) added for browser verification because compose port 3000 serves a baked image, not the working tree; kept for future sessions.",
+    "Deliberately not taken: flipping backend AI_THINKING_ENABLED/AI_THINKING_EFFORT instead - that would change every API client and stay invisible in the panel without a server-default handshake; scoped to the chat UI the user asked about."
+  ],
+  "manifests_changed": [],
+  "reason": "The Model tab only offers the models baked into AI_AVAILABLE_MODELS, which lags what OpenRouter actually serves, so a model missing from the list is unusable without a repo edit even though the WebSocket already forwards any model string unvalidated; and the thinking-effort default of 'off' means every chat silently runs without reasoning unless the user remembers to raise it, when 'high' is the wanted default.",
+  "risks": [],
+  "rollback": "git revert restores all behaviour. A revert does not remove the persisted customModel value users have saved under the chat-mode localStorage key in their browsers; the reverted store simply ignores the extra key, so no cleanup is required.",
+  "schema_version": 1,
+  "security_impact": "None deliberately: the free-text model name is client state sent over the existing authenticated WS 'model' field, which the backend already forwarded unvalidated to OpenRouter (agent_session.py passes data.get('model') through); no new input reaches a query or shell, and nothing is rendered from it beyond the user's own text.",
+  "summary": "Controls window: free-text custom model entry and default thinking effort high",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "lint 0 errors (31 pre-existing warnings), type-check clean, vitest 11 files / 66 tests passed",
+      "id": "frontend-test",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "run after finish; check-fast baseline was 0 blocking, 0 advisory",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

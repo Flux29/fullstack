@@ -13,7 +13,7 @@ import type {
   ToolCall,
   WSEvent,
 } from "@/types";
-import { WS_URL } from "@/lib/constants";
+import { DEFAULT_THINKING_EFFORT, WS_URL } from "@/lib/constants";
 import { setUrlParam } from "@/lib/utils";
 import { useConversationStore } from "@/stores";
 import { useResearchStore, useChatModeStore } from "@/stores";
@@ -66,7 +66,8 @@ export function useChat(options: UseChatOptions = {}) {
   const [queuedMessages, setQueuedMessages] = useState<QueuedMessage[]>([]);
   const modelRef = useRef<string | null>(null);
   const temperatureRef = useRef<number | null>(null);
-  const thinkingEffortRef = useRef<"low" | "medium" | "high" | null>(null);
+  // null means the user chose Off: the field is omitted and the server default applies.
+  const thinkingEffortRef = useRef<"low" | "medium" | "high" | null>(DEFAULT_THINKING_EFFORT);
   const [pendingApproval, setPendingApproval] = useState<PendingApproval | null>(null);
   const [pendingQuestions, setPendingQuestions] = useState<AskUserQuestion[] | null>(null);
 

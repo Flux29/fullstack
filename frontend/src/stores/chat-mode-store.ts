@@ -12,6 +12,11 @@ import { persist } from "zustand/middleware";
  * `workspaceId` names the coding workspace the next turn may act on (ADR-006),
  * carried as `workspace_id`. The backend attaches nothing when coding is off or
  * the workspace is not the caller's, so a stale persisted id is harmless.
+ *
+ * `customModel` is the latest model name the user typed into the controls panel
+ * rather than picked from the server list — kept so an out-of-date
+ * AI_AVAILABLE_MODELS never forces a repo edit to use a newer model. The
+ * backend forwards any model string unvalidated, so a bad name fails per-turn.
  */
 interface ChatModeState {
   deepResearch: boolean;
@@ -19,6 +24,8 @@ interface ChatModeState {
   toggleDeepResearch: () => void;
   workspaceId: string | null;
   setWorkspaceId: (id: string | null) => void;
+  customModel: string | null;
+  setCustomModel: (name: string | null) => void;
 }
 
 export const useChatModeStore = create<ChatModeState>()(
@@ -29,6 +36,8 @@ export const useChatModeStore = create<ChatModeState>()(
       toggleDeepResearch: () => set((s) => ({ deepResearch: !s.deepResearch })),
       workspaceId: null,
       setWorkspaceId: (id) => set({ workspaceId: id }),
+      customModel: null,
+      setCustomModel: (name) => set({ customModel: name }),
     }),
     {
       name: "chat-mode",

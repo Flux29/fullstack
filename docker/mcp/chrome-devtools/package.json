@@ -5,6 +5,6 @@
   "license": "UNLICENSED",
   "dependencies": {
     "chrome-devtools-mcp": "1.7.0",
-    "supergateway": "3.4.3"
+    "supergateway": "4.1.0"
   }
 }

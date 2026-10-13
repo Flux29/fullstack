@@ -169,6 +169,13 @@ Redis DB 3 plus durable PostgreSQL. Model, artifact, instructions, dimension,
 and normalization changes alter the collection fingerprint and require explicit
 re-embedding.
 
+Model Runner shares the single GPU with Docling Serve. Measured on an 8 GB RTX 3000 Ada
+(2026-10-12): with the Qwen3 4B embedder and the reranker both warm, Model Runner holds
+about 7.5 GB, because llama.cpp fits context and slot buffers to whatever memory is free at
+load time; both models unload after five idle minutes. If a GPU Docling conversion fails with
+a CUDA out-of-memory error while Model Runner is warm, limit the embedding model's context
+size or parallel slots in Model Runner, or schedule ingestion for when Model Runner is cold.
+
 ### Vector Storage
 Vectors are stored in **pgvector** using the existing PostgreSQL database.
 No additional services needed.

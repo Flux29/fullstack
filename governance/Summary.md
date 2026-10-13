@@ -58,8 +58,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 170)
+## Recent changes (latest 20 of 171)
 
+- **2026-10-12** — Document the Docker Model Runner nv-gpu-info.exe provisioning fix and the DMR/Docling GPU memory contention
+  - Components: none recorded
+  - Record: `governance/history/changes/2026-10-12-document-the-docker-model-runner-nv-gpu-info-exe-provisioning-fi.json`
 - **2026-08-27** — Controls window: free-text custom model entry and default thinking effort high
   - Components: agent-operating-surface, chat-frontend, frontend-app
   - Record: `governance/history/changes/2026-08-27-controls-window-free-text-custom-model-entry-and-default-thinkin.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Teach a coding turn the target repository's own conventions from AGENTS.md and its skills index
   - Components: agents, backend-api
   - Record: `governance/history/changes/2026-08-23-teach-a-coding-turn-the-target-repository-s-own-conventions-from.json`
-- **2026-08-23** — Stop click expanding argv globs on Windows so governance options accept path patterns
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-23-stop-click-expanding-argv-globs-on-windows-so-governance-options.json`
 
 ## Decisions (6)
 

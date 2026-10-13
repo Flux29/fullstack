@@ -44,9 +44,10 @@ These are used to sign JWTs and authenticate service-to-service calls. Rotate at
 - [ ] Apply Alembic through `0027_embedding_cache`; it creates pgvector, the durable embedding cache, and collection fingerprint registry.
 - [ ] Confirm `GET http://localhost:12434/engines/v1/models` contains the inspected Qwen 4B artifact and that a `dimensions: 1024` request succeeds.
 - [ ] Confirm Docker Model Runner contains `huggingface.co/keisuke-miyako/gte-reranker-modernbert-base-gguf-q8_0:Q8_0` and its native `/rerank` endpoint succeeds.
+- [ ] Confirm `docker model status` lists the `llama.cpp` backend as **Running** with a `-cuda` tag. Known Windows issue (docker/model-runner#1054, Docker Desktop 4.82+): it reads `Error ... com.docker.nv-gpu-info.exe: The system cannot find the file specified` because the CUDA backend image lacks that helper, so the updater's GPU check fails while the installed build keeps serving. Fix: copy `com.docker.nv-gpu-info.exe` from `C:\Program Files\Docker\Docker\resources\model-runner\bin\` into `%USERPROFILE%\.docker\bin\inference\`, re-run the install with `docker desktop enable model-runner --gpu disable` then `--gpu enable` (a CORS change or a Model Runner disable/re-enable does not), and copy the helper once more because the CUDA install replaces the directory. Repeat after any Docker Desktop update that bumps llama.cpp.
 - [ ] Preserve the external `redis-data` and `docling-models` volumes. Normal Make targets never delete them.
 - [ ] Verify CUDA Docling Serve `/health`, then perform one warm PDF conversion before ingestion.
-- [ ] Keep Taskiq at one worker and `TASKIQ_MAX_ASYNC_TASKS=1` until simultaneous Qwen/Docling GPU load is measured.
+- [ ] Keep Taskiq at one worker and `TASKIQ_MAX_ASYNC_TASKS=1`: with the Qwen3 4B embedder and the reranker warm, Model Runner holds about 7.5 GB of the 8 GB GPU that Docling Serve shares (measured 2026-10-12; remedies under Embedding Providers in `docs/file-processing.md`).
 
 - [ ] Set `ADMIN_EMAIL` and a strong `ADMIN_PASSWORD` before the one-time `make seed`/`make quickstart` step.
 - [ ] (Optional) Ingest seed documents: `uv run fullstack cmd rag-ingest /path/to/file.pdf --collection docs`.

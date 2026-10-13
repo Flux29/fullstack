@@ -1,0 +1,58 @@
+{
+  "adr_refs": [
+    "ADR-002",
+    "ADR-005"
+  ],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "MANUAL_STEPS.md: new checklist item requiring docker model status to show llama.cpp Running with a -cuda tag, with the nv-gpu-info.exe fix (docker/model-runner#1054); the Taskiq line now states the measured 7.5 GB GPU footprint instead of until measured.",
+    "docs/file-processing.md Embedding Providers: documents that Model Runner shares the GPU with Docling Serve, the measured footprint, and the CUDA OOM remedies."
+  ],
+  "compatibility_impact": "None to repository contracts. The host-side change moved Docker Model Runner llama.cpp from the stale latest-cuda build (ac4cdde, June 2026) to the pinned b9879-cuda build (72874f5). The ADR-002 embedding contract was re-verified: the same input yields the same 2560-d native vector (cosine 1.0 against the pre-change vector) and identical rerank scores.",
+  "date": "2026-10-12",
+  "files_changed": [
+    "MANUAL_STEPS.md",
+    "docs/file-processing.md"
+  ],
+  "follow_up": [
+    "Extend preflight-model to parse docker model status so a backend install Error is caught by the registered health check; it went unnoticed for two months because the request path kept working.",
+    "The model-runner maintainer states the project is being deprecated in favour of llmman (no public repo yet); ADR-005 models Model Runner as a host runtime and will need revisiting when that lands."
+  ],
+  "id": "2026-10-12-document-the-docker-model-runner-nv-gpu-info-exe-provisioning-fi",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Additive documentation: the only removal was the obsolete until-measured clause; the shrink pass cut one remedy sentence that was duplicated between the two files.",
+    "The fix is host-side and recurs: the b9879-cuda backend image ships without com.docker.nv-gpu-info.exe, so the copy must be repeated after every Docker Desktop llama.cpp bump; nothing automates it.",
+    "The new llama.cpp build does not print a CUDA0 device line into docker model logs on model load; GPU serving was verified with --list-devices on the new binary and nvidia-smi (7.6 GB used with both models warm)."
+  ],
+  "manifests_changed": [],
+  "reason": "Docker Desktop 4.82 and later stop provisioning com.docker.nv-gpu-info.exe into the per-user inference directory, so the llama.cpp backend has reported an install Error since 2026-08-12 while serving from a stale June CUDA build, and nothing in the docs that describe the Model Runner dependency mentions the check or the fix, so the next operator re-diagnoses it from scratch. The same docs also lack the measured GPU footprint: a warm Qwen3 4B embedder plus reranker take the 8 GB GPU to about 7.5 GB, which Docling Serve shares.",
+  "risks": [
+    "If the helper copy is forgotten after a llama.cpp bump, docker model status regresses to Error while serving continues on the previously installed build."
+  ],
+  "rollback": "git revert restores both docs. It does not restore the host: the previous CUDA llama.cpp install is preserved at C:\\Users\\pollm\\.docker\\bin\\inference.bak-2026-10-12 (951 MiB) and can be renamed back over .docker\\bin\\inference while no model is loaded; the copied com.docker.nv-gpu-info.exe lives outside the repo.",
+  "schema_version": 1,
+  "security_impact": "None. Documentation only. The documented host-side procedure copies a Docker Desktop-shipped executable into the user profile and changes no exposure, secret, or MCP surface.",
+  "summary": "Document the Docker Model Runner nv-gpu-info.exe provisioning fix and the DMR/Docling GPU memory contention",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "44 checks run, 0 blocking, 8 advisory (all pre-existing thick-domain facade and healthcheck findings), 13 not yet enforced",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "Docker Model Runner ready; native vector length=2560, application target=1024; reranker ready",
+      "id": "preflight-model",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "10 passed in 0.31s (mocked transport; independent of the live Model Runner)",
+      "id": "rag-docker-integration",
+      "result": "pass"
+    }
+  ]
+}

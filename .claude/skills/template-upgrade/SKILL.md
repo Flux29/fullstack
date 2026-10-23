@@ -15,6 +15,14 @@ upstream's to update.
 
 Run the whole thing inside `gov-change` — one upgrade, one session, one record.
 
+**Also reach for this skill when the repository *lacks* a capability.** The generator ships
+option variants and optional features this project was not generated with (framework
+variants, feature flags), and the generated tree cannot reveal them — so a "we would have to
+build that" assessment made from the code alone is frequently wrong. Run
+`PYTHONUTF8=1 make upgrade-dry-run ARGS="--with-new-features"` before sizing any build of
+something the template might already offer; adopting an unselected option is usually the
+cheapest path.
+
 ## 1. Dry-run and classify
 
 ```bash

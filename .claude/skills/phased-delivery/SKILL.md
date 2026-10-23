@@ -16,6 +16,26 @@ Three actors, strictly separated so each does what it is cheapest at:
 - **The phase-gate script** (`scripts/watch-phase-gate.ps1` in this skill's directory)
   owns the CI gap at zero token cost — see Stage 4.
 
+## Consent boundaries versus mechanics
+
+Every human step below is one of two things, and conflating them is why a working
+pipeline reads as an unautomated one. Say which is which whenever you explain the
+pipeline or propose changing it.
+
+- **Consent boundaries — human by design, never automate away.** Plan approval
+  (Stage 1) and the stop-and-ask fork when a sandbox diff is ambiguous or the plan
+  does not settle a design question (Stage 3). These are where the user decides.
+  Removing one is a defect, not an improvement.
+- **Mechanics — human only because nothing automates them yet.** Pasting the
+  clipboard prompt to start a phase (Stage 2), running the gate script in its own
+  terminal (Stage 4), reading telemetry through interactive queries (Stage 3), and
+  `ship`'s per-session push cadence. These are legitimate automation targets; name
+  them as mechanics rather than defending them as process.
+
+Much of what looks manual already is not: the sandbox pulls local main at the start
+of every phase, and on green CI the gate merges, fast-forwards local main, bumps the
+plan's Status line, and queues the next phase's prompt with no model involved.
+
 ## Stage 1 — Plan (and ADR only when there is a decision)
 
 A plan and an ADR are different artifacts: the ADR records a *decision* and should
@@ -41,9 +61,32 @@ phase prompt starts with. There is no copy step.
 **Plan approval is a consent boundary:** once the user approves the plan, corrections
 you make to the agent's branches during review (Stage 3) need no further sign-off.
 
+**Plans are load-bearing pipeline state that governance does not index.** The gate
+script parses each plan's `Status:` line and `## Phase N:` headings, but
+`governance/catalog.json` and `governance-sync` index ADRs (through their front
+matter) and not plans — so `governance-context` and `Summary.md` carry no view of
+in-flight deliveries. Read delivery state from `docs/plans/` directly; a governance
+cycle will not surface it for you.
+
+**The entry gate contradicts the pipeline's precondition — expect it.** Phased delivery
+requires the dev Compose stack up (sandboxd, git-local), while `gov-change`'s
+`governance-preflight` runs `preflight-ports`, which asserts those ports are *free*. A
+`preflight-ports` failure listing only this project's ports, all held by `com.docker.backend`,
+means "the stack is running" and is the healthy state for a delivery — substitute
+`make governance-check-fast` for the repo-side baseline and note the substitution. Do not
+spend a diagnosis detour on it every phase.
+
 ## Stage 2 — Kick off a phase
 
-```bash
+**Execution precondition: the machine stays awake and unlocked for the whole phase.** A phase
+is 10–30 minutes of agent work riding a chat WebSocket, and the turn dies with the socket.
+Windows screen lock and Modern Standby suspend the browser, it stops answering the server's
+keepalive pings, the backend cancels the turn by design, and the client reconnects minutes
+later with the work orphaned. The sandbox workspace survives; uncommitted progress does not.
+Recovery is a re-send in the same conversation: `git status` in the workspace, then continue
+the phase from where the branch actually is.
+
+```powershell
 pwsh .claude/skills/phased-delivery/scripts/watch-phase-gate.ps1 -PlanPath docs/plans/NNN-<topic>.md -Phase 1 -Kickoff
 ```
 
@@ -80,7 +123,7 @@ The PR **is** the merge to main — never merge the sandbox branch into local ma
 yourself; local main follows GitHub after the gate (`ship` owns the single-branch
 workflow rules this follows).
 
-```bash
+```powershell
 git push origin sandbox/<slug>-phase-N
 gh pr create --base main --head sandbox/<slug>-phase-N --fill
 pwsh .claude/skills/phased-delivery/scripts/watch-phase-gate.ps1 -PlanPath docs/plans/NNN-<topic>.md -Phase 1 -Pr <number>

@@ -1,0 +1,47 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Delivery sessions now distinguish consent boundaries from automatable mechanics, treat a preflight-ports failure on the project's own ports as the healthy state, keep the machine awake for each phase, and know plans are not yet in the governance index"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/phased-delivery/SKILL.md"
+  ],
+  "follow_up": [
+    "Update the plans-not-indexed paragraph when the governance plan index lands"
+  ],
+  "id": "2026-10-23-install-the-reviewed-phased-delivery-update-consent-boundaries-v",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log",
+    "The 2026-08-30 and 2026-09-14 staged copies were compared: every line the older one added appears in the newer one, so no merge was needed",
+    "The 'Plans are load-bearing pipeline state that governance does not index' paragraph is true at this commit and becomes false when the plan index (observation 42) lands; that session updates it, after which the live skill differs from the staged copy by design"
+  ],
+  "manifests_changed": [],
+  "reason": "The live phased-delivery skill had not changed since 2026-08-26, and its first real use exposed four gaps: the pipeline's manual mechanics read as defects because the skill did not separate consent boundaries from steps nothing automates yet (observation 41), every phase paid a diagnosis detour on preflight-ports, which fails by design while the dev stack the pipeline needs is up (37), a locked or suspended Windows machine killed in-flight phase turns with no recovery path written down (38), and plans' invisibility to the governance index was undocumented (42). Reviews on 2026-08-30 and 2026-09-14 staged the fixes; installing the 2026-09-14 copy, which contains the 2026-08-30 copy's changes, writes them down.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-09-14/phased-delivery and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed phased-delivery update: consent boundaries versus mechanics, the expected preflight-ports failure, and keeping the machine awake",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 175)
+## Recent changes (latest 20 of 176)
 
 - **2026-10-23** — Install the reviewed ship update: proof that inherited validation ran, and regeneration after every rebase
   - Components: agent-operating-surface
@@ -66,6 +66,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-10-23** — Install the reviewed pick-workflow update: read the record backlog and the generator first, and route docs-only and bot-PR work
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-pick-workflow-update-read-the-record-backlo.json`
+- **2026-10-23** — Install the reviewed phased-delivery update: consent boundaries versus mechanics, the expected preflight-ports failure, and keeping the machine awake
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-10-23-install-the-reviewed-phased-delivery-update-consent-boundaries-v.json`
 - **2026-10-23** — Install the reviewed gov-change update: slot and worktree checks, a sized shrink pass, and claim verification rules
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-gov-change-update-slot-and-worktree-checks.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Add the phased-delivery skill and phase-gate script so planned work flows plan-to-sandbox-to-review-to-PR without per-phase improvisation
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-08-25-add-the-phased-delivery-skill-and-phase-gate-script-so-planned-w.json`
-- **2026-08-25** — Add a dev-profile git daemon so coding sandboxes can clone and push the host repos
-  - Components: agents, backend-api, governance-kernel
-  - Record: `governance/history/changes/2026-08-25-add-a-dev-profile-git-daemon-so-coding-sandboxes-can-clone-and-p.json`
 
 ## Decisions (6)
 

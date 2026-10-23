@@ -1,0 +1,44 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Routing now starts from the latest change records' follow_up and the generator's unselected options, sends analysis-only work to no session, docs-only RAG work to gov-change alone, and bot PRs on governed paths to adoption"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/pick-workflow/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-10-23-install-the-reviewed-pick-workflow-update-read-the-record-backlo",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log",
+    "The 2026-08-30 and 2026-10-14 staged copies were compared: every line the older one added appears in the newer one, so no merge was needed"
+  ],
+  "manifests_changed": [],
+  "reason": "The live pick-workflow skill had not changed since 2026-08-11 and routed from the request alone: sessions re-derived work a prior record's follow_up already named (observation 17), sized from-scratch builds of capabilities the template generator offers as unselected options (8), wrapped analysis-only work in change ceremony (24), merged Dependabot PRs on governed paths instead of adopting them (34), and had no branch for documentation-only changes about the RAG subsystem (79). Reviews on 2026-08-30 and 2026-10-14 staged the fixes; installing the 2026-10-14 copy, which contains the 2026-08-30 copy's changes, routes those cases.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-10-14/pick-workflow and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed pick-workflow update: read the record backlog and the generator first, and route docs-only and bot-PR work",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

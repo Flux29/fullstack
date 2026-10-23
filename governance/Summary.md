@@ -58,11 +58,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 174)
+## Recent changes (latest 20 of 175)
 
 - **2026-10-23** — Install the reviewed ship update: proof that inherited validation ran, and regeneration after every rebase
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-ship-update-proof-that-inherited-validation.json`
+- **2026-10-23** — Install the reviewed pick-workflow update: read the record backlog and the generator first, and route docs-only and bot-PR work
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-10-23-install-the-reviewed-pick-workflow-update-read-the-record-backlo.json`
 - **2026-10-23** — Install the reviewed gov-change update: slot and worktree checks, a sized shrink pass, and claim verification rules
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-gov-change-update-slot-and-worktree-checks.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Add a dev-profile git daemon so coding sandboxes can clone and push the host repos
   - Components: agents, backend-api, governance-kernel
   - Record: `governance/history/changes/2026-08-25-add-a-dev-profile-git-daemon-so-coding-sandboxes-can-clone-and-p.json`
-- **2026-08-24** — Offer the Ox Alpha stealth model for coding-workspace turns, keeping coding enablement environment-scoped
-  - Components: backend-api
-  - Record: `governance/history/changes/2026-08-24-offer-the-ox-alpha-stealth-model-for-coding-workspace-turns-keep.json`
 
 ## Decisions (6)
 

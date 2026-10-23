@@ -8,12 +8,32 @@ description: Choose the right workflow skill and command chain before starting w
 Answer the questions in order. The first one that matches wins — they are ordered by how
 expensive the mistake is, not by how common the case is.
 
+## Before the questions — read what is already written down
+
+**The backlog is in the change records.** Run `make governance-context PATHS="..."` and read
+the most recent records' `follow_up` and `limitations` fields for the paths in scope. Work a
+prior session already named routes as continuation of that record's plan, and the record's
+own wording becomes this session's reason — reconstructing the task from the request alone
+re-derives what the trail already states, and risks diverging from it.
+
+**For "does X exist / should we build X", check the generator before sizing a build.** This
+repository is generated from `fastapi-fullstack`, and a capability it lacks may be an
+unselected template option rather than a from-scratch build — the generated tree alone cannot
+reveal that. `PYTHONUTF8=1 make upgrade-dry-run ARGS="--with-new-features"` (see
+`template-upgrade`) shows whether adoption is an upgrade. Capability gap analysis that stops at the code answers the wrong
+question.
+
 ## Q1 — Does this change any tracked file?
 
 **No** (explaining, exploring, mapping, answering a question) → **no change session.**
 Use `make governance-context PATHS="..." TASK="..."`, then `Explore` or
 `feature-dev:code-explorer` for breadth. Opening a session you never finish leaves the `Stop`
 hook blocking turn-end for the next person.
+
+This covers analysis and determination work too — a design assessment, a feasibility call, a
+recommendation — however non-trivial it is. The session-start rule "start non-trivial work
+with `pick-workflow`" means *route it at the moment the session decides to change something*,
+not wrap every investigation in change ceremony.
 
 **Yes** → continue. Every branch below runs inside `gov-change`'s envelope.
 
@@ -34,6 +54,12 @@ generic refactor path does not.
 
 Operational-only work — ingest a document, run a search, list collections, no code change —
 is **`rag-knowledge`** instead, and needs no session.
+
+Documentation-only work about the subsystem — `docs/`, `MANUAL_STEPS.md`, other tracked
+`*.md`, no code — is neither: it changes tracked files, so it needs a session, but the
+embedding-dimension gate has nothing to check. Run **`gov-change` alone**; `governance-context`
+reports root-level docs as unassigned paths (expected) and `governance-impact` selects
+`governance-check`.
 
 ## Q4 — Does it change an HTTP contract the browser consumes?
 
@@ -78,6 +104,7 @@ and untouched tests.
 | New or renamed env var | edit source → `governance-sync` regenerates `ENV_VARS.md` (never hand-edit) → `compose-check` |
 | Compose / profile / service | `gov-change` → `compose-check` → `preflight-ports`, `preflight-volumes` → `compose-check-prod` |
 | Curated manifest, exception, ADR | `gov-change`; generated manifests are rebuilt, never edited |
+| Dependabot / bot PR on a governed path | **adopt, never merge** — re-apply the bump inside `gov-change` with the project's own tooling (`uv lock --upgrade-package …`), validate under the new version, record it, land it, then close the bot PR |
 | Template upgrade | `template-upgrade` (dry-run → classify against ownership provenance → sweep) |
 | CLAUDE.md, hooks, skills | `gov-change` + `claude-md-management:claude-md-improver` / `hookify:hookify` / `skill-creator` |
 

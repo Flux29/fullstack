@@ -40,6 +40,7 @@ Implement a connector in `backend/app/services/rag/connectors/` following the ex
 - Chunk size/overlap and parser (Docling Serve by default; PyMuPDF/LlamaParse opt-in) are configured via env — see `docs/configuration.md`.
 - Reranking uses Docker Model Runner's native `/rerank` endpoint with the configured GGUF reranker and improves result ordering when enabled.
 - If search returns poor results: confirm the collection is populated (`rag-stats`), check the active collection in the chat's KB selector, and verify the embedding provider/key.
+- Check Model Runner's self-reported state, not only that `/embeddings` and `/rerank` answer: `docker model status` must list the `llama.cpp` backend as Running with a `-cuda` tag (not Error/Installing), and `docker model logs` after a fresh model load must show a CUDA0 device line. A stale backend keeps serving while its installer fails; the known Windows failure and its fix are the `docker model status` item in `MANUAL_STEPS.md`.
 
 ## Rules
 

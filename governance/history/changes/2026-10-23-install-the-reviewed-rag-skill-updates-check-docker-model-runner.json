@@ -1,0 +1,46 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "RAG change and knowledge sessions now check docker model status for a Running -cuda llama.cpp backend and a CUDA0 log line, not only that embeddings and rerank answer"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/rag-change/SKILL.md",
+    ".claude/skills/rag-knowledge/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-10-23-install-the-reviewed-rag-skill-updates-check-docker-model-runner",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log",
+    "Two skills in one session because both changes answer the same observation with the same check; the MANUAL_STEPS.md item they cite was confirmed present",
+    "The status check itself was not run against the live Model Runner in this session; it is skill text, not a validator"
+  ],
+  "manifests_changed": [],
+  "reason": "Both RAG skills, unchanged since 2026-08-11 and 2026-08-10, verified Docker Model Runner only by sending requests, and a working request path hid a broken update path for weeks: the llama.cpp CUDA backend's installer kept failing on a missing nv-gpu-info helper while the stale build went on serving (observation 80; the fix is documented in MANUAL_STEPS.md since 2026-10-12). The 2026-10-14 review staged the same status check for both skills; installing them makes docker model status and the CUDA0 log line part of their checks.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-10-14/rag-change and ~/.claude/skill-updates/2026-10-14/rag-knowledge and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed RAG skill updates: check Docker Model Runner's self-reported backend state, not only its request path",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

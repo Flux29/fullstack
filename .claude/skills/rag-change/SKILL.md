@@ -38,6 +38,13 @@ make preflight-volumes    # docling-models, redis-data preservation volumes
 `preflight-model` is the health check for the model-runner-host component. If it fails, stop.
 Every retrieval result you gather afterwards is meaningless.
 
+`preflight-model` exercises only the request path, and a working request path can hide a
+broken update path for months (a stale backend keeps serving while its installer fails). Also
+read Model Runner's own state: `docker model status` must list the `llama.cpp` backend as
+Running with a `-cuda` tag, not Error or Installing, and after a fresh model load
+`docker model logs` must show a CUDA0 device line. The known Windows failure and its fix are
+the `docker model status` item in `MANUAL_STEPS.md`.
+
 ## 3. Change
 
 Class A/B — edit inside `backend/app/services/rag/`. Callers import through the package

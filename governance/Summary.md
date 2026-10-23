@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 180)
+## Recent changes (latest 20 of 181)
 
 - **2026-10-23** — Install the reviewed template-upgrade update: check the generator's unselected options before sizing a build
   - Components: agent-operating-surface
@@ -66,6 +66,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-10-23** — Install the reviewed ship update: proof that inherited validation ran, and regeneration after every rebase
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-ship-update-proof-that-inherited-validation.json`
+- **2026-10-23** — Install the reviewed RAG skill updates: check Docker Model Runner's self-reported backend state, not only its request path
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-10-23-install-the-reviewed-rag-skill-updates-check-docker-model-runner.json`
 - **2026-10-23** — Install the reviewed pytest-suite update: regression tests must fail without the fix, and test doubles are checked against the real contract
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-pytest-suite-update-regression-tests-must-f.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Give the sandbox runtime pwsh, Node, and bun so frontend work is bootstrappable
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-25-give-the-sandbox-runtime-pwsh-node-and-bun-so-frontend-work-is-b.json`
-- **2026-08-25** — Format the compose long-syntax regression test so the governance-lint CI gate passes
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-25-format-the-compose-long-syntax-regression-test-so-the-governance.json`
 
 ## Decisions (6)
 

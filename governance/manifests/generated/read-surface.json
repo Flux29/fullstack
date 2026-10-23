@@ -57,6 +57,7 @@
       "docker/mcp/docling/",
       "docs/",
       "docs/architecture/decisions/",
+      "docs/plans/",
       "emails/",
       "frontend/",
       "frontend/e2e/",

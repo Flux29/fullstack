@@ -7,6 +7,7 @@ manifest take".
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -267,8 +268,6 @@ def read_adr_front_matter(path: Path) -> tuple[dict[str, Any], list[str]]:
     `checks.documentation` reports them — detection and repair stay separate, the same way
     they are for every other governance surface.
     """
-    import re
-
     import yaml
 
     text = path.read_text(encoding="utf-8").replace("\r\n", "\n")
@@ -367,6 +366,70 @@ def build_decision_index(ctx: Context) -> dict[str, Any]:
         },
         "decisions": sorted(decisions, key=lambda item: item["id"]),
     }
+
+
+#: The phase gate's plan contract, matched with the gate's own patterns
+#: (`.claude/skills/phased-delivery/scripts/watch-phase-gate.ps1`): it counts `## Phase N`
+#: headings and rewrites the `Status:` line to `phase N of T complete`. Reading a plan any
+#: other way would let Summary.md report a state the gate does not see.
+_PLAN_PHASE_PATTERN = re.compile(r"^## Phase \d+", re.MULTILINE)
+_PLAN_STATUS_PATTERN = re.compile(r"^Status:(.*)$", re.MULTILINE)
+_PLAN_PROGRESS_PATTERN = re.compile(r"^phase (\d+) of \d+ complete$")
+_PLAN_TITLE_PATTERN = re.compile(r"^# Plan\s+\d+\s*[—–-]\s*(.+)$", re.MULTILINE)
+_PLAN_ADR_PATTERN = re.compile(r"^ADR:(.*)$", re.MULTILINE)
+
+
+def build_plan_index(ctx: Context) -> list[dict[str, Any]]:
+    """Index the delivery plans under `docs/plans/` for Summary.md's Deliveries section.
+
+    `state` is derived, never declared. `complete` once the Status line's completed-phase
+    count reaches the number of phase headings (the gate recomputes the total from the
+    headings on every bump, so the headings are the authority); `unreadable` when the gate
+    could not run the plan; `in-flight` otherwise, including a Status line in a form the gate
+    has not written yet, which its first bump overwrites.
+    """
+    from repo_governance.config import iter_files
+    from repo_governance.identifiers import ADR_REFERENCE_PATTERN
+    from repo_governance.io_atomic import relative_posix
+
+    plans = []
+    for path in iter_files(ctx.paths.plans, suffixes=(".md",)):
+        if path.name == "README.md":
+            continue
+        text = path.read_text(encoding="utf-8")
+        status = _PLAN_STATUS_PATTERN.search(text)
+        status_text = status.group(1).strip() if status else ""
+        phases = len(_PLAN_PHASE_PATTERN.findall(text))
+
+        problems = []
+        if status is None:
+            problems.append("no `Status:` line, so the gate cannot record progress")
+        if phases == 0:
+            problems.append("no `## Phase N` headings, so the gate finds nothing to run")
+        progress = _PLAN_PROGRESS_PATTERN.match(status_text)
+        if problems:
+            state = "unreadable"
+        elif progress and int(progress.group(1)) >= phases:
+            state = "complete"
+        else:
+            state = "in-flight"
+
+        number = path.name.split("-", 1)[0]
+        title = _PLAN_TITLE_PATTERN.search(text)
+        adr = _PLAN_ADR_PATTERN.search(text)
+        plans.append(
+            {
+                "id": f"Plan {number}" if number.isdigit() else path.stem,
+                "topic": title.group(1).strip() if title else path.stem,
+                "status": status_text,
+                "adr_refs": sorted(set(ADR_REFERENCE_PATTERN.findall(adr.group(1)))) if adr else [],
+                "state": state,
+                "problems": problems,
+                "file": relative_posix(path, ctx.repo_root),
+            }
+        )
+
+    return plans
 
 
 #: Characters fnmatch treats as pattern syntax. A rule containing none of them is a

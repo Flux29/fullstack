@@ -4,6 +4,10 @@
 list in each ADR. That makes the front matter a manifest input, not prose: a key governance
 silently ignores, a date the YAML resolver turns into an object, or a supersession only one
 side declares are all data corruption, and each one has a test here.
+
+Delivery plans are read the same way, by the phase gate rather than by the merge: their
+`Status:` line and `## Phase N` headings decide what the pipeline runs next, and sync indexes
+them into Summary.md with the gate's own patterns. Those tests close the module.
 """
 
 from __future__ import annotations
@@ -14,7 +18,13 @@ from pathlib import Path
 import jsonschema
 import pytest
 
-from repo_governance.builders import build_decision_index, read_adr_front_matter
+from repo_governance.builders import (
+    _PLAN_PHASE_PATTERN,
+    _PLAN_STATUS_PATTERN,
+    build_decision_index,
+    build_plan_index,
+    read_adr_front_matter,
+)
 from repo_governance.checks import CheckScope
 from repo_governance.checks.documentation import (
     check_adr_consistency,
@@ -453,3 +463,124 @@ def test_decision_propose_keeps_a_matching_related_path_glob_verbatim(
     fields, problems = read_adr_front_matter(written)
     assert problems == []
     assert fields["related_paths"] == [pattern]
+
+
+# --- delivery plans -------------------------------------------------------------------
+
+
+def write_plan(
+    root: Path,
+    number: str = "001",
+    *,
+    adr: str = "ADR-001 (this delivery implements it)",
+    status: str | None = "phase 0 of 2 complete",
+    phases: int = 2,
+) -> Path:
+    """The lines of a plan that the gate and the index read."""
+    lines = [f"# Plan {number} — A delivery", f"ADR: {adr}"]
+    if status is not None:
+        lines.append(f"Status: {status}")
+    lines += [f"## Phase {phase}: Part {phase}" for phase in range(1, phases + 1)]
+    target = root / "docs" / "plans" / f"{number}-a-delivery.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return target
+
+
+def _only_plan(root: Path) -> dict:
+    (plan,) = build_plan_index(Context.discover(root))
+    return plan
+
+
+def test_a_plan_is_indexed_with_topic_status_phases_and_adr(minimal_repo: Path) -> None:
+    write_plan(minimal_repo)
+    readme = minimal_repo / "docs" / "plans" / "README.md"
+    readme.write_text("# Delivery plans\n\nStatus: the README is not a plan\n", encoding="utf-8")
+
+    assert _only_plan(minimal_repo) == {
+        "id": "Plan 001",
+        "topic": "A delivery",
+        "status": "phase 0 of 2 complete",
+        "adr_refs": ["ADR-001"],
+        "state": "in-flight",
+        "problems": [],
+        "file": "docs/plans/001-a-delivery.md",
+    }
+
+
+@pytest.mark.parametrize(
+    ("status", "phases", "state"),
+    [
+        ("phase 1 of 2 complete", 2, "in-flight"),
+        ("phase 2 of 2 complete", 2, "complete"),
+        # The gate recomputes the total from the headings, so a phase added mid-delivery reopens the plan.
+        ("phase 2 of 2 complete", 3, "in-flight"),
+        # A form the gate has not written yet; its first bump overwrites it.
+        ("drafting", 2, "in-flight"),
+    ],
+)
+def test_state_follows_the_completed_phase_count(minimal_repo: Path, status: str, phases: int, state: str) -> None:
+    write_plan(minimal_repo, status=status, phases=phases)
+
+    assert _only_plan(minimal_repo)["state"] == state
+
+
+def test_a_plan_the_gate_cannot_run_is_unreadable_and_says_why(minimal_repo: Path) -> None:
+    write_plan(minimal_repo, status=None, phases=0)
+
+    plan = _only_plan(minimal_repo)
+
+    assert plan["state"] == "unreadable"
+    assert plan["problems"] == [
+        "no `Status:` line, so the gate cannot record progress",
+        "no `## Phase N` headings, so the gate finds nothing to run",
+    ]
+
+
+def test_a_plan_without_an_adr_has_no_refs(minimal_repo: Path) -> None:
+    write_plan(minimal_repo, adr="none — no architectural decision in this work")
+
+    assert _only_plan(minimal_repo)["adr_refs"] == []
+
+
+def test_summary_lists_deliveries_by_state_with_their_adr_status(minimal_repo: Path) -> None:
+    write_adr(minimal_repo, "ADR-001", status="proposed", components=())
+    write_plan(minimal_repo, "001", adr="ADR-001, then ADR-009")
+    write_plan(minimal_repo, "002", status="phase 2 of 2 complete")
+    write_plan(minimal_repo, "003", status=None)
+    ctx = Context.discover(minimal_repo)
+    sync(ctx)
+
+    deliveries = ctx.paths.summary.read_text(encoding="utf-8").split("\n## Deliveries (3)\n", 1)[1]
+
+    assert "- **Plan 001** — A delivery\n  - Status: phase 0 of 2 complete\n" in deliveries
+    assert "  - Implements: ADR-001 (proposed), ADR-009 (not in the decision index)\n" in deliveries
+    assert "### Not readable by the phase gate\n\n- **Plan 003**" in deliveries
+    assert "### Complete (1)" in deliveries
+    assert "Plan 002" not in deliveries
+
+
+def test_a_repository_without_plans_renders_no_deliveries_section(minimal_repo: Path) -> None:
+    ctx = Context.discover(minimal_repo)
+    sync(ctx)
+
+    assert "## Deliveries" not in ctx.paths.summary.read_text(encoding="utf-8")
+
+
+def test_the_plan_patterns_are_the_phase_gate_s_own(repo_root: Path) -> None:
+    """Summary.md must report what the gate sees, so a change to the gate's contract fails here first."""
+    gate = (repo_root / ".claude" / "skills" / "phased-delivery" / "scripts" / "watch-phase-gate.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert f"'(?m){_PLAN_PHASE_PATTERN.pattern}'" in gate
+    assert f"'(?m){_PLAN_STATUS_PATTERN.pattern.replace('(.*)', '.*')}'" in gate
+    assert '"Status: phase $Phase of $total complete"' in gate
+
+
+def test_the_real_repository_plans_are_readable_by_the_gate(real_context: Context) -> None:
+    plans = build_plan_index(real_context)
+
+    assert plans, "the real repository must carry a delivery plan"
+    for plan in plans:
+        assert plan["problems"] == [], f"{plan['file']}: {plan['problems']}"

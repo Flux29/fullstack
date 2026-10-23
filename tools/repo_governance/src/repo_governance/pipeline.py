@@ -100,6 +100,7 @@ def render_all(ctx: Context) -> dict[str, str]:
 
     from repo_governance.builders import (
         build_interfaces,
+        build_plan_index,
         build_read_surface,
         build_services,
     )
@@ -125,6 +126,7 @@ def render_all(ctx: Context) -> dict[str, str]:
         ctx,
         effective=effective,
         decision_index=decision_index,
+        plans=build_plan_index(ctx),
         interfaces=interfaces,
     )
 

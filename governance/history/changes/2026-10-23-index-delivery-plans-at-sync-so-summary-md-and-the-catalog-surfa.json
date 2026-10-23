@@ -1,0 +1,86 @@
+{
+  "adr_refs": [
+    "ADR-001"
+  ],
+  "affected_components": [
+    "agent-operating-surface",
+    "governance-kernel"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "governance-sync lists every delivery plan under Deliveries in Summary.md with its topic, Status line, and the status of the ADR it implements; unreadable plans are listed with the reason and finished ones counted",
+    "The catalog, and with it the session-start orientation, points at docs/plans/",
+    "The pre-commit governance hook also fires on docs/plans/ and docs/architecture/decisions/, so a gate Status bump or an ADR status change committed without a sync is refused instead of reaching CI"
+  ],
+  "compatibility_impact": "render_summary takes a new required plans argument; its only caller is pipeline.render_all, updated here. The phase gate's plan contract is unchanged, and a contract test now fails if the gate's patterns drift from the index's. Summary.md gains a Deliveries section; no schema or generated-file registry change",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/phased-delivery/SKILL.md",
+    ".claude/skills/phased-delivery/scripts/watch-phase-gate.ps1",
+    ".pre-commit-config.yaml",
+    "docs/plans/README.md",
+    "governance/Summary.md",
+    "governance/catalog.json",
+    "governance/governance.toml",
+    "governance/manifests/generated/read-surface.json",
+    "tools/repo_governance/src/repo_governance/builders.py",
+    "tools/repo_governance/src/repo_governance/config.py",
+    "tools/repo_governance/src/repo_governance/identifiers.py",
+    "tools/repo_governance/src/repo_governance/pipeline.py",
+    "tools/repo_governance/src/repo_governance/renderers/summary.py",
+    "tools/repo_governance/tests/test_decision_index.py"
+  ],
+  "follow_up": [
+    "Persist the plan index (with a schema) and let governance-context name in-flight deliveries for the paths they touch, when a consumer needs it",
+    "Add a plan-readability check rule beside check_adr_front_matter so an unreadable plan fails governance check"
+  ],
+  "id": "2026-10-23-index-delivery-plans-at-sync-so-summary-md-and-the-catalog-surfa",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "The simplify pass (four reviewers) ran: it removed an unread field, an in-memory wrapper, a test that could not fail, a second ADR-id regex (now one ADR_REFERENCE_PATTERN in identifiers.py), and overlapping comments; and it found that the pre-commit filter did not cover docs/plans/, which the docs claimed, so the filter was widened. Nothing could be removed instead of added: no existing mechanism read plans",
+    "The plan index is not persisted as its own JSON document: its only reader is the Summary renderer. governance-context does not name plans for a path yet",
+    "An unreadable plan is surfaced in Summary.md and fails the tool's real-repository test, but no governance check rule reports it",
+    "docs/architecture/decisions/ was added to the pre-commit filter in the same edit because it is the same gap (an input Summary.md reads that never triggered the hook); it predates this change"
+  ],
+  "manifests_changed": [
+    "governance/manifests/generated/read-surface.json"
+  ],
+  "reason": "docs/plans/ is load-bearing pipeline state - the phase gate parses each plan's Status line and Phase headings to decide what runs next - but the governance catalog and sync did not index plans, so Summary.md, the document an agent reads to orient itself, showed every ADR and no in-flight delivery. A governance cycle updated the representation for decisions (indexed from front matter at sync) and silently skipped plans, and phased-delivery had to tell agents to read docs/plans/ directly because governance would not surface it (observation 42). Indexing each plan's id, topic, Status line and ADR reference at sync, with the gate's own parsing rules, folding it into Summary.md, and cataloguing docs/plans/ makes a plan status change visible through the same cycle as a decision change.",
+  "risks": [
+    "A gate Status bump now stales Summary.md until the next sync; the gate's message, the plans README, and phased-delivery say so"
+  ],
+  "rollback": "git revert restores the previous tool, Summary.md, catalog, and docs. Nothing outside the repository changes. Plans already written are untouched either way",
+  "schema_version": 1,
+  "security_impact": "None - the index reads tracked markdown under docs/plans/ and writes only into Summary.md; read-surface.json gains docs/plans/ as an allowed path, already allowed through docs/, so the read gate's decisions do not change",
+  "summary": "Index delivery plans at sync so Summary.md and the catalog surface in-flight deliveries the way they surface decisions",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "393 passed (11 new plan-index tests), coverage 77.71% over the 75% floor",
+      "id": "governance-selftest",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "ruff check and ruff format --check clean over tools/repo_governance",
+      "id": "governance-lint",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "25 of 167 governed files sampled, every manifest claim agrees",
+      "id": "governance-sample",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "pre-finish run had 0 blocking findings other than governance-changes-are-recorded, which this record resolves; 8 advisories, all pre-existing. Read-gate selftest healthy and read-surface coverage 100% (1099/1099)",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

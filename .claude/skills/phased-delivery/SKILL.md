@@ -61,12 +61,13 @@ phase prompt starts with. There is no copy step.
 **Plan approval is a consent boundary:** once the user approves the plan, corrections
 you make to the agent's branches during review (Stage 3) need no further sign-off.
 
-**Plans are load-bearing pipeline state that governance does not index.** The gate
-script parses each plan's `Status:` line and `## Phase N:` headings, but
-`governance/catalog.json` and `governance-sync` index ADRs (through their front
-matter) and not plans — so `governance-context` and `Summary.md` carry no view of
-in-flight deliveries. Read delivery state from `docs/plans/` directly; a governance
-cycle will not surface it for you.
+**Plans are load-bearing pipeline state, and governance indexes them.** The gate
+script parses each plan's `Status:` line and `## Phase N` headings; `governance-sync`
+reads them with the same patterns and lists every plan under Deliveries in
+`governance/Summary.md` (topic, Status line, the ADR it implements), and the catalog
+points at `docs/plans/`. A gate bump therefore leaves Summary.md stale: commit the bump
+together with the output of `make governance-sync`, or the pre-commit check refuses it.
+`governance-context` does not name plans for a path yet — read the plan for its steps.
 
 **The entry gate contradicts the pipeline's precondition — expect it.** Phased delivery
 requires the dev Compose stack up (sandboxd, git-local), while `gov-change`'s

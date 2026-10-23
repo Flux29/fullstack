@@ -60,6 +60,7 @@ def render_summary(
     *,
     effective: dict[str, Any],
     decision_index: dict[str, Any],
+    plans: list[dict[str, Any]],
     interfaces: dict[str, Any],
 ) -> str:
     """Render the summary from values already computed in this render pass.
@@ -151,6 +152,38 @@ def render_summary(
         if retired:
             parts.append(f"\n### Superseded, deprecated, and rejected ({len(retired)})\n\n")
             parts.append("Listed by count only; the successor decision carries the constraint.\n")
+
+    if plans:
+        parts.append(f"\n## Deliveries ({len(plans)})\n\n")
+        parts.append(
+            "Plans under `docs/plans/`, read the way the phase gate reads them: the `Status:` line and the "
+            "`## Phase N` headings.\n"
+        )
+        decision_status = {item["id"]: item["status"] for item in decisions}
+        in_flight = [item for item in plans if item["state"] == "in-flight"]
+        unreadable = [item for item in plans if item["state"] == "unreadable"]
+        complete = [item for item in plans if item["state"] == "complete"]
+
+        if in_flight:
+            parts.append("\n### In flight\n\n")
+            for plan in in_flight:
+                adrs = ", ".join(
+                    f"{ref} ({decision_status.get(ref, 'not in the decision index')})" for ref in plan["adr_refs"]
+                )
+                parts.append(f"- **{plan['id']}** — {plan['topic']}\n")
+                parts.append(f"  - Status: {plan['status']}\n")
+                parts.append(f"  - Implements: {adrs or 'no ADR'}\n")
+                parts.append(f"  - Plan: `{plan['file']}`\n")
+
+        if unreadable:
+            parts.append("\n### Not readable by the phase gate\n\n")
+            for plan in unreadable:
+                parts.append(f"- **{plan['id']}** — {plan['topic']} — `{plan['file']}`\n")
+                parts.append(f"  - {'; '.join(plan['problems'])}\n")
+
+        if complete:
+            parts.append(f"\n### Complete ({len(complete)})\n\n")
+            parts.append("Listed by count only; each phase's change records carry what was delivered.\n")
 
     return "".join(parts)
 

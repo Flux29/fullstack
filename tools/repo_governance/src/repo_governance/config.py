@@ -126,6 +126,11 @@ class Paths:
         return self.history / "decisions" / "index.json"
 
     @property
+    def plans(self) -> Path:
+        """Where the phased-delivery plans live. Indexed into Summary.md at sync."""
+        return self.repo_root / "docs" / "plans"
+
+    @property
     def evaluations(self) -> Path:
         return self.history / "evaluations"
 

@@ -122,7 +122,7 @@ read_when = "Always, before opening anything else under governance/."
 [[catalog]]
 path = "governance/Summary.md"
 kind = "summary"
-description = "Current architectural state, open findings, accepted exceptions, active contracts, and the most recent material changes."
+description = "Current architectural state, open findings, accepted exceptions, active contracts, the most recent material changes, decisions, and in-flight deliveries."
 authority = "generated"
 update = "sync"
 read_when = "Orienting on a repository you have not touched recently, or checking what is currently unresolved."
@@ -358,6 +358,14 @@ description = "Generated index of every ADR: id, title, status, date, components
 authority = "generated"
 update = "sync"
 read_when = "Resolving an ADR id to file, status, and components without opening every ADR."
+
+[[catalog]]
+path = "docs/plans/"
+kind = "doc"
+description = "Phased-delivery plans. The phase gate parses each plan's `Status:` line and `## Phase N` headings, so both are load-bearing; sync indexes every plan's topic, status, and ADR into Summary.md's Deliveries section."
+authority = "curated"
+update = "manual"
+read_when = "Starting, reviewing, or resuming a phased delivery, or finding which delivery implements an ADR."
 
 [[catalog]]
 path = "governance/templates/"

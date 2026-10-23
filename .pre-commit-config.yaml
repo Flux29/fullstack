@@ -62,4 +62,4 @@ repos:
         entry: uv run --project tools/repo_governance governance check --fast
         language: system
         files: >-
-          ^(governance/|.*\.governance\.json$|backend/\.env\.example$|frontend/\.env\.example$|ENV_VARS\.md$|docker-compose.*\.yml$|Makefile$|\.github/workflows/|tools/repo_governance/)
+          ^(governance/|.*\.governance\.json$|backend/\.env\.example$|frontend/\.env\.example$|ENV_VARS\.md$|docker-compose.*\.yml$|Makefile$|\.github/workflows/|tools/repo_governance/|docs/architecture/decisions/|docs/plans/)

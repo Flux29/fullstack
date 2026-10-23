@@ -17,6 +17,9 @@ SLUG_PATTERN = re.compile(r"^[a-z0-9][a-z0-9-]{0,63}$")
 #: Architecture decision records.
 ADR_PATTERN = re.compile(r"^ADR-\d{3}$")
 
+#: The same identifier where prose cites it, such as a delivery plan's `ADR:` line.
+ADR_REFERENCE_PATTERN = re.compile(r"\bADR-\d{3}\b")
+
 #: Change records: an ISO date followed by a slug.
 CHANGE_RECORD_PATTERN = re.compile(r"^\d{4}-\d{2}-\d{2}-[a-z0-9][a-z0-9-]{0,63}$")
 

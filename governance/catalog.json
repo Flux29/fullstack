@@ -17,8 +17,16 @@
       "update": "manual"
     },
     {
+      "authority": "curated",
+      "description": "Phased-delivery plans. The phase gate parses each plan's `Status:` line and `## Phase N` headings, so both are load-bearing; sync indexes every plan's topic, status, and ADR into Summary.md's Deliveries section.",
+      "kind": "doc",
+      "path": "docs/plans/",
+      "read_when": "Starting, reviewing, or resuming a phased delivery, or finding which delivery implements an ADR.",
+      "update": "manual"
+    },
+    {
       "authority": "generated",
-      "description": "Current architectural state, open findings, accepted exceptions, active contracts, and the most recent material changes.",
+      "description": "Current architectural state, open findings, accepted exceptions, active contracts, the most recent material changes, decisions, and in-flight deliveries.",
       "kind": "summary",
       "path": "governance/Summary.md",
       "read_when": "Orienting on a repository you have not touched recently, or checking what is currently unresolved.",

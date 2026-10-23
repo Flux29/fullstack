@@ -141,7 +141,7 @@ $total = ([regex]::Matches($plan, '(?m)^## Phase \d+')).Count
 $updated = [regex]::Replace($plan, '(?m)^Status:.*$', "Status: phase $Phase of $total complete")
 if ($updated -ne $plan) {
     Set-Content -Path $PlanPath -Value $updated -NoNewline
-    Write-Host "Plan status bumped to 'phase $Phase of $total complete' (commit it with the next phase's review)."
+    Write-Host "Plan status bumped to 'phase $Phase of $total complete' (commit it with the next phase's review, after make governance-sync refreshes Summary.md)."
 }
 
 Publish-PhasePrompt $updated $PlanPath ($Phase + 1)

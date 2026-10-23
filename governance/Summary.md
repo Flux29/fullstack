@@ -58,7 +58,7 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 181)
+## Recent changes (latest 20 of 182)
 
 - **2026-10-23** — Install the reviewed template-upgrade update: check the generator's unselected options before sizing a build
   - Components: agent-operating-surface
@@ -87,6 +87,9 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-10-23** — Install the reviewed frontend-feature update: check the working tree on a dev server, not the baked compose image, and drive portal UI with Playwright
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-frontend-feature-update-check-the-working-t.json`
+- **2026-10-23** — Index delivery plans at sync so Summary.md and the catalog surface in-flight deliveries the way they surface decisions
+  - Components: agent-operating-surface, governance-kernel
+  - Record: `governance/history/changes/2026-10-23-index-delivery-plans-at-sync-so-summary-md-and-the-catalog-surfa.json`
 - **2026-10-23** — Describe the plan's not-yet-created sandbox GC module in prose so skills-check stops reading it as a broken citation
   - Components: none recorded
   - Record: `governance/history/changes/2026-10-23-describe-the-plan-s-not-yet-created-sandbox-gc-module-in-prose-s.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Keep in-flight agent turns alive across scheduled token refresh; answer orphaned WS control frames explicitly
   - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
   - Record: `governance/history/changes/2026-08-25-keep-in-flight-agent-turns-alive-across-scheduled-token-refresh.json`
-- **2026-08-25** — Give the sandbox runtime pwsh, Node, and bun so frontend work is bootstrappable
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-25-give-the-sandbox-runtime-pwsh-node-and-bun-so-frontend-work-is-b.json`
 
 ## Decisions (6)
 
@@ -134,3 +134,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 ### Proposed (awaiting review)
 
 - **ADR-006** — Coding workspaces give the assistant sandboxed repository tools, and every write or execute is approval-gated unless the workspace ruleset auto-approves it — `docs/architecture/decisions/ADR-006-coding-workspaces.md`
+
+## Deliveries (1)
+
+Plans under `docs/plans/`, read the way the phase gate reads them: the `Status:` line and the `## Phase N` headings.
+
+### In flight
+
+- **Plan 001** — ADR-006 rules 8 and 9: sandbox quotas, state GC, and per-conversation auto-approve
+  - Status: phase 0 of 4 complete
+  - Implements: ADR-006 (proposed)
+  - Plan: `docs/plans/001-adr006-rules-8-9.md`

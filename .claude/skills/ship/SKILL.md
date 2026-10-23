@@ -17,8 +17,13 @@ contain.
 2. No unfinished second session: one reason per commit, same as one reason per session.
 3. `git status` shows only the files this session touched. Anything unexpected is
    someone else's work — stop and ask, do not sweep it in.
-4. The shrink pass ran: `simplify` reviewed the session diff during GOV-CLOSE, and its
-   outcome — changes applied, or nothing to shrink — is stated in the session report.
+4. The shrink pass ran: `simplify`, or the inline pass that `gov-change` sanctions for small
+   and documentation-only diffs, reviewed the session diff during GOV-CLOSE, and its form and
+   outcome — changes applied, or nothing to shrink — are stated in the session report.
+5. Any validation you are treating as inherited actually **ran**. A zero check count, no
+   runs listed for the branch, and a green badge belonging to a different ref all mean *not
+   validated* — an absent signal reads exactly like a passing one at a glance, and the first
+   push to a long-dormant branch inherits the blame for everything it surfaces.
 
 ## Sequence
 
@@ -53,6 +58,25 @@ git status -sb        # clean, and up to date with origin
 ```
 
 If the push is rejected, fetch and rebase — never force-push `main`.
+
+**After any rebase, regenerate before pushing.** This is unconditional, not conflict-gated:
+
+- **Conflict in a generated file** (`governance/Summary.md`, `governance/manifests/generated/**`,
+  `ENV_VARS.md`) — take either side, re-run `make governance-sync` against the rebased
+  sources, stage its output, continue the rebase. The generator is the merge tool; a
+  hand-merge is drift by construction even when it reads correctly.
+- **No conflict at all** — still regenerate. Upstream commits routinely add inputs the
+  generator consumes (another change record is the common one), so a textually clean rebase
+  can leave your already-committed Summary stale with no signal anywhere. Run
+  `make governance-sync` and `make governance-check-fast` *before* the push; if bytes change,
+  repair it per the rules below rather than after the Stop hook or CI finds it.
+
+Generated artifacts depend on the whole source state, not on the files git happened to touch.
+
+**If a push turns something red, separate triggering from causing before reporting it.** Check
+the pre-change commit out into a scratch worktree and run the same suite there: matching
+failure names and counts prove the failures predate you. That costs one worktree and converts
+an accusation into a fact.
 
 ## Rules
 

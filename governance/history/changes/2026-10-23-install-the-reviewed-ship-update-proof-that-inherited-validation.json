@@ -1,0 +1,44 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Landing a change now requires proof that inherited validation ran, regeneration of generated files after every rebase (conflicted or not), and a pre-change rerun before attributing a red push; the shrink-pass precondition accepts gov-change's inline form"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/ship/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-10-23-install-the-reviewed-ship-update-proof-that-inherited-validation",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log",
+    "The 2026-08-30 and 2026-10-14 staged copies were compared: every line the older one added appears in the newer one, so no merge was needed"
+  ],
+  "manifests_changed": [],
+  "reason": "The live ship skill had not changed since 2026-08-20, and pushes kept landing on unchecked assumptions: a conflict-free rebase left an already-committed Summary.md stale with no signal anywhere (observation 36), generated-file conflicts were hand-merged instead of regenerated (31), a zero check count or a green badge from another ref was read as passing (16), and its shrink-pass precondition still demanded simplify where gov-change now sanctions an inline pass for small diffs (84). Reviews on 2026-08-30 and 2026-10-14 staged the fixes; installing the 2026-10-14 copy, which contains the 2026-08-30 copy's changes, makes the landing step check them.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-10-14/ship and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed ship update: proof that inherited validation ran, and regeneration after every rebase",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

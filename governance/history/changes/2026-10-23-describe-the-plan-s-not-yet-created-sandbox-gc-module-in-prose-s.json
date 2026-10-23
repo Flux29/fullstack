@@ -1,0 +1,50 @@
+{
+  "adr_refs": [],
+  "affected_components": [],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "The Skills reference check and the governance tool self-test stop failing on main CI; the executing agent still gets the module name and its directory"
+  ],
+  "compatibility_impact": "None - the plan's Status line and phase headings, which the phase-gate script parses, are unchanged; the step still names the same module and directory",
+  "date": "2026-10-23",
+  "files_changed": [
+    "docs/plans/001-adr006-rules-8-9.md"
+  ],
+  "follow_up": [
+    "Teach the phased-delivery plan template that skills-check reads every path in docs/ as an existence claim, so files a plan will create are named in prose",
+    "Look at the red Security Scan dependency audit on main"
+  ],
+  "id": "2026-10-23-describe-the-plan-s-not-yet-created-sandbox-gc-module-in-prose-s",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass inline (one-line documentation diff): nothing to remove",
+    "main CI also fails the Security Scan job's Python dependency audit; that is an advisory-database finding unrelated to this change and is not addressed here"
+  ],
+  "manifests_changed": [],
+  "reason": "Plan 001 step 2.2 names the file its Phase 2 will create as a repository path, and skills-check reads every path in docs/ as a claim that the path exists. Since the plan landed on 2026-08-26 (90e1722) that one finding has failed the Skills reference check and the governance self-test's real-corpus test on every main CI run, so CI OK has been red for eight weeks and any new failure would be hidden behind it. Naming the module and its existing parent directory instead keeps the instruction exact for the executing agent while making no false existence claim.",
+  "risks": [],
+  "rollback": "git revert restores the previous wording, and with it the skills-check and self-test failures",
+  "schema_version": 1,
+  "security_impact": "None - one sentence of plan prose; no code, configuration, or permissions",
+  "summary": "Describe the plan's not-yet-created sandbox GC module in prose so skills-check stops reading it as a broken citation",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves (was 1 missing-path finding at docs/plans/001-adr006-rules-8-9.md:45)",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "382 passed, coverage 77.44% over the 75% floor; test_real_repository_corpus_has_zero_findings, failing on every main CI run since 90e1722, passes",
+      "id": "governance-selftest",
+      "result": "pass"
+    }
+  ]
+}

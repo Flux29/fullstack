@@ -58,8 +58,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 171)
+## Recent changes (latest 20 of 172)
 
+- **2026-10-23** — Install the reviewed gov-change update: slot and worktree checks, a sized shrink pass, and claim verification rules
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-10-23-install-the-reviewed-gov-change-update-slot-and-worktree-checks.json`
 - **2026-10-12** — Document the Docker Model Runner nv-gpu-info.exe provisioning fix and the DMR/Docling GPU memory contention
   - Components: none recorded
   - Record: `governance/history/changes/2026-10-12-document-the-docker-model-runner-nv-gpu-info-exe-provisioning-fi.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-23** — Update the recorded migration head expectation to 0031_create_workspaces
   - Components: governance-kernel
   - Record: `governance/history/changes/2026-08-23-update-the-recorded-migration-head-expectation-to-0031-create-wo.json`
-- **2026-08-23** — Teach a coding turn the target repository's own conventions from AGENTS.md and its skills index
-  - Components: agents, backend-api
-  - Record: `governance/history/changes/2026-08-23-teach-a-coding-turn-the-target-repository-s-own-conventions-from.json`
 
 ## Decisions (6)
 

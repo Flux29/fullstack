@@ -1,0 +1,46 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Sessions running gov-change now check the single-slot session file and HEAD for a peer or already-shipped change, hydrate gitignored runtime files in worktrees, size the shrink pass to the diff, check diff size and line endings after scripted edits, verify security and persistence claims by exercising them, treat impact-selected validators as a lower bound of the CI job, and write user-facing commands for the user's shell"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes; the envelope's commands and order are unchanged, only rules around them are added",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/gov-change/SKILL.md"
+  ],
+  "follow_up": [
+    "Fix the plan citation that keeps skills-check and the governance self-test red on main (separate session)"
+  ],
+  "id": "2026-10-23-install-the-reviewed-gov-change-update-slot-and-worktree-checks",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; the change only adds rules, each traced to an ACTIONED observation in the archived task-observer log",
+    "The 2026-09-14 and 2026-10-14 staged copies were compared: every line the older one added appears in the newer one except two lines re-wrapped around an added threshold sentence, so no merge was needed"
+  ],
+  "manifests_changed": [],
+  "reason": "The live gov-change skill had not changed since 2026-08-25 while three task-observer reviews (2026-08-30, 2026-09-14, 2026-10-14) derived nineteen rules from sessions that went wrong under it - a peer session's single-slot state overwritten, worktree validators failing on missing gitignored env files, a four-agent shrink pass spent on docs-only diffs, scripted edits silently rewriting every line ending, security and persistence claims accepted from configuration, and commands handed to the user in the wrong shell. Repo-owned skills land only through a governed change and none had run, so every session since kept repeating those failures. Installing the staged 2026-10-14 copy, which contains the 2026-09-14 copy's changes, makes the envelope carry them.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-10-14/gov-change and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed gov-change update: slot and worktree checks, a sized shrink pass, and claim verification rules",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "1 finding, pre-existing and outside this diff - docs/plans/001-adr006-rules-8-9.md:45 cites backend/app/worker/tasks/sandbox_tasks.py, a file that plan's Phase 2 creates; red on main CI since 90e1722 (2026-08-26). Zero findings in .claude/skills/gov-change",
+      "id": "skills-check",
+      "result": "fail"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing (site chains, cycles, orphans, compose healthchecks, email facade)",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

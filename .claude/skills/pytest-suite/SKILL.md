@@ -48,6 +48,34 @@ async def test_create_user_returns_201(client: AsyncClient):
     assert resp.status_code == 201
 ```
 
+## Regression tests — falsify before you trust
+
+A regression test is evidence only once it has been **observed failing without the fix**. Run
+it against the unfixed code first and confirm it reproduces the reported symptom; a test
+written to match the surrounding convention can pass identically before and after the repair
+while appearing to cover it.
+
+Two ways that happens here:
+
+- **The harness routes around the bug.** A convenience runner that hands arguments in as a
+  list never exercises the argv-reading path a CLI bug lives in; a mocked session never
+  reaches the SQL a repository bug lives in. Enter through the same code path as the fault.
+- **A guarded branch never runs on this runner.** Platform checks and env-gated branches make
+  a test vacuous on every machine but one. Force the condition in the test rather than leaving
+  it to the environment.
+
+## Test doubles — check the double against the real contract
+
+A hand-written fake encodes the author's *belief* about a dependency's return shapes, so a
+suite built on it validates the belief rather than the code. Ten green tests against a fake
+that returns attribute-style objects prove nothing when the real backend returns TypedDict
+mappings.
+
+- Prefer the dependency's own in-memory implementation when it ships one (`fakeredis`, `moto`,
+  a library's `StateBackend`) — that is the double.
+- Otherwise assert the double's shape against **one real call** before relying on it.
+- Where a feature has two real backends, passing against one is not coverage of the other.
+
 ## Naming & rules
 
 - `test_<action>_<scenario>_<expected_result>` (e.g. `test_create_user_with_duplicate_email_raises_already_exists_error`)

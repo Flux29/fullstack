@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Backend tests written under this skill now require a regression test to be seen failing without its fix and a hand-written double to be checked against one real call"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/pytest-suite/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-10-23-install-the-reviewed-pytest-suite-update-regression-tests-must-f",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log"
+  ],
+  "manifests_changed": [],
+  "reason": "The live pytest-suite skill had not changed since 2026-08-10, and it let two kinds of test pass without proving anything: a regression test passed identically before and after its fix because the convenience harness never entered the argv path the bug lived in (observation 10), and ten green tests ran against a hand-written fake whose return shapes did not match the real backend (15). The 2026-08-30 review staged the rules; installing them makes falsifying a regression test and checking a double against one real call part of writing tests here.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-08-30/pytest-suite and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed pytest-suite update: regression tests must fail without the fix, and test doubles are checked against the real contract",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

@@ -31,11 +31,25 @@ from CLI output.
 This phase is **read-only toward production**: query telemetry and databases; never
 mutate live state to "test a theory".
 
+**When the query tools are unavailable, fall to the next rung — not to the code.** Evidence
+ranks: trace UI > MCP queries > the instrumented service's stdout > reading source. The
+Logfire MCP server failing to connect is a different outage from a missing `LOGFIRE_TOKEN`,
+and it has the same fallback: the console exporter mirrors span starts into the container's
+logs, so `docker logs --since/--until` scoped to the incident window is a degraded but real
+trace source. Read-only still applies.
+
 ## 2. Diagnose
 
 Run `engineering:debug` with the trace evidence as its input — reproduce locally,
 isolate, and name the root cause. A trace narrows *where*; the debug pass proves *why*.
 If the local reproduction contradicts the telemetry, believe neither yet — say so.
+
+**Bisect the path before reading any layer's source.** List the layers the input actually
+traverses, then run the same input through two entry points that differ by exactly one layer
+(the module entry point versus the installed launcher; the client versus a direct wire call)
+and let the result halve the search. Distinctive formatting in an error message is a weak
+signal — several layers produce the same-looking output — and the hypothesis in the bug report
+is a lead to test, never a premise to build on.
 
 ## 3. Fix — governed
 

@@ -1,0 +1,43 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Live-symptom debugging now falls back to container logs when telemetry queries are down, and bisects the execution path before reading any layer's source"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/prod-debug/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-10-23-install-the-reviewed-prod-debug-update-bisect-the-execution-path",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log"
+  ],
+  "manifests_changed": [],
+  "reason": "The live prod-debug skill had not changed since 2026-08-10, and two debugging sessions went wrong under it: one built on the surface of an error message and the bug report's hypothesis instead of bisecting the layers the input actually crossed (observation 11), and one dropped straight to reading source when the Logfire MCP server failed to connect, although the console exporter mirrors span starts into the container's logs (33). The 2026-08-30 review staged the fix; installing it adds an evidence ladder with a log fallback and a bisection step before any source is read.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-08-30/prod-debug and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed prod-debug update: bisect the execution path, and fall back to container logs when the telemetry server is down",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

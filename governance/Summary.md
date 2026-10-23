@@ -58,11 +58,14 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 177)
+## Recent changes (latest 20 of 178)
 
 - **2026-10-23** — Install the reviewed ship update: proof that inherited validation ran, and regeneration after every rebase
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-ship-update-proof-that-inherited-validation.json`
+- **2026-10-23** — Install the reviewed prod-debug update: bisect the execution path, and fall back to container logs when the telemetry server is down
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-10-23-install-the-reviewed-prod-debug-update-bisect-the-execution-path.json`
 - **2026-10-23** — Install the reviewed pick-workflow update: read the record backlog and the generator first, and route docs-only and bot-PR work
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-pick-workflow-update-read-the-record-backlo.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Amend ADR-006 with answers to open questions 3 (quotas) and 4 (auto-approve lifetime)
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-25-amend-adr-006-with-answers-to-open-questions-3-quotas-and-4-auto.json`
-- **2026-08-25** — Adopt the Dependabot ruff 0.16.4 bump for the governance tool inside a governed session
-  - Components: governance-kernel
-  - Record: `governance/history/changes/2026-08-25-adopt-the-dependabot-ruff-0-16-4-bump-for-the-governance-tool-in.json`
 
 ## Decisions (6)
 

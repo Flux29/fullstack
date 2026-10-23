@@ -39,10 +39,24 @@ close with GOV-CLOSE. Expect `governance-impact` to select `frontend-test`.
    ```bash
    make frontend-test    # the registered validator: lint, type-check, AND vitest
    ```
-   Then look at it: `bun dev` against a running backend (`make dev`) and drive the page
-   in a browser — the Browser pane or Playwright MCP counts; "types pass" does not. UI
-   is not done until it has been seen rendering. If the feature spans the proxy hop and
-   a stack is running, the `playwright` validator is the only end-to-end proof.
+   Then look at it — "types pass" does not count; UI is not done until it has been seen
+   rendering. Two traps make that look done when it is not:
+
+   - **Port 3000 is the compose container**, running a production build with no bind
+     mounts, so it does not serve your working tree — a fresh edit simply is not there, and
+     the check fails silently by showing the old UI. Confirm what is on the port first; if
+     it is the container, run a dev server beside it (the `frontend-dev` entry in
+     `.claude/launch.json`, port 3001) against the same running backend rather than
+     rebuilding the image. The
+     auth session cookie carries across ports.
+   - **Portal UI — Radix/headless-ui popovers, dropdowns, dialogs — needs Playwright MCP**,
+     not the Browser pane. Interleaved pane tool calls shift focus and dismiss the popover
+     between steps, screenshots miss the portal layer entirely, and synthetic events never
+     reach the React handlers. Playwright keeps one trusted-event session; treat the
+     accessibility tree, not the screenshot, as ground truth.
+
+   If the feature spans the proxy hop and a stack is running, the `playwright` validator is
+   the only end-to-end proof.
 
 ## Rules
 

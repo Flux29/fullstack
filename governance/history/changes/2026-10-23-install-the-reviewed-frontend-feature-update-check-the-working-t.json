@@ -1,0 +1,44 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Frontend browser checks now confirm what serves port 3000 and use the frontend-dev server on 3001 for working-tree changes, and drive portal UI through Playwright MCP"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes",
+  "date": "2026-10-23",
+  "files_changed": [
+    ".claude/skills/frontend-feature/SKILL.md"
+  ],
+  "follow_up": [],
+  "id": "2026-10-23-install-the-reviewed-frontend-feature-update-check-the-working-t",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (documentation-only diff): nothing removed, because the file is a reviewed staged copy installed byte-for-byte so the review bookkeeping can match it; every added rule traces to an ACTIONED observation in the archived task-observer log",
+    "The skill's claims were checked against the repository: .claude/launch.json defines frontend-dev on port 3001"
+  ],
+  "manifests_changed": [],
+  "reason": "The live frontend-feature skill had not changed since 2026-08-10, and its browser check verified the wrong thing in two ways: port 3000 is the compose container's production build with no bind mounts, so a fresh edit was simply absent and the check showed the old UI (observation 40), and Radix portal popovers dismissed between Browser-pane tool calls, so dropdown and dialog flows could not be driven or screenshotted (39). The 2026-08-30 review staged the fix; installing it points the check at the frontend-dev server on port 3001 and at Playwright MCP for portal UI.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The staged source copy stays outside the repository at ~/.claude/skill-updates/2026-08-30/frontend-feature and is not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Install the reviewed frontend-feature update: check the working tree on a dev server, not the baked compose image, and drive portal UI with Playwright",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

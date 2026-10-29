@@ -58,8 +58,11 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **Redis logical databases** — 0 General application cache; 1 Taskiq broker queue; 2 Taskiq result backend; 3 Embedding cache level one
 - **Proxy layer** — 71 handlers front every REST call; the chat WebSocket at /api/v1/ws/agent is the only documented exception.
 
-## Recent changes (latest 20 of 182)
+## Recent changes (latest 20 of 183)
 
+- **2026-10-28** — Apply the 2026-10-28 review's FullStack observations: plan files named in prose, enforcement claims verified at their trigger, and --adr from the binding decisions
+  - Components: agent-operating-surface
+  - Record: `governance/history/changes/2026-10-28-apply-the-2026-10-28-review-s-fullstack-observations-plan-files.json`
 - **2026-10-23** — Install the reviewed template-upgrade update: check the generator's unselected options before sizing a build
   - Components: agent-operating-surface
   - Record: `governance/history/changes/2026-10-23-install-the-reviewed-template-upgrade-update-check-the-generator.json`
@@ -117,9 +120,6 @@ Current state, what is unresolved, and recent material history. This is not the 
 - **2026-08-25** — Limit the frontend-js Dependabot group to minor and patch updates so grouped PRs stay mergeable
   - Components: none recorded
   - Record: `governance/history/changes/2026-08-25-limit-the-frontend-js-dependabot-group-to-minor-and-patch-update.json`
-- **2026-08-25** — Keep in-flight agent turns alive across scheduled token refresh; answer orphaned WS control frames explicitly
-  - Components: agents, backend-api, chat-frontend, frontend-app, governance-kernel
-  - Record: `governance/history/changes/2026-08-25-keep-in-flight-agent-turns-alive-across-scheduled-token-refresh.json`
 
 ## Decisions (6)
 

@@ -18,7 +18,7 @@ Goal: <one sentence — what is true after this phase that was not before>
 Validation: <the commands or validator IDs that prove this phase, runnable in the sandbox>
 
 Steps:
-1. <step name> — <what to do; the step name becomes the commit message>
+1. <step name> — <what to do; the step name becomes the commit message. Name a file the step creates as "a new module `<module>.py` in `<existing directory>/`", never as a full path: skills-check reads paths in docs/ as existing files>
 2. <step name> — <...>
 
 ## Phase 2: <name>

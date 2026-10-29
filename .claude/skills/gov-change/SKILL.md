@@ -130,7 +130,10 @@ of it and will drift if treated as one.
 The optional flags are where the Report below actually lands, so fill them in rather than
 only in chat. Two are tied to this skill's own steps: `--validation` (one per validator ID
 `governance-impact` selected, as `id=result:evidence`) and `--limitation` (the shrink pass's
-honest answer to "why could nothing be removed"). Everything after `ARGS=` is passed through
+honest answer to "why could nothing be removed"). `--adr` names the decisions
+`governance-context` listed as binding the touched components, each confirmed to still hold —
+not ADRs the work merely mentions; the CLI reports an uncited binding decision only after it
+has written the record. Everything after `ARGS=` is passed through
 verbatim; when the nested quoting fights you on a long record, run
 `uv run --project tools/repo_governance governance change finish ...` directly instead.
 
@@ -165,7 +168,7 @@ Use `make governance-explain ID=<id>` for the reasoning behind a specific record
 
 ## Verify what you claim
 
-`--validation` lines are evidence, not assertion. Three claims fail verification in the same
+`--validation` lines are evidence, not assertion. Four claims fail verification in the same
 way — everything short of exercising the behaviour passes, and all of it is wrong:
 
 - **A security posture read from configuration is a hypothesis.** A flag can be set, present
@@ -174,6 +177,11 @@ way — everything short of exercising the behaviour passes, and all of it is wr
   observed trying and failing. Same for a boundary asserted in a comment, ADR, or README: the
   remediation is to move the claim into the artifact that enforces it, then verify the
   **denials**, not only the allowed path.
+- **An enforcement claim has two halves: the rule and its trigger.** "The pre-commit hook
+  refuses X" or "CI fails on Y" depends on what the check does *and* on when it runs — the
+  hook's `files:` filter, a workflow's path triggers, a job's conditions. Reading the check's
+  code proves only the first half. Give the trigger the exact input the claim is about and
+  watch it refuse.
 - **Persistence needs the other interface.** Writing and reading back through one live session
   proves the cache in front of the storage and nothing about durability. Read the same data
   through the far side — the volume itself, an offline API, a restart.

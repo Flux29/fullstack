@@ -1,0 +1,49 @@
+{
+  "adr_refs": [],
+  "affected_components": [
+    "agent-operating-surface"
+  ],
+  "affected_contracts": [],
+  "behavioral_effects": [
+    "Plan authors name files a plan will create in prose and run skills-check before landing a plan; enforcement claims are verified at their trigger; --adr is filled from the decisions governance-context listed as binding"
+  ],
+  "compatibility_impact": "None - no interface, schema, or contract changes; the plan template's gate-read parts (Status line, Phase headings) are unchanged",
+  "date": "2026-10-28",
+  "files_changed": [
+    ".claude/skills/gov-change/SKILL.md",
+    ".claude/skills/phased-delivery/SKILL.md",
+    ".claude/skills/phased-delivery/references/plan-template.md"
+  ],
+  "follow_up": [
+    "Make change finish report uncited binding decisions before it writes the record (observation 171)"
+  ],
+  "id": "2026-10-28-apply-the-2026-10-28-review-s-fullstack-observations-plan-files",
+  "initiated_by": {
+    "kind": "agent"
+  },
+  "limitations": [
+    "Shrink pass ran in its inline form (17 changed lines, documentation only): the naming rule appears in both phased-delivery Stage 1 and the plan template on purpose, because the template is where file names are written and Stage 1 adds the skills-check step and its reason; nothing else to remove",
+    "Observation 171 also suggested having change finish print the binding-decision check before it writes the record; that is a tooling change and is not part of this session",
+    "One session for three observations across two skills because the 2026-10-28 review sent them together as one unit and the owner asked for one commit"
+  ],
+  "manifests_changed": [],
+  "reason": "Three mistakes from the 2026-10-23 skill-install and plan-index sessions had no rule to prevent them. A plan named the file it would create as a repository path, and skills-check read it as a broken citation, keeping main CI red for eight weeks, because the phased-delivery plan template carries no convention for files that do not exist yet (observation 160). A skill sentence claimed the pre-commit hook refuses an unsynced plan bump after only the check's code was read, while the hook's file filter never fired on plans (170). And change finish was given the ADR the work talked about rather than the decision binding the changed components (171). The 2026-10-28 review sent all three to this repository; the rules go into phased-delivery's Stage 1 and plan template and into gov-change's GOV-CLOSE and Verify what you claim.",
+  "risks": [],
+  "rollback": "git revert restores the previous skill text. The observation log entries (160, 170, 171) live outside the repository and are not touched by a revert",
+  "schema_version": 1,
+  "security_impact": "None - agent-facing skill text only; no runtime code, configuration, or permission changes",
+  "summary": "Apply the 2026-10-28 review's FullStack observations: plan files named in prose, enforcement claims verified at their trigger, and --adr from the binding decisions",
+  "tool_version": "1.0.0",
+  "validators_run": [
+    {
+      "evidence_ref": "53 files scanned, every citation resolves; the new placeholder wording is ignored as intended",
+      "id": "skills-check",
+      "result": "pass"
+    },
+    {
+      "evidence_ref": "44 checks, 0 blocking, 8 advisory, all pre-existing",
+      "id": "governance-check",
+      "result": "pass"
+    }
+  ]
+}

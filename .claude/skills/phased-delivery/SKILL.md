@@ -52,6 +52,12 @@ the gate script parses it and synthesizes each phase's chat prompt from it; a
 ` ```prompt ` fence in a phase section overrides the default prompt when a phase
 needs custom instructions.
 
+Name a file the plan will create as a new module in its existing directory
+("a new module `<module>.py` in `<existing directory>/`"), never as a full path:
+`skills-check` reads every path under `docs/` as a claim that it exists, and one
+path-named future file kept main's CI red for eight weeks. Run
+`make governance-skills-check` before landing the plan.
+
 Land the plan (and ADR) through `gov-change` and `ship` like any other edit. The
 sandbox picks the plan up automatically — workspaces clone from this repository
 through the dev git daemon, so once the plan is on local main, a fresh clone has it
